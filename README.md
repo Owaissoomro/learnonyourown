@@ -144,6 +144,132 @@ canonical_problem_dict = {
 - `Study Sheet Generator/out_pdfs/topics/study-sheet-11-lu-and-qr-factorizations.pdf`
 
 ---
+# 🖼 Sample Outputs (snippets)
+
+<details>
+<summary><strong>📄 LCCF Problem Sheet — LeetCode “Insert Interval”</strong> (snippet)</summary>
+
+**Saved as:** `LCCF/out_pdfs/problems/problem-sheet-lc-insert-interval.pdf`
+
+```tex
+% --- Problem Header ---
+\section*{Problem: Insert Interval (LC 57)}
+\textbf{Difficulty:} Medium \quad
+\textbf{URL:} \texttt{https://leetcode.com/problems/insert-interval/}
+
+% --- ELI5 Intuition ---
+\paragraph{ELI5.}
+Walk from left to right. Copy intervals that end before the new one starts.
+Merge overlaps into one growing interval. Append the rest.
+
+% --- Formal Solution ---
+\paragraph{Solution.}
+Let new interval be $[s, e]$. For each $[l_i, r_i]$ in order:
+1) If $r_i < s$, push $[l_i, r_i]$.
+2) Else if $e < l_i$, push $[s, e]$ once, then push $[l_i, r_i]$ and the remaining.
+3) Else (overlap), set $s \leftarrow \min(s,l_i)$ and $e \leftarrow \max(e,r_i)$ and continue.
+
+\paragraph{Complexity.} \mathcal{O}(n) time, \mathcal{O}(1) extra space.
+```
+
+```python
+# Python (from the PDF)
+def insert(intervals, new):
+    s, e = new
+    out, placed = [], False
+    for l, r in intervals:
+        if r < s:
+            out.append([l, r])
+        elif e < l:
+            if not placed:
+                out.append([s, e]); placed = True
+            out.append([l, r])
+        else:
+            s, e = min(s, l), max(e, r)
+    if not placed: out.append([s, e])
+    return out
+```
+
+```cpp
+// C++17 (from the PDF)
+vector<vector<int>> insert(vector<vector<int>>& a, vector<int>& b){
+    int s=b[0], e=b[1]; vector<vector<int>> out; bool placed=false;
+    for (auto &x : a){
+        if (x[1] < s) out.push_back(x);
+        else if (e < x[0]){ if(!placed){ out.push_back({s,e}); placed=true; } out.push_back(x); }
+        else { s=min(s,x[0]); e=max(e,x[1]); }
+    }
+    if(!placed) out.push_back({s,e});
+    return out;
+}
+```
+</details>
+
+---
+
+<details>
+<summary><strong>📄 LCCF Problem Sheet — Codeforces “Two Doors”</strong> (snippet)</summary>
+
+**Saved as:** `LCCF/out_pdfs/problems/problem-sheet-cf-2-doors.pdf`
+
+```tex
+\section*{Problem: Two Doors (CF)}
+\paragraph{ELI5.} Pick the nearer door by absolute difference.
+\paragraph{Solution.} For $a,b,c$, compute $d_1=|a-c|$, $d_2=|b-c|$ and output
+$1$ if $d_1<d_2$, $2$ if $d_2<d_1$, else $3$.
+\paragraph{Complexity.} \mathcal{O}(1) per test.
+```
+
+```python
+def solve():
+    import sys
+    it = iter(sys.stdin.read().split()); t = int(next(it))
+    ans = []
+    for _ in range(t):
+        a,b,c = map(int, (next(it), next(it), next(it)))
+        d1, d2 = abs(a-c), abs(b-c)
+        ans.append("1" if d1<d2 else "2" if d2<d1 else "3")
+    print("\n".join(ans))
+```
+</details>
+
+---
+
+<details>
+<summary><strong>📘 Study Sheet — “LU and QR Factorizations”</strong> (snippet)</summary>
+
+**Saved as:** `Study Sheet Generator/out_pdfs/topics/study-sheet-11-lu-and-qr-factorizations.pdf`
+
+```tex
+\section*{Study Sheet 11 — LU and QR Factorizations}
+
+\paragraph{Overview.}
+$A=LU$ (with pivoting) and $A=QR$ with $Q^\top Q=I$ and $R$ upper-triangular.
+
+\paragraph{Formula Canon.}
+Least-squares solution via QR: $x = R^{-1}Q^\top b$, and
+\mathrm{proj}_{\mathrm{col}(A)}(b)=QQ^\top b$.
+
+\paragraph{Worked Example (Classical Gram–Schmidt).}
+$q_1=a_1/\|a_1\|$, $r_{12}=q_1^\top a_2$, $u_2=a_2-r_{12}q_1$, 
+$q_2=u_2/\|u_2\|$, $R=\begin{bmatrix}\|a_1\|&r_{12}\\0&\|u_2\|\end{bmatrix}$.
+```
+
+```python
+# From-scratch QR (snippet from the PDF)
+import numpy as np
+def qr_gs(A):
+    A = np.array(A, float); m,n = A.shape
+    Q, R = np.zeros((m,n)), np.zeros((n,n))
+    for j in range(n):
+        v = A[:, j].copy()
+        for i in range(j):
+            R[i,j] = Q[:,i] @ v
+            v -= R[i,j] * Q[:,i]
+        R[j,j] = np.linalg.norm(v); Q[:,j] = v / R[j,j]
+    return Q, R
+```
+</details>
 
 ## ⚙️ Configuration Reference
 

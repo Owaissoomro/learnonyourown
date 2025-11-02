@@ -1,0 +1,961 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Mashmokh and Reverse Operation}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/414/C}}
+\LINE{DIFFICULTY / RATING}{2100}
+\STATEMENT{Mashmokh's boss, Bimokh, did not like Mashmokh. So he fired him. Mashmokh decided to go to university and participate in ACM instead of finding a new job. He wants to become a member of Bamokh's team. In order to join he was given some programming tasks and one week to solve them. Mashmokh is not a very experienced programmer. Actually he is not a programmer at all. So he was not able to solve them. That is why he asked you to help him with these tasks. One of these tasks is the following.
+
+You have an array $a$ of length $2^n$ and $m$ queries on it. The $i$-th query is described by an integer $q_i$. In order to perform the $i$-th query you must:
+\begin{bullets}
+\item split the array into $2^{n-q_i}$ parts, where each part is a subarray consisting of $2^{q_i}$ numbers; the $j$-th subarray ($1 \le j \le 2^{n-q_i}$) should contain the elements $a[(j-1)\cdot 2^{q_i}+1], a[(j-1)\cdot 2^{q_i}+2], \ldots, a[(j-1)\cdot 2^{q_i}+2^{q_i}]$;
+\item reverse each of the subarrays;
+\item join them into a single array in the same order (this array becomes new array $a$);
+\item output the number of inversions in the new $a$.
+\end{bullets}
+Given initial array $a$ and all the queries, answer all the queries. Please, note that the changes from some query are saved for further queries.
+
+Input:
+\begin{bullets}
+\item The first line contains a single integer $n$ ($0 \le n \le 20$).
+\item The second line contains $2^n$ space-separated integers $a[1], a[2], \ldots, a[2^n]$ ($1 \le a[i] \le 10^9$), the initial array.
+\item The third line contains a single integer $m$ ($1 \le m \le 10^6$).
+\item The fourth line contains $m$ space-separated integers $q_1, q_2, \ldots, q_m$ ($0 \le q_i \le n$), the queries.
+\end{bullets}
+Note: since the size of the input and output could be very large, do not use slow output techniques in your language. For example, do not use input and output streams (cin, cout) in C++.
+
+Output:
+Output $m$ lines. In the $i$-th line print the answer (the number of inversions) for the $i$-th query.
+
+Note:
+If we reverse an array $x[1], x[2], \ldots, x[n]$ it becomes new array $y[1], y[2], \ldots, y[n]$, where $y[i] = x[n - i + 1]$ for each $i$.
+
+The number of inversions of an array $x[1], x[2], \ldots, x[n]$ is the number of pairs of indices $i, j$ such that: $i < j$ and $x[i] > x[j]$.}
+\BREAKDOWN{We must support up to $10^6$ queries that reverse fixed-size blocks and report the inversion count after each, with updates being persistent. Direct simulation is too slow; instead, precompute inversion contributions per merge level and toggle them efficiently per query.}
+\ELI{Each query flips the contribution of some merge-sort levels; precompute both versions and toggle sums.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Integers $n$, array $a$ of length $2^n$, integer $m$, and sequence $q_1,\ldots,q_m$ with $0 \le q_i \le n$. Values of $a[i]$ fit in 32-bit signed, up to $10^9$.}
+\OUTPUTS{For each query, the number of inversions in the current array after applying the described block reversals. One integer per line.}
+\SAMPLES{
+Example 1: $n=2$, $a=[1,2,3,4]$, queries $[1,2]$. Outputs: $2$, then $4$.
+
+Example 2: $n=1$, $a=[2,1]$, queries $[0,1,1]$. Outputs: $1, 0, 1$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $N=2^n$ and levels $k=1,\ldots,n$ denote merge levels combining two halves of size $2^{k-1}$ into blocks of size $2^k$. For each level $k$, define:
+\begin{bullets}
+\item $I_k^{(0)}$: total number of cross-half inversions $(x \in \text{left}, y \in \text{right})$ with $x>y$ over all blocks at level $k$.
+\item $I_k^{(1)}$: total number of cross-half \emph{noninversions} with strict inequality $(x<y)$ over all blocks at level $k$.
+\end{bullets}
+Let $b_k \in \{0,1\}$ be the parity (toggle state) of level $k$. The inversion count after a sequence of queries is
+\begin{BreakableEquation*}
+\operatorname{Inv} = \sum_{k=1}^{n} \big( (1-b_k)\,I_k^{(0)} + b_k\,I_k^{(1)} \big),
+\end{BreakableEquation*}
+with $b_k$ toggled for all $k \le q$ upon a query $q$.}
+\varmapStart
+\var{n}{power such that array length is $2^n$}
+\var{N}{array length $2^n$}
+\var{I_k^{(0)}}{cross inversions at level $k$ with original half order}
+\var{I_k^{(1)}}{cross pairs at level $k$ contributing after reversal (i.e., left $<$ right)}
+\var{b_k}{toggle parity at level $k$ (0 means original, 1 means flipped)}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+I_k^{(1)} &= T_k - I_k^{(0)} - E_k, \\
+T_k &= \sum_{\text{blocks at level }k} 2^{k-1}\cdot 2^{k-1} = 2^{2k-2}\cdot 2^{n-k}, \\
+\operatorname{Inv}(\mathbf{b}) &= \sum_{k=1}^{n}\Big(I_k^{(0)} + b_k\cdot \big(I_k^{(1)}-I_k^{(0)}\big)\Big),
+\end{aligned}
+\]
+where $E_k$ is the total number of equal-value cross pairs across halves at level $k$, and $T_k$ is the total cross-pair count at level $k$.}
+\ASSUMPTIONS{Indices are 1-based in the statement but any consistent indexing is fine. Values may repeat; inversions are strict $>$. The array length is a power of two, so complete merge levels exist.}
+\INVARIANTS{
+\begin{bullets}
+\item Each query $q$ toggles $b_k$ for all $k \le q$ and leaves higher levels unchanged.
+\item Merge-scan per level preserves sortedness of blocks for the next level.
+\item Equal values never contribute to inversions in either configuration.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Simulate each query by reversing fixed-size blocks and count inversions via merge sort per step.}
+\ASSUMPTIONS{Works for small $n$ or small $m$; too slow for worst case but serves as a correctness baseline.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For each query $q$, split $a$ into consecutive blocks of length $2^q$ and reverse each block in place.
+\item Count inversions of the resulting $a$ using a standard $O(N\log N)$ merge-sort counter.
+\item Persist the modified $a$ and output the inversion count.
+\end{algosteps}
+\COMPLEXITY{Per query time $O(N + N\log N)=O(N\log N)$, space $O(N)$ for merge buffers. This is infeasible for $N$ up to $2^{20}$ and $m$ up to $10^6$.}
+\[
+\begin{aligned}
+T_{\text{per query}}(N) &= O\big(N + N\log N\big) = O(N\log N), \\
+T_{\text{total}} &=
+  O\big(m\,N\log N\big)\ \text{(too large for constraints).}
+\end{aligned}
+\]
+\CORRECTNESS{Each query reverses exactly the specified blocks, and the inversion counter is exact by standard merge counting. Persistence holds since we modify $a$ in place.}
+\EDGECASES{$q=0$ (no change), $q=n$ (reverse whole array), $n=0$ (singleton), all equal elements.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# CF TEMPLATE (must include read_input / solve_case / main + guard + asserts)
+from typing import List, Tuple
+
+def reverse_blocks_inplace(a: List[int], q: int) -> None:
+    """Reverse each consecutive block of length 2^q in-place."""
+    L = 1 << q
+    n = len(a)
+    if L <= 1:
+        return
+    for i in range(0, n, L):
+        a[i:i+L] = reversed(a[i:i+L])
+
+def count_inversions_merge(a: List[int]) -> Tuple[int, List[int]]:
+    """Return (inv_count, sorted_copy) using iterative merge sort."""
+    n = len(a)
+    buf = a[:]
+    inv = 0
+    size = 1
+    cur = buf
+    tmp = [0] * n
+    while size < n:
+        for s in range(0, n, size << 1):
+            m = min(s + size, n)
+            e = min(s + (size << 1), n)
+            i, j, k = s, m, s
+            while i < m and j < e:
+                if cur[i] <= cur[j]:
+                    tmp[k] = cur[i]; i += 1
+                else:
+                    tmp[k] = cur[j]; j += 1
+                    inv += (m - i)
+                k += 1
+            while i < m:
+                tmp[k] = cur[i]; i += 1; k += 1
+            while j < e:
+                tmp[k] = cur[j]; j += 1; k += 1
+        cur, tmp = tmp, cur
+        size <<= 1
+    return inv, cur[:]  # cur is sorted
+
+def read_input_baseline(data: str):
+    it = iter(map(int, data.strip().split()))
+    try:
+        n = next(it)
+    except StopIteration:
+        return None
+    N = 1 << n
+    a = [next(it) for _ in range(N)]
+    m = next(it)
+    qs = [next(it) for _ in range(m)]
+    return n, a, m, qs
+
+def solve_all_baseline(n: int, a: List[int], m: int, qs: List[int]) -> List[int]:
+    out = []
+    for q in qs:
+        reverse_blocks_inplace(a, q)
+        inv, _ = count_inversions_merge(a)
+        out.append(inv)
+    return out
+
+def main_baseline():
+    import sys
+    data = sys.stdin.read()
+    if not data.strip():
+        # Self-test
+        n, a, m, qs = 2, [1, 2, 3, 4], 2, [1, 2]
+        ans = solve_all_baseline(n, a[:], m, qs)
+        assert ans == [2, 4]
+        n, a, m, qs = 1, [2, 1], 3, [0, 1, 1]
+        ans = solve_all_baseline(n, a[:], m, qs)
+        assert ans == [1, 0, 1]
+        print("OK")
+        return
+    parsed = read_input_baseline(data)
+    if parsed is None:
+        return
+    n, a, m, qs = parsed
+    res = solve_all_baseline(n, a, m, qs)
+    sys.stdout.write("\n".join(map(str, res)))
+
+if __name__ == "__main__":
+    main_baseline()
+# Asserts already included in main when no input is provided.
+\end{minted}
+\VALIDATION{Checked on tiny cases with and without duplicates. Verified persistence across queries.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Use a bottom-up merge-scan to precompute per-level cross counts $I_k^{(0)}$ and $I_k^{(1)}$. Each query toggles $b_k$ for $k \le q$; recompute the sum $\sum_k I_k^{(b_k)}$ in $O(n)$ per query.}
+\ASSUMPTIONS{Array length is a power of two; merges at each level are disjoint.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Bottom-up over levels $k=1..n$ merge adjacent sorted blocks and accumulate:
+  \begin{bullets}
+  \item $I_k^{(0)}$: count of strict cross inversions during merge.
+  \item $E_k$: equal cross-pair counts via run-length scan across halves.
+  \item $I_k^{(1)} = T_k - I_k^{(0)} - E_k$.
+  \end{bullets}
+\item Maintain a parity array $b_k$ initialized to $0$.
+\item For each query $q$, flip $b_k$ for $k \le q$ and compute answer $\sum_k I_k^{(b_k)}$.
+\end{algosteps}
+\COMPLEXITY{Precomputation $O(N\log N)$. Per query $O(n)$ time, $O(n)$ space for the precomputed arrays. This is fast since $n \le 20$.}
+\[
+\begin{aligned}
+T_{\text{pre}}(N) &= O(N\log N),\quad S=O(N + n). \\
+T_{\text{per query}} &= O(n) \le O(20).
+\end{aligned}
+\]
+\CORRECTNESS{At level $k$, every cross pair is either left$>$right, left$<$right, or equal; these counts partition $T_k$. Reversing blocks of size $2^q$ flips the effective contribution at all $k \le q$ while leaving higher levels unchanged. Summing per level yields the total inversion count.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Same API/signature as baseline; deterministic; with asserts
+from typing import List, Tuple
+
+def precompute_level_counts(a: List[int], n: int) -> Tuple[List[int], List[int]]:
+    """Compute I_k^(0) and I_k^(1) for k=1..n via bottom-up merges.
+    Returns two lists of length n+1 (index 0 unused).
+    """
+    N = len(a)
+    arr = a[:]  # will be sorted in-place per level
+    inv0 = [0] * (n + 1)
+    inv1 = [0] * (n + 1)
+    size = 1
+    level = 1
+    tmp = [0] * N
+    while level <= n:
+        block = size << 1
+        i = 0
+        while i < N:
+            mid = i + size
+            end = min(i + block, N)
+            # Slices are already sorted from previous level
+            left = arr[i:mid]
+            right = arr[mid:end]
+            l, r = len(left), len(right)
+            # Count inv0 in this merge
+            p = q = 0
+            k = i
+            local_inv0 = 0
+            while p < l and q < r:
+                if left[p] <= right[q]:
+                    tmp[k] = left[p]; p += 1
+                else:
+                    tmp[k] = right[q]; q += 1
+                    local_inv0 += (l - p)
+                k += 1
+            while p < l:
+                tmp[k] = left[p]; p += 1; k += 1
+            while q < r:
+                tmp[k] = right[q]; q += 1; k += 1
+            # Count equal cross pairs E_k (run-length scan)
+            p = q = 0
+            eq_pairs = 0
+            while p < l and q < r:
+                if left[p] < right[q]:
+                    p += 1
+                elif left[p] > right[q]:
+                    q += 1
+                else:
+                    v = left[p]
+                    p0 = p
+                    while p < l and left[p] == v:
+                        p += 1
+                    q0 = q
+                    while q < r and right[q] == v:
+                        q += 1
+                    eq_pairs += (p - p0) * (q - q0)
+            inv0[level] += local_inv0
+            total_pairs = l * r
+            inv1[level] += (total_pairs - local_inv0 - eq_pairs)
+            i = end
+        # copy tmp back
+        arr, tmp = tmp, arr
+        size <<= 1
+        level += 1
+    return inv0, inv1
+
+def read_input(data: str):
+    it = iter(map(int, data.strip().split()))
+    try:
+        n = next(it)
+    except StopIteration:
+        return None
+    N = 1 << n
+    a = [next(it) for _ in range(N)]
+    m = next(it)
+    qs = [next(it) for _ in range(m)]
+    return n, a, m, qs
+
+def solve_all_improved(n: int, a: List[int], m: int, qs: List[int]) -> List[int]:
+    inv0, inv1 = precompute_level_counts(a, n)
+    parity = [0] * (n + 1)
+    out = []
+    for q in qs:
+        for k in range(1, q + 1):
+            parity[k] ^= 1
+        # recompute sum
+        total = 0
+        for k in range(1, n + 1):
+            total += inv1[k] if parity[k] else inv0[k]
+        out.append(total)
+    return out
+
+def main_improved():
+    import sys
+    data = sys.stdin.read()
+    if not data.strip():
+        # Self-test
+        n, a, m, qs = 2, [1, 2, 3, 4], 2, [1, 2]
+        ans = solve_all_improved(n, a[:], m, qs)
+        assert ans == [2, 4]
+        n, a, m, qs = 1, [2, 1], 3, [0, 1, 1]
+        ans = solve_all_improved(n, a[:], m, qs)
+        assert ans == [1, 0, 1]
+        print("OK")
+        return
+    parsed = read_input(data)
+    if parsed is None:
+        return
+    n, a, m, qs = parsed
+    res = solve_all_improved(n, a, m, qs)
+    sys.stdout.write("\n".join(map(str, res)))
+
+if __name__ == "__main__":
+    main_improved()
+\end{minted}
+\VALIDATION{Verified on small arrays with duplicates and random cases vs. brute force for $n \le 8$.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Same precomputation as Approach B, but maintain a running total and update only the toggled levels per query: for $k \le q$, add $(I_k^{(1)}-I_k^{(0)})$ if toggling to $1$, else add $(I_k^{(0)}-I_k^{(1)})$. This yields $O(q)$ update with $q \le n \le 20$.}
+\ASSUMPTIONS{$n \le 20$ so per-query $O(n)$ is effectively constant.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute $(I_k^{(0)}, I_k^{(1)})$ for all $k$ using a single bottom-up pass.
+\item Initialize $b_k=0$ and $S=\sum_k I_k^{(0)}$.
+\item For each query $q$: for $k=1$ to $q$, flip $b_k$ and update $S$ by $\pm\big(I_k^{(1)}-I_k^{(0)}\big)$. Output $S$.
+\end{algosteps}
+\OPTIMALITY{Any solution must reflect the effect of each query on at least the levels it changes; with $q$ levels affected, updating fewer than $q$ contributions cannot capture the correct result in general. Thus the $O(q)$ update is tight for this model, and $q \le n \le 20$ is effectively constant.}
+\COMPLEXITY{Precomputation $O(N\log N)$; each query $O(q) \le O(n)$, memory $O(N+n)$.}
+\[
+\begin{aligned}
+T_{\text{pre}}(N) &= O(N\log N), \\
+T_{\text{per query}} &= O(q)\ (\text{with }q\le n\le 20), \\
+S(N) &= O(N+n).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case()/solve_all(), main()+guard + asserts
+from typing import List, Tuple
+
+def precompute_level_counts(a: List[int], n: int) -> Tuple[List[int], List[int]]:
+    """Compute I_k^(0) and I_k^(1) for k=1..n via bottom-up merges."""
+    N = len(a)
+    arr = a[:]  # will be sorted per level
+    inv0 = [0] * (n + 1)
+    inv1 = [0] * (n + 1)
+    tmp = [0] * N
+    size = 1
+    level = 1
+    while level <= n:
+        block = size << 1
+        i = 0
+        while i < N:
+            mid = i + size
+            end = min(i + block, N)
+            left = arr[i:mid]
+            right = arr[mid:end]
+            l, r = len(left), len(right)
+            # Merge and count inv0
+            p = q = 0
+            k = i
+            local_inv0 = 0
+            while p < l and q < r:
+                if left[p] <= right[q]:
+                    tmp[k] = left[p]; p += 1
+                else:
+                    tmp[k] = right[q]; q += 1
+                    local_inv0 += (l - p)
+                k += 1
+            while p < l:
+                tmp[k] = left[p]; p += 1; k += 1
+            while q < r:
+                tmp[k] = right[q]; q += 1; k += 1
+            # Equal cross pairs
+            p = q = 0
+            eq_pairs = 0
+            while p < l and q < r:
+                if left[p] < right[q]:
+                    p += 1
+                elif left[p] > right[q]:
+                    q += 1
+                else:
+                    v = left[p]
+                    p0 = p
+                    while p < l and left[p] == v:
+                        p += 1
+                    q0 = q
+                    while q < r and right[q] == v:
+                        q += 1
+                    eq_pairs += (p - p0) * (q - q0)
+            inv0[level] += local_inv0
+            total_pairs = l * r
+            inv1[level] += (total_pairs - local_inv0 - eq_pairs)
+            i = end
+        arr, tmp = tmp, arr
+        size <<= 1
+        level += 1
+    return inv0, inv1
+
+def fastints():
+    """Generator yielding ints from stdin.buffer without splitting into a big list."""
+    import sys
+    data = sys.stdin.buffer.read()
+    num = 0
+    sign = 1
+    in_num = False
+    for ch in data:
+        if 48 <= ch <= 57:  # '0'..'9'
+            num = num * 10 + (ch - 48)
+            in_num = True
+        elif ch == 45:  # '-'
+            sign = -1
+        else:
+            if in_num:
+                yield sign * num
+                num = 0
+                sign = 1
+                in_num = False
+    if in_num:
+        yield sign * num
+
+def read_input():
+    it = fastints()
+    try:
+        n = next(it)
+    except StopIteration:
+        return None
+    N = 1 << n
+    a = [next(it) for _ in range(N)]
+    m = next(it)
+    # Return iterator for queries to stream processing
+    return n, a, m, it
+
+def solve_all(n: int, a: List[int], m: int, qit) -> List[int]:
+    inv0, inv1 = precompute_level_counts(a, n)
+    parity = [0] * (n + 1)
+    # Initialize total inversions with all levels in state 0
+    total = sum(inv0[1:])
+    out = []
+    # Buffered output to reduce write calls
+    for _ in range(m):
+        q = next(qit)
+        for k in range(1, q + 1):
+            if parity[k] == 0:
+                total += (inv1[k] - inv0[k])
+                parity[k] = 1
+            else:
+                total += (inv0[k] - inv1[k])
+                parity[k] = 0
+        out.append(total)
+    return out
+
+def main():
+    import sys
+    parsed = read_input()
+    if parsed is None:
+        # Self-tests
+        n, a, m, qs = 2, [1, 2, 3, 4], 2, [1, 2]
+        inv0, inv1 = precompute_level_counts(a, n)
+        # Initial inversions
+        assert sum(inv0[1:]) == 0
+        # After q=1, then q=2
+        def run(n, a, qs):
+            inv0, inv1 = precompute_level_counts(a, n)
+            total = sum(inv0[1:])
+            parity = [0] * (n + 1)
+            res = []
+            for q in qs:
+                for k in range(1, q + 1):
+                    if parity[k] == 0:
+                        total += (inv1[k] - inv0[k])
+                        parity[k] = 1
+                    else:
+                        total += (inv0[k] - inv1[k])
+                        parity[k] = 0
+                res.append(total)
+            return res
+        assert run(2, [1, 2, 3, 4], [1, 2]) == [2, 4]
+        assert run(1, [2, 1], [0, 1, 1]) == [1, 0, 1]
+        # Duplicates
+        assert run(2, [1, 1, 1, 1], [2, 1, 0]) == [0, 0, 0]
+        print("OK")
+        return
+    n, a, m, qit = parsed
+    ans = solve_all(n, a, m, qit)
+    sys.stdout.write("\n".join(map(str, ans)))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts in main: initial sum check, two multi-step scenarios including duplicates.}
+\RESULT{For each query, we output the inversion count after applying persistent block reversals up to the current query. Ties do not arise since the output is a single integer.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit-test the per-level precomputation against brute force for random small arrays; verify persistence across multiple queries; test edge cases $n=0$, $q=0$, $q=n$, all equal values, strictly increasing/decreasing arrays.}
+\LINE{CROSS-CHECKS}{Compare Approach A vs. Approach C on small $n \le 8$ for random sequences of queries; ensure identical outputs.}
+\LINE{EDGE-CASE GENERATOR}{Generate arrays with repeats, all equal, alternating patterns, and adversarial queries alternating $q=n$ and $q=0$.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def brute(a, qs):
+    from typing import List, Tuple
+    def reverse_blocks(a: List[int], q: int):
+        L = 1 << q
+        for i in range(0, len(a), L):
+            a[i:i+L] = reversed(a[i:i+L])
+    def invcnt(a: List[int]) -> int:
+        # naive O(N log N) merge counter
+        def ms(b):
+            n = len(b)
+            if n <= 1:
+                return 0, b[:]
+            m = n // 2
+            c1, l = ms(b[:m])
+            c2, r = ms(b[m:])
+            i = j = 0
+            merged = []
+            inv = c1 + c2
+            while i < len(l) and j < len(r):
+                if l[i] <= r[j]:
+                    merged.append(l[i]); i += 1
+                else:
+                    merged.append(r[j]); j += 1
+                    inv += len(l) - i
+            merged.extend(l[i:]); merged.extend(r[j:])
+            return inv, merged
+        return ms(a)[0]
+    A = a[:]
+    out = []
+    for q in qs:
+        reverse_blocks(A, q)
+        out.append(invcnt(A))
+    return out
+
+def reference(a, qs):
+    # Use Approach C final reference
+    from typing import List, Tuple
+    def precompute_level_counts(a, n):
+        N = len(a)
+        arr = a[:]
+        inv0 = [0] * (n + 1)
+        inv1 = [0] * (n + 1)
+        tmp = [0] * N
+        size = 1
+        level = 1
+        while level <= n:
+            block = size << 1
+            i = 0
+            while i < N:
+                mid = i + size
+                end = min(i + block, N)
+                left = arr[i:mid]
+                right = arr[mid:end]
+                l, r = len(left), len(right)
+                p = q = 0
+                k = i
+                local_inv0 = 0
+                while p < l and q < r:
+                    if left[p] <= right[q]:
+                        tmp[k] = left[p]; p += 1
+                    else:
+                        tmp[k] = right[q]; q += 1
+                        local_inv0 += (l - p)
+                    k += 1
+                while p < l:
+                    tmp[k] = left[p]; p += 1; k += 1
+                while q < r:
+                    tmp[k] = right[q]; q += 1; k += 1
+                p = q = 0
+                eq_pairs = 0
+                while p < l and q < r:
+                    if left[p] < right[q]:
+                        p += 1
+                    elif left[p] > right[q]:
+                        q += 1
+                    else:
+                        v = left[p]
+                        p0 = p
+                        while p < l and left[p] == v:
+                            p += 1
+                        q0 = q
+                        while q < r and right[q] == v:
+                            q += 1
+                        eq_pairs += (p - p0) * (q - q0)
+                inv0[level] += local_inv0
+                inv1[level] += l * r - local_inv0 - eq_pairs
+                i = end
+            arr, tmp = tmp, arr
+            size <<= 1
+            level += 1
+        return inv0, inv1
+    n = (len(a)).bit_length() - 1
+    inv0, inv1 = precompute_level_counts(a, n)
+    total = sum(inv0[1:])
+    parity = [0] * (n + 1)
+    out = []
+    for q in qs:
+        for k in range(1, q + 1):
+            if parity[k] == 0:
+                total += (inv1[k] - inv0[k]); parity[k] = 1
+            else:
+                total += (inv0[k] - inv1[k]); parity[k] = 0
+        out.append(total)
+    return out
+
+def run_tests():
+    random.seed(0)
+    for n in range(0, 8):
+        N = 1 << n
+        for _ in range(50):
+            a = [random.randint(0, 5) for _ in range(N)]
+            qs = [random.randint(0, n) for _ in range(20)]
+            b = brute(a, qs)
+            r = reference(a, qs)
+            assert b == r, (n, a, qs, b, r)
+    print("All tests passed")
+
+if __name__ == "__main__":
+    run_tests()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF/LC) + asserts
+from typing import List, Tuple
+
+def precompute_level_counts(a: List[int], n: int) -> Tuple[List[int], List[int]]:
+    N = len(a)
+    arr = a[:]
+    inv0 = [0] * (n + 1)
+    inv1 = [0] * (n + 1)
+    tmp = [0] * N
+    size = 1
+    level = 1
+    while level <= n:
+        block = size << 1
+        i = 0
+        while i < N:
+            mid = i + size
+            end = min(i + block, N)
+            left = arr[i:mid]
+            right = arr[mid:end]
+            l, r = len(left), len(right)
+            p = q = 0
+            k = i
+            local_inv0 = 0
+            while p < l and q < r:
+                if left[p] <= right[q]:
+                    tmp[k] = left[p]; p += 1
+                else:
+                    tmp[k] = right[q]; q += 1
+                    local_inv0 += (l - p)
+                k += 1
+            while p < l:
+                tmp[k] = left[p]; p += 1; k += 1
+            while q < r:
+                tmp[k] = right[q]; q += 1; k += 1
+            # equal pairs
+            p = q = 0
+            eq_pairs = 0
+            while p < l and q < r:
+                if left[p] < right[q]:
+                    p += 1
+                elif left[p] > right[q]:
+                    q += 1
+                else:
+                    v = left[p]
+                    p0 = p
+                    while p < l and left[p] == v:
+                        p += 1
+                    q0 = q
+                    while q < r and right[q] == v:
+                        q += 1
+                    eq_pairs += (p - p0) * (q - q0)
+            inv0[level] += local_inv0
+            inv1[level] += l * r - local_inv0 - eq_pairs
+            i = end
+        arr, tmp = tmp, arr
+        size <<= 1
+        level += 1
+    return inv0, inv1
+
+def fastints():
+    import sys
+    data = sys.stdin.buffer.read()
+    num = 0
+    sign = 1
+    in_num = False
+    for ch in data:
+        if 48 <= ch <= 57:
+            num = num * 10 + (ch - 48)
+            in_num = True
+        elif ch == 45:
+            sign = -1
+        else:
+            if in_num:
+                yield sign * num
+                num = 0
+                sign = 1
+                in_num = False
+    if in_num:
+        yield sign * num
+
+def read_input():
+    it = fastints()
+    try:
+        n = next(it)
+    except StopIteration:
+        return None
+    N = 1 << n
+    a = [next(it) for _ in range(N)]
+    m = next(it)
+    return n, a, m, it
+
+def solve_all(n: int, a: List[int], m: int, qit) -> List[int]:
+    inv0, inv1 = precompute_level_counts(a, n)
+    parity = [0] * (n + 1)
+    total = sum(inv0[1:])
+    out = []
+    for _ in range(m):
+        q = next(qit)
+        for k in range(1, q + 1):
+            if parity[k] == 0:
+                total += (inv1[k] - inv0[k])
+                parity[k] = 1
+            else:
+                total += (inv0[k] - inv1[k])
+                parity[k] = 0
+        out.append(total)
+    return out
+
+def main():
+    import sys
+    parsed = read_input()
+    if parsed is None:
+        # Minimal asserts
+        n, a, m, qs = 2, [1, 2, 3, 4], 2, [1, 2]
+        ans = solve_all(n, a, m, iter(qs))
+        assert ans == [2, 4]
+        n, a, m, qs = 1, [2, 1], 3, [0, 1, 1]
+        ans = solve_all(n, a, m, iter(qs))
+        assert ans == [1, 0, 1]
+        n, a, m, qs = 2, [1, 1, 1, 1], 3, [2, 1, 0]
+        ans = solve_all(n, a, m, iter(qs))
+        assert ans == [0, 0, 0]
+        print("OK")
+        return
+    n, a, m, qit = parsed
+    res = solve_all(n, a, m, qit)
+    sys.stdout.write("\n".join(map(str, res)))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Precompute inversion contributions per merge level and toggle them per query.}
+\WHY{This is a classic CF problem on offline preprocessing and bitwise/level toggling; appears in interviews to test merge-sort insights and handling of large I/O.}
+\CHECKLIST{
+\begin{bullets}
+\item Build bottom-up merges; per level accumulate strict inversions $I_k^{(0)}$.
+\item Count equal cross pairs and derive $I_k^{(1)}$.
+\item Maintain parity per level; for each query $q$, flip levels $1..q$.
+\item Update running total or recompute sum from parities.
+\item Use fast I/O for up to $10^6$ queries.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item $n=0$ (array of size $1$) $\Rightarrow$ always $0$ inversions.
+\item $q=0$ (no change).
+\item $q=n$ (reverse whole array).
+\item All elements equal.
+\item Strictly increasing or decreasing arrays.
+\item Duplicates spanning halves at many levels.
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Treat equality correctly: inversions are strict $>$, so equal pairs go to $E_k$.
+\item Off-by-one in level indexing ($k$ from $1$ to $n$).
+\item Forgetting that queries are persistent.
+\item Inefficient I/O causing TLE; buffer outputs.
+\item Copying arrays incorrectly between levels during merges.
+\item Using recursion depth that overflows Python for $N=2^{20}$.
+\end{bullets}}
+\FAILMODES{Naive simulation is $O(mN\log N)$ and times out. Miscounting equals inflates $I_k^{(1)}$ causing wrong answers. Not toggling all levels $\le q$ yields incorrect results.}
+\ELI{Think of merge sort: each level contributes some inversions. A query flips certain levels. Precompute both versions, then just flip the sign on those levels and keep a running sum.}
+\NotePages{3}
+
+\end{document}

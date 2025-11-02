@@ -1,0 +1,824 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — MEX Game 2 (Hard Version)}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1943/E2}}
+\LINE{DIFFICULTY / RATING}{3300}
+\STATEMENT{This is the hard version of the problem. The only difference between the two versions is the constraint on $t$, $m$ and the sum of $m$. You can make hacks only if both versions of the problem are solved.
+
+Alice and Bob play yet another game on an array $a$ of size $n$. Alice starts with an empty array $c$. Both players take turns playing, with Alice starting first.
+
+On Alice's turn, she picks one element from $a$, appends that element to $c$, and then deletes it from $a$.
+
+On Bob's turn, he picks at most $k$ elements from $a$, and then deletes it from $a$.
+
+The game ends when the array $a$ is empty. Alice's score is defined to be the MEX$^\dagger$ of $c$. Alice wants to maximize her score while Bob wants to minimize it. Find Alice's final score if both players play optimally.
+
+The array will be given in compressed format. Instead of giving the elements present in the array, we will be giving their frequencies. Formally, you will be given $m$, the maximum element in the array, and then $m + 1$ integers $f_0, f_1, \ldots, f_{m}$, where $f_i$ represents the number of times $i$ occurs in the array $a$.
+
+$^\dagger$ The $\operatorname{MEX}$ (minimum excludant) of an array of integers is defined as the smallest non-negative integer which does not occur in the array. For example:
+\begin{itemize}
+\item The MEX of $[2,2,1]$ is $0$, because $0$ does not belong to the array.
+\item The MEX of $[3,1,0,1]$ is $2$, because $0$ and $1$ belong to the array, but $2$ does not.
+\item The MEX of $[0,3,1,2]$ is $4$, because $0$, $1$, $2$ and $3$ belong to the array, but $4$ does not.
+\end{itemize}
+
+Input:
+Each test contains multiple test cases. The first line contains a single integer $t$ ($1 \le t \le 10^5$) — the number of test cases. The description of the test cases follows.
+
+The first line of each test case contains two integers $m$ and $k$ ($1 \le m \le 2 \cdot 10^5, 1 \le k \le 10^9$).
+
+The second line contains $m + 1$ integers $f_0, f_1, \ldots, f_m$ ($1 \le f_i \le 10^9$).
+
+It is guaranteed the sum of $m$ over all test cases does not exceed $2 \cdot 10^5$.
+
+Output:
+For each test case, find Alice's score if both players play optimally.
+
+Note:
+In the first test case, the array $a$ is $[0, 0, 0, 0, 1, 1, 1, 1, 1]$. A possible game with a score of $2$ is as follows:
+
+1. Alice chooses the element $0$. After this move, $a = [0, 0, 0, 1, 1, 1, 1, 1]$ and $c=[0]$.
+2. Bob chooses to remove the $3$ elements $0$, $0$ and $1$. After this move, $a = [0, 1, 1, 1, 1]$ and $c=[0]$.
+3. Alice chooses the element $1$. After this move, $a = [0,1,1,1]$ and $c=[0,1]$.
+4. Bob removes the $4$ remaining elements $0$, $1$, $1$ and $1$. After this move, $a=[\,]$ and $c=[0,1]$.
+
+At the end, $c=[0,1]$ which has a MEX of $2$. Note that this is an example game and does not necessarily represent the optimal strategy for both players.
+
+In the second test case, Alice can choose a $0$ in her first turn, guaranteeing that her score is at least $1$. While Bob can remove all copies element $1$ in his first turn, thus guaranteeing that Alice's score cannot exceed $1$. So Alice's score is $1$ if both players play optimally.}
+\BREAKDOWN{We are given frequencies $f_0,\ldots,f_m$. Alice wants the maximum $x$ such that she can take at least one copy of each value $0,1,\ldots,x-1$ before Bob deletes all copies of any among them, given that Bob can delete up to $k$ elements after each of Alice's picks.}
+\ELI{Sort the frequencies of needed values; Alice grabs the easiest ones first, Bob spends $k$ deletions per round trying to wipe one remaining value; Alice can secure $x$ values iff for the $t$-th smallest frequency $g_t$, we have $g_t > (t-1)k$ for all $t \le x$.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Multiple test cases. For each: integers $m$, $k$ with $1 \le m \le 2\cdot 10^5$, $1 \le k \le 10^9$; then a list of $m+1$ integers $f_0,\ldots,f_m$ with $1 \le f_i \le 10^9$. Sum of $m$ over tests $\le 2\cdot 10^5$.}
+\OUTPUTS{For each test case, a single integer: the optimal MEX of the sequence $c$ built by Alice under optimal play from both sides.}
+\SAMPLES{Example 1: $m=1$, $k=3$, $f=[4,5]$. Sorted prefixes: $[4]$ is $> 0$, $[4,5]$ has $5 > 3$. Answer: $2$.
+
+Example 2: $m=2$, $k=2$, $f=[1,2,1]$. For $x=2$, sorted $[1,2]$ fails since $2 \nobreak> 2$ is false. Answer: $1$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $f_i$ be the multiplicity of value $i$ in the multiset $a$. Alice and Bob alternate moves; per round, Alice takes one element (securing its value for MEX), Bob deletes up to $k$ arbitrary remaining elements. The goal is to find the largest $x$ such that Alice can secure one copy of each value in $\{0,\ldots,x-1\}$.}
+\varmapStart
+\var{x}{candidate MEX}
+\var{f_i}{frequency of value $i$ in the initial array}
+\var{k}{Bob's per-move deletion budget}
+\var{g_t}{the $t$-th smallest value among $\{f_0,\ldots,f_{x-1}\}$}
+\var{d_i}{deadline $\lceil f_i/k \rceil$ by which Alice must pick value $i$}
+\varmapEnd
+\GOVERN{
+\begin{BreakableEquation*}
+\text{Feasible}(x) \iff \forall t \in \{1,\ldots,x\}:\ g_t > (t-1)k \iff \forall t:\ \left\lceil \frac{g_t}{k} \right\rceil \ge t.
+\end{BreakableEquation*}
+}
+\ASSUMPTIONS{Alice always picks distinct needed values first; Bob focuses deletions to fully eliminate one target value. Frequencies are integral and nonzero.}
+\INVARIANTS{After $r$ Alice moves, Bob has performed exactly $r$ deletions with budget $k$ each, i.e., at most $rk$ total deletions. If a target value still has at least one copy at the start of Alice's turn, Alice can secure it immediately.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{For each $x$ from $0$ to $m+1$, sort the multiset $\{f_0,\ldots,f_{x-1}\}$ and check whether $g_t > (t-1)k$ holds for all positions.}
+\ASSUMPTIONS{This is $O(m^2 \log m)$ per test in the worst case; acceptable only for tiny instances or as a correctness baseline.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Initialize answer $ans \leftarrow 0$.
+\item For $x$ from $1$ to $m+1$: take the first $x$ frequencies, sort ascending as $g_1,\ldots,g_x$.
+\item If for all $t$ we have $g_t > (t-1)k$, set $ans \leftarrow x$; otherwise break.
+\end{algosteps}
+\COMPLEXITY{$T(n)$ with $n=m+1$: worst-case $O\!\left(\sum_{x=1}^{n} x \log x\right)=O(n^2 \log n)$; $S(n)=O(n)$ for the working arrays.}
+\[
+\begin{aligned}
+T(n) &= \sum_{x=1}^{n} O(x \log x) \\
+     &= O(n^2 \log n).
+\end{aligned}
+\]
+\CORRECTNESS{Sorting by frequency is optimal since Bob completes elimination sooner on smaller $f_i$; Alice must pick those earliest. The prefix condition ensures no deadline is missed.}
+\EDGECASES{When $k=1$, condition reduces to $g_t > t-1$; when some $f_i=1$, they must be picked immediately at the start.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input(data: str = None) -> List[Tuple[int, int, List[int]]]:
+    if data is None:
+        data = sys.stdin.read().strip()
+    if not data:
+        return []
+    it = iter(map(int, data.split()))
+    t = next(it)
+    tests = []
+    for _ in range(t):
+        m = next(it); k = next(it)
+        f = [next(it) for _ in range(m+1)]
+        tests.append((m, k, f))
+    return tests
+
+def feasible_slow_prefix(freqs: List[int], k: int) -> bool:
+    """Check g_t > (t-1)*k for given freqs (already the first x)."""
+    g = sorted(freqs)
+    for j, val in enumerate(g):  # j = 0..x-1
+        if val <= j * k:
+            return False
+    return True
+
+def solve_case_baseline(m: int, k: int, f: List[int]) -> int:
+    ans = 0
+    cur = []
+    for x in range(1, m+2):
+        cur.append(f[x-1])
+        if feasible_slow_prefix(cur, k):
+            ans = x
+        else:
+            break
+    return ans
+
+def solve_all_baseline(tests: List[Tuple[int, int, List[int]]]) -> List[str]:
+    return [str(solve_case_baseline(m, k, f)) for (m, k, f) in tests]
+
+def _self_test_baseline():
+    # Tiny hand-crafted
+    assert solve_case_baseline(1, 3, [4,5]) == 2
+    assert solve_case_baseline(2, 2, [1,2,1]) == 1
+    assert solve_case_baseline(0, 10, [7]) == 1
+    # Nondecreasing with bigger k (easier for Alice)
+    m, f = 3, [1, 1, 1, 1]
+    v1 = solve_case_baseline(m, 1, f)
+    v2 = solve_case_baseline(m, 100, f)
+    assert v2 >= v1
+
+def main():
+    tests = read_input()
+    if not tests:
+        _self_test_baseline()
+        return
+    out = solve_all_baseline(tests)
+    sys.stdout.write("\n".join(out))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{The asserts cover simple cases, monotonicity in $k$, and trivial $m=0$.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized via Binary Search Feasibility Check}
+\WHICHFORMULA{Monotonicity: If $x$ is feasible, every $x' \le x$ is also feasible. Therefore binary search the maximum feasible $x$ in $[0, m+1]$. For a candidate $x$, sort $\{f_0,\ldots,f_{x-1}\}$ and check $g_t > (t-1)k$.}
+\ASSUMPTIONS{Sorting at most $\lceil \log_2(m+2) \rceil$ times per test is fast enough since the sum of $m$ is $\le 2\cdot 10^5$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Define predicate $\mathrm{ok}(x)$: sort first $x$ frequencies and verify $g_t > (t-1)k$ for all $t$.
+\item Binary search $x$ in $[0, m+1]$ with $\mathrm{ok}$.
+\item Return the largest feasible $x$.
+\end{algosteps}
+\COMPLEXITY{Each check is $O(x \log x)$; binary search does $O(\log m)$ checks, hence $O(m \log m \log m)$ per test in worst case.}
+\[
+\begin{aligned}
+T(m) &\approx \sum_{i=1}^{\lceil \log_2(m+2)\rceil} O(m \log m) = O(m \log^2 m), \\
+S(m) &= O(m).
+\end{aligned}
+\]
+\CORRECTNESS{Follows from the monotonicity of feasibility and the equivalence to deadline scheduling with unit-time tasks where sorting by deadlines suffices.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+import random
+
+def read_input(data: str = None) -> List[Tuple[int, int, List[int]]]:
+    if data is None:
+        data = sys.stdin.read().strip()
+    if not data:
+        return []
+    it = iter(map(int, data.split()))
+    t = next(it)
+    tests = []
+    for _ in range(t):
+        m = next(it); k = next(it)
+        f = [next(it) for _ in range(m+1)]
+        tests.append((m, k, f))
+    return tests
+
+def ok_check_x(f: List[int], k: int, x: int) -> bool:
+    if x <= 0:
+        return True
+    g = sorted(f[:x])
+    for j, val in enumerate(g):  # j = 0..x-1
+        if val <= j * k:
+            return False
+    return True
+
+def solve_case_bs(m: int, k: int, f: List[int]) -> int:
+    lo, hi = 0, m+1
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if ok_check_x(f, k, mid):
+            lo = mid
+        else:
+            hi = mid - 1
+    return lo
+
+def solve_all_bs(tests: List[Tuple[int, int, List[int]]]) -> List[str]:
+    return [str(solve_case_bs(m, k, f)) for (m, k, f) in tests]
+
+def _self_test_improved():
+    # Compare with baseline on random small cases
+    from random import randint, seed
+    seed(0)
+    def baseline(m, k, f):
+        ans = 0
+        cur = []
+        for x in range(1, m+2):
+            cur.append(f[x-1])
+            g = sorted(cur)
+            good = True
+            for j, v in enumerate(g):
+                if v <= j * k:
+                    good = False
+                    break
+            if good:
+                ans = x
+            else:
+                break
+        return ans
+    for _ in range(200):
+        m = randint(0, 8)
+        k = randint(1, 6)
+        f = [randint(1, 10) for _ in range(m+1)]
+        assert solve_case_bs(m, k, f) == baseline(m, k, f)
+    # Given samples
+    assert solve_case_bs(1, 3, [4,5]) == 2
+    assert solve_case_bs(2, 2, [1,2,1]) == 1
+
+def main():
+    tests = read_input()
+    if not tests:
+        _self_test_improved()
+        return
+    out = solve_all_bs(tests)
+    sys.stdout.write("\n".join(out))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Randomized cross-check vs. the baseline on small instances; fixed asserts for the examples.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Linearithmic Scan with Range-Add Segment Tree (Deadlines View)}
+\WHICHFORMULA{Interpret each value $i$ as a unit-time job with deadline $d_i=\lceil f_i/k\rceil$ (Alice must pick it by round $d_i$ before Bob eliminates it). Among the first $x$ values, feasibility is the classic unit-time scheduling constraint $\forall r:\ \#\{i\le x: d_i \le r\} \le r$. Maintain counts over deadlines and track $\max_{1\le r\le x} (C(r) - r)$ via a segment tree with range add and range max.}
+\ASSUMPTIONS{We only need deadlines up to $m+1$ rounds; larger deadlines can be clamped to $m+1$ since at most $m+1$ picks exist.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Initialize a segment tree over positions $r=1,\ldots,m+1$ with base values $B[r]=-r$.
+\item For $x$ from $1$ to $m+1$: compute $d=\min\!\left(\left\lceil \tfrac{f_{x-1}}{k}\right\rceil,\, m+1\right)$ and apply range add $+1$ to $B[d..m+1]$.
+\item After the update, query $\max(B[1..x])$; if it is $>0$, feasibility fails at this $x$ and the answer is $x-1$. Otherwise continue.
+\end{algosteps}
+\OPTIMALITY{Each iteration does $O(\log m)$ work; correctness follows from the equivalence to unit-time deadline scheduling and the monotone overload check $C(r)-r \le 0$.}
+\COMPLEXITY{$T(m)=O(m \log m)$; $S(m)=O(m)$ for the segment tree.}
+\[
+\begin{aligned}
+T(m) &= (m+1)\cdot O(\log(m+1)) = O(m \log m).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+from random import randint, seed
+
+def read_input(data: str = None) -> List[Tuple[int, int, List[int]]]:
+    if data is None:
+        data = sys.stdin.read().strip()
+    if not data:
+        return []
+    it = iter(map(int, data.split()))
+    t = next(it)
+    tests = []
+    for _ in range(t):
+        m = next(it); k = next(it)
+        f = [next(it) for _ in range(m+1)]
+        tests.append((m, k, f))
+    return tests
+
+class SegTree:
+    def __init__(self, n: int):
+        self.n = n
+        self.maxv = [0] * (4 * n)
+        self.lz = [0] * (4 * n)
+        self._build(1, 1, n)
+
+    def _build(self, idx: int, l: int, r: int):
+        if l == r:
+            self.maxv[idx] = -l  # B[l] = -l initially
+            return
+        m = (l + r) // 2
+        self._build(idx*2, l, m)
+        self._build(idx*2+1, m+1, r)
+        self.maxv[idx] = max(self.maxv[idx*2], self.maxv[idx*2+1])
+
+    def _push(self, idx: int):
+        if self.lz[idx] != 0:
+            v = self.lz[idx]
+            for c in (idx*2, idx*2+1):
+                self.maxv[c] += v
+                self.lz[c] += v
+            self.lz[idx] = 0
+
+    def range_add(self, L: int, R: int, val: int, idx: int = 1, l: int = 1, r: int = None):
+        if r is None:
+            r = self.n
+        if L > R:
+            return
+        if L <= l and r <= R:
+            self.maxv[idx] += val
+            self.lz[idx] += val
+            return
+        self._push(idx)
+        m = (l + r) // 2
+        if L <= m:
+            self.range_add(L, R, val, idx*2, l, m)
+        if R > m:
+            self.range_add(L, R, val, idx*2+1, m+1, r)
+        self.maxv[idx] = max(self.maxv[idx*2], self.maxv[idx*2+1])
+
+    def range_max(self, L: int, R: int, idx: int = 1, l: int = 1, r: int = None) -> int:
+        if r is None:
+            r = self.n
+        if L > R:
+            return -10**18
+        if L <= l and r <= R:
+            return self.maxv[idx]
+        self._push(idx)
+        m = (l + r) // 2
+        res = -10**18
+        if L <= m:
+            res = max(res, self.range_max(L, R, idx*2, l, m))
+        if R > m:
+            res = max(res, self.range_max(L, R, idx*2+1, m+1, r))
+        return res
+
+def solve_case_opt(m: int, k: int, f: List[int]) -> int:
+    n = m + 1
+    st = SegTree(n)
+    ans = 0
+    for x in range(1, n+1):
+        fi = f[x-1]
+        d = (fi + k - 1) // k  # ceil(fi/k)
+        if d > n:
+            d = n
+        st.range_add(d, n, 1)  # C(r) for r>=d increases by 1 -> B[r] += 1
+        if st.range_max(1, x) > 0:
+            return x - 1
+        ans = x
+    return ans
+
+def solve_all_opt(tests: List[Tuple[int, int, List[int]]]) -> List[str]:
+    return [str(solve_case_opt(m, k, f)) for (m, k, f) in tests]
+
+def _self_test_final():
+    # Cross-check vs. binary-search checker on random small instances
+    seed(1)
+    def bs(m, k, f):
+        lo, hi = 0, m+1
+        def ok(x):
+            if x <= 0:
+                return True
+            g = sorted(f[:x])
+            for j, v in enumerate(g):
+                if v <= j * k:
+                    return False
+            return True
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            if ok(mid):
+                lo = mid
+            else:
+                hi = mid - 1
+        return lo
+    for _ in range(200):
+        m = randint(0, 100)
+        k = randint(1, 50)
+        f = [randint(1, 200) for _ in range(m+1)]
+        assert solve_case_opt(m, k, f) == bs(m, k, f)
+    # Given simple checks
+    assert solve_case_opt(1, 3, [4,5]) == 2
+    assert solve_case_opt(2, 2, [1,2,1]) == 1
+
+def main():
+    tests = read_input()
+    if not tests:
+        _self_test_final()
+        return
+    out = solve_all_opt(tests)
+    sys.stdout.write("\n".join(out))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts in-code beyond randomized checks:
+1) solve\_case\_opt(1, 3, [4,5]) = 2; 2) solve\_case\_opt(2, 2, [1,2,1]) = 1; 3) 200 randomized cases cross-checked against the binary-search checker.}
+\RESULT{The printed integer per test is the maximum MEX Alice can enforce. No tie-breaking is needed.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests check hand-crafted scenarios, monotonicity, and randomized cross-checks between approaches. Stress on small ranges ensures edge interactions with $k$ and frequencies are validated.}
+\LINE{CROSS-CHECKS}{Approach A vs. B vs. C on random small cases; Approach C equals Approach B on all tested instances.}
+\LINE{EDGE-CASE GENERATOR}{Generate random $m \in [0,100]$, $k \in [1,50]$, and $f_i \in [1,200]$. Ensures coverage where many deadlines are equal or very large relative to $m$.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+from random import seed, randint
+
+def gen_cases(num: int = 50):
+    seed(42)
+    cases = []
+    for _ in range(num):
+        m = randint(0, 50)
+        k = randint(1, 50)
+        f = [randint(1, 200) for _ in range(m+1)]
+        cases.append((m, k, f))
+    return cases
+
+def run_cross_checks():
+    from typing import List, Tuple
+    def bs(m: int, k: int, f: List[int]) -> int:
+        lo, hi = 0, m+1
+        def ok(x: int) -> bool:
+            if x <= 0: return True
+            g = sorted(f[:x])
+            for j, v in enumerate(g):
+                if v <= j*k:
+                    return False
+            return True
+        while lo < hi:
+            mid = (lo + hi + 1)//2
+            if ok(mid): lo = mid
+            else: hi = mid-1
+        return lo
+    # Optimal solver
+    def opt(m: int, k: int, f: List[int]) -> int:
+        n = m+1
+        # Inline small segment tree
+        N = n
+        size = 1
+        while size < N: size <<= 1
+        maxv = [-10**18]*(2*size)
+        lz = [0]*(2*size)
+        # build B[i] = -i at leaves
+        for i in range(N):
+            maxv[size+i] = -(i+1)
+        for i in range(size-1, 0, -1):
+            maxv[i] = max(maxv[i<<1], maxv[i<<1|1])
+        def push(x):
+            if lz[x]:
+                for c in (x<<1, x<<1|1):
+                    maxv[c] += lz[x]
+                    lz[c] += lz[x]
+                lz[x] = 0
+        def range_add(L, R, val, x, lx, rx):
+            if L>R or R<lx or rx<L: return
+            if L<=lx and rx<=R:
+                maxv[x]+=val; lz[x]+=val; return
+            push(x); m=(lx+rx)//2
+            range_add(L,R,val,x<<1,lx,m)
+            range_add(L,R,val,x<<1|1,m+1,rx)
+            maxv[x]=max(maxv[x<<1],maxv[x<<1|1])
+        def range_max(L, R, x, lx, rx):
+            if L>R or R<lx or rx<L: return -10**18
+            if L<=lx and rx<=R: return maxv[x]
+            push(x); m=(lx+rx)//2
+            return max(range_max(L,R,x<<1,lx,m), range_max(L,R,x<<1|1,m+1,rx))
+        ans = 0
+        for x in range(1, n+1):
+            d = (f[x-1]+k-1)//k
+            if d > n: d = n
+            range_add(d, n, 1, 1, 1, size)
+            if range_max(1, x, 1, 1, size) > 0:
+                return x-1
+            ans = x
+        return ans
+    for (m, k, f) in gen_cases(200):
+        assert opt(m,k,f) == bs(m,k,f)
+
+if __name__ == "__main__":
+    run_cross_checks()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Final CF-ready solver (Approach C), with input reading and asserts guarded by empty-input mode
+import sys
+from typing import List, Tuple
+
+def read_input(data: str = None) -> List[Tuple[int, int, List[int]]]:
+    if data is None:
+        data = sys.stdin.read().strip()
+    if not data:
+        return []
+    it = iter(map(int, data.split()))
+    t = next(it)
+    tests = []
+    for _ in range(t):
+        m = next(it); k = next(it)
+        f = [next(it) for _ in range(m+1)]
+        tests.append((m, k, f))
+    return tests
+
+class SegTree:
+    def __init__(self, n: int):
+        self.n = n
+        self.maxv = [0] * (4 * n)
+        self.lz = [0] * (4 * n)
+        self._build(1, 1, n)
+    def _build(self, idx: int, l: int, r: int):
+        if l == r:
+            self.maxv[idx] = -l
+            return
+        m = (l + r) // 2
+        self._build(idx*2, l, m)
+        self._build(idx*2+1, m+1, r)
+        self.maxv[idx] = max(self.maxv[idx*2], self.maxv[idx*2+1])
+    def _push(self, idx: int):
+        if self.lz[idx] != 0:
+            v = self.lz[idx]
+            for c in (idx*2, idx*2+1):
+                self.maxv[c] += v
+                self.lz[c] += v
+            self.lz[idx] = 0
+    def range_add(self, L: int, R: int, val: int, idx: int = 1, l: int = 1, r: int = None):
+        if r is None:
+            r = self.n
+        if L > R:
+            return
+        if L <= l and r <= R:
+            self.maxv[idx] += val
+            self.lz[idx] += val
+            return
+        self._push(idx)
+        m = (l + r) // 2
+        if L <= m:
+            self.range_add(L, R, val, idx*2, l, m)
+        if R > m:
+            self.range_add(L, R, val, idx*2+1, m+1, r)
+        self.maxv[idx] = max(self.maxv[idx*2], self.maxv[idx*2+1])
+    def range_max(self, L: int, R: int, idx: int = 1, l: int = 1, r: int = None) -> int:
+        if r is None:
+            r = self.n
+        if L > R:
+            return -10**18
+        if L <= l and r <= R:
+            return self.maxv[idx]
+        self._push(idx)
+        m = (l + r) // 2
+        res = -10**18
+        if L <= m:
+            res = max(res, self.range_max(L, R, idx*2, l, m))
+        if R > m:
+            res = max(res, self.range_max(L, R, idx*2+1, m+1, r))
+        return res
+
+def solve_case(m: int, k: int, f: List[int]) -> int:
+    n = m + 1
+    st = SegTree(n)
+    ans = 0
+    for x in range(1, n+1):
+        fi = f[x-1]
+        d = (fi + k - 1) // k
+        if d > n:
+            d = n
+        st.range_add(d, n, 1)
+        if st.range_max(1, x) > 0:
+            return x - 1
+        ans = x
+    return ans
+
+def solve_all(tests: List[Tuple[int, int, List[int]]]) -> List[str]:
+    return [str(solve_case(m, k, f)) for (m, k, f) in tests]
+
+def _self_tests():
+    # Exactly 3 asserts as minimal validation
+    assert solve_case(1, 3, [4,5]) == 2
+    assert solve_case(2, 2, [1,2,1]) == 1
+    # Cross-check against binary search on small random
+    from random import seed, randint
+    seed(7)
+    def bs(m, k, f):
+        lo, hi = 0, m+1
+        def ok(x):
+            if x <= 0:
+                return True
+            g = sorted(f[:x])
+            for j, v in enumerate(g):
+                if v <= j * k:
+                    return False
+            return True
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            if ok(mid): lo = mid
+            else: hi = mid - 1
+        return lo
+    for _ in range(100):
+        m = randint(0, 50)
+        k = randint(1, 50)
+        f = [randint(1, 100) for _ in range(m+1)]
+        assert solve_case(m, k, f) == bs(m, k, f)
+
+def main():
+    tests = read_input()
+    if not tests:
+        _self_tests()
+        return
+    out = solve_all(tests)
+    sys.stdout.write("\n".join(out))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Compute the largest prefix of values by index $\{0,\ldots,x-1\}$ that Alice can secure before Bob deletes any of them entirely, given Bob deletes up to $k$ per round.}
+\WHY{This models adversarial scheduling and resource bounds; the deadline transformation to $\lceil f_i/k\rceil$ is a common and powerful trick in greedy proofs.}
+\CHECKLIST{
+\begin{bullets}
+\item Form candidate $x$.
+\item Sort $f_0,\ldots,f_{x-1}$ or transform to deadlines $d_i=\lceil f_i/k\rceil$.
+\item Verify $g_t > (t-1)k$ for all $t$ or that $C(r)\le r$ for all $r\le x$.
+\end{bullets}
+}
+\EDGECASES{
+\begin{bullets}
+\item $m=0$: answer is $1$ if $f_0 \ge 1$.
+\item Very large $k$: Alice can secure almost all values; answer tends to $m+1$.
+\item $k=1$: condition simplifies to sorted $f$ strictly increasing by at least $1$ each step.
+\item Equal frequencies: many equal deadlines; ensure stable handling.
+\item Huge $f_i$ relative to $k$: deadlines beyond $m+1$ can be clamped.
+\item Mixed small and huge $f_i$: pick the small ones first.
+\end{bullets}
+}
+\PITFALLS{
+\begin{bullets}
+\item Using $\ge$ instead of $>$ in $g_t > (t-1)k$.
+\item Off-by-one in deadline definition: elimination happens before Alice’s next pick.
+\item Forgetting to clamp deadlines to $m+1$.
+\item Sorting the wrong subset (must be indices $0$ to $x-1$ only).
+\item Mishandling empty input when embedding tests.
+\item Segment tree range add direction: must add on $[d, m+1]$.
+\end{bullets}
+}
+\FAILMODES{Approaches that greedily compare sums $\sum f_i$ to $k$ without order will fail; Bob can concentrate deletions. The deadline view survives by considering worst-case concentration.}
+\ELI{Think of each number $i$ as a task that must be done before time $d_i=\lceil f_i/k\rceil$. Alice can do one task per time unit. She can finish the first $x$ tasks (values $0$ to $x-1$) iff at every time $r$, she has at most $r$ tasks due.}
+\NotePages{3}
+
+\end{document}

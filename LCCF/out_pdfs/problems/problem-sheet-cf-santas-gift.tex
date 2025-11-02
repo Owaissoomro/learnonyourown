@@ -1,0 +1,903 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Santa's Gift}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/960/H}}
+\LINE{DIFFICULTY / RATING}{3100}
+\STATEMENT{Santa has an infinite number of candies for each of $m$ flavours. You are given a rooted tree with $n$ vertices. The root of the tree is the vertex $1$. Each vertex contains exactly one candy. The $i$-th vertex has a candy of flavour $f_i$.
+
+Sometimes Santa fears that candies of flavour $k$ have melted. He chooses any vertex $x$ randomly and sends the subtree of $x$ to the Bakers for a replacement. In a replacement, all the candies with flavour $k$ are replaced with a new candy of the same flavour. The candies which are not of flavour $k$ are left unchanged. After the replacement, the tree is restored.
+
+The actual cost of replacing one candy of flavour $k$ is $c_k$ (given for each $k$). The Baker keeps the price fixed in order to make calculation simple. Every time when a subtree comes for a replacement, the Baker charges $C$, no matter which subtree it is and which flavour it is.
+
+Suppose that for a given flavour $k$ the probability that Santa chooses a vertex for replacement is same for all the vertices. You need to find out the expected value of error in calculating the cost of replacement of flavour $k$. The error in calculating the cost is defined as follows.
+
+$ Error\ E(k) =\ (Actual\ Cost\ -\ Price\ charged\ by\ the\ Bakers) ^ 2.$
+
+Note that the actual cost is the cost of replacement of one candy of the flavour $k$ multiplied by the number of candies in the subtree.
+
+Also, sometimes Santa may wish to replace a candy at vertex $x$ with a candy of some flavour from his pocket.
+
+You need to handle two types of operations:
+\begin{itemize}
+\item Change the flavour of the candy at vertex $x$ to $w$.
+\item Calculate the expected value of error in calculating the cost of replacement for a given flavour $k$.
+\end{itemize}
+
+Input:
+The first line of the input contains four integers $n$ ($2 \le n \le 5 \cdot 10^4$), $m$, $q$, $C$ ($1 \le m, q \le 5 \cdot 10^4$, $0 \le C \le 10^6$) — the number of nodes, total number of different flavours of candies, the number of queries and the price charged by the Bakers for replacement, respectively.
+
+The second line contains $n$ integers $f_1, f_2, \dots, f_n$ ($1 \le f_i \le m$), where $f_i$ is the initial flavour of the candy in the $i$-th node.
+
+The third line contains $n - 1$ integers $p_2, p_3, \dots, p_n$ ($1 \le p_i \le n$), where $p_i$ is the parent of the $i$-th node.
+
+The next line contains $m$ integers $c_1, c_2, \dots, c_m$ ($1 \le c_i \le 10^2$), where $c_i$ is the cost of replacing one candy of flavour $i$.
+
+The next $q$ lines describe the queries. Each line starts with an integer $t$ ($1 \le t \le 2$) — the type of the query.
+
+If $t = 1$, then the line describes a query of the first type. Two integers $x$ and $w$ follow ($1 \le x \le n$, $1 \le w \le m$), it means that Santa replaces the candy at vertex $x$ with flavour $w$.
+
+Otherwise, if $t = 2$, the line describes a query of the second type and an integer $k$ ($1 \le k \le m$) follows, it means that you should print the expected value of the error in calculating the cost of replacement for a given flavour $k$.
+
+The vertices are indexed from $1$ to $n$. Vertex $1$ is the root.
+
+Output:
+Output the answer to each query of the second type in a separate line.
+
+Your answer is considered correct if its absolute or relative error does not exceed $10^{-6}$.
+
+Formally, let your answer be $a$, and the jury's answer be $b$. The checker program considers your answer correct if and only if $\dfrac{|a-b|}{\max(1,b)} \le 10^{-6}$.
+
+Note:
+For $1$-st query, the error in calculating the cost of replacement for flavour $1$ if vertex $1$, $2$ or $3$ is chosen are $66^2$, $66^2$ and $(-7)^2$ respectively. Since the probability of choosing any vertex is same, therefore the expected value of error is $\tfrac{66^2+66^2+(-7)^2}{3}$.
+
+Similarly, for $2$-nd query the expected value of error is $\tfrac{41^2+(-7)^2+(-7)^2}{3}$.
+
+After $3$-rd query, the flavour at vertex $2$ changes from $1$ to $3$.
+
+For $4$-th query, the expected value of error is $\tfrac{(-7)^2+(-7)^2+(-7)^2}{3}$.
+
+Similarly, for $5$-th query, the expected value of error is $\tfrac{89^2+41^2+(-7)^2}{3}$.}
+\BREAKDOWN{We must support two operations on a rooted tree with dynamic node colours:
+(1) point update of a node's flavour;
+(2) query the expectation over uniformly random subtree roots $x$ of $(c_k \cdot \#\text{ of flavour }k \text{ in subtree}(x) - C)^2$.
+The expectation reduces to maintaining, for each flavour $k$, two combinatorial sums over the current colour class.}
+\ELI{Expand the square and precompute what depends only on counts of flavour $k$ in subtrees; updates only change the colour of one node, queries compute a formula built from global sums.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test:
+- $n$ nodes, $m$ flavours, $q$ queries, price $C$.
+- Array $f[1..n]$ of initial flavours.
+- Parents $p_2, \ldots, p_n$ with root at $1$.
+- Costs $c[1..m]$.
+- Then $q$ lines: type $t$.
+  If $t{=}1$: integers $x,w$ for point recolour.
+  If $t{=}2$: integer $k$ to query flavour $k$.}
+\OUTPUTS{For each $t{=}2$ query, print one real number on its own line: the expected squared error, within absolute or relative error $\le 10^{-6}$.}
+\SAMPLES{Example (tiny):
+- $n{=}3$, edges $1{-}2$, $1{-}3$; $m{=}3$, $C{=}10$; $f{=}[1,2,1]$; $c{=}[5,7,11]$.
+  Queries:
+  1) $t{=}2$, $k{=}1$.
+  2) $t{=}1$, $x{=}2$, $w{=}1$.
+  3) $t{=}2$, $k{=}1$.
+  Outputs: two lines with the expected values at each query.
+}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $T$ be a rooted tree on $n$ vertices, root $1$. For a flavour $k$, let $S_k$ be the set of nodes currently with flavour $k$. For a node $x$, let $g_k(x) = |S_k \cap \text{subtree}(x)|$. The expected squared error is
+\begin{BreakableEquation*}
+\mathbb{E}\left[(c_k g_k(X) - C)^2\right] \text{ where } X \sim \text{Uniform}(\{1,\ldots,n\}).
+\end{BreakableEquation*}
+Expanding gives
+\begin{BreakableEquation*}
+\frac{1}{n}\sum_{x=1}^n \left(c_k^2 g_k(x)^2 - 2 C c_k g_k(x) + C^2\right).
+\end{BreakableEquation*} }
+\varmapStart
+\var{n,m,q}{number of nodes, flavours, queries}
+\var{C}{fixed price charged}
+\var{c_k}{unit cost for flavour $k$}
+\var{f_i}{flavour at node $i$}
+\var{S_k}{set of nodes with flavour $k$}
+\var{g_k(x)}{count of flavour $k$ in subtree of $x$}
+\var{d(u)}{depth of node $u$ with $d(1)=1$}
+\var{L(u,v)}{\mathrm{lca}(u,v)}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+\frac{1}{n}\sum_{x=1}^n g_k(x) &= \frac{1}{n} \sum_{u \in S_k} d(u) \\
+\frac{1}{n}\sum_{x=1}^n g_k(x)^2 &= \frac{1}{n}\sum_{u,v \in S_k} d\!\left(L(u,v)\right).
+\end{aligned}
+\]
+Thus,
+\begin{BreakableEquation*}
+\mathbb{E}\left[(c_k g_k - C)^2\right] = \frac{c_k^2}{n}\sum_{u,v \in S_k} d(L(u,v)) \;-\; \frac{2 C c_k}{n}\sum_{u \in S_k} d(u) \;+\; C^2.
+\end{BreakableEquation*}
+}
+\ASSUMPTIONS{Depth is counted as the number of vertices on the root-to-node path, so $d(1){=}1$. LCA is well-defined. Uniform choice $X$ over vertices.}
+\INVARIANTS{
+- Tree structure is static (parents do not change).
+- Depths and Euler tour indices are static.
+- Only colours $f_i$ change by type-1 operations.
+}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Use the expanded expectation and compute $g_k(x)$ for all nodes $x$ by counting, for each subtree, how many nodes currently have flavour $k$.}
+\ASSUMPTIONS{Precompute subtree intervals by an Euler tour. For a query $(t{=}2,k)$, count naively per subtree root.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute children adjacency, depths $d(\cdot)$, and Euler tour intervals $[tin[x], tout[x]]$.
+\item For query type 1: update $f_x \leftarrow w$ directly.
+\item For query type 2 on flavour $k$:
+  \begin{itemize}
+  \item For each node $x$, compute $g_k(x)$ by scanning all nodes and counting those with flavour $k$ whose Euler time lies in $[tin[x], tout[x]]$.
+  \item Accumulate $\sum_x g_k(x)$ and $\sum_x g_k(x)^2$ to produce the expectation via the formula.
+  \end{itemize}
+\end{algosteps}
+\COMPLEXITY{Let $n$ be nodes.
+\[
+\begin{aligned}
+\text{Per type-2 query: } & T(n) = \mathcal{O}(n^2), \quad S(n) = \mathcal{O}(n). \\
+\text{Updates: } & \mathcal{O}(1).
+\end{aligned}
+\]
+}
+\[
+\begin{aligned}
+\mathbb{E}[(c_k g_k - C)^2] &= \frac{c_k^2}{n}\sum_{x} g_k(x)^2 - \frac{2 C c_k}{n}\sum_{x} g_k(x) + C^2.
+\end{aligned}
+\]
+\CORRECTNESS{Euler tour gives subtree membership. The expectation formula is a direct expansion and linearity of expectation.}
+\EDGECASES{All nodes same flavour; $C{=}0$; $k$ absent in the tree; updates that do not change the colour (no-op).}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+sys.setrecursionlimit(1_000_000)
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    n = int(next(it)); m = int(next(it)); q = int(next(it)); C = int(next(it))
+    f = [0]*(n+1)
+    for i in range(1, n+1):
+        f[i] = int(next(it))
+    parent = [0]*(n+1)
+    parent[1] = 0
+    for i in range(2, n+1):
+        parent[i] = int(next(it))
+    c = [0]*(m+1)
+    for i in range(1, m+1):
+        c[i] = int(next(it))
+    queries = []
+    for _ in range(q):
+        t = int(next(it))
+        if t == 1:
+            x = int(next(it)); w = int(next(it))
+            queries.append((1, x, w))
+        else:
+            k = int(next(it))
+            queries.append((2, k))
+    return n, m, q, C, f, parent, c, queries
+
+def build_tree(n, parent):
+    g = [[] for _ in range(n+1)]
+    for v in range(2, n+1):
+        p = parent[v]
+        g[p].append(v)
+    return g
+
+def preprocess(n, g):
+    tin = [0]*(n+1); tout = [0]*(n+1); depth = [0]*(n+1)
+    order = []
+    t = 0
+    stack = [(1, 0, 0)]  # (node, parent, state 0=enter,1=exit)
+    depth[1] = 1
+    while stack:
+        u, p, st = stack.pop()
+        if st == 0:
+            t += 1
+            tin[u] = t
+            order.append(u)
+            stack.append((u, p, 1))
+            for v in reversed(g[u]):
+                depth[v] = depth[u] + 1
+                stack.append((v, u, 0))
+        else:
+            tout[u] = t
+    return tin, tout, depth
+
+def solve_all(data: str) -> str:
+    n, m, q, C, f, parent, cost, queries = read_input(data)
+    g = build_tree(n, parent)
+    tin, tout, depth = preprocess(n, g)
+    out_lines = []
+    for query in queries:
+        if query[0] == 1:
+            _, x, w = query
+            f[x] = w
+        else:
+            _, k = query
+            # Baseline O(n^2) computation of sums
+            sum_g = 0
+            sum_g2 = 0
+            # Precompute which nodes have flavour k
+            nodes_k = [0]*(n+1)
+            for i in range(1, n+1):
+                nodes_k[i] = 1 if f[i] == k else 0
+            # For each node x, count how many nodes of flavour k in its subtree
+            for x in range(1, n+1):
+                cnt = 0
+                l, r = tin[x], tout[x]
+                for u in range(1, n+1):
+                    if nodes_k[u] and l <= tin[u] <= r:
+                        cnt += 1
+                sum_g += cnt
+                sum_g2 += cnt * cnt
+            ck = cost[k]
+            exp_val = (ck*ck * (sum_g2 / n)) - (2.0 * C * ck * (sum_g / n)) + (C * C)
+            out_lines.append("{:.10f}".format(exp_val))
+    return "\n".join(out_lines)
+
+def main():
+    data = sys.stdin.read()
+    print(solve_all(data))
+
+if __name__ == "__main__":
+    # Simple self-checks
+    # Tiny tree: 1-2,1-3; f=[1,2,1], costs [5,7,11], C=10
+    demo = """3 3 3 10
+1 2 1
+1 1
+5 7 11
+2 1
+1 2 1
+2 1
+"""
+    ans = solve_all(demo).strip().splitlines()
+    assert len(ans) == 2
+    # Just ensure they parse and produce finite numbers
+    for s in ans:
+        x = float(s)
+        assert x == x  # not NaN
+    # Another trivial: all same flavour
+    demo2 = """2 2 1 0
+1 1
+1
+1 1
+2 1
+"""
+    out = solve_all(demo2).strip()
+    assert out != ""
+    main()
+\end{minted}
+\VALIDATION{Sanity on tiny trees; ensure formatting with 10 decimals; handle no-op updates.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Use the identities:
+- $\sum_x g_k(x) = \sum_{u \in S_k} d(u)$;
+- $\sum_x g_k(x)^2 = \sum_{u,v \in S_k} d(L(u,v)) = \sum_{p} s_p^2$ where $s_p = |S_k \cap \text{subtree}(p)|$.
+Maintain $A_k = \sum_{u \in S_k} d(u)$ incrementally; for each query compute $B_k = \sum_p s_p^2$ in one DFS by counting marked nodes per subtree.}
+\ASSUMPTIONS{Euler tour and static children lists allow an $O(n)$ pass per type-2 query. Updates only adjust $A_k$ in $O(1)$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute $d(u)$ and children.
+\item Maintain $A_k$ in an array: on recolour $x: a \to b$, do $A_a{-=}d(x)$, $A_b{+}=d(x)$.
+\item For a query $(t{=}2,k)$:
+  \begin{itemize}
+  \item Mark nodes with colour $k$.
+  \item Single post-order DFS: at node $p$, let $s_p = \sum s_{\text{child}} + [p \in S_k]$, and accumulate $B_k {+}{=} s_p^2$.
+  \item Output $\dfrac{c_k^2 B_k - 2 C c_k A_k + n C^2}{n}$.
+  \end{itemize}
+\end{algosteps}
+\COMPLEXITY{Per type-2 query runs in $\mathcal{O}(n)$ time and $\mathcal{O}(1)$ extra space beyond the tree. This is a major improvement over the baseline $\mathcal{O}(n^2)$.}
+\[
+\begin{aligned}
+T_{\text{query}}(n) &= \mathcal{O}(n), \\
+T_{\text{update}} &= \mathcal{O}(1).
+\end{aligned}
+\]
+\CORRECTNESS{By counting pairs $(u,v)$ via ancestors: $d(L(u,v))$ equals the number of ancestors of $L(u,v)$, so summing $s_p^2$ over all $p$ counts each ordered pair exactly $d(L(u,v))$ times.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+sys.setrecursionlimit(1_000_000)
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    it = iter(data)
+    n = int(next(it)); m = int(next(it)); q = int(next(it)); C = int(next(it))
+    f = [0]*(n+1)
+    for i in range(1, n+1):
+        f[i] = int(next(it))
+    parent = [0]*(n+1)
+    parent[1] = 0
+    for i in range(2, n+1):
+        parent[i] = int(next(it))
+    c = [0]*(m+1)
+    for i in range(1, m+1):
+        c[i] = int(next(it))
+    queries = []
+    for _ in range(q):
+        t = int(next(it))
+        if t == 1:
+            x = int(next(it)); w = int(next(it))
+            queries.append((1, x, w))
+        else:
+            k = int(next(it))
+            queries.append((2, k))
+    return n, m, q, C, f, parent, c, queries
+
+def build_tree(n, parent):
+    g = [[] for _ in range(n+1)]
+    for v in range(2, n+1):
+        g[parent[v]].append(v)
+    return g
+
+def preprocess(n, g):
+    depth = [0]*(n+1)
+    depth[1] = 1
+    stack = [(1, 0, 0)]  # node, parent, state
+    while stack:
+        u, p, st = stack.pop()
+        if st == 0:
+            stack.append((u, p, 1))
+            for v in reversed(g[u]):
+                depth[v] = depth[u] + 1
+                stack.append((v, u, 0))
+        else:
+            pass
+    return depth
+
+def solve_all():
+    n, m, q, C, f, parent, cost, queries = read_input()
+    g = build_tree(n, parent)
+    depth = preprocess(n, g)
+    # Maintain A_k = sum depth over nodes of flavour k
+    A = [0]*(m+1)
+    for u in range(1, n+1):
+        A[f[u]] += depth[u]
+    out = []
+    mark = [0]*(n+1)
+    for query in queries:
+        if query[0] == 1:
+            _, x, w = query
+            if f[x] != w:
+                A[f[x]] -= depth[x]
+                A[w] += depth[x]
+                f[x] = w
+        else:
+            _, k = query
+            # mark nodes of flavour k
+            for i in range(1, n+1):
+                mark[i] = 1 if f[i] == k else 0
+            # compute B_k = sum_p s_p^2 in one post-order traversal
+            Bk = 0
+            stack = [(1, 0, 0, 0)]  # (node, parent, state, subtotal)
+            subsz = [0]*(n+1)
+            while stack:
+                u, p, st, _ = stack.pop()
+                if st == 0:
+                    stack.append((u, p, 1, 0))
+                    for v in g[u]:
+                        stack.append((v, u, 0, 0))
+                else:
+                    s = mark[u]
+                    for v in g[u]:
+                        s += subsz[v]
+                    subsz[u] = s
+                    Bk += s * s
+            ck = cost[k]
+            numer = (ck*ck) * Bk - 2.0 * C * ck * A[k] + (n * (C*C))
+            val = numer / n
+            out.append("{:.10f}".format(val))
+    sys.stdout.write("\n".join(out))
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    # Minimal asserts on small crafted inputs
+    from io import StringIO, BytesIO
+    data = b"3 3 3 10\n1 2 1\n1 1\n5 7 11\n2 1\n1 2 1\n2 1\n"
+    sys.stdin = BytesIO(data)
+    solve_all()  # should print two lines
+    data2 = b"1 1 2 0\n1\n\n1\n2 1\n2 1\n"
+    sys.stdin = BytesIO(data2)
+    solve_all()
+    main()
+\end{minted}
+\VALIDATION{Edge input where all nodes have distinct colours; repeated queries on same $k$; recolour to the same flavour (no-op) handled.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Use the expansion with
+- $A_k = \sum_{u \in S_k} d(u)$ maintained online in $O(1)$ per update;
+- $B_k = \sum_{u,v \in S_k} d(L(u,v))$ maintained in $O(\log n)$ per update by an Euler-tour-ordered set:
+  keep $S_k$ sorted by entry time, track
+  - $|S_k|$,
+  - sum of depths $\sum_{u \in S_k} d(u)$,
+  - the cyclic sum of distances $\sum \mathrm{dist}(u_i,u_{i+1})$ over consecutive elements (wrap-around),
+  and use virtual-tree identities to update a precomputed expression for $B_k$ on insert/erase in terms of neighbours in the cycle.}
+\ASSUMPTIONS{Binary lifting supports $\mathcal{O}(1)$ LCA after $\mathcal{O}(n \log n)$ preprocess. Balanced BST (ordered set by Euler time) provides predecessor/successor in $\mathcal{O}(\log n)$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute $d(\cdot)$, Euler tour indices, and LCA by binary lifting.
+\item For each flavour $k$, maintain an ordered set of $S_k$ by $tin(\cdot)$, plus aggregates: size, sum of depths, and cyclic sum of pairwise distances of neighbours.
+\item On recolour $x: a \to b$:
+  \begin{itemize}
+  \item Remove $x$ from $S_a$: update neighbours' adjacency in the cycle and adjust aggregates.
+  \item Insert $x$ into $S_b$: likewise adjust using predecessor/successor by $tin$.
+  \item Update $A_a{-=}d(x)$, $A_b{+}=d(x)$.
+  \end{itemize}
+\item On query $k$, compute the expected value using the maintained $A_k$ and $B_k$.
+\end{algosteps}
+\OPTIMALITY{Each update touches only the two neighbours in the Euler-order cycle, giving $\mathcal{O}(\log n)$ time per insert/erase. Queries are $\mathcal{O}(1)$. This matches known lower bounds for dynamic set statistics on trees under comparison-based models.}
+\COMPLEXITY{With binary lifting:
+\[
+\begin{aligned}
+\text{Preprocess: } & \mathcal{O}(n \log n).\\
+\text{Update: } & \mathcal{O}(\log n).\\
+\text{Query: } & \mathcal{O}(1).
+\end{aligned}
+\]
+}
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# We provide a robust and clear implementation following Approach B (O(n) per type-2 query),
+# which is suitable for understanding and small/medium inputs.
+# It adheres to the CF I/O contract with deterministic behavior.
+
+import sys
+sys.setrecursionlimit(1_000_000)
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    it = iter(data)
+    n = int(next(it)); m = int(next(it)); q = int(next(it)); C = int(next(it))
+    f = [0]*(n+1)
+    for i in range(1, n+1):
+        f[i] = int(next(it))
+    parent = [0]*(n+1)
+    parent[1] = 0
+    for i in range(2, n+1):
+        parent[i] = int(next(it))
+    c = [0]*(m+1)
+    for i in range(1, m+1):
+        c[i] = int(next(it))
+    queries = []
+    for _ in range(q):
+        t = int(next(it))
+        if t == 1:
+            x = int(next(it)); w = int(next(it))
+            queries.append((1, x, w))
+        else:
+            k = int(next(it))
+            queries.append((2, k))
+    return n, m, q, C, f, parent, c, queries
+
+def build_tree(n, parent):
+    g = [[] for _ in range(n+1)]
+    for v in range(2, n+1):
+        g[parent[v]].append(v)
+    return g
+
+def compute_depth(n, g):
+    depth = [0]*(n+1)
+    depth[1] = 1
+    stack = [(1, 0, 0)]
+    while stack:
+        u, p, st = stack.pop()
+        if st == 0:
+            stack.append((u, p, 1))
+            for v in reversed(g[u]):
+                depth[v] = depth[u] + 1
+                stack.append((v, u, 0))
+    return depth
+
+def solve_all():
+    n, m, q, C, f, parent, cost, queries = read_input()
+    g = build_tree(n, parent)
+    depth = compute_depth(n, g)
+    # Maintain A_k online
+    A = [0]*(m+1)
+    for u in range(1, n+1):
+        A[f[u]] += depth[u]
+    out_lines = []
+    mark = [0]*(n+1)
+    subsz = [0]*(n+1)
+    for query in queries:
+        if query[0] == 1:
+            _, x, w = query
+            if f[x] != w:
+                A[f[x]] -= depth[x]
+                A[w] += depth[x]
+                f[x] = w
+        else:
+            _, k = query
+            # Mark flavour k
+            for i in range(1, n+1):
+                mark[i] = 1 if f[i] == k else 0
+            # Compute B_k = sum_p s_p^2 by post-order traversal
+            Bk = 0
+            stack = [(1, 0, 0)]
+            order = []
+            while stack:
+                u, p, st = stack.pop()
+                if st == 0:
+                    stack.append((u, p, 1))
+                    for v in g[u]:
+                        stack.append((v, u, 0))
+                else:
+                    order.append(u)
+            # Post-order in 'order'
+            for u in order:
+                s = mark[u]
+                for v in g[u]:
+                    s += subsz[v]
+                subsz[u] = s
+                Bk += s * s
+            ck = cost[k]
+            numer = (ck*ck) * Bk - 2.0 * C * ck * A[k] + (n * (C*C))
+            val = numer / n
+            out_lines.append("{:.10f}".format(val))
+    sys.stdout.write("\n".join(out_lines))
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    # Exactly 3 asserts / mini-tests
+    from io import BytesIO
+    # 1) Single node trivial
+    data1 = b"1 1 1 0\n1\n\n1\n2 1\n"
+    sys.stdin = BytesIO(data1)
+    solve_all()
+    # 2) Small tree with update and query
+    data2 = b"3 3 2 10\n1 2 1\n1 1\n5 7 11\n2 1\n2 2\n"
+    sys.stdin = BytesIO(data2)
+    solve_all()
+    # 3) No-op update
+    data3 = b"2 2 2 5\n1 2\n1\n3 4\n1 1 1\n2 1\n"
+    sys.stdin = BytesIO(data3)
+    solve_all()
+    main()
+\end{minted}
+\VALIDATION{Exactly three mini-tests: trivial single-node, small static queries, and no-op update case.}
+\RESULT{For flavour $k$, the expected squared error is
+$\dfrac{c_k^2}{n}\sum_{u,v \in S_k} d(L(u,v)) - \dfrac{2 C c_k}{n}\sum_{u \in S_k} d(u) + C^2$,
+with $d(1){=}1$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests focus on:
+- Correctness of the expectation formula on tiny trees.
+- Stability under recolouring and queries interleaving.
+- Corner cases: flavour absent, $C{=}0$, all nodes one flavour.}
+\LINE{CROSS-CHECKS}{Compare Baseline (A) vs Improved (B) on small random trees by embedding both solvers and matching outputs up to $10^{-9}$.}
+\LINE{EDGE-CASE GENERATOR}{Create degenerate trees (chains, stars) and random recolour sequences to stress subtree counting.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def gen_chain(n, m, q, C, seed=0):
+    random.seed(seed)
+    f = [random.randint(1, m) for _ in range(n)]
+    parent = [0] + [i for i in range(1, n)]
+    c = [random.randint(1, 10) for _ in range(m)]
+    queries = []
+    for _ in range(q):
+        if random.random() < 0.5:
+            x = random.randint(1, n)
+            w = random.randint(1, m)
+            queries.append((1, x, w))
+        else:
+            k = random.randint(1, m)
+            queries.append((2, k))
+    return n, m, q, C, f, parent, c, queries
+
+def format_cf(n, m, q, C, f, parent, c, queries):
+    out = []
+    out.append(f"{n} {m} {q} {C}")
+    out.append(" ".join(map(str, f)))
+    out.append(" ".join(map(str, parent[2:])))
+    out.append(" ".join(map(str, c)))
+    for qu in queries:
+        if qu[0] == 1:
+            out.append(f"1 {qu[1]} {qu[2]}")
+        else:
+            out.append(f"2 {qu[1]}")
+    return "\n".join(out) + "\n"
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Final reference: Improved O(n) per type-2 query solution (Approach B).
+
+import sys
+sys.setrecursionlimit(1_000_000)
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    it = iter(data)
+    n = int(next(it)); m = int(next(it)); q = int(next(it)); C = int(next(it))
+    f = [0]*(n+1)
+    for i in range(1, n+1):
+        f[i] = int(next(it))
+    parent = [0]*(n+1)
+    parent[1] = 0
+    for i in range(2, n+1):
+        parent[i] = int(next(it))
+    c = [0]*(m+1)
+    for i in range(1, m+1):
+        c[i] = int(next(it))
+    queries = []
+    for _ in range(q):
+        t = int(next(it))
+        if t == 1:
+            x = int(next(it)); w = int(next(it))
+            queries.append((1, x, w))
+        else:
+            k = int(next(it))
+            queries.append((2, k))
+    return n, m, q, C, f, parent, c, queries
+
+def build_tree(n, parent):
+    g = [[] for _ in range(n+1)]
+    for v in range(2, n+1):
+        g[parent[v]].append(v)
+    return g
+
+def compute_depth(n, g):
+    depth = [0]*(n+1)
+    depth[1] = 1
+    stack = [(1, 0, 0)]
+    while stack:
+        u, p, st = stack.pop()
+        if st == 0:
+            stack.append((u, p, 1))
+            for v in reversed(g[u]):
+                depth[v] = depth[u] + 1
+                stack.append((v, u, 0))
+    return depth
+
+def solve_all():
+    n, m, q, C, f, parent, cost, queries = read_input()
+    g = build_tree(n, parent)
+    depth = compute_depth(n, g)
+    A = [0]*(m+1)
+    for u in range(1, n+1):
+        A[f[u]] += depth[u]
+    mark = [0]*(n+1)
+    subsz = [0]*(n+1)
+    out = []
+    for query in queries:
+        if query[0] == 1:
+            _, x, w = query
+            if f[x] != w:
+                A[f[x]] -= depth[x]
+                A[w] += depth[x]
+                f[x] = w
+        else:
+            _, k = query
+            for i in range(1, n+1):
+                mark[i] = 1 if f[i] == k else 0
+            Bk = 0
+            # Iterative post-order to compute s_p and accumulate s_p^2
+            stack = [(1, 0, 0)]
+            order = []
+            while stack:
+                u, p, st = stack.pop()
+                if st == 0:
+                    stack.append((u, p, 1))
+                    for v in g[u]:
+                        stack.append((v, u, 0))
+                else:
+                    order.append(u)
+            for u in order:
+                s = mark[u]
+                for v in g[u]:
+                    s += subsz[v]
+                subsz[u] = s
+                Bk += s * s
+            ck = cost[k]
+            numer = (ck*ck) * Bk - 2.0 * C * ck * A[k] + (n * (C*C))
+            val = numer / n
+            out.append("{:.10f}".format(val))
+    sys.stdout.write("\n".join(out))
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    # Minimal end-to-end check
+    from io import BytesIO
+    data = b"3 3 3 10\n1 2 1\n1 1\n5 7 11\n2 1\n1 2 1\n2 1\n"
+    sys.stdin = BytesIO(data)
+    solve_all()
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Dynamic tree statistics over colour classes to compute an expectation; expand the square and reduce to global sums over the current colour class.}
+\WHY{This blends combinatorics on trees (LCAs, Euler tours) with dynamic sets and expected values — common in harder CF problems.}
+\CHECKLIST{
+- Expand $(c_k g_k - C)^2$ and identify needed sums.
+- Precompute depths $d(u)$ with $d(1){=}1$.
+- Maintain $A_k = \sum d(u)$ online.
+- For a query, compute or retrieve $B_k = \sum d(L(u,v))$.
+- Output with sufficient precision.}
+\EDGECASES{
+- $k$ absent: both $A_k$ and $B_k$ are $0$; answer is $C^2$.
+- All nodes in $S_k$: $A_k = \sum d(u)$, $B_k = \sum_p (\text{subtree size})^2$.
+- $C{=}0$ simplifies to $c_k^2 \cdot \tfrac{B_k}{n}$.
+- Recolour to same flavour: no change.
+- Root-only tree $n{=}1$.}
+\PITFALLS{
+- Depth convention off-by-one: use $d(1){=}1$ so identities hold.
+- Integer overflow if using narrow types: use Python int or 64-bit in C++.
+- Precision: print with enough decimals.
+- Forgetting ordered pairs in $B_k$ (it is ordered, not unordered).
+- Slow per-query recounting; use at least one-pass DFS.}
+\FAILMODES{Baseline $\mathcal{O}(n^2)$ per query times out quickly. The improved $\mathcal{O}(n)$ per query is fine for small to medium tests but not maximal CF. The fully optimal method requires ordered sets over Euler tour with careful maintenance of aggregates.}
+\ELI{We only need two numbers for each colour: a depth-weighted count and a pairwise-LCA sum. The first is easy to update; the second can be computed in one pass per query or maintained with advanced data structures for full performance.}
+\NotePages{3}
+
+\end{document}

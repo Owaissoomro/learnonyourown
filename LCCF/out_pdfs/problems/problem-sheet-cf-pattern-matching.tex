@@ -1,0 +1,837 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Pattern Matching}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1476/E}}
+\LINE{DIFFICULTY / RATING}{2300}
+\STATEMENT{You are given $n$ patterns $p_1, p_2, \dots, p_n$ and $m$ strings $s_1, s_2, \dots, s_m$. Each pattern $p_i$ consists of $k$ characters that are either lowercase Latin letters or wildcard characters (denoted by underscores). All patterns are pairwise distinct. Each string $s_j$ consists of $k$ lowercase Latin letters.
+
+A string $a$ matches a pattern $b$ if for each $i$ from $1$ to $k$ either $b_i$ is a wildcard character or $b_i=a_i$.
+
+You are asked to rearrange the patterns in such a way that the first pattern the $j$-th string matches is $p[mt_j]$. You are allowed to leave the order of the patterns unchanged.
+
+Can you perform such a rearrangement? If you can, then print any valid order.
+
+Input:
+The first line contains three integers $n$, $m$ and $k$ ($1 \le n, m \le 10^5$, $1 \le k \le 4$) — the number of patterns, the number of strings and the length of each pattern and string.
+
+Each of the next $n$ lines contains a pattern — $k$ characters that are either lowercase Latin letters or underscores. All patterns are pairwise distinct.
+
+Each of the next $m$ lines contains a string — $k$ lowercase Latin letters, and an integer $mt$ ($1 \le mt \le n$) — the index of the first pattern the corresponding string should match.
+
+Output:
+Print ``NO'' if there is no way to rearrange the patterns in such a way that the first pattern that the $j$-th string matches is $p[mt_j]$.
+
+Otherwise, print ``YES'' in the first line. The second line should contain $n$ distinct integers from $1$ to $n$ — the order of the patterns. If there are multiple answers, print any of them.
+
+Note:
+The order of patterns after the rearrangement in the first example is the following:
+
+- aaaa
+- \_\_b\_
+- ab\_\_
+- \_bcd
+- \_b\_d
+
+Thus, the first string matches patterns ab\_\_, \_bcd, \_b\_d in that order, the first of them is ab\_\_, that is indeed $p[4]$. The second string matches \_\_b\_ and ab\_\_, the first of them is \_\_b\_, that is $p[2]$. The last string matches \_bcd and \_b\_d, the first of them is \_bcd, that is $p[5]$.
+
+The answer to that test is not unique, other valid orders also exist.
+
+In the second example cba does not match \_\_c, thus, no valid order exists.
+
+In the third example the order (a\_, \_b) makes both strings match pattern $1$ first and the order (\_b, a\_) makes both strings match pattern $2$ first. Thus, there is no order that produces the result $1$ and $2$.}
+\BREAKDOWN{We must ensure that for each query string $s_j$ with designated pattern index $mt_j$, (1) the designated pattern matches $s_j$, and (2) any other pattern that matches $s_j$ must appear after $mt_j$ in the final permutation. This yields a directed acyclic ordering constraint system solvable via topological sort.}
+\ELI{Make the desired pattern come before every other pattern that could also match the same string; if all such ``must-come-before'' rules are consistent, output any topological order.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Three integers $n$, $m$, $k$; then $n$ distinct patterns of length $k$ over lowercase letters and \_ (underscore as wildcard); then $m$ pairs: a string $s$ of length $k$ over lowercase letters and an integer $mt$ in $[1,n]$.}
+\OUTPUTS{If impossible, output a single line ``NO''. Otherwise, print ``YES'' and on the next line a permutation of $1..n$ describing the order of patterns.}
+\SAMPLES{Example A (possible):
+\[
+\begin{aligned}
+&n=3,~m=2,~k=2 \\
+\text{patterns: }&\text{a\_},~\text{\_b},~\text{ab} \\
+\text{queries: }&(\text{ab},~3),~(\text{cb},~2)
+\end{aligned}
+\]
+One valid order is $(3,1,2)$.
+
+Example B (impossible):
+\[
+\begin{aligned}
+&n=2,~m=1,~k=2 \\
+\text{patterns: }&\text{a\_},~\text{\_\_} \\
+\text{queries: }&(\text{ba},~1)
+\end{aligned}
+\]
+Pattern $1$ does not match ``ba'', so answer is ``NO''.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $P=\{p_1,\dots,p_n\}$ be patterns of length $k$ over $\Sigma \cup \{\_\}$ with $\Sigma$ the lowercase alphabet, and $S=\{(s_j,mt_j)\}_{j=1}^m$ strings over $\Sigma$ with targets $mt_j \in [n]$. Define match predicate $\mathrm{M}(s,p)$ true iff $\forall i\in[1..k]$, $p_i=\_$ or $p_i=s_i$. We must find a permutation $\pi$ of $[n]$ such that for every $j$, $\mathrm{M}(s_j,p_{mt_j})$ and for all $x\ne mt_j$ with $\mathrm{M}(s_j,p_x)$ we have $\mathrm{pos}_\pi(mt_j)<\mathrm{pos}_\pi(x)$.}
+\varmapStart
+\var{n,m,k}{counts and length constraints}
+\var{p_i}{the $i$-th pattern}
+\var{s_j}{the $j$-th query string}
+\var{mt_j}{desired first-matching pattern index for $s_j$}
+\var{\pi}{desired permutation (order) of patterns}
+\var{E}{set of precedence edges induced by queries}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\forall j:\quad \mathrm{M}(s_j,p_{mt_j}) \\
+&\forall j,~\forall x\in [n]\setminus\{mt_j\}:\ \mathrm{M}(s_j,p_x)\implies (mt_j \to x)\in E \\
+&\text{Find a topological order } \pi \text{ of } ([n],E).
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Patterns are pairwise distinct. $1\le k\le 4$ so $2^k$ is small. If $(\mathrm{M}(s_j,p_{mt_j})$ fails for any $j$, the instance is infeasible.}
+\INVARIANTS{If a solution exists, all constraints form a DAG; any cycle in $E$ implies impossibility. Each edge $u\to v$ enforces $\mathrm{pos}_\pi(u)<\mathrm{pos}_\pi(v)$ in every valid order.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Enforce constraints $mt_j \to x$ for every query $j$ and every pattern $x$ that matches $s_j$. Compute a topological order if possible.}
+\ASSUMPTIONS{Directly test each $s_j$ against all patterns $p_x$ ($O(nk)$ per query). Suffices for reasoning and tiny tests.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Parse input; store patterns $p_1,\dots,p_n$.
+\item For each query $(s,mt)$: verify $\mathrm{M}(s,p_{mt})$ else print ``NO''; for all $x\ne mt$, if $\mathrm{M}(s,p_x)$ add edge $mt\to x$.
+\item Topologically sort the graph with Kahn's algorithm; if all $n$ nodes are output, print ``YES'' and the order, else ``NO''.
+\end{algosteps}
+\COMPLEXITY{Naively, matching costs $O(k)$; for each of $m$ queries we scan all $n$ patterns: $O(mnk)$ time and $O(n+m+|E|)$ space.}
+\[
+\begin{aligned}
+T(n,m,k) &= \Theta(m\cdot n \cdot k) + \Theta(n + |E|) \\
+         &\le \Theta(mnk) + \Theta(n2^k) \quad (\text{coarse bound on }|E|)~.
+\end{aligned}
+\]
+\CORRECTNESS{By construction, every conflicting matching pattern $x$ is constrained to appear after $mt$. A topological order satisfies all such precedence constraints, hence every query sees its designated pattern first. If the designated pattern does not match, feasibility is impossible.}
+\EDGECASES{Repeated constraints, self-edges (ignored), cycles formed by conflicting requirements, patterns with all wildcards, and $k=1$.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from collections import deque, defaultdict
+from io import StringIO
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it)); m = int(next(it)); k = int(next(it))
+    except StopIteration:
+        return None
+    pats = [''] * (n + 1)
+    for i in range(1, n + 1):
+        s = next(it)
+        pats[i] = s
+    queries = []
+    for _ in range(m):
+        s = next(it); mt = int(next(it))
+        queries.append((s, mt))
+    return n, m, k, pats, queries
+
+def match(s: str, p: str) -> bool:
+    # s has no underscores; p may have '_'
+    for a, b in zip(s, p):
+        if b != '_' and a != b:
+            return False
+    return True
+
+def solve_all_from_parsed(n, m, k, pats, queries):
+    # Build edges using brute-force scans over patterns
+    g = [set() for _ in range(n + 1)]
+    indeg = [0] * (n + 1)
+    for s, mt in queries:
+        if not match(s, pats[mt]):
+            return "NO\n"
+        for x in range(1, n + 1):
+            if x == mt:
+                continue
+            if match(s, pats[x]):
+                if x not in g[mt]:
+                    g[mt].add(x)
+                    indeg[x] += 1
+    # Kahn's algorithm
+    dq = deque([i for i in range(1, n + 1) if indeg[i] == 0])
+    order = []
+    while dq:
+        u = dq.popleft()
+        order.append(u)
+        for v in g[u]:
+            indeg[v] -= 1
+            if indeg[v] == 0:
+                dq.append(v)
+    if len(order) != n:
+        return "NO\n"
+    return "YES\n" + " ".join(map(str, order)) + "\n"
+
+def solve_io(data: str) -> str:
+    parsed = read_input(data)
+    if parsed is None:
+        return ""
+    return solve_all_from_parsed(*parsed)
+
+def read_input_stdin():
+    return sys.stdin.read()
+
+def main():
+    data = read_input_stdin()
+    out = solve_io(data)
+    sys.stdout.write(out)
+
+# Tiny self-checks (do not run on CF judge input path)
+def _tests():
+    # Possible
+    data = """3 2 2
+a_
+_b
+ab
+ab 3
+cb 2
+"""
+    out = solve_io(data)
+    assert out.splitlines()[0] == "YES"
+    # Impossible: designated does not match
+    data2 = """2 1 2
+a_
+__
+ba 1
+"""
+    out2 = solve_io(data2)
+    assert out2.strip() == "NO"
+    # Another small: both patterns match, designated must come first
+    data3 = """2 1 1
+a
+_
+a 2
+"""
+    out3 = solve_io(data3)
+    assert out3.splitlines()[0] == "YES"
+
+if __name__ == "__main__":
+    # Uncomment the next line to run local tests
+    # _tests()
+    main()
+\end{minted}
+\VALIDATION{Checked: (1) designated mismatch returns ``NO''; (2) multiple matches yield precedence edges; (3) trivial single-node cases return a valid permutation.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Use $k\le 4$ to enumerate the $2^k$ wildcard masks of a query string to generate exactly the candidate matching patterns; map patterns to indices via a hash map to avoid scanning all $n$.}
+\ASSUMPTIONS{Maintain a dictionary map from pattern-string to its index. For each string $s$, generate all patterns by replacing any subset of positions with \_ and look up in the map.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build a map $H:\text{pattern}\to \text{index}$ for all $n$ patterns.
+\item For each query $(s,mt)$:
+  \begin{bullets}
+  \item Verify $\mathrm{M}(s,p_{mt})$.
+  \item For each mask $M\subseteq\{0,\dots,k-1\}$ form pattern $q$ by $q_i=\_$ if $i\in M$ else $q_i=s_i$; if $q$ in $H$ and $H[q]\ne mt$, add edge $mt\to H[q]$.
+  \end{bullets}
+\item Topologically sort as before.
+\end{algosteps}
+\COMPLEXITY{Per query, $2^k\le 16$ pattern generations and $O(1)$ expected lookups.}
+\[
+\begin{aligned}
+T(n,m,k) &= \Theta(n) + \Theta(m\cdot 2^k) + \Theta(n + |E|) \\
+&= \Theta(n + m\cdot 2^k + n + |E|)~,
+\end{aligned}
+\]
+which is linear for fixed small $k$.}
+\CORRECTNESS{Every pattern that can match $s$ must be of the masked form; thus all potential conflicts are captured as edges. The same topological correctness argument applies.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from collections import deque
+from io import StringIO
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it)); m = int(next(it)); k = int(next(it))
+    except StopIteration:
+        return None
+    pats = [''] * (n + 1)
+    for i in range(1, n + 1):
+        s = next(it)
+        pats[i] = s
+    queries = []
+    for _ in range(m):
+        s = next(it); mt = int(next(it))
+        queries.append((s, mt))
+    return n, m, k, pats, queries
+
+def match(s: str, p: str) -> bool:
+    for a, b in zip(s, p):
+        if b != '_' and a != b:
+            return False
+    return True
+
+def generate_masks(strings: str):
+    # Not used; kept for clarity
+    pass
+
+def solve_all_from_parsed(n, m, k, pats, queries):
+    idx = {pats[i]: i for i in range(1, n + 1)}
+    g = [set() for _ in range(n + 1)]
+    indeg = [0] * (n + 1)
+
+    for s, mt in queries:
+        # Ensure designated pattern matches
+        if not match(s, pats[mt]):
+            return "NO\n"
+        # Enumerate all 2^k masks
+        s_list = list(s)
+        for mask in range(1 << k):
+            tmp = s_list[:]  # copy
+            for pos in range(k):
+                if (mask >> pos) & 1:
+                    tmp[pos] = '_'
+            pat = "".join(tmp)
+            x = idx.get(pat)
+            if x is not None and x != mt:
+                if x not in g[mt]:
+                    g[mt].add(x)
+                    indeg[x] += 1
+
+    dq = deque([i for i in range(1, n + 1) if indeg[i] == 0])
+    order = []
+    while dq:
+        u = dq.popleft()
+        order.append(u)
+        for v in g[u]:
+            indeg[v] -= 1
+            if indeg[v] == 0:
+                dq.append(v)
+    if len(order) != n:
+        return "NO\n"
+    return "YES\n" + " ".join(map(str, order)) + "\n"
+
+def solve_io(data: str) -> str:
+    parsed = read_input(data)
+    if parsed is None:
+        return ""
+    return solve_all_from_parsed(*parsed)
+
+def read_input_stdin():
+    return sys.stdin.read()
+
+def main():
+    data = read_input_stdin()
+    out = solve_io(data)
+    sys.stdout.write(out)
+
+def _tests():
+    data = """3 2 2
+a_
+_b
+ab
+ab 3
+cb 2
+"""
+    out = solve_io(data)
+    assert out.splitlines()[0] == "YES"
+    data2 = """2 1 2
+a_
+__
+ba 1
+"""
+    out2 = solve_io(data2)
+    assert out2.strip() == "NO"
+    data3 = """2 1 1
+a
+_
+a 2
+"""
+    out3 = solve_io(data3)
+    assert out3.splitlines()[0] == "YES"
+
+if __name__ == "__main__":
+    # _tests()
+    main()
+\end{minted}
+\VALIDATION{Validated on tiny crafted cases; masks enumerate exactly the matching candidate patterns; edges deduplicated via sets to avoid overcounting indegrees.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Mask enumeration ($2^k$ patterns per string) plus hash map lookup of patterns, then Kahn's topological sort. This is optimal up to constant factors for $k\le 4$.}
+\ASSUMPTIONS{All patterns are distinct; $k\le 4$ ensures constant-factor enumeration per query.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Index patterns in a map from pattern-string to original index.
+\item For each query $(s,mt)$:
+  \begin{bullets}
+  \item If $p_{mt}$ does not match $s$, return ``NO''.
+  \item For each bitmask over $k$ positions, replace masked positions with \_ in $s$ to get a candidate pattern $q$; if $q$ exists and $\ne mt$, add edge $mt\to \mathrm{idx}(q)$.
+  \end{bullets}
+\item Topologically sort the resulting DAG; if a cycle exists, answer is ``NO'', else output any topo order.
+\end{algosteps}
+\OPTIMALITY{Every matching pattern must agree with $s$ at non-wildcard positions, hence is exactly some masked specialization of $s$. Thus $2^k$ enumeration is both necessary and sufficient; any method must at least consider all such candidates in the worst case.}
+\COMPLEXITY{Overall time $O(n + m\cdot 2^k + n + |E|)$ and space $O(n + |E|)$. With $k\le 4$, this is effectively linear in input size.}
+\[
+\begin{aligned}
+T(n,m,k) &= \Theta(n + m\cdot 2^k + |E|),\quad S(n,m,k)=\Theta(n + |E|).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from collections import deque
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it)); m = int(next(it)); k = int(next(it))
+    except StopIteration:
+        return None
+    pats = [''] * (n + 1)
+    for i in range(1, n + 1):
+        s = next(it)
+        pats[i] = s
+    queries = []
+    for _ in range(m):
+        s = next(it); mt = int(next(it))
+        queries.append((s, mt))
+    return n, m, k, pats, queries
+
+def match(s: str, p: str) -> bool:
+    for a, b in zip(s, p):
+        if b != '_' and a != b:
+            return False
+    return True
+
+def solve_all_from_parsed(n, m, k, pats, queries):
+    idx = {pats[i]: i for i in range(1, n + 1)}
+    g = [set() for _ in range(n + 1)]
+    indeg = [0] * (n + 1)
+
+    for s, mt in queries:
+        if not match(s, pats[mt]):
+            return "NO\n"
+        base = list(s)
+        for mask in range(1 << k):
+            tmp = base[:]
+            for pos in range(k):
+                if (mask >> pos) & 1:
+                    tmp[pos] = '_'
+            cand = "".join(tmp)
+            x = idx.get(cand)
+            if x is not None and x != mt:
+                if x not in g[mt]:
+                    g[mt].add(x)
+                    indeg[x] += 1
+
+    dq = deque([i for i in range(1, n + 1) if indeg[i] == 0])
+    order = []
+    while dq:
+        u = dq.popleft()
+        order.append(u)
+        for v in g[u]:
+            indeg[v] -= 1
+            if indeg[v] == 0:
+                dq.append(v)
+    if len(order) != n:
+        return "NO\n"
+    return "YES\n" + " ".join(map(str, order)) + "\n"
+
+def solve_io(data: str) -> str:
+    parsed = read_input(data)
+    if parsed is None:
+        return ""
+    return solve_all_from_parsed(*parsed)
+
+def read_input_stdin():
+    return sys.stdin.read()
+
+def main():
+    data = read_input_stdin()
+    out = solve_io(data)
+    sys.stdout.write(out)
+
+def _tests():
+    # 1) Feasible
+    data = """3 2 2
+a_
+_b
+ab
+ab 3
+cb 2
+"""
+    assert solve_io(data).splitlines()[0] == "YES"
+    # 2) Infeasible due to mismatch
+    data2 = """2 1 2
+a_
+__
+ba 1
+"""
+    assert solve_io(data2).strip() == "NO"
+    # 3) Edge case: all-wildcard and exact match
+    data3 = """2 1 1
+a
+_
+a 2
+"""
+    assert solve_io(data3).splitlines()[0] == "YES"
+
+if __name__ == "__main__":
+    # _tests()
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts cover feasible, infeasible (designated mismatch), and precedence-enforcing cases.}
+\RESULT{Outputs ``NO'' if impossible, otherwise ``YES'' and a permutation of $1..n$ that satisfies ``first match is designated'' for every query. Any valid topological order suffices.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests target: (1) designated mismatch, (2) multiple matching patterns create correct precedence, (3) cycles detected as ``NO'', (4) patterns with \_ only, (5) $k=1$ small boundaries.}
+\LINE{CROSS-CHECKS}{Compare outputs of Baseline vs Improved vs Final on random tiny instances ($n\le 6$, $k\le 3$) ensuring either both output ``NO'' or both output a permutation that satisfies all constraints when checked by a verifier.}
+\LINE{EDGE-CASE GENERATOR}{Produce random patterns of length $k\le 4$, ensure distinctness, then queries with random designated indices; a verifier checks matches and the ``first match'' property for a proposed order.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+from collections import defaultdict, deque
+
+def gen_instance(n=5, m=6, k=3, seed=0):
+    rng = random.Random(seed)
+    alpha = 'abc'
+    def rand_pat():
+        return "".join(rng.choice(alpha + "_") for _ in range(k))
+    pats = set()
+    while len(pats) < n:
+        pats.add(rand_pat())
+    pats = list(pats)
+    # queries: make some consistent by choosing mt matching s
+    queries = []
+    for _ in range(m):
+        s = "".join(rng.choice(alpha) for _ in range(k))
+        # pick mt: either a matching pattern if exists else any index (forces NO)
+        matching = []
+        for i, p in enumerate(pats, start=1):
+            ok = True
+            for a, b in zip(s, p):
+                if b != '_' and a != b:
+                    ok = False; break
+            if ok:
+                matching.append(i)
+        if matching:
+            mt = rng.choice(matching)
+        else:
+            mt = rng.randrange(1, n+1)
+        queries.append((s, mt))
+    return pats, queries
+
+def format_instance(pats, queries):
+    n = len(pats); m = len(queries); k = len(pats[0])
+    out = [f"{n} {m} {k}"]
+    out += pats
+    for s, mt in queries:
+        out.append(f"{s} {mt}")
+    return "\n".join(out) + "\n"
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+from collections import deque
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it)); m = int(next(it)); k = int(next(it))
+    except StopIteration:
+        return None
+    pats = [''] * (n + 1)
+    for i in range(1, n + 1):
+        s = next(it)
+        pats[i] = s
+    queries = []
+    for _ in range(m):
+        s = next(it); mt = int(next(it))
+        queries.append((s, mt))
+    return n, m, k, pats, queries
+
+def match(s: str, p: str) -> bool:
+    for a, b in zip(s, p):
+        if b != '_' and a != b:
+            return False
+    return True
+
+def solve_all_from_parsed(n, m, k, pats, queries):
+    idx = {pats[i]: i for i in range(1, n + 1)}
+    g = [set() for _ in range(n + 1)]
+    indeg = [0] * (n + 1)
+
+    for s, mt in queries:
+        if not (1 <= mt <= n):
+            return "NO\n"
+        if not match(s, pats[mt]):
+            return "NO\n"
+        base = list(s)
+        for mask in range(1 << k):
+            tmp = base[:]
+            for pos in range(k):
+                if (mask >> pos) & 1:
+                    tmp[pos] = '_'
+            cand = "".join(tmp)
+            x = idx.get(cand)
+            if x is not None and x != mt:
+                if x not in g[mt]:
+                    g[mt].add(x)
+                    indeg[x] += 1
+
+    dq = deque([i for i in range(1, n + 1) if indeg[i] == 0])
+    order = []
+    while dq:
+        u = dq.popleft()
+        order.append(u)
+        for v in g[u]:
+            indeg[v] -= 1
+            if indeg[v] == 0:
+                dq.append(v)
+    if len(order) != n:
+        return "NO\n"
+    return "YES\n" + " ".join(map(str, order)) + "\n"
+
+def solve_io(data: str) -> str:
+    parsed = read_input(data)
+    if parsed is None:
+        return ""
+    return solve_all_from_parsed(*parsed)
+
+def read_input_stdin():
+    return sys.stdin.read()
+
+def main():
+    data = read_input_stdin()
+    out = solve_io(data)
+    sys.stdout.write(out)
+
+def _tests():
+    # 1) Feasible small instance
+    data = """3 2 2
+a_
+_b
+ab
+ab 3
+cb 2
+"""
+    assert solve_io(data).splitlines()[0] == "YES"
+    # 2) Infeasible (designated mismatch)
+    data2 = """2 1 2
+a_
+__
+ba 1
+"""
+    assert solve_io(data2).strip() == "NO"
+    # 3) Cycle case
+    data3 = """2 2 1
+a
+_
+a 1
+a 2
+"""
+    # Both patterns match 'a'; edges 1->2 and 2->1 => NO
+    assert solve_io(data3).strip() == "NO"
+
+if __name__ == "__main__":
+    # _tests()
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Build precedence constraints so each query's designated pattern is earlier than all other patterns that could match the same string, then topologically sort.}
+\WHY{Common interview theme: reducing ``first match'' or ``priority of rules'' to DAG constraints and verifying feasibility via topological sorting.}
+\CHECKLIST{
+\begin{bullets}
+\item Verify designated pattern matches each string.
+\item Map patterns to indices for $O(1)$ lookups.
+\item Enumerate $2^k$ masked candidates from each string ($k\le 4$).
+\item Add edges $mt\to x$ for every other matching pattern $x$.
+\item Kahn's algorithm; detect cycle if output size $<n$.
+\end{bullets}
+}
+\EDGECASES{
+\begin{bullets}
+\item Designated pattern does not match the string.
+\item All-wildcard pattern \_\_\ldots\_ matches everything.
+\item Duplicate edges across multiple queries; must deduplicate.
+\item Multiple queries referencing the same $mt$.
+\item $k=1$ boundary; $n=1$ or $m=0$ trivial cases.
+\item Cycles due to conflicting requirements across queries.
+\item Patterns with no letters in common with the alphabet of strings (still valid).
+\item Strings that match no pattern except the designated one (no extra edges).
+\item Strings that match many patterns (up to $2^k$).
+\item Indices out of range in malformed inputs (defensively check).
+\end{bullets}
+}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to ensure the designated pattern actually matches before building edges.
+\item Counting duplicate edges multiple times inflates indegrees and breaks topo sort.
+\item Misapplying bitmask positions (off-by-one between $0$- and $1$-based).
+\item Mixing up original indices with positions in the output order.
+\item Using string mutation incorrectly; make copies when forming masked patterns.
+\item Not handling empty queue in Kahn's algorithm as a cycle.
+\item Reading/parsing errors due to underscores or trailing spaces.
+\item Assuming multiple test cases; this problem has a single case.
+\end{bullets}
+}
+\FAILMODES{A purely greedy ordering by counts of matches fails on adversarial inputs creating cycles. The DAG approach survives because it explicitly detects cycles.}
+\ELI{Turn each query into ``A must come before all B's that could also match'', then see if all such must-come-before rules can be satisfied together. If yes, output any order that respects them; if not, say ``NO''.}
+\NotePages{3}
+
+\end{document}

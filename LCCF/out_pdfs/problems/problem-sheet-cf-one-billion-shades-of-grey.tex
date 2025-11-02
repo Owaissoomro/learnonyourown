@@ -1,0 +1,911 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — One Billion Shades of Grey}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1427/G}}
+\LINE{DIFFICULTY / RATING}{3300}
+\STATEMENT{You have to paint with shades of grey the tiles of an $n\times n$ wall. The wall has $n$ rows of tiles, each with $n$ tiles.
+
+The tiles on the boundary of the wall (i.e., on the first row, last row, first column and last column) are already painted and you shall not change their color. All the other tiles are not painted. Some of the tiles are broken, you shall not paint those tiles. It is guaranteed that the tiles on the boundary are not broken.
+
+You shall paint all the non-broken tiles that are not already painted. When you paint a tile you can choose from $10^9$ shades of grey, indexed from $1$ to $10^9$. You can paint multiple tiles with the same shade. Formally, painting the wall is equivalent to assigning a shade (an integer between $1$ and $10^9$) to each non-broken tile that is not already painted.
+
+The contrast between two tiles is the absolute value of the difference between the shades of the two tiles. The total contrast of the wall is the sum of the contrast of all the pairs of adjacent non-broken tiles (two tiles are adjacent if they share a side).
+
+Compute the minimum possible total contrast of the wall.
+
+Input:
+The first line contains $n$ ($3\le n\le 200$) – the number of rows and columns.
+
+Then $n$ lines, each containing $n$ integers, follow. The $i$-th of these lines describe the $i$-th row of tiles. It contains the $n$ integers $a_{ij}$ ($-1\le a_{ij}\le 10^9$). The value of $a_{ij}$ describes the tile on the $i$-th row and $j$-th column:
+
+- If $a_{ij}=0$, then the tile is not painted and shall be painted.
+- If $a_{ij}=-1$, then the tile is broken and shall not be painted.
+- If $1\le a_{ij}\le 10^9$, then the tile is already painted with the shade $a_{ij}$.
+
+Output:
+Print a single integer – the minimum possible total contrast of the wall.
+
+Note:
+Explanation of the first testcase: The initial configuration of the tiles is (tiles to paint are denoted by ?):
+
+1 7 64 ? 61 1 1
+
+1 7 64 5 61 1 1
+
+Explanation of the second testcase: Since all tiles are either painted or broken, there is nothing to do. The total contrast is $396$.
+
+Explanation of the third testcase: The initial configuration of the tiles is (tiles to paint are denoted by ?):
+
+6 6 5 4 46 ? ? ? 47 ? ? ? 38 ? ? ? 28 8 1 2 2
+
+6 6 5 4 46 6 5 4 47 7 5 3 38 8 2 2 28 8 1 2 2}
+\BREAKDOWN{Model the wall as a graph: vertices are non-broken tiles, edges connect 4-neighbors. Some vertices have fixed labels (already painted). Choose integer labels for the remaining vertices to minimize the sum of absolute differences across edges. Reduce this to a sequence of minimum s–t cuts by the coarea/threshold decomposition.}
+\ELI{Treat each possible shade threshold; for each threshold compute a minimum cut that separates tiles above vs. at or below the threshold; summing these cut sizes with appropriate weights gives the minimal total contrast.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{A single integer $n$ ($3\le n\le 200$). Then an $n\times n$ integer grid $a_{ij}$, where $a_{ij}\in\{-1\}\cup\{0\}\cup[1,10^9]$. Here $-1$ means broken (absent vertex), $0$ means unpainted (free variable), and $>0$ means fixed shade. Boundary tiles are guaranteed non-broken and fixed ($>0$).}
+\OUTPUTS{One integer: the minimum possible total contrast, i.e., the minimum over all assignments of labels to currently unpainted, non-broken tiles of the sum of absolute differences across all edges between adjacent non-broken tiles.}
+\SAMPLES{Example 1 (tiny). $n=3$, all boundary shades $1$, the center is $0$. Answer: $0$ (paint the center $1$).
+Example 2 (tiny). $n=3$, boundary all $1$ except the rightmost column all $2$, center is $0$. Answer: $3$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $G=(V,E)$ be the grid graph over non-broken tiles; edges connect 4-neighbors. Partition $V=F\cup U$ where $F$ are fixed-label tiles with labels $y_v\in\mathbb{Z}_{>0}$ and $U$ are free tiles to label. Seek labels $x_v\in\mathbb{Z}_{>0}$ for $v\in U$ minimizing the total variation energy.}
+\varmapStart
+\var{G=(V,E)}{graph of non-broken tiles and their adjacencies}
+\var{F}{set of fixed tiles; $x_v=y_v$ for $v\in F$}
+\var{U}{set of free tiles to paint}
+\var{x_v}{label (shade) for tile $v$}
+\var{w_{uv}}{edge weight; here $w_{uv}=1$ for every $(u,v)\in E$}
+\varmapEnd
+\GOVERN{
+\[
+\min_{\substack{x_v\in\mathbb{Z}_{>0}~\forall v\in U\\ x_v=y_v~\forall v\in F}}
+\sum_{(u,v)\in E} w_{uv}\,\lvert x_u-x_v\rvert
+\]
+}
+\ASSUMPTIONS{All fixed labels are positive integers. Graph is finite, undirected, weights are unit. Broken tiles are excluded (no vertex, no incident edges).}
+\INVARIANTS{The objective is convex in each coordinate. The optimal labeling can be chosen to take values only from the set of fixed labels. The level sets $\{v:x_v>\tau\}$ are nested as $\tau$ increases.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Greedy median smoothing: iteratively update each free tile to the median of its currently labeled neighbors (counting multiplicities across incident edges), keeping fixed tiles constant.}
+\ASSUMPTIONS{Converges to a local minimum of the convex energy on the discrete grid; not guaranteed globally optimal but simple and fast on tiny inputs.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Initialize each free tile to the nearest fixed shade (e.g., global median of all fixed labels).
+\item Repeat: for each free tile $v$, set $x_v$ to the median of $\{x_u:(u,v)\in E\}$ until no change.
+\item Compute the energy over $E$ and return it.
+\end{algosteps}
+\COMPLEXITY{Each sweep is $O(|E|)$; suppose $T$ sweeps to converge then $O(T\cdot|E|)$. Space $O(|V|)$.}
+\[
+\begin{aligned}
+T(n) &\approx O(T\cdot n^2), \\
+S(n) &= O(n^2).
+\end{aligned}
+\]
+\CORRECTNESS{Monotone energy decrease per update; converges to a local optimum.}
+\EDGECASES{Disconnected components; tiles with all neighbors broken; homogeneous boundary.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# CF TEMPLATE (must include read_input / solve_case / main + guard + asserts)
+from collections import deque
+import sys
+
+def energy(grid, labels, id_of, n):
+    # Sum |x_u - x_v| over edges between non-broken tiles
+    res = 0
+    dirs = [(1,0),(-1,0),(0,1),(0,-1)]
+    for i in range(n):
+        for j in range(n):
+            if grid[i][j] == -1: 
+                continue
+            u = id_of[i][j]
+            xu = labels[u]
+            for di,dj in dirs:
+                ni, nj = i+di, j+dj
+                if 0 <= ni < n and 0 <= nj < n and grid[ni][nj] != -1:
+                    v = id_of[ni][nj]
+                    xv = labels[v]
+                    # Count each undirected edge once by direction filter
+                    if (di,dj) in [(1,0),(0,1)]:
+                        res += abs(xu - xv)
+    return res
+
+def baseline_solve_grid(grid):
+    n = len(grid)
+    id_of = [[-1]*n for _ in range(n)]
+    nodes = []
+    fixed = {}
+    idx = 0
+    for i in range(n):
+        for j in range(n):
+            if grid[i][j] != -1:
+                id_of[i][j] = idx
+                nodes.append((i,j))
+                if grid[i][j] > 0:
+                    fixed[idx] = grid[i][j]
+                idx += 1
+    if idx == 0:
+        return 0
+    # Initial fill: global median of fixed labels (or 1 if none, but boundary guarantees some fixed)
+    fixed_vals = sorted(fixed.values())
+    init_val = fixed_vals[len(fixed_vals)//2] if fixed_vals else 1
+    labels = [init_val]*idx
+    for u, val in fixed.items():
+        labels[u] = val
+    dirs = [(1,0),(-1,0),(0,1),(0,-1)]
+    changed = True
+    # Limit sweeps to avoid infinite loops on degenerate cases
+    for _ in range(2000):
+        if not changed:
+            break
+        changed = False
+        for u, (i,j) in enumerate(nodes):
+            if u in fixed:
+                continue
+            neigh = []
+            for di,dj in dirs:
+                ni, nj = i+di, j+dj
+                if 0 <= ni < n and 0 <= nj < n and grid[ni][nj] != -1:
+                    v = id_of[ni][nj]
+                    neigh.append(labels[v])
+            if neigh:
+                neigh.sort()
+                m = neigh[len(neigh)//2]
+                if labels[u] != m:
+                    labels[u] = m
+                    changed = True
+    return energy(grid, labels, id_of, n)
+
+def read_input(data_iter):
+    n = int(next(data_iter))
+    grid = []
+    for _ in range(n):
+        row = [int(next(data_iter)) for __ in range(n)]
+        grid.append(row)
+    return n, grid
+
+def solve_case(n, grid):
+    # Baseline energy (local optimum)
+    return str(baseline_solve_grid(grid))
+
+def main():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        # Run tiny self-checks
+        def run_tests():
+            # Test 1: all boundary 1, center free
+            g = [
+                [1,1,1],
+                [1,0,1],
+                [1,1,1],
+            ]
+            assert baseline_solve_grid(g) == 0
+            # Test 2: right border is 2, others 1, center free; optimal total 3 for global optimum;
+            # baseline may reach that on this tiny case
+            g2 = [
+                [1,1,2],
+                [1,0,2],
+                [1,1,2],
+            ]
+            assert baseline_solve_grid(g2) == 3
+            # Test 3: with broken center, only boundary-boundary contrasts
+            g3 = [
+                [1,1,2],
+                [1,-1,2],
+                [1,1,2],
+            ]
+            # Edges across top and bottom between 1 and 2: 2 total
+            assert baseline_solve_grid(g3) == 2
+        run_tests()
+        return
+    it = iter(data)
+    n, grid = read_input(it)
+    print(solve_case(n, grid))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Tiny crafted $3\times 3$ cases: homogeneous boundary, single differing side, and a broken center tile.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Component-wise weighted medians: on tree-like regions a global median along shortest paths is optimal. Use iterative reweighting with BFS layers to stabilize faster than naive sweeping.}
+\ASSUMPTIONS{Graph is a grid; distances are Manhattan; boundary fixed labels provide anchors.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute multi-source BFS distances from all fixed tiles.
+\item For each free tile, gather a small neighborhood of closest fixed tiles (e.g., within distance $d$) and set the label to the weighted median of their shades with weights decreasing in distance.
+\item Iterate a few rounds to stabilize; compute energy.
+\end{algosteps}
+\COMPLEXITY{Each BFS is $O(|V|+|E|)$. A handful of refinement rounds keeps time near linear.}
+\[
+\begin{aligned}
+T(n) &\approx O(n^2), \\
+S(n) &= O(n^2).
+\end{aligned}
+\]
+\CORRECTNESS{Heuristic that respects convexity and reduces energy quickly; not guaranteed optimal, but often close.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Same API/signature as baseline; deterministic; with asserts
+from collections import deque
+import sys
+
+def improved_solve_grid(grid, radius=2):
+    n = len(grid)
+    id_of = [[-1]*n for _ in range(n)]
+    nodes = []
+    fixed = {}
+    idx = 0
+    for i in range(n):
+        for j in range(n):
+            if grid[i][j] != -1:
+                id_of[i][j] = idx
+                nodes.append((i,j))
+                if grid[i][j] > 0:
+                    fixed[idx] = grid[i][j]
+                idx += 1
+    if idx == 0:
+        return 0
+    labels = [1]*idx
+    for u, val in fixed.items():
+        labels[u] = val
+    # Precompute list of fixed points
+    fixed_pts = [(i,j,grid[i][j]) for i in range(n) for j in range(n) if grid[i][j] > 0]
+    # A few rounds of localized weighted median
+    for _ in range(5):
+        for u,(i,j) in enumerate(nodes):
+            if u in fixed:
+                continue
+            cand = []
+            for (fi,fj,val) in fixed_pts:
+                d = abs(fi-i)+abs(fj-j)
+                if d <= radius:
+                    cand.append((d,val))
+            if not cand:
+                # fallback: nearest few
+                near = sorted(((abs(fi-i)+abs(fj-j), val) for (fi,fj,val) in fixed_pts))[:4]
+                cand = near
+            cand.sort()
+            values = []
+            for d,v in cand:
+                w = max(1, radius+1-d)
+                values.extend([v]*w)
+            values.sort()
+            labels[u] = values[len(values)//2]
+    # Compute energy
+    res = 0
+    dirs = [(1,0),(0,1)]
+    for i in range(n):
+        for j in range(n):
+            if grid[i][j] == -1:
+                continue
+            u = id_of[i][j]
+            xu = labels[u]
+            for di,dj in dirs:
+                ni, nj = i+di, j+dj
+                if 0 <= ni < n and 0 <= nj < n and grid[ni][nj] != -1:
+                    v = id_of[ni][nj]
+                    xv = labels[v]
+                    res += abs(xu - xv)
+    return res
+
+def read_input(data_iter):
+    n = int(next(data_iter))
+    grid = []
+    for _ in range(n):
+        row = [int(next(data_iter)) for __ in range(n)]
+        grid.append(row)
+    return n, grid
+
+def solve_case(n, grid):
+    return str(improved_solve_grid(grid))
+
+def main():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        def run_tests():
+            g = [
+                [1,1,1],
+                [1,0,1],
+                [1,1,1],
+            ]
+            assert improved_solve_grid(g) == 0
+            g2 = [
+                [1,1,2],
+                [1,0,2],
+                [1,1,2],
+            ]
+            # Heuristic matches optimal on this tiny case
+            assert improved_solve_grid(g2) == 3
+            g3 = [
+                [1,1,2],
+                [1,-1,2],
+                [1,1,2],
+            ]
+            assert improved_solve_grid(g3) == 2
+        run_tests()
+        return
+    it = iter(data)
+    n, grid = read_input(it)
+    print(solve_case(n, grid))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Same tiny cases as baseline; matches expected minima on them.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Coarea/threshold decomposition with parametric minimum s–t cuts: sort distinct fixed labels $L_0<\cdots<L_{K-1}$. For each threshold $\tau=L_i$, construct a cut instance that forces fixed tiles with $y>\tau$ to the source and those with $y\le \tau$ to the sink, with unit-capacity undirected edges for adjacencies. Let $f_i$ be the min-cut value. Then the minimum total contrast equals $\sum_{i=0}^{K-2} (L_{i+1}-L_i)\, f_i$. Labels can be recovered if desired from the sequence of optimal cuts.}
+\ASSUMPTIONS{Edge weights are unit. Fixed labels are integers. Boundaries provide at least one fixed label (guaranteed by the statement).}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build the graph on non-broken tiles; add unit-capacity undirected edges for every adjacent pair.
+\item Collect and sort the distinct fixed labels $L$ across all fixed tiles.
+\item For each threshold $\tau=L_i$ (for $i=0,\dots,K-2$):
+  \begin{bullets}
+  \item Add infinite-capacity arcs from source to every fixed tile with $y>\tau$, and from every fixed tile with $y\le \tau$ to sink.
+  \item Compute the minimum s–t cut value $f_i$.
+  \end{bullets}
+\item Return $\sum_{i=0}^{K-2} (L_{i+1}-L_i)\, f_i$.
+\end{algosteps}
+\OPTIMALITY{By the coarea formula for functions on graphs: for any labeling $x$, $\sum_{(u,v)}|x_u-x_v|=\sum_{\tau\in\mathbb{Z}}|\delta(\{v:x_v>\tau\})|$. Under fixed labels, the optimal nested level sets are minimum cuts for each threshold. The decomposition over distinct fixed labels suffices; integrals collapse to a finite weighted sum.}
+\COMPLEXITY{Let $N=\lvert V\rvert\le n^2$, $M=\lvert E\rvert\le 2n(n-1)$, and $K$ be the number of distinct fixed labels. A straightforward implementation runs $K-1$ max-flow computations: time $O((K-1)\cdot T_{\text{flow}}(N,M))$, space $O(N+M)$. In practice, $K=O(n)$ (boundary size). Advanced parametric/d\&c schemes reduce the number of flows to $O(\log K)$ but are not required for correctness.}
+\[
+\begin{aligned}
+T(n) &\approx O\big((K-1)\cdot M\sqrt{N}\big)\ \text{with Dinic in practice},\\
+S(n) &= O(N+M).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case()/solve_all(), main()+guard + asserts
+import sys
+from collections import deque
+
+class Dinic:
+    def __init__(self, n):
+        self.n = n
+        self.adj = [[] for _ in range(n)]
+    def add_edge(self, u, v, c):
+        self.adj[u].append([v, c, len(self.adj[v])])
+        self.adj[v].append([u, 0, len(self.adj[u]) - 1])
+    def bfs(self, s, t, level):
+        for i in range(self.n):
+            level[i] = -1
+        q = deque([s])
+        level[s] = 0
+        while q:
+            u = q.popleft()
+            for v, c, _ in self.adj[u]:
+                if c > 0 and level[v] < 0:
+                    level[v] = level[u] + 1
+                    q.append(v)
+        return level[t] >= 0
+    def dfs(self, u, t, f, it, level):
+        if u == t:
+            return f
+        for i in range(it[u], len(self.adj[u])):
+            it[u] = i
+            v, c, rev = self.adj[u][i]
+            if c > 0 and level[u] + 1 == level[v]:
+                ret = self.dfs(v, t, min(f, c), it, level)
+                if ret > 0:
+                    # push
+                    self.adj[u][i][1] -= ret
+                    self.adj[v][rev][1] += ret
+                    return ret
+        return 0
+    def maxflow(self, s, t):
+        flow = 0
+        level = [-1] * self.n
+        INF = 10**18
+        while self.bfs(s, t, level):
+            it = [0] * self.n
+            while True:
+                pushed = self.dfs(s, t, INF, it, level)
+                if pushed == 0:
+                    break
+                flow += pushed
+        return flow
+
+def build_ids(grid):
+    n = len(grid)
+    id_of = [[-1]*n for _ in range(n)]
+    nodes = []
+    fixed = {}
+    idx = 0
+    for i in range(n):
+        for j in range(n):
+            if grid[i][j] != -1:
+                id_of[i][j] = idx
+                nodes.append((i,j))
+                if grid[i][j] > 0:
+                    fixed[idx] = grid[i][j]
+                idx += 1
+    return id_of, nodes, fixed
+
+def min_total_contrast(grid):
+    n = len(grid)
+    id_of, nodes, fixed = build_ids(grid)
+    V = len(nodes)
+    if V == 0:
+        return 0
+    # Collect distinct fixed labels
+    L = sorted(set(fixed.values()))
+    if len(L) == 1:
+        # All fixed are equal; optimal labels are that value everywhere
+        # Total contrast equals sum over edges of |y - y| = 0
+        # but include edges among fixed/fixed; still zero
+        return 0
+    # Pre-build adjacency list for unit undirected edges
+    dirs = [(1,0),(0,1)]
+    undirected_edges = []
+    for i in range(n):
+        for j in range(n):
+            if grid[i][j] == -1: 
+                continue
+            u = id_of[i][j]
+            for di,dj in dirs:
+                ni, nj = i+di, j+dj
+                if 0 <= ni < n and 0 <= nj < n and grid[ni][nj] != -1:
+                    v = id_of[ni][nj]
+                    undirected_edges.append((u, v))  # u <-> v with unit capacity both ways
+    INF = 10**18
+    ans = 0
+    for i in range(len(L)-1):
+        tau = L[i]
+        din = Dinic(V + 2)
+        s, t = V, V+1
+        # add undirected unit edges
+        for (u, v) in undirected_edges:
+            din.add_edge(u, v, 1)
+            din.add_edge(v, u, 1)
+        # terminal constraints
+        for u, y in fixed.items():
+            if y > tau:
+                din.add_edge(s, u, INF)   # force to source side
+            else:
+                din.add_edge(u, t, INF)   # force to sink side
+        fval = din.maxflow(s, t)
+        ans += (L[i+1] - L[i]) * fval
+    return ans
+
+def read_input(data_iter):
+    n = int(next(data_iter))
+    grid = []
+    for _ in range(n):
+        row = [int(next(data_iter)) for __ in range(n)]
+        grid.append(row)
+    return n, grid
+
+def solve_case(n, grid):
+    return str(min_total_contrast(grid))
+
+def main():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        # Self-tests
+        def run_tests():
+            # Test 1: all boundary 1, center free -> 0
+            g = [
+                [1,1,1],
+                [1,0,1],
+                [1,1,1],
+            ]
+            assert min_total_contrast(g) == 0
+            # Test 2: right border is 2, others 1, center free -> 3
+            g2 = [
+                [1,1,2],
+                [1,0,2],
+                [1,1,2],
+            ]
+            assert min_total_contrast(g2) == 3
+            # Test 3: as above but center broken -> only two boundary edges differ -> 2
+            g3 = [
+                [1,1,2],
+                [1,-1,2],
+                [1,1,2],
+            ]
+            assert min_total_contrast(g3) == 2
+        run_tests()
+        return
+    it = iter(data)
+    n, grid = read_input(it)
+    print(solve_case(n, grid))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts on $3\times 3$ grids: homogeneous boundary (answer 0), one side different (answer 3), and broken center (answer 2).}
+\RESULT{Outputs the minimal total contrast as a single integer. Labels are not required to be printed; only the minimum sum is needed.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Use deterministic tiny grids to validate corner cases: homogeneous boundaries, a single differing side, and presence of broken tiles. Stress on random $n\le 6$ can be cross-checked by brute force on trees or by fixing labels to a small set.}
+\LINE{CROSS-CHECKS}{Compare energies from Approach A/B with the optimal from Approach C on tiny instances; ensure Approach C is never worse and usually strictly better.}
+\LINE{EDGE-CASE GENERATOR}{Produce grids with: all fixed equal; alternating boundary values; interior holes (broken tiles); disconnected free regions; singleton free tile.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def gen_equal_boundary(n, val=1, center_free=True, broken=False):
+    g = [[val]*n for _ in range(n)]
+    for i in range(1,n-1):
+        for j in range(1,n-1):
+            g[i][j] = 0 if center_free else val
+    if broken:
+        g[n//2][n//2] = -1
+    return g
+
+def gen_side_diff(n, left=1, right=2):
+    g = [[left]*n for _ in range(n)]
+    for i in range(n):
+        g[i][n-1] = right
+    for i in range(1,n-1):
+        for j in range(1,n-1):
+            g[i][j] = 0
+    return g
+
+def gen_random(n, p_broken=0.1, shades=[1,3,7]):
+    g = [[0]*n for _ in range(n)]
+    # boundary painted with random shades
+    for i in range(n):
+        g[0][i] = random.choice(shades)
+        g[n-1][i] = random.choice(shades)
+        g[i][0] = random.choice(shades)
+        g[i][n-1] = random.choice(shades)
+    # interior mix
+    for i in range(1,n-1):
+        for j in range(1,n-1):
+            r = random.random()
+            if r < p_broken:
+                g[i][j] = -1
+            elif r < p_broken + 0.2:
+                g[i][j] = random.choice(shades)
+            else:
+                g[i][j] = 0
+    return g
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF/LC) + asserts
+import sys
+from collections import deque
+
+class Dinic:
+    def __init__(self, n):
+        self.n = n
+        self.adj = [[] for _ in range(n)]
+    def add_edge(self, u, v, c):
+        self.adj[u].append([v, c, len(self.adj[v])])
+        self.adj[v].append([u, 0, len(self.adj[u]) - 1])
+    def bfs(self, s, t, level):
+        for i in range(self.n):
+            level[i] = -1
+        q = deque([s])
+        level[s] = 0
+        while q:
+            u = q.popleft()
+            for v, c, _ in self.adj[u]:
+                if c > 0 and level[v] < 0:
+                    level[v] = level[u] + 1
+                    q.append(v)
+        return level[t] >= 0
+    def dfs(self, u, t, f, it, level):
+        if u == t:
+            return f
+        for i in range(it[u], len(self.adj[u])):
+            it[u] = i
+            v, c, rev = self.adj[u][i]
+            if c > 0 and level[u] + 1 == level[v]:
+                ret = self.dfs(v, t, min(f, c), it, level)
+                if ret > 0:
+                    self.adj[u][i][1] -= ret
+                    self.adj[v][rev][1] += ret
+                    return ret
+        return 0
+    def maxflow(self, s, t):
+        flow = 0
+        INF = 10**18
+        level = [-1] * self.n
+        while self.bfs(s, t, level):
+            it = [0] * self.n
+            while True:
+                pushed = self.dfs(s, t, INF, it, level)
+                if pushed == 0:
+                    break
+                flow += pushed
+        return flow
+
+def read_input(data_iter):
+    n = int(next(data_iter))
+    grid = []
+    for _ in range(n):
+        row = [int(next(data_iter)) for __ in range(n)]
+        grid.append(row)
+    return n, grid
+
+def build_ids(grid):
+    n = len(grid)
+    id_of = [[-1]*n for _ in range(n)]
+    nodes = []
+    fixed = {}
+    idx = 0
+    for i in range(n):
+        for j in range(n):
+            if grid[i][j] != -1:
+                id_of[i][j] = idx
+                nodes.append((i,j))
+                if grid[i][j] > 0:
+                    fixed[idx] = grid[i][j]
+                idx += 1
+    return id_of, nodes, fixed
+
+def min_total_contrast(grid):
+    n = len(grid)
+    id_of, nodes, fixed = build_ids(grid)
+    V = len(nodes)
+    if V == 0:
+        return 0
+    L = sorted(set(fixed.values()))
+    if len(L) == 1:
+        return 0
+    dirs = [(1,0),(0,1)]
+    undirected_edges = []
+    for i in range(n):
+        for j in range(n):
+            if grid[i][j] == -1:
+                continue
+            u = id_of[i][j]
+            for di,dj in dirs:
+                ni, nj = i+di, j+dj
+                if 0 <= ni < n and 0 <= nj < n and grid[ni][nj] != -1:
+                    v = id_of[ni][nj]
+                    undirected_edges.append((u, v))
+    INF = 10**18
+    ans = 0
+    for i in range(len(L)-1):
+        tau = L[i]
+        din = Dinic(V + 2)
+        s, t = V, V+1
+        for (u, v) in undirected_edges:
+            din.add_edge(u, v, 1)
+            din.add_edge(v, u, 1)
+        for u, y in fixed.items():
+            if y > tau:
+                din.add_edge(s, u, INF)
+            else:
+                din.add_edge(u, t, INF)
+        fval = din.maxflow(s, t)
+        ans += (L[i+1] - L[i]) * fval
+    return ans
+
+def solve_all(data):
+    it = iter(data)
+    n, grid = read_input(it)
+    return str(min_total_contrast(grid))
+
+def main():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        # self-checks
+        def run_tests():
+            g = [
+                [1,1,1],
+                [1,0,1],
+                [1,1,1],
+            ]
+            assert min_total_contrast(g) == 0
+            g2 = [
+                [1,1,2],
+                [1,0,2],
+                [1,1,2],
+            ]
+            assert min_total_contrast(g2) == 3
+            g3 = [
+                [1,1,2],
+                [1,-1,2],
+                [1,1,2],
+            ]
+            assert min_total_contrast(g3) == 2
+        run_tests()
+        return
+    print(solve_all(data))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Minimize sum of absolute differences on a grid with some fixed labels via parametric min-cuts over thresholds.}
+\WHY{Classic reduction of convex multi-label MRFs to s–t cuts; appears in vision and advanced graph optimization interviews.}
+\CHECKLIST{
+- Build graph on non-broken tiles, unit undirected edges for adjacencies.
+- Identify all fixed labels and sort distinct values.
+- For each threshold $\tau$, enforce terminal sides and compute min-cut.
+- Weight each cut by the gap to the next label and sum.
+- Use sufficiently large INF (greater than any possible cut size).
+}
+\EDGECASES{
+- All fixed labels equal $\Rightarrow$ answer $0$.
+- Broken tiles create disconnected components; handle missing vertices.
+- No interior free tiles: still compute correct sum (constant).
+- Single free tile adjacent to $k$ fixed tiles: set to their median; algorithm reproduces it.
+- Multiple fixed labels only on one side of the grid.
+- Tiles with degree $<4$ along holes (broken neighborhoods).
+}
+\PITFALLS{
+- Modeling undirected edges: add two directed arcs of capacity $1$; do not double-count in energy.
+- INF too small: the cut may sever a terminal arc; choose INF $\gg \lvert E\rvert$.
+- Forgetting to include edges between fixed tiles (they contribute to the objective).
+- Mishandling thresholds exactly at a fixed label: use rule $y\le\tau$ goes to sink, $y>\tau$ to source.
+- Rebuilding residual graph incorrectly between thresholds; easiest is rebuild afresh.
+- Using $10^9$ thresholds; only distinct fixed labels matter.
+}
+\FAILMODES{Greedy/local-smoothing approaches can get stuck at suboptimal energies on loopy grids. The cut-based method achieves the global optimum by convexity and coarea decomposition.}
+\ELI{Think of gradually raising a water level $\tau$: tiles with shade above $\tau$ must be on the source side; others on the sink side. At each level the least expensive fence (min-cut) separates the two groups. Add up the fence lengths weighted by how much you raise the water, and you get the minimal total contrast.}
+\NotePages{3}
+
+\end{document}

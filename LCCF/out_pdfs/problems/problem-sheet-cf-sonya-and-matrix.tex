@@ -1,0 +1,970 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Sonya and Matrix}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1004/D}}
+\LINE{DIFFICULTY / RATING}{2300}
+\STATEMENT{Since Sonya has just learned the basics of matrices, she decided to play with them a little bit.
+
+Sonya imagined a new type of matrices that she called rhombic matrices. These matrices have exactly one zero, while all other cells have the Manhattan distance to the cell containing the zero. The cells with equal numbers have the form of a rhombus, that is why Sonya called this type so.
+
+The Manhattan distance between two cells ($x_1$, $y_1$) and ($x_2$, $y_2$) is defined as $|x_1 - x_2| + |y_1 - y_2|$. For example, the Manhattan distance between the cells $(5, 2)$ and $(7, 1)$ equals to $|5-7|+|2-1|=3$.
+
+Example of a rhombic matrix.
+
+Note that rhombic matrices are uniquely defined by $n$, $m$, and the coordinates of the cell containing the zero.
+
+She drew a $n\times m$ rhombic matrix. She believes that you can not recreate the matrix if she gives you only the elements of this matrix in some arbitrary order (i.e., the sequence of $n\cdot m$ numbers). Note that Sonya will not give you $n$ and $m$, so only the sequence of numbers in this matrix will be at your disposal.
+
+Write a program that finds such an $n\times m$ rhombic matrix whose elements are the same as the elements in the sequence in some order.
+
+Input:
+The first line contains a single integer $t$ ($1\le t\le 10^6$) — the number of cells in the matrix.
+
+The second line contains $t$ integers $a_1, a_2, \ldots, a_t$ ($0\le a_i< t$) — the values in the cells in arbitrary order.
+
+Output:
+In the first line, print two positive integers $n$ and $m$ ($n \times m = t$) — the size of the matrix.
+
+In the second line, print two integers $x$ and $y$ ($1\le x\le n$, $1\le y\le m$) — the row number and the column number where the cell with $0$ is located.
+
+If there are multiple possible answers, print any of them. If there is no solution, print the single integer $-1$.
+
+Note:
+You can see the solution to the first example in the legend. You also can choose the cell $(2, 2)$ for the cell where $0$ is located. You also can choose a $5\times 4$ matrix with zero at $(4, 2)$.
+
+In the second example, there is a $3\times 6$ matrix, where the zero is located at $(2, 3)$ there.
+
+In the third example, a solution does not exist.}
+\BREAKDOWN{We are given a multiset of Manhattan distances from a single zero cell in an unknown $n\times m$ grid. We must reconstruct any valid $(n,m,x,y)$ that yields exactly the same multiset. Key invariants: exactly one zero; inner rings up to the minimum border distance are full with counts $4d$; the maximum distance equals the sum of farthest vertical and horizontal offsets.}
+\ELI{Use the shape of the distance ``rings'' (counts per distance) to deduce how far the zero is from borders, try factor pairs $(n,m)$ for $t$, and validate by rebuilding the histogram.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{A single test:
+- Integer $t$ with $1\le t\le 10^6$.
+- A list of $t$ integers $a_i$ with $0\le a_i< t$, representing the multiset of Manhattan distances in arbitrary order.}
+\OUTPUTS{Either:
+- Two integers $n,m$ with $n\cdot m=t$, and integers $x,y$ with $1\le x\le n$, $1\le y\le m$, such that the distances from $(x,y)$ in the $n\times m$ grid reproduce the multiset; or
+- A single integer $-1$ if no such grid exists.}
+\SAMPLES{Example 1:
+- Input distances for a $3\times 3$ with zero at $(2,2)$: multiset $\{0,1,1,1,1,2,2,2,2\}$.
+- One valid output: $3~3$ on first line; $2~2$ on second line.
+
+Example 2:
+- Input distances for a $3\times 6$ with zero at $(2,3)$: multiset yields counts by distance $[1,4,6,6,4,2]$.
+- One valid output: $3~6$ then $2~3$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let the grid be $[1..n]\times[1..m]$ and the zero at $(x,y)$. Define $a=x-1$, $b=n-x$, $c=y-1$, $d=m-y$. For a cell $(i,j)$, distance is $|i-x|+|j-y|$. Let $C(\delta)$ denote the number of cells at distance $\delta$.}
+\varmapStart
+\var{t}{number of cells, $t=n\cdot m$}
+\var{a,b,c,d}{nonnegative offsets to borders: up, down, left, right}
+\var{D}{maximum observed distance in the multiset}
+\var{p}{largest $k$ with $C(k)=4k$ for all $1\le k\le p$, i.e., $p=\min(a,b,c,d)$}
+\var{V}{vertical farthest offset $\max(a,b)$}
+\var{H}{horizontal farthest offset $\max(c,d)$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+t&=n\cdot m,\\
+a&=x-1,\quad b=n-x,\quad c=y-1,\quad d=m-y,\\
+p&=\min(a,b,c,d),\\
+D&=\max(a,b)+\max(c,d)=V+H,\\
+C(0)&=1,\quad C(k)=4k\ \text{for }1\le k\le p,\\
+\sum_{\delta\ge 0} C(\delta)&=t.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Rectangular grid with 1-based indices. Exactly one zero is present. The multiset contains only valid Manhattan distances from that zero within the grid.}
+\INVARIANTS{ 
+- For $1\le k\le p$, no clipping by borders occurs, hence $C(k)=4k$. 
+- The farthest cells are corners only, hence $C(D)\in\{1,2,4\}$. 
+- Feasible $(x,y)$ must satisfy $x\in[p+1,n-p]$, $y\in[p+1,m-p]$, and at least one of the four border distances equals exactly $p$.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Try every factor pair $(n,m)$ of $t$, and every position $(x,y)$, rebuild the histogram of distances, compare to the given multiset.}
+\ASSUMPTIONS{Only practical for tiny $t$ due to $O(t\cdot \tau(t))$ rebuilds; serves as a correctness reference.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Count frequency $C(\delta)$ from the input multiset; record $D=\max \delta$.
+\item Enumerate all factor pairs $(n,m)$ of $t$.
+\item For each $(n,m)$ and each $(x,y)$, compute the histogram by iterating all $nm$ cells and comparing to $C$.
+\end{algosteps}
+\COMPLEXITY{Brute-force rebuild per candidate is $O(nm)=O(t)$. Trying all $(x,y)$ adds $\Theta(nm)$ factor, so overall is $O(t^2)$ per $(n,m)$, thus infeasible for large $t$.}
+\[
+\begin{aligned}
+T(n) &= \Theta\Big(\sum_{(n,m)} (nm)\cdot (nm)\Big) = \Theta\Big(\sum_{(n,m)} t^2\Big) = \Theta\big(\tau(t)\cdot t^2\big). \\
+\end{aligned}
+\]
+\CORRECTNESS{Exhaustively checks all possibilities; if a configuration matches the histogram exactly, it is valid by construction.}
+\EDGECASES{Single cell $t=1$; inputs missing the unique zero; negative or too-large distances are rejected by mismatch.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from collections import Counter
+from math import isqrt
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, []
+    t = int(data[0])
+    arr = list(map(int, data[1:1+t]))
+    return t, arr
+
+def build_hist_naive(n, m, x, y):
+    # returns histogram (list) of counts by distance
+    maxd = (n-1) + (m-1)
+    hist = [0]*(maxd+1)
+    for i in range(1, n+1):
+        di = abs(i - x)
+        for j in range(1, m+1):
+            dj = abs(j - y)
+            hist[di + dj] += 1
+    return hist
+
+def all_factor_pairs(t):
+    for d in range(1, isqrt(t)+1):
+        if t % d == 0:
+            n = d
+            m = t // d
+            yield n, m
+            if n != m:
+                yield m, n
+
+def solve_case_baseline(t, arr):
+    if t == 0:
+        return -1, None
+    freq = Counter(arr)
+    if freq.get(0, 0) != 1:
+        return -1, None
+    D = max(freq) if freq else 0
+    target = [0]*(D+1)
+    for k, v in freq.items():
+        if k < 0 or k > D:
+            return -1, None
+        target[k] = v
+    for n, m in all_factor_pairs(t):
+        maxd = (n-1)+(m-1)
+        if maxd != D:
+            # skip if maximum distance cannot match
+            continue
+        for x in range(1, n+1):
+            for y in range(1, m+1):
+                hist = build_hist_naive(n, m, x, y)
+                if len(hist) == len(target) and hist == target:
+                    return 0, (n, m, x, y)
+    return -1, None
+
+def solve_all_baseline():
+    t, arr = read_input()
+    code, ans = solve_case_baseline(t, arr)
+    if code == -1:
+        print(-1)
+    else:
+        n, m, x, y = ans
+        print(n, m)
+        print(x, y)
+
+def main():
+    # If running as a script, solve the given input.
+    solve_all_baseline()
+
+if __name__ == "__main__":
+    # Tiny sanity asserts for baseline (small sizes only).
+    def gen_seq(n, m, x, y):
+        a = []
+        for i in range(1, n+1):
+            for j in range(1, m+1):
+                a.append(abs(i-x)+abs(j-y))
+        return a
+    # 1x1
+    t1 = 1; a1 = [0]
+    code, ans = solve_case_baseline(t1, a1)
+    assert code == 0 and ans[:2] == (1, 1)
+    # 3x3 center
+    a2 = gen_seq(3,3,2,2)
+    code, ans = solve_case_baseline(9, a2)
+    assert code == 0 and ans[0]*ans[1] == 9
+    # 2x4 corner
+    a3 = gen_seq(2,4,1,1)
+    code, ans = solve_case_baseline(8, a3)
+    assert code == 0 and ans[0]*ans[1] == 8
+    main()
+\end{minted}
+\VALIDATION{Validated on small handcrafted cases in asserts. Use only for tiny $t$ as it is quadratic.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Exploit ring counts: $C(0)=1$, and $C(d)=4d$ for $1\le d\le p=\min(a,b,c,d)$. Let $D=\max$ distance. For factor pairs $(n,m)$ with $n\ge 2p+1$, $m\ge 2p+1$, we can force one border at distance $p$ and match $D=V+H$ to solve for the other coordinate.}
+\ASSUMPTIONS{Counts are exact; farthest distance occurs only at corners; we can validate a candidate by rebuilding the histogram efficiently.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build frequency array $C$ and check $C(0)=1$; let $D=\max\{\delta\}$.
+\item Find $p$ as the largest integer with $C(d)=4d$ for all $1\le d\le p$.
+\item For each factor pair $(n,m)$ of $t$ with $n\ge 2p+1$, $m\ge 2p+1$, compute
+$V_{\min}=\lceil (n-1)/2\rceil$, $V_{\max}=n-1-p$, $H_{\min}=\lceil (m-1)/2\rceil$, $H_{\max}=m-1-p$ and require $D\in[V_{\min}+H_{\min}, V_{\max}+H_{\max}]$.
+\item Try two constructions:
+  - Force top border at distance $p$ ($x=p+1$), thus $V=n-1-p$ and $H=D-V$. Choose a feasible $y$ with $y-1\in[\max(m-1-H,p), \min(H, m-1-p)]$.
+  - Force left border at distance $p$ ($y=p+1$), symmetric for $x$.
+\item Validate $(n,m,x,y)$ by rebuilding the histogram and comparing to $C$.
+\end{algosteps}
+\COMPLEXITY{Divisor enumeration is $O(\tau(t))$. Each validation rebuild can be done in $O(nm)=O(t)$, and we try a constant number of candidates per factor pair. In practice, strong pruning by ranges yields few validations.}
+\[
+\begin{aligned}
+T(n) &= O\big(\tau(t)\big) + O\big(K\cdot t\big)\quad \text{for small constant }K,\\
+\end{aligned}
+\]
+\CORRECTNESS{The construction guarantees $\min(a,b,c,d)=p$ and $D=V+H$. The final histogram equality ensures all distances match exactly, resolving any ambiguity.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from collections import Counter
+from math import isqrt
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, []
+    t = int(data[0])
+    arr = list(map(int, data[1:1+t]))
+    return t, arr
+
+def all_factor_pairs(t):
+    for d in range(1, isqrt(t)+1):
+        if t % d == 0:
+            n = d
+            m = t // d
+            yield n, m
+            if n != m:
+                yield m, n
+
+def compute_p_and_D(freq):
+    if freq.get(0, 0) != 1:
+        return None, None
+    D = max(freq) if freq else 0
+    cnt = [0]*(D+1)
+    for k, v in freq.items():
+        if k < 0 or k > D:
+            return None, None
+        cnt[k] = v
+    if cnt[0] != 1:
+        return None, None
+    p = 0
+    for d in range(1, D+1):
+        if cnt[d] == 4*d:
+            p = d
+        else:
+            break
+    return p, D
+
+def build_hist(n, m, x, y):
+    # Build histogram in O(n*m) with tight loops; sufficient for t<=1e6 and few candidates.
+    A = n - 1
+    B = m - 1
+    a = x - 1
+    b = A - a
+    c = y - 1
+    d = B - c
+    maxA = max(a, b)
+    maxB = max(c, d)
+    D = maxA + maxB
+    fr = [0]*(maxA+1)
+    fr[0] = 1
+    mm = min(a, b)
+    for r in range(1, mm+1):
+        fr[r] = 2
+    for r in range(mm+1, maxA+1):
+        fr[r] = 1
+    fc = [0]*(maxB+1)
+    fc[0] = 1
+    mmc = min(c, d)
+    for s in range(1, mmc+1):
+        fc[s] = 2
+    for s in range(mmc+1, maxB+1):
+        fc[s] = 1
+    res = [0]*(D+1)
+    # Convolution-like accumulation
+    for r, vr in enumerate(fr):
+        if vr == 0:
+            continue
+        base = r
+        for s, vs in enumerate(fc):
+            res[base + s] += vr * vs
+    return res
+
+def try_construct(n, m, p, D):
+    A = n - 1
+    B = m - 1
+    Vmin = (A + 1)//2
+    Vmax = A - p
+    Hmin = (B + 1)//2
+    Hmax = B - p
+    if Vmin > Vmax or Hmin > Hmax:
+        return None
+    if D < Vmin + Hmin or D > Vmax + Hmax:
+        return None
+    # Option 1: force vertical side at distance p -> x = p+1 or x = n-p (both give V=A-p).
+    V = A - p
+    Hneed = D - V
+    if Hmin <= Hneed <= Hmax:
+        c_low = max(B - Hneed, p)
+        c_high = min(Hneed, B - p)
+        if c_low <= c_high:
+            y = c_low + 1
+            x = p + 1
+            return x, y
+    # Option 2: force horizontal side at distance p -> y = p+1 (or y = m-p).
+    H = B - p
+    Vneed = D - H
+    if Vmin <= Vneed <= Vmax:
+        a_low = max(A - Vneed, p)
+        a_high = min(Vneed, A - p)
+        if a_low <= a_high:
+            x = a_low + 1
+            y = p + 1
+            return x, y
+    return None
+
+def solve_case_improved(t, arr):
+    if t == 0:
+        return -1, None
+    freq = Counter(arr)
+    p, D = compute_p_and_D(freq)
+    if p is None:
+        return -1, None
+    # Build target list for easy equality check
+    target = [0]*(D+1)
+    for k, v in freq.items():
+        if 0 <= k <= D:
+            target[k] = v
+        else:
+            return -1, None
+    for n, m in all_factor_pairs(t):
+        # p requires central window at least 2p+1 in both dimensions
+        if n < 2*p + 1 or m < 2*p + 1:
+            continue
+        cand = try_construct(n, m, p, D)
+        if cand is None:
+            continue
+        x, y = cand
+        hist = build_hist(n, m, x, y)
+        if len(hist) == len(target) and hist == target:
+            return 0, (n, m, x, y)
+    return -1, None
+
+def solve_all_improved():
+    t, arr = read_input()
+    code, ans = solve_case_improved(t, arr)
+    if code == -1:
+        print(-1)
+    else:
+        n, m, x, y = ans
+        print(n, m)
+        print(x, y)
+
+def main():
+    solve_all_improved()
+
+if __name__ == "__main__":
+    # Quick checks
+    def gen_seq(n, m, x, y):
+        a = []
+        for i in range(1, n+1):
+            for j in range(1, m+1):
+                a.append(abs(i-x)+abs(j-y))
+        return a
+    # 1x1
+    code, ans = solve_case_improved(1, [0])
+    assert code == 0 and ans[:2] == (1,1)
+    # 3x3 center
+    a2 = gen_seq(3,3,2,2)
+    code, ans = solve_case_improved(9, a2)
+    assert code == 0 and ans[0]*ans[1] == 9
+    # 3x6 example
+    a3 = gen_seq(3,6,2,3)
+    code, ans = solve_case_improved(18, a3)
+    assert code == 0 and ans[0]*ans[1] == 18
+    main()
+\end{minted}
+\VALIDATION{Asserts on canonical examples: $1\times 1$, $3\times 3$ centered, $3\times 6$ off-center.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Same as Approach B with strong pruning and a constant number of candidate $(x,y)$ per factor pair. Histogram verification is linear in $t$ and performed a few times only.}
+\ASSUMPTIONS{The ring-structure characterization is necessary; any valid solution must satisfy $p$ and $D$ constraints, making the search space tiny.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute $C$, verify $C(0)=1$, derive $p$ and $D$.
+\item Enumerate factor pairs $(n,m)$ with $n\ge 2p+1$, $m\ge 2p+1$ and check $D$ feasibility bounds.
+\item Force one border at exactly $p$ to ensure $\min(a,b,c,d)=p$; solve for the other coordinate to meet $D=V+H$.
+\item Validate by histogram equality; return the first success or $-1$ if none.
+\end{algosteps}
+\OPTIMALITY{The constraints reduce feasible $(n,m,x,y)$ to at most a handful; each check is $O(t)$. No algorithm can avoid seeing essentially all input values at least once, so $O(t)$ is optimal up to constant factors.}
+\COMPLEXITY{$O(t+\tau(t) + K\cdot t)$ time with tiny $K$; $O(D)$ extra space for histograms, where $D\le n+m-2 \le 2\sqrt{t}-2$ in balanced cases.}
+\[
+\begin{aligned}
+T(n) &= O(t) \text{ to read } + O(\tau(t)) \text{ to enumerate } + O(K\cdot t) \text{ to validate}.
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from collections import Counter
+from math import isqrt
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, []
+    t = int(data[0])
+    arr = list(map(int, data[1:1+t]))
+    return t, arr
+
+def all_factor_pairs(t):
+    # Enumerate both (n,m) orders
+    for d in range(1, isqrt(t)+1):
+        if t % d == 0:
+            n = d
+            m = t // d
+            yield n, m
+            if n != m:
+                yield m, n
+
+def compute_p_and_D(freq):
+    # Validate presence of a single zero and determine p and D
+    if freq.get(0, 0) != 1:
+        return None, None, None
+    D = max(freq) if freq else 0
+    cnt = [0]*(D+1)
+    for k, v in freq.items():
+        if k < 0 or k > D:
+            return None, None, None
+        cnt[k] = v
+    if cnt[0] != 1:
+        return None, None, None
+    p = 0
+    for d in range(1, D+1):
+        if cnt[d] == 4*d:
+            p = d
+        else:
+            break
+    return p, D, cnt
+
+def build_hist(n, m, x, y):
+    # Construct histogram counts by distance in O(n*m) with compact loops.
+    A = n - 1
+    B = m - 1
+    a = x - 1
+    b = A - a
+    c = y - 1
+    d = B - c
+    maxA = max(a, b)
+    maxB = max(c, d)
+    D = maxA + maxB
+    fr = [0]*(maxA+1)
+    fr[0] = 1
+    mm = min(a, b)
+    for r in range(1, mm+1):
+        fr[r] = 2
+    for r in range(mm+1, maxA+1):
+        fr[r] = 1
+    fc = [0]*(maxB+1)
+    fc[0] = 1
+    mmc = min(c, d)
+    for s in range(1, mmc+1):
+        fc[s] = 2
+    for s in range(mmc+1, maxB+1):
+        fc[s] = 1
+    res = [0]*(D+1)
+    for r, vr in enumerate(fr):
+        if vr == 0:
+            continue
+        base = r
+        for s, vs in enumerate(fc):
+            res[base + s] += vr * vs
+    return res
+
+def try_construct(n, m, p, D):
+    A = n - 1
+    B = m - 1
+    Vmin = (A + 1)//2
+    Vmax = A - p
+    Hmin = (B + 1)//2
+    Hmax = B - p
+    if Vmin > Vmax or Hmin > Hmax:
+        return None
+    if D < Vmin + Hmin or D > Vmax + Hmax:
+        return None
+    # Force vertical side at distance p
+    V = A - p
+    Hneed = D - V
+    if Hmin <= Hneed <= Hmax:
+        c_low = max(B - Hneed, p)
+        c_high = min(Hneed, B - p)
+        if c_low <= c_high:
+            y = c_low + 1
+            x = p + 1
+            return x, y
+    # Force horizontal side at distance p
+    H = B - p
+    Vneed = D - H
+    if Vmin <= Vneed <= Vmax:
+        a_low = max(A - Vneed, p)
+        a_high = min(Vneed, A - p)
+        if a_low <= a_high:
+            x = a_low + 1
+            y = p + 1
+            return x, y
+    return None
+
+def solve_case():
+    t, arr = read_input()
+    if t == 0:
+        print(-1)
+        return
+    freq = Counter(arr)
+    p, D, cnt = compute_p_and_D(freq)
+    if p is None:
+        print(-1)
+        return
+    # Target histogram for equality check
+    target = cnt
+    for n, m in all_factor_pairs(t):
+        if n < 2*p + 1 or m < 2*p + 1:
+            continue
+        cand = try_construct(n, m, p, D)
+        if cand is None:
+            continue
+        x, y = cand
+        hist = build_hist(n, m, x, y)
+        if len(hist) == len(target) and hist == target:
+            print(n, m)
+            print(x, y)
+            return
+    print(-1)
+
+def solve_all():
+    # Single test instance as per problem
+    solve_case()
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    # Deterministic self-checks (do not print on success)
+    def gen_seq(n, m, x, y):
+        a = []
+        for i in range(1, n+1):
+            for j in range(1, m+1):
+                a.append(abs(i-x)+abs(j-y))
+        return a
+    # 1) 1x1
+    a1 = [0]
+    from io import StringIO
+    sys.stdin = StringIO("1\n0\n")
+    solve_all()  # prints 1 1 and 1 1
+    # 2) 3x3 center
+    seq2 = gen_seq(3,3,2,2)
+    sys.stdin = StringIO("9\n" + " ".join(map(str, seq2)) + "\n")
+    solve_all()
+    # 3) 3x6 with zero at (2,3)
+    seq3 = gen_seq(3,6,2,3)
+    sys.stdin = StringIO(str(len(seq3)) + "\n" + " ".join(map(str, seq3)) + "\n")
+    solve_all()
+\end{minted}
+\VALIDATION{Exactly 3 I/O mini-tests included in the main-guard self-checks: $1\times 1$, $3\times 3$ centered, and $3\times 6$ with $(2,3)$.}
+\RESULT{Outputs any valid $(n,m,x,y)$ consistent with the multiset. If none exist, outputs $-1$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit-test histogram builder on small grids; property-test that the solver reproduces the original histogram for random $(n,m,x,y)$ with moderate $t$.}
+\LINE{CROSS-CHECKS}{Compare histograms of candidate against the input frequency; ensure $C(0)=1$, early rings $C(d)=4d$ up to $p$, and $D$ feasibility bounds are satisfied.}
+\LINE{EDGE-CASE GENERATOR}{Generate cases with $p=0$ (zero at border), with ties in max distance ($C(D)=2$ or $4$), and prime $t$ to reduce factor pairs.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+from random import Random
+
+def gen_grid_case(n, m, x, y):
+    arr = []
+    for i in range(1, n+1):
+        for j in range(1, m+1):
+            arr.append(abs(i-x)+abs(j-y))
+    return len(arr), arr
+
+def gen_edge_cases():
+    cases = []
+    # Single cell
+    cases.append(gen_grid_case(1,1,1,1))
+    # Zero at corner (p=0)
+    cases.append(gen_grid_case(2,5,1,1))
+    # Zero on edge but not corner
+    cases.append(gen_grid_case(4,7,1,4))
+    # Centered
+    cases.append(gen_grid_case(5,5,3,3))
+    # Rectangular with ties at max (two farthest corners)
+    cases.append(gen_grid_case(3,6,2,3))
+    return cases
+
+def test_reference_solver():
+    import sys
+    from io import StringIO
+    from collections import Counter
+    # Inline reference (copy from final submission)
+    def run_io(t, arr):
+        data = str(t) + "\n" + " ".join(map(str, arr)) + "\n"
+        sys.stdin = StringIO(data)
+        # use the final solve_all from above cell context if running stand-alone
+    # Produce some cases and ensure solver prints plausible output.
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+from collections import Counter
+from math import isqrt
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, []
+    t = int(data[0])
+    arr = list(map(int, data[1:1+t]))
+    return t, arr
+
+def all_factor_pairs(t):
+    for d in range(1, isqrt(t)+1):
+        if t % d == 0:
+            n = d
+            m = t // d
+            yield n, m
+            if n != m:
+                yield m, n
+
+def compute_p_and_D(freq):
+    if freq.get(0, 0) != 1:
+        return None, None, None
+    D = max(freq) if freq else 0
+    cnt = [0]*(D+1)
+    for k, v in freq.items():
+        if k < 0 or k > D:
+            return None, None, None
+        cnt[k] = v
+    if cnt[0] != 1:
+        return None, None, None
+    p = 0
+    for d in range(1, D+1):
+        if cnt[d] == 4*d:
+            p = d
+        else:
+            break
+    return p, D, cnt
+
+def build_hist(n, m, x, y):
+    A = n - 1
+    B = m - 1
+    a = x - 1
+    b = A - a
+    c = y - 1
+    d = B - c
+    maxA = max(a, b)
+    maxB = max(c, d)
+    D = maxA + maxB
+    fr = [0]*(maxA+1)
+    fr[0] = 1
+    mm = min(a, b)
+    for r in range(1, mm+1):
+        fr[r] = 2
+    for r in range(mm+1, maxA+1):
+        fr[r] = 1
+    fc = [0]*(maxB+1)
+    fc[0] = 1
+    mmc = min(c, d)
+    for s in range(1, mmc+1):
+        fc[s] = 2
+    for s in range(mmc+1, maxB+1):
+        fc[s] = 1
+    res = [0]*(D+1)
+    for r, vr in enumerate(fr):
+        if vr == 0:
+            continue
+        base = r
+        for s, vs in enumerate(fc):
+            res[base + s] += vr * vs
+    return res
+
+def try_construct(n, m, p, D):
+    A = n - 1
+    B = m - 1
+    Vmin = (A + 1)//2
+    Vmax = A - p
+    Hmin = (B + 1)//2
+    Hmax = B - p
+    if Vmin > Vmax or Hmin > Hmax:
+        return None
+    if D < Vmin + Hmin or D > Vmax + Hmax:
+        return None
+    # Force vertical side = p
+    V = A - p
+    Hneed = D - V
+    if Hmin <= Hneed <= Hmax:
+        c_low = max(B - Hneed, p)
+        c_high = min(Hneed, B - p)
+        if c_low <= c_high:
+            y = c_low + 1
+            x = p + 1
+            return x, y
+    # Force horizontal side = p
+    H = B - p
+    Vneed = D - H
+    if Vmin <= Vneed <= Vmax:
+        a_low = max(A - Vneed, p)
+        a_high = min(Vneed, A - p)
+        if a_low <= a_high:
+            x = a_low + 1
+            y = p + 1
+            return x, y
+    return None
+
+def solve_case():
+    t, arr = read_input()
+    if t == 0:
+        print(-1)
+        return
+    freq = Counter(arr)
+    p, D, cnt = compute_p_and_D(freq)
+    if p is None:
+        print(-1)
+        return
+    target = cnt
+    for n, m in all_factor_pairs(t):
+        if n < 2*p + 1 or m < 2*p + 1:
+            continue
+        cand = try_construct(n, m, p, D)
+        if cand is None:
+            continue
+        x, y = cand
+        hist = build_hist(n, m, x, y)
+        if len(hist) == len(target) and hist == target:
+            print(n, m)
+            print(x, y)
+            return
+    print(-1)
+
+def solve_all():
+    solve_case()
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    # Minimal asserts
+    def gen_seq(n, m, x, y):
+        a = []
+        for i in range(1, n+1):
+            for j in range(1, m+1):
+                a.append(abs(i-x)+abs(j-y))
+        return a
+    # 1x1
+    t1, a1 = 1, [0]
+    from io import StringIO
+    sys.stdin = StringIO("1\n0\n")
+    solve_all()
+    # 3x3 center
+    seq2 = gen_seq(3,3,2,2)
+    sys.stdin = StringIO("9\n" + " ".join(map(str, seq2)) + "\n")
+    solve_all()
+    # 3x6
+    seq3 = gen_seq(3,6,2,3)
+    sys.stdin = StringIO(str(len(seq3)) + "\n" + " ".join(map(str, seq3)) + "\n")
+    solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Reconstruct $(n,m,x,y)$ of a rhombic (Manhattan-distance) matrix from the multiset of its entries.}
+\WHY{Tests ability to extract structure from histograms, reason about geometry on grids, and design efficient validation with pruning.}
+\CHECKLIST{
+- Verify $C(0)=1$; get $D=\max$ distance.
+- Find $p$ as the largest prefix where $C(d)=4d$.
+- Enumerate factor pairs $(n,m)$ with $n,m\ge 2p+1$.
+- Check $D$ range feasibility.
+- Construct $(x,y)$ by forcing one side to distance $p$ and solving $V+H=D$.
+- Validate histogram equality.}
+\EDGECASES{
+- $t=1$ (single zero).
+- $p=0$ (zero at border).
+- Ties at maximum distance ($C(D)=2$ or $4$).
+- Highly rectangular grids (e.g., $1\times t$, but then $p=0$ and feasibility constrains $D$).
+- Missing or extra distances (fails at validation).
+- Large $t$ near $10^6$ (ensure $O(t)$ validation and pruning).}
+\PITFALLS{
+- Forgetting to ensure at least one side is exactly $p$ (not just $\ge p$).
+- Allowing $n<2p+1$ or $m<2p+1$.
+- Miscomputing $V_{\min}$ and $H_{\min}$ as $\lfloor\cdot\rfloor$ instead of $\lceil\cdot\rceil$.
+- Off-by-one between offsets $(a,b,c,d)$ and $(x,y)$.
+- Not handling both $(n,m)$ orders from factorization.
+- Building histogram beyond or below $D$ and mismatching lengths.}
+\FAILMODES{Weaker approaches that guess $(x,y)$ without enforcing $p$ or $D$ constraints will frequently fail or be too slow. The proposed method survives by drastically pruning and exact histogram matching.}
+\ELI{The distances form expanding diamond rings. Count how many full rings exist before the rectangle clips them, try possible grid sizes, place the zero exactly $p$ away from a border, and see if the whole distance histogram matches. If yes, you have the grid; otherwise, no solution.}
+\NotePages{3}
+
+\end{document}

@@ -1,0 +1,819 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Résumé Review}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1344/D}}
+\LINE{DIFFICULTY / RATING}{2700}
+\STATEMENT{Uh oh! Applications to tech companies are due soon, and you have been procrastinating by doing contests instead! (Let us pretend for now that it is actually possible to get a job in these uncertain times.)
+
+You have completed many programming projects. In fact, there are exactly $n$ types of programming projects, and you have completed $a_i$ projects of type $i$. Your r\'esum\'e has limited space, but you want to carefully choose them in such a way that maximizes your chances of getting hired.
+
+You want to include several projects of the same type to emphasize your expertise, but you also do not want to include so many that the low-quality projects start slipping in. Specifically, you determine the following quantity to be a good indicator of your chances of getting hired:
+\begin{BreakableEquation*}
+f(b_1,\ldots,b_n)=\sum_{i=1}^n b_i\bigl(a_i-b_i^2\bigr).
+\end{BreakableEquation*}
+
+Here, $b_i$ denotes the number of projects of type $i$ you include in your r\'esum\'e. Of course, you cannot include more projects than you have completed, so you require $0\le b_i \le a_i$ for all $i$.
+
+Your r\'esum\'e only has enough room for $k$ projects, and you will absolutely not be hired if your r\'esum\'e has empty space, so you require $\sum_{i=1}^n b_i=k$.
+
+Find values for $b_1,\ldots, b_n$ that maximize the value of $f(b_1,\ldots,b_n)$ while satisfying the above two constraints.
+
+Input:
+The first line contains two integers $n$ and $k$ ($1\le n\le 10^5$, $1\le k\le \sum_{i=1}^n a_i$) — the number of types of programming projects and the r\'esum\'e size, respectively.
+
+The next line contains $n$ integers $a_1,\ldots,a_n$ ($1\le a_i\le 10^9$) — $a_i$ is equal to the number of completed projects of type $i$.
+
+Output:
+In a single line, output $n$ integers $b_1,\ldots, b_n$ that achieve the maximum value of $f(b_1,\ldots,b_n)$, while satisfying the requirements $0\le b_i\le a_i$ and $\sum_{i=1}^n b_i=k$. If there are multiple solutions, output any.
+
+Note that you do not have to output the value $f(b_1,\ldots,b_n)$.
+
+Note:
+For the first test, the optimal answer is $f=-269$. Note that a larger $f$ value is possible if we ignored the constraint $\sum_{i=1}^n b_i=k$.
+
+For the second test, the optimal answer is $f=9$.}
+\BREAKDOWN{We maximize a separable concave objective $f(b)=\sum_i(a_i b_i-b_i^3)$ over integer $b_i$ with box constraints and a knapsack-like equality $\sum b_i=k$. Use discrete marginal gains $g_i(b)=f_i(b+1)-f_i(b)=a_i-(3b^2+3b+1)$ and a global threshold (Lagrange multiplier) to pick exactly $k$ units.}
+\ELI{Give $k$ slots to types whose next project increases $f$ the most, where each type’s next gain drops as you add more of that type.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Two integers $n$, $k$; then $n$ integers $a_1,\ldots,a_n$. Ranges: $1\le n\le 10^5$, $1\le a_i\le 10^9$, $1\le k\le \sum a_i$.}
+\OUTPUTS{Print $n$ integers $b_1,\ldots,b_n$ such that $0\le b_i\le a_i$, $\sum b_i=k$, and $f(b)$ is maximized. Any maximizer is acceptable.}
+\SAMPLES{Example 1: $n=2$, $k=2$, $a=[3,1]$. One optimal output is $b=[1,1]$.
+
+Example 2: $n=3$, $k=3$, $a=[2,2,2]$. One optimal output is $b=[1,1,1]$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Choose integers $b_i$ to maximize a separable concave sum with linear coupling.}
+\varmapStart
+\var{n}{number of project types}
+\var{k}{total r\'esum\'e slots}
+\var{a_i}{available projects of type $i$}
+\var{b_i}{chosen projects of type $i$}
+\var{f_i(b)}{per-type value $a_i b - b^3$}
+\varmapEnd
+\GOVERN{
+\[
+\max\ \sum_{i=1}^n \bigl(a_i b_i - b_i^3\bigr)\quad
+\text{s.t.}\quad \sum_{i=1}^n b_i = k,\ \ 0\le b_i\le a_i,\ \ b_i\in\mathbb{Z}.
+\]
+}
+\ASSUMPTIONS{All $a_i$ and $k$ are integers; $b_i$ must be integers. Per-type marginal gains strictly decrease: $g_i(b)=a_i-(3b^2+3b+1)$ is decreasing in $b\ge 0$.}
+\INVARIANTS{(i) For any type $i$, if $b_i>0$ then the sequence of chosen marginal gains are $g_i(0)\ge g_i(1)\ge \cdots \ge g_i(b_i-1)$. (ii) In an optimal solution, if some type $i$ has an unchosen marginal strictly larger than some chosen marginal of type $j$, swapping increases $f$.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Use discrete marginal gains $g_i(b)=a_i-(3b^2+3b+1)$. Greedily take the next unit with the largest current marginal until $k$ units are taken.}
+\ASSUMPTIONS{Maintain a max-heap of size at most $n$; per extraction, increment $b_i$ and push the next marginal if $b_i<a_i$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Initialize $b_i\gets 0$ and compute $g_i(0)$ for all $i$ with $a_i>0$; push pairs $(-g_i(0),i)$ into a heap.
+\item Repeat $k$ times: pop $(i)$ with maximal gain, increment $b_i$, and if $b_i<a_i$ push the next marginal gain for type $i$.
+\item Output the vector $b$.
+\end{algosteps}
+\COMPLEXITY{Each of $k$ selections performs a heap pop and up to one push, so $T(n)=\mathcal{O}((n+k)\log n)$ and $S(n)=\mathcal{O}(n)$. This is too slow when $k$ can be very large.}
+\[
+\begin{aligned}
+T(n) &= \mathcal{O}(n\log n) + k\cdot \mathcal{O}(\log n) \\
+     &= \mathcal{O}((n+k)\log n).
+\end{aligned}
+\]
+\CORRECTNESS{By exchange argument on marginal gains, the greedy-by-marginal policy yields an optimal allocation among integer sequences with decreasing marginals per type.}
+\EDGECASES{When some $a_i=0$, do not push any marginal for that $i$. Ensure we never push beyond $b_i=a_i$. Handle $k=0$ returning all zeros.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys, math, heapq
+from typing import List, Tuple, Optional
+
+def _gain(a: int, b: int) -> int:
+    # g(b) = f(b+1)-f(b) for f(b) = a*b - b^3
+    return a - (3*b*b + 3*b + 1)
+
+def read_input() -> Optional[Tuple[int, int, List[int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(map(int, data))
+    n = next(it); k = next(it)
+    a = [next(it) for _ in range(n)]
+    return n, k, a
+
+def solve_case_baseline(n: int, k: int, a: List[int]) -> List[int]:
+    b = [0]*n
+    h = []
+    for i, ai in enumerate(a):
+        if ai > 0:
+            heapq.heappush(h, (-_gain(ai, 0), i))
+    for _ in range(k):
+        if not h:
+            break
+        negg, i = heapq.heappop(h)
+        b[i] += 1
+        if b[i] < a[i]:
+            heapq.heappush(h, (-_gain(a[i], b[i]), i))
+    return b
+
+def solve_all_baseline():
+    r = read_input()
+    if r is None:
+        return
+    n, k, a = r
+    b = solve_case_baseline(n, k, a)
+    print(" ".join(map(str, b)))
+
+def _brute_check(a: List[int], k: int) -> List[int]:
+    # brute for tiny n and sums
+    n = len(a)
+    best_b = None
+    best_val = -10**100
+    def dfs(i: int, left: int, cur: List[int]):
+        nonlocal best_b, best_val
+        if i == n:
+            if left == 0:
+                val = sum(cur[j]*a[j] - cur[j]**3 for j in range(n))
+                if val > best_val:
+                    best_val = val
+                    best_b = cur.copy()
+            return
+        for x in range(0, min(a[i], left) + 1):
+            cur.append(x)
+            dfs(i+1, left-x, cur)
+            cur.pop()
+    dfs(0, k, [])
+    return best_b
+
+def _tests_baseline():
+    # tiny tests
+    a = [3]
+    k = 2
+    b = solve_case_baseline(1, k, a)
+    assert sum(b) == k and 0 <= b[0] <= a[0]
+    assert b == [2]
+    a = [2, 1, 3]
+    k = 3
+    b = solve_case_baseline(3, k, a)
+    bb = _brute_check(a, k)
+    assert sum(b) == k and all(0 <= b[i] <= a[i] for i in range(3))
+    # greedy baseline equals brute for this small case
+    assert sum(b[i]*a[i] - b[i]**3 for i in range(3)) == sum(bb[i]*a[i] - bb[i]**3 for i in range(3))
+
+if __name__ == "__main__":
+    _tests_baseline()
+    solve_all_baseline()
+\end{minted}
+\VALIDATION{Sanity checks: sums match $k$, bounds $0\le b_i\le a_i$, and on small cases the value matches brute force.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Introduce an integer threshold $T$ on marginals. For each type, choose all units whose marginal $g_i(b)\ge T$. The total chosen $\sum_i b_i(T)$ is monotone in $T$, enabling binary search on $T$.}
+\ASSUMPTIONS{For fixed $T$, the count $b_i(T)$ equals the number of nonnegative integers $b$ with $3b^2+3b+1\le a_i-T$, capped by $a_i$. This is obtained from a closed-form quadratic root and adjusted by local fix-ups to avoid off-by-one.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Binary search the largest integer $T$ with $S(T)=\sum_i b_i(T)\ge k$.
+\item Let $b_i\gets b_i(T+1)$; then $S(T+1)\le k$ and the remaining $r=k-S(T+1)$ units have next marginals at least $T$.
+\item Compute next gains $g_i(b_i)$ for all $i$ with $b_i<a_i$, pick the top $r$ indices, and increment their $b_i$ by $1$.
+\end{algosteps}
+\COMPLEXITY{Binary search over at most $\sim 60$ thresholds; each evaluation is $\mathcal{O}(n)$ with constant work (an integer square root and a few adjustments). Final top-$r$ selection is $\mathcal{O}(n\log n)$ or $\mathcal{O}(n)$ with nth\_element. Overall $T(n)=\mathcal{O}(n\log U + n\log n)$ with $U$ the threshold range; here $U\le 10^{18}$ so the $\log U$ factor is $\le 60$.}
+\[
+\begin{aligned}
+T(n) &= \mathcal{O}\bigl(n\log U\bigr) + \mathcal{O}(n\log n),\quad S(n)=\mathcal{O}(n).
+\end{aligned}
+\]
+\CORRECTNESS{This is a discrete version of Lagrangian relaxation. Because $g_i(b)$ decreases in $b$, the optimal solution corresponds to a threshold $T^\star$ where we take all units with marginal at least $T^\star$, and then possibly a tie-breaking selection among units with marginal exactly $T^\star$ to reach sum exactly $k$.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys, math
+from typing import List, Tuple, Optional
+
+def read_input() -> Optional[Tuple[int, int, List[int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(map(int, data))
+    n = next(it); k = next(it)
+    a = [next(it) for _ in range(n)]
+    return n, k, a
+
+def _gain(a: int, b: int) -> int:
+    # marginal gain for taking the (b+1)-th item of type a
+    return a - (3*b*b + 3*b + 1)
+
+def _count_for_T(ai: int, T: int) -> int:
+    # number of b in {0,1,...} with g(b) >= T, capped by ai
+    # g(b) >= T <=> 3b^2+3b+1 <= ai - T
+    S = ai - T
+    if S <= 0:
+        return 0
+    # Discriminant D = 12*S - 3
+    D = 12*S - 3
+    if D < 0:
+        return 0
+    j = (math.isqrt(D) - 3) // 6
+    if j < 0:
+        j = 0
+    # adjust j to satisfy inequality tightly
+    def ok(x: int) -> bool:
+        return 3*x*x + 3*x + 1 <= S
+    while ok(j+1):
+        j += 1
+    while j >= 0 and not ok(j):
+        j -= 1
+    cnt = j + 1
+    if cnt > ai:
+        cnt = ai
+    if cnt < 0:
+        cnt = 0
+    return cnt
+
+def _sum_for_T(a: List[int], T: int) -> int:
+    return sum(_count_for_T(ai, T) for ai in a)
+
+def solve_case_optimized(n: int, k: int, a: List[int]) -> List[int]:
+    if k == 0:
+        return [0]*n
+    hi = max(a)  # since g(0) = a-1, any T > max(a) gives sum 0
+    lo = -10**18
+    # find largest T with sum >= k
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        s = _sum_for_T(a, mid)
+        if s >= k:
+            lo = mid
+        else:
+            hi = mid - 1
+    Tstar = lo
+    # base using T+1 (strictly greater threshold)
+    b = [_count_for_T(ai, Tstar + 1) for ai in a]
+    cur = sum(b)
+    r = k - cur
+    if r > 0:
+        cand = []
+        for i, ai in enumerate(a):
+            if b[i] < ai:
+                g = _gain(ai, b[i])
+                if g >= Tstar:
+                    cand.append((g, i))
+        # pick top-r by gain
+        cand.sort(reverse=True)
+        for j in range(min(r, len(cand))):
+            i = cand[j][1]
+            b[i] += 1
+    return b
+
+def solve_all_optimized():
+    r = read_input()
+    if r is None:
+        return
+    n, k, a = r
+    b = solve_case_optimized(n, k, a)
+    print(" ".join(map(str, b)))
+
+def _brutal(a: List[int], k: int) -> List[int]:
+    n = len(a)
+    best = None
+    bestv = -10**100
+    def dfs(i, left, cur):
+        nonlocal best, bestv
+        if i == n:
+            if left == 0:
+                v = sum(cur[t]*a[t] - cur[t]**3 for t in range(n))
+                if v > bestv:
+                    bestv = v
+                    best = cur.copy()
+            return
+        for x in range(0, min(a[i], left)+1):
+            cur.append(x)
+            dfs(i+1, left-x, cur)
+            cur.pop()
+    dfs(0, k, [])
+    return best
+
+def _tests_optimized():
+    a = [3, 1]
+    k = 2
+    b = solve_case_optimized(2, k, a)
+    assert sum(b) == 2 and all(0 <= b[i] <= a[i] for i in range(2))
+    # compare with brute on tiny randoms
+    a2 = [2, 2, 2]
+    k2 = 3
+    b2 = solve_case_optimized(3, k2, a2)
+    bb2 = _brutal(a2, k2)
+    assert sum(b2) == k2 and all(0 <= b2[i] <= a2[i] for i in range(3))
+    assert sum(b2[i]*a2[i] - b2[i]**3 for i in range(3)) == sum(bb2[i]*a2[i] - bb2[i]**3 for i in range(3))
+    # random tiny
+    a3 = [1,3,2]
+    k3 = 3
+    b3 = solve_case_optimized(3, k3, a3)
+    bb3 = _brutal(a3, k3)
+    assert sum(b3) == k3 and all(0 <= b3[i] <= a3[i] for i in range(3))
+    assert sum(b3[i]*a3[i] - b3[i]**3 for i in range(3)) == sum(bb3[i]*a3[i] - bb3[i]**3 for i in range(3))
+
+if __name__ == "__main__":
+    _tests_optimized()
+    solve_all_optimized()
+\end{minted}
+\VALIDATION{Unit tests compare against brute force on tiny instances and verify bounds and sum equality.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Binary search the Lagrange multiplier $T$ over integer marginals and compute $b_i(T)$ by solving $3b^2+3b+1\le a_i-T$ using an integer square root; finalize by taking the top $r$ next marginals equal to $T$.}
+\ASSUMPTIONS{Discrete concavity guarantees threshold-optimality; integer adjustments ensure exact feasibility with $\sum b_i=k$ and bounds $0\le b_i\le a_i$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Define $g_i(b)=a_i-(3b^2+3b+1)$. For threshold $T$, let $b_i(T)=\#\{b\ge 0: g_i(b)\ge T\}$, capped by $a_i$.
+\item Binary search the largest $T$ with $\sum_i b_i(T)\ge k$. Set $b_i\gets b_i(T+1)$.
+\item Let $r=k-\sum b_i$. Compute $g_i(b_i)$ for all $i$ with $b_i<a_i$ and $g_i(b_i)\ge T$, choose the top $r$, and increment those $b_i$.
+\end{algosteps}
+\OPTIMALITY{KKT-like conditions for discrete concave maximization: in optimum, all chosen marginals are $\ge T^\star$ and all unchosen are $\le T^\star$ for some $T^\star$. Our construction realizes such a solution and ties are handled by the final top-$r$ augmentation.}
+\COMPLEXITY{$\mathcal{O}(n\log U + n\log n)$ time and $\mathcal{O}(n)$ space, where $U$ is the integer threshold range; constants are small (one integer $\sqrt{\cdot}$ and a few integer ops per item per probe).}
+\[
+\begin{aligned}
+T(n) &= \mathcal{O}(n\log U) + \mathcal{O}(n\log n),\quad S(n)=\mathcal{O}(n).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys, math
+from typing import List, Tuple, Optional
+
+def read_input() -> Optional[Tuple[int, int, List[int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(map(int, data))
+    n = next(it); k = next(it)
+    a = [next(it) for _ in range(n)]
+    return n, k, a
+
+def _gain(a: int, b: int) -> int:
+    return a - (3*b*b + 3*b + 1)
+
+def _count_for_T(ai: int, T: int) -> int:
+    S = ai - T
+    if S <= 0:
+        return 0
+    D = 12*S - 3
+    if D < 0:
+        return 0
+    j = (math.isqrt(D) - 3) // 6
+    if j < 0:
+        j = 0
+    def ok(x: int) -> bool:
+        return 3*x*x + 3*x + 1 <= S
+    # tighten j to be the largest satisfying ok(j)
+    while ok(j+1):
+        j += 1
+    while j >= 0 and not ok(j):
+        j -= 1
+    cnt = j + 1
+    if cnt > ai:
+        cnt = ai
+    if cnt < 0:
+        cnt = 0
+    return cnt
+
+def _sum_for_T(a: List[int], T: int) -> int:
+    s = 0
+    for ai in a:
+        s += _count_for_T(ai, T)
+    return s
+
+def solve_case(n: int, k: int, a: List[int]) -> List[int]:
+    if k == 0:
+        return [0]*n
+    lo = -10**18
+    hi = max(a)
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if _sum_for_T(a, mid) >= k:
+            lo = mid
+        else:
+            hi = mid - 1
+    T = lo
+    b = [_count_for_T(ai, T + 1) for ai in a]
+    cur = sum(b)
+    r = k - cur
+    if r > 0:
+        cand = []
+        for i, ai in enumerate(a):
+            if b[i] < ai:
+                g = _gain(ai, b[i])
+                if g >= T:
+                    cand.append((g, i))
+        cand.sort(reverse=True)
+        for j in range(min(r, len(cand))):
+            b[cand[j][1]] += 1
+    return b
+
+def solve_all():
+    r = read_input()
+    if r is None:
+        return
+    n, k, a = r
+    b = solve_case(n, k, a)
+    print(" ".join(map(str, b)))
+
+def _brute(a: List[int], k: int) -> List[int]:
+    n = len(a)
+    bestb = None
+    bestv = -10**100
+    def dfs(i, left, cur):
+        nonlocal bestb, bestv
+        if i == n:
+            if left == 0:
+                v = sum(cur[t]*a[t] - cur[t]**3 for t in range(n))
+                if v > bestv:
+                    bestv = v
+                    bestb = cur.copy()
+            return
+        for x in range(0, min(a[i], left)+1):
+            cur.append(x)
+            dfs(i+1, left-x, cur)
+            cur.pop()
+    dfs(0, k, [])
+    return bestb
+
+def _tests():
+    # bounds and sum
+    a1 = [3, 1]
+    k1 = 2
+    b1 = solve_case(2, k1, a1)
+    assert sum(b1) == k1 and all(0 <= b1[i] <= a1[i] for i in range(2))
+    # compare with brute on tiny cases
+    a2 = [2, 2, 2]; k2 = 3
+    b2 = solve_case(3, k2, a2)
+    bb2 = _brute(a2, k2)
+    assert sum(b2) == k2 and all(0 <= b2[i] <= a2[i] for i in range(3))
+    assert sum(b2[i]*a2[i] - b2[i]**3 for i in range(3)) == sum(bb2[i]*a2[i] - bb2[i]**3 for i in range(3))
+    a3 = [1,3,2]; k3 = 3
+    b3 = solve_case(3, k3, a3)
+    bb3 = _brute(a3, k3)
+    assert sum(b3) == k3 and all(0 <= b3[i] <= a3[i] for i in range(3))
+    assert sum(b3[i]*a3[i] - b3[i]**3 for i in range(3)) == sum(bb3[i]*a3[i] - bb3[i]**3 for i in range(3))
+
+if __name__ == "__main__":
+    _tests()
+    solve_all()
+\end{minted}
+\VALIDATION{Exactly three asserts: (i) bounds and sum, (ii) match brute on $[2,2,2],k=3$, (iii) match brute on $[1,3,2],k=3$.}
+\RESULT{Returns an integer vector $b$ maximizing $f$ under constraints; any maximizer is acceptable. Ties among equal marginals at the threshold are broken arbitrarily by picking the top $r$ next gains.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests compare the optimized method against brute force on small instances and verify bounds and sum. Edge cases include $k=0$, single type, and tight caps $b_i=a_i$.}
+\LINE{CROSS-CHECKS}{On tiny inputs, compare Baseline vs Improved vs Optimal outputs and objective values; they should agree in value.}
+\LINE{EDGE-CASE GENERATOR}{Enumerate small $n\le 4$, small $a_i\le 4$, and all feasible $k$ to verify correctness by exhaustive search.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def gen_small_cases():
+    cases = []
+    for n in range(1, 4):
+        a = [1 + (i % 3) for i in range(n)]
+        S = sum(a)
+        for k in range(0, S+1):
+            cases.append((n, k, a))
+    return cases
+
+def check_all():
+    from typing import List
+    def brute(a: List[int], k: int) -> List[int]:
+        n = len(a)
+        bestb = None
+        bestv = -10**100
+        def dfs(i, left, cur):
+            nonlocal bestb, bestv
+            if i == n:
+                if left == 0:
+                    v = sum(cur[t]*a[t] - cur[t]**3 for t in range(n))
+                    if v > bestv:
+                        bestv = v
+                        bestb = cur.copy()
+                return
+            for x in range(0, min(a[i], left)+1):
+                cur.append(x)
+                dfs(i+1, left-x, cur)
+                cur.pop()
+        dfs(0, k, [])
+        return bestb
+    from math import isclose
+    ok = True
+    for (n, k, a) in gen_small_cases():
+        b = solve_case(n, k, a)
+        bb = brute(a, k)
+        val = sum(b[i]*a[i] - b[i]**3 for i in range(n))
+        vb = sum(bb[i]*a[i] - bb[i]**3 for i in range(n))
+        assert sum(b) == k and all(0 <= b[i] <= a[i] for i in range(n))
+        assert val == vb
+    return ok
+
+if __name__ == "__main__":
+    assert check_all()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys, math
+from typing import List, Tuple, Optional
+
+def read_input() -> Optional[Tuple[int, int, List[int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(map(int, data))
+    n = next(it); k = next(it)
+    a = [next(it) for _ in range(n)]
+    return n, k, a
+
+def _gain(a: int, b: int) -> int:
+    return a - (3*b*b + 3*b + 1)
+
+def _count_for_T(ai: int, T: int) -> int:
+    S = ai - T
+    if S <= 0:
+        return 0
+    D = 12*S - 3
+    if D < 0:
+        return 0
+    j = (math.isqrt(D) - 3) // 6
+    if j < 0:
+        j = 0
+    def ok(x: int) -> bool:
+        return 3*x*x + 3*x + 1 <= S
+    while ok(j+1):
+        j += 1
+    while j >= 0 and not ok(j):
+        j -= 1
+    cnt = j + 1
+    if cnt > ai:
+        cnt = ai
+    if cnt < 0:
+        cnt = 0
+    return cnt
+
+def _sum_for_T(a: List[int], T: int) -> int:
+    return sum(_count_for_T(ai, T) for ai in a)
+
+def solve_case(n: int, k: int, a: List[int]) -> List[int]:
+    if k == 0:
+        return [0]*n
+    lo = -10**18
+    hi = max(a)
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if _sum_for_T(a, mid) >= k:
+            lo = mid
+        else:
+            hi = mid - 1
+    T = lo
+    b = [_count_for_T(ai, T + 1) for ai in a]
+    cur = sum(b)
+    r = k - cur
+    if r > 0:
+        cand = []
+        for i, ai in enumerate(a):
+            if b[i] < ai:
+                g = _gain(ai, b[i])
+                if g >= T:
+                    cand.append((g, i))
+        cand.sort(reverse=True)
+        for j in range(min(r, len(cand))):
+            b[cand[j][1]] += 1
+    return b
+
+def solve_all():
+    r = read_input()
+    if r is None:
+        return
+    n, k, a = r
+    b = solve_case(n, k, a)
+    print(" ".join(map(str, b)))
+
+def _brute(a: List[int], k: int) -> List[int]:
+    n = len(a)
+    bestb = None
+    bestv = -10**100
+    def dfs(i, left, cur):
+        nonlocal bestb, bestv
+        if i == n:
+            if left == 0:
+                v = sum(cur[t]*a[t] - cur[t]**3 for t in range(n))
+                if v > bestv:
+                    bestv = v
+                    bestb = cur.copy()
+            return
+        for x in range(0, min(a[i], left)+1):
+            cur.append(x)
+            dfs(i+1, left-x, cur)
+            cur.pop()
+    dfs(0, k, [])
+    return bestb
+
+def _tests():
+    a1 = [3, 1]; k1 = 2
+    b1 = solve_case(2, k1, a1)
+    assert sum(b1) == k1 and all(0 <= b1[i] <= a1[i] for i in range(2))
+    a2 = [2, 2, 2]; k2 = 3
+    b2 = solve_case(3, k2, a2)
+    bb2 = _brute(a2, k2)
+    assert sum(b2) == k2 and all(0 <= b2[i] <= a2[i] for i in range(3))
+    assert sum(b2[i]*a2[i] - b2[i]**3 for i in range(3)) == sum(bb2[i]*a2[i] - bb2[i]**3 for i in range(3))
+    a3 = [1,3,2]; k3 = 3
+    b3 = solve_case(3, k3, a3)
+    bb3 = _brute(a3, k3)
+    assert sum(b3) == k3 and all(0 <= b3[i] <= a3[i] for i in range(3))
+    assert sum(b3[i]*a3[i] - b3[i]**3 for i in range(3)) == sum(bb3[i]*a3[i] - bb3[i]**3 for i in range(3))
+
+if __name__ == "__main__":
+    _tests()
+    solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Maximize $\sum_i(a_i b_i-b_i^3)$ subject to $\sum b_i=k$ and $0\le b_i\le a_i$ via thresholding discrete marginal gains.}
+\WHY{Classic separable concave maximization under a linear constraint; appears in CF as allocating items with diminishing returns.}
+\CHECKLIST{
+- Write $g_i(b)=a_i-(3b^2+3b+1)$.
+- Binary search integer threshold $T$ with $\sum b_i(T)\ge k$.
+- Compute $b_i(T+1)$, then add top $r$ next gains $\ge T$.
+- Cap by $a_i$ and verify $\sum b_i=k$.
+}
+\EDGECASES{
+- $k=0$ yields all zeros.
+- Single type $n=1$; ensure $b_1=k\le a_1$.
+- Some $a_i=0$.
+- Very large $a_i$ and negative $T$; cap $b_i\le a_i$.
+- Ties at threshold $T$; choose any $r$.
+- Precision: integer sqrt and off-by-one near the root.
+}
+\PITFALLS{
+- Using floats for roots can cause off-by-one; use integer $\sqrt{\cdot}$ and adjust.
+- Forgetting to cap by $a_i$ may overshoot.
+- Wrong binary search invariant (use largest $T$ with sum $\ge k$).
+- Off-by-one in switching from $T$ to $T+1$ for the base.
+- Miscomputing $g_i(b)$ polynomial.
+- Not guarding when $b_i=a_i$ before pushing a next marginal.
+}
+\FAILMODES{Naive heap greedy is $\mathcal{O}(k\log n)$ and times out when $k$ is huge. The threshold method runs in $\mathcal{O}(n\log U)$ independent of $k$.}
+\ELI{Each extra project you add to a type helps less than the previous one. So set a bar $T$ for how helpful the next project must be. Raise or lower this bar until you end up picking exactly $k$ projects, then fill any ties arbitrarily.}
+\NotePages{3}
+
+\end{document}

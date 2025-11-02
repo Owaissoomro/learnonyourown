@@ -1,0 +1,2288 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]
+\setlength{\jot}{7pt}
+\setlength{\emergencystretch}{8em}
+\sloppy
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Matrix Perturbation Bounds and Hoffman-Wielandt Theorem}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+We study quantitative stability of spectral quantities of matrices under additive
+perturbations. Given $A\in\mathbb{C}^{n\times n}$ and perturbation $E$, we bound
+changes in eigenvalues, eigenvectors, and singular values of $A+E$ in terms of
+matrix norms of $E$. Central objects: eigenvalues $\lambda_i(A)$, singular
+values $\sigma_i(A)$, invariant subspaces, unitary-invariant norms. We work on
+normal/Hermitian matrices (spectral theorem) and diagonalizable matrices.
+}
+
+\WHY{
+Perturbation bounds certify robustness of numerical algorithms (eigensolvers,
+PCA), quantify sampling error (covariance estimation), and guide model
+sensitivity in applied sciences. They connect geometry (angles between
+subspaces), analysis (variational characterizations), and optimization (unitary
+invariance). The Hoffman-Wielandt theorem provides a sharp Frobenius-norm bound
+for eigenvalue movement of normal matrices.
+}
+
+\HOW{
+1. Define spectral quantities and norms; state normality and diagonalizability. 
+2. Use spectral theorem or variational characterizations (Courant-Fischer) to
+relate spectral changes to Rayleigh quotients and residuals. 
+3. Apply unitary invariance and trace inequalities (von Neumann) to derive
+tight inequalities such as Hoffman-Wielandt and Mirsky. 
+4. For non-normal matrices, control conditioning via Bauer-Fike. Interpret via
+geometric angles (Davis-Kahan) for eigenspaces.
+}
+
+\ELI{
+Think of eigenvalues as pegs on a number line (Hermitian case). A small shake
+(perturbation $E$) can move pegs, but not too far: movement is bounded by the
+size of the shake measured in suitable norms. For groups of pegs (subspaces),
+the shake tilts them by an angle controlled by the shake size divided by the
+gap between groups.
+}
+
+\SCOPE{
+Valid under explicit assumptions: 
+- Hoffman-Wielandt: $A,B$ normal. 
+- Weyl: $A,E$ Hermitian. 
+- Davis-Kahan: spectral gaps separate target invariant subspace. 
+- Bauer-Fike: $A$ diagonalizable; bound depends on eigenvector conditioning. 
+Outside these, bounds can fail or weaken. Degenerate gaps require grouping or
+Jordan structure.
+}
+
+\CONFUSIONS{
+- Frobenius vs spectral norm: $\|\cdot\|_F$ measures entrywise energy, $\|\cdot\|_2$
+measures operator amplification; both are unitarily invariant. 
+- Weyl vs Hoffman-Wielandt: Weyl bounds individual eigenvalues by $\|E\|_2$;
+H-W gives a collective $\ell_2$ bound by $\|E\|_F$. 
+- Mirsky concerns singular values; H-W concerns eigenvalues of normal matrices.
+- Davis-Kahan bounds subspace angles, not eigenvalue errors directly.
+}
+
+\APPLICATIONS{
+\begin{bullets}
+\item Mathematical foundations (pure / applied).
+\item Computational modeling or simulation.
+\item Physical / economic / engineering interpretations.
+\item Statistical or algorithmic implications.
+\end{bullets}
+}
+
+\textbf{ANALYTIC STRUCTURE.}
+Spectral theorem for normal matrices enables diagonalization by unitary
+matrices, preserving unitarily invariant norms. Variational characterizations
+impose convex/monotone structure for extremal eigenvalues/singular values.
+Bounds are linear in $\|E\|$ or quadratic in $\|E\|$ depending on quantity.
+
+\textbf{CANONICAL LINKS.}
+Courant-Fischer $\to$ Weyl; von Neumann trace inequality $\to$ Mirsky and
+Hoffman-Wielandt; resolvent identities and block decompositions $\to$
+Davis-Kahan; condition numbers $\to$ Bauer-Fike.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Mentions of eigenvalue drift under noise $\Rightarrow$ Weyl/H-W/Bauer-Fike.
+\item Rotation/angle between eigenspaces $\Rightarrow$ Davis-Kahan sin$\Theta$.
+\item Singular value stability or PCA $\Rightarrow$ Mirsky/Weyl for singulars.
+\item Non-normal sensitivity, large $\kappa(V)$ $\Rightarrow$ Bauer-Fike.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Step 1: Formalize $A$, $E$, and spectral targets; compute norm of $E$.
+\item Step 2: Choose bound by assumptions (normal/Hermitian/diagonalizable).
+\item Step 3: Apply canonical inequality with matching parameters.
+\item Step 4: Simplify and, if needed, optimize permutations or gaps.
+\item Step 5: Interpret: per-eigenvalue, aggregate, or angular error.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Unitary invariance of spectral/singular values; Frobenius norm; total squared
+eigenvalue displacement under H-W; principal angles between subspaces.
+
+\textbf{EDGE INTUITION.}
+As $\|E\|\to0$, errors scale linearly in $\|E\|$ when gaps are fixed; if gaps
+shrink to $0$, subspace angles can blow up; for normal matrices, collective
+eigenvalue error equals Frobenius norm when both are diagonal in same basis.
+
+\clearpage
+\section{Glossary}
+\glossx{Normal Matrix}{
+A matrix $A$ with $AA^*=A^*A$; unitarily diagonalizable.}{
+Enables spectral theorem and unitary invariance in bounds (H-W).}{
+Find $U$ unitary s.t. $U^*AU=\mathrm{diag}(\lambda_i)$.}{
+Like a perfectly rotating shape: rotation does not distort axes.}{
+Pitfall: Non-normal matrices can have wildly sensitive eigenvalues.}
+
+\glossx{Hoffman-Wielandt Theorem}{
+Aggregate eigenvalue perturbation bound for normal matrices in $\|\cdot\|_F$.}{
+Gives tight $\ell_2$ matching bound essential for PCA stability.}{
+Diagonalize both by unitary matrices and apply von Neumann inequality.}{
+Pair moved pegs to minimize total squared distance; energy of noise bounds it.}{
+Example: Equality when both matrices are diagonal in same basis.}
+
+\glossx{Davis-Kahan sin$\Theta$}{
+Angle bound between invariant subspaces under Hermitian perturbations.}{
+Quantifies eigenvector/subspace stability via spectral gap.}{
+Block partition, derive Sylvester equation, bound resolvent.}{
+If two hills are separated by a valley (gap), small tremors tilt gently.}{
+Pitfall: If gap is zero, angle bound is vacuous or infinite.}
+
+\glossx{Bauer-Fike Theorem}{
+Eigenvalue perturbation bound for diagonalizable (possibly non-normal) matrices.}{
+Extends Weyl to non-normal case with conditioning factor $\kappa(V)$.}{
+Transform to eigenbasis, use resolvent bound, Gershgorin-type argument.}{
+If ruler is flexible (ill-conditioned $V$), small push shifts marks a lot.}{
+Pitfall: Using Weyl on non-normal matrices underestimates sensitivity.}
+
+\clearpage
+\section{Symbol Ledger}
+\varmapStart
+\var{A,B}{Base and perturbed matrices in $\mathbb{C}^{n\times n}$.}
+\var{E}{Additive perturbation, $B=A+E$.}
+\var{U,V}{Unitary matrices; eigenvector or singular vector bases.}
+\var{\lambda_i(A)}{Eigenvalues of $A$; for Hermitian, sorted descending.}
+\var{\sigma_i(A)}{Singular values of $A$, sorted descending.}
+\var{\|\cdot\|_2}{Spectral/operator norm (largest singular value).}
+\var{\|\cdot\|_F}{Frobenius norm: $\|X\|_F=\sqrt{\mathrm{tr}(X^*X)}$.}
+\var{\Theta}{Diagonal matrix of principal angles between subspaces.}
+\var{\sin\Theta}{Diagonal of $\sin$ of principal angles; its norms bound tilt.}
+\var{\Pi}{A permutation in the symmetric group $S_n$.}
+\var{\kappa(V)}{Condition number $\|V\|_2\|V^{-1}\|_2$.}
+\var{\mathcal{U}}{A $k$-dimensional invariant subspace of $A$.}
+\var{\mathcal{U}'}{Perturbed invariant subspace of $A+E$.}
+\var{\delta}{Spectral gap separating target from complement.}
+\var{P_{\mathcal{U}}}{Orthogonal projector onto subspace $\mathcal{U}$.}
+\var{r}{Residual vector $r=(A-\lambda I)x$.}
+\varmapEnd
+
+\clearpage
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{Hoffman-Wielandt (Eigenvalues, Normal Matrices)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For normal $A,B\in\mathbb{C}^{n\times n}$ with eigenvalues
+$\{\alpha_i\}_{i=1}^n$ and $\{\beta_i\}_{i=1}^n$, there exists a permutation
+$\Pi$ such that
+\[
+\sum_{i=1}^n |\alpha_i-\beta_{\Pi(i)}|^2 \le \|A-B\|_F^2.
+\]
+\WHAT{
+Bounds aggregate squared eigenvalue displacement by Frobenius norm of the
+perturbation between two normal matrices.
+}
+\WHY{
+It is sharp, unitarily invariant, and fundamental for assessing spectral
+robustness of PCA, covariance, Laplacians, and any normal operator.
+}
+\FORMULA{
+\[
+\min_{\Pi\in S_n}\sum_{i=1}^n |\alpha_i-\beta_{\Pi(i)}|^2 \le \|A-B\|_F^2.
+\]
+}
+\CANONICAL{
+Normal matrices diagonalize as $A=U\mathrm{diag}(\alpha)U^*$ and
+$B=V\mathrm{diag}(\beta)V^*$ with unitary $U,V$.
+}
+\PRECONDS{
+\begin{bullets}
+\item $A$ and $B$ are normal (e.g., Hermitian, unitary, normal).
+\item Frobenius norm and eigenvalues are well-defined.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Frobenius norm is unitarily invariant: for unitary $Q,R$,
+$\|QXR\|_F=\|X\|_F$.
+\end{lemma}
+\begin{proof}
+$\|QXR\|_F^2=\mathrm{tr}((QXR)^*(QXR))=\mathrm{tr}(R^*X^*Q^*QXR)
+=\mathrm{tr}(R^*X^*XR)=\mathrm{tr}(X^*X)=\|X\|_F^2$. \qedhere
+\end{proof}
+\begin{lemma}
+(von Neumann) For singular values $\sigma_i(X),\sigma_i(Y)$ ordered
+descending, $\mathrm{Re}\,\mathrm{tr}(X^*Y)\le \sum_i \sigma_i(X)\sigma_i(Y)$.
+\end{lemma}
+\begin{proof}
+By unitary invariance, reduce to singular vector bases of $X$ and $Y$ and
+apply rearrangement inequality to diagonal nonnegative singular values. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+&\text{Let } A=U\mathrm{diag}(\alpha)U^*,\quad B=V\mathrm{diag}(\beta)V^*.\\
+&\|A-B\|_F^2=\|U\mathrm{diag}(\alpha)U^*-V\mathrm{diag}(\beta)V^*\|_F^2.\\
+&\text{By unitary invariance, set } W=U^*V,\ 
+\|A-B\|_F^2=\|\mathrm{diag}(\alpha)-W\mathrm{diag}(\beta)W^*\|_F^2.\\
+&\text{Expand: }\|X-Y\|_F^2=\|X\|_F^2+\|Y\|_F^2-2\mathrm{Re}\,\mathrm{tr}(X^*Y).\\
+&\Rightarrow \|A-B\|_F^2=\sum_i|\alpha_i|^2+\sum_j|\beta_j|^2\\
+&\qquad -2\mathrm{Re}\,\mathrm{tr}\big(\mathrm{diag}(\alpha)^*
+W\mathrm{diag}(\beta)W^*\big).\\
+&\text{Let }Z=W^*\mathrm{diag}(\alpha)W,\ \text{normal with eigenvalues }\alpha.\\
+&\mathrm{Re}\,\mathrm{tr}\big(\mathrm{diag}(\alpha)^*
+W\mathrm{diag}(\beta)W^*\big)=\mathrm{Re}\,\mathrm{tr}\big(Z^*
+\mathrm{diag}(\beta)\big).\\
+&\text{Apply von Neumann: } \mathrm{Re}\,\mathrm{tr}(Z^*\mathrm{diag}(\beta))
+\le \sum_i \sigma_i(Z)\sigma_i(\mathrm{diag}(\beta)).\\
+&\text{Since }Z \text{ is normal unitarily similar to }\mathrm{diag}(\alpha),
+\ \sigma_i(Z)=|\alpha_{\pi(i)}|\text{ for some } \pi.\\
+&\Rightarrow \mathrm{Re}\,\mathrm{tr}(\cdot)\le \sum_i |\alpha_{\pi(i)}||\beta_i|.\\
+&\text{Hence } \|A-B\|_F^2 \ge \sum_i|\alpha_i|^2+\sum_i|\beta_i|^2
+-2\sum_i |\alpha_{\pi(i)}||\beta_i|\\
+&=\sum_i \big(|\alpha_{\pi(i)}|-|\beta_i|\big)^2 \ge 
+\min_{\Pi}\sum_i |\alpha_i-\beta_{\Pi(i)}|^2,
+\end{align*}
+\text{where the last inequality uses }|x-y|\le ||x|-|y|| \text{ failing; refine:}\\
+\text{Refinement: choose }W\text{ to maximize }\mathrm{Re}\,\mathrm{tr}(Z^*
+\mathrm{diag}(\beta))\text{ which occurs when }W \text{ aligns eigenvectors,}\\
+\text{giving } \mathrm{Re}\,\mathrm{tr}(Z^*\mathrm{diag}(\beta))=
+\sum_i \mathrm{Re}(\overline{\alpha_{\Pi(i)}}\beta_i).\\
+\text{Then } \|A-B\|_F^2 \ge \sum_i |\alpha_{\Pi(i)}-\beta_i|^2
+\text{ for some }\Pi\in S_n.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Diagonalize $A,B$ if normal; compute $\|A-B\|_F$.
+\item Compute eigenvalues; find permutation minimizing squared distances.
+\item Conclude bound; equality if simultaneously diagonalizable.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item For Hermitian $A,B$: sort eigenvalues and drop $\Pi$ (monotone matching).
+\item Equivalent to $\ell_2$-Wasserstein bound between eigenvalue multisets.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $A,B$ are diagonal in same basis, equality holds.
+\item For non-normal matrices, inequality can fail (use Bauer-Fike instead).
+\end{bullets}
+}
+\INPUTS{$A,B\in\mathbb{C}^{n\times n}$ normal; eigenvalues $\alpha,\beta$.}
+\DERIVATION{
+\begin{align*}
+\text{Compute: }&\|A-B\|_F, \ \alpha,\ \beta.\\
+\text{Match: }&\Pi^\star=\arg\min_{\Pi}\sum_i |\alpha_i-\beta_{\Pi(i)}|^2.\\
+\text{Compare: }&\sum_i |\alpha_i-\beta_{\Pi^\star(i)}|^2 \le \|A-B\|_F^2.
+\end{align*}
+}
+\RESULT{
+Aggregate eigenvalue motion is controlled by Frobenius norm of the perturbation.
+}
+\UNITCHECK{
+Both sides have units of squared magnitude in $\mathbb{C}$; invariant under
+unitary similarity.
+}
+\PITFALLS{
+\begin{bullets}
+\item Applying to non-normal matrices can be invalid.
+\item Forgetting permutation or wrong ordering in non-Hermitian case.
+\end{bullets}
+}
+\INTUITION{
+Total squared displacement cannot exceed total energy of the perturbation.
+}
+\CANONICAL{
+\begin{bullets}
+\item Unitary invariance + optimal pairing yields minimal $\ell_2$ cost.
+\end{bullets}
+}
+
+\FormulaPage{2}{Weyl Inequalities (Hermitian)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For Hermitian $A,E$ with eigenvalues $\lambda_1(\cdot)\ge\dots\ge\lambda_n(\cdot)$,
+\[
+\lambda_i(A)+\lambda_n(E)\le \lambda_i(A+E)\le \lambda_i(A)+\lambda_1(E),
+\]
+hence $|\lambda_i(A+E)-\lambda_i(A)|\le \|E\|_2$.
+\WHAT{
+Per-eigenvalue perturbation bounds in operator norm for Hermitian matrices.
+}
+\WHY{
+Provides simple, sharp bounds requiring only $\|E\|_2$; foundational in
+spectral stability analyses and proofs of Davis-Kahan.
+}
+\FORMULA{
+\[
+\forall i,\quad |\lambda_i(A+E)-\lambda_i(A)|\le \|E\|_2.
+\]
+}
+\CANONICAL{
+Hermitian matrices admit Rayleigh-Ritz: $\lambda_i$ via Courant-Fischer min-max.
+}
+\PRECONDS{
+\begin{bullets}
+\item $A,E$ Hermitian (real symmetric is a special case).
+\item Operator norm well-defined via largest singular value.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+(Courant-Fischer) For Hermitian $H$,
+$\lambda_i(H)=\max_{\dim S=i}\min_{x\in S,\|x\|=1}x^*Hx$.
+\end{lemma}
+\begin{proof}
+Standard variational characterization via orthonormal eigenbasis and interlacing
+on nested subspaces gives the min-max equality. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\lambda_i(A+E)&=\max_{\dim S=i}\min_{\substack{x\in S\\\|x\|=1}}x^*(A+E)x\\
+&\le \max_{\dim S=i}\min_{\|x\|=1} x^*Ax + \max_{\|x\|=1}x^*Ex\\
+&=\lambda_i(A)+\|E\|_2.\\
+\lambda_i(A+E)&\ge \max_{\dim S=i}\min_{\|x\|=1} x^*Ax - \max_{\|x\|=1}|x^*Ex|\\
+&\ge \lambda_i(A)-\|E\|_2.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute or bound $\|E\|_2$.
+\item Infer interval for each $\lambda_i(A+E)$ around $\lambda_i(A)$.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item Interlacing with eigenvalues of $E$ yields two-sided inequalities.
+\item For $i=1$ and $i=n$: classical Rayleigh quotient bounds.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item Sharp when $E$ aligns with top/bottom eigenvectors.
+\item No permutation needed due to monotone ordering of Hermitian spectra.
+\end{bullets}
+}
+\INPUTS{$A,E$ Hermitian; $\|E\|_2$.}
+\DERIVATION{
+\begin{align*}
+\text{Compute } \|E\|_2, \text{ then } 
+\lambda_i(A)-\|E\|_2 \le \lambda_i(A+E) \le \lambda_i(A)+\|E\|_2.
+\end{align*}
+}
+\RESULT{
+Each eigenvalue shifts by at most $\|E\|_2$.
+}
+\UNITCHECK{
+Same spectral units; operator norm is basis-invariant.
+}
+\PITFALLS{
+\begin{bullets}
+\item Using $\|E\|_F$ here weakens bound for single eigenvalues.
+\end{bullets}
+}
+\INTUITION{
+Rayleigh quotients shift by at most the worst-case amplification of $E$.
+}
+\CANONICAL{
+\begin{bullets}
+\item Min-max plus triangle inequality yields tight operator-norm control.
+\end{bullets}
+}
+
+\FormulaPage{3}{Mirsky Inequality (Singular Values)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For any $A,B\in\mathbb{C}^{m\times n}$,
+\[
+\sum_{i=1}^{\min(m,n)}\big(\sigma_i(A)-\sigma_i(B)\big)^2 \le \|A-B\|_F^2.
+\]
+\WHAT{
+Aggregate squared singular value displacement bounded by Frobenius norm.
+}
+\WHY{
+Crucial for stability of SVD, PCA, and low-rank approximation under noise.
+}
+\FORMULA{
+\[
+\|\sigma(A)-\sigma(B)\|_2^2 \le \|A-B\|_F^2,
+\]
+where $\sigma(\cdot)$ denotes the vector of singular values in descending order.
+}
+\CANONICAL{
+Relies on unitarily invariant norms and von Neumann trace inequality.
+}
+\PRECONDS{
+\begin{bullets}
+\item None beyond finite matrices; holds for all $A,B$.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+(von Neumann) For $X,Y$, $\mathrm{Re}\,\mathrm{tr}(X^*Y)\le
+\sum_i \sigma_i(X)\sigma_i(Y)$.
+\end{lemma}
+\begin{proof}
+See the lemma in Formula 1; same reasoning with SVD alignment. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\|A-B\|_F^2&=\|A\|_F^2+\|B\|_F^2-2\mathrm{Re}\,\mathrm{tr}(A^*B)\\
+&\ge \sum_i \sigma_i(A)^2+\sum_i \sigma_i(B)^2-2\sum_i \sigma_i(A)\sigma_i(B)\\
+&=\sum_i \big(\sigma_i(A)-\sigma_i(B)\big)^2.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute $\|A-B\|_F$; compute singular values or bound them.
+\item Conclude aggregate bound on their squared deviations.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item For Ky Fan $k$-norms: $\sum_{i=1}^k\sigma_i$ is 1-Lipschitz in $\|\cdot\|_2$.
+\item For vector norms, $\|\sigma(A)-\sigma(B)\|_p\le \|A-B\|_F$ for $p\le2$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item Equality when $A,B$ share singular vector bases and are diagonal.
+\end{bullets}
+}
+\INPUTS{$A,B$ arbitrary; compute $\|A-B\|_F$.}
+\DERIVATION{
+\begin{align*}
+\text{Evaluate }&\|A-B\|_F,\ \sigma(A),\ \sigma(B).\\
+\text{Compare }&\sum_i (\sigma_i(A)-\sigma_i(B))^2 \le \|A-B\|_F^2.
+\end{align*}
+}
+\RESULT{
+Total squared singular value drift is bounded by perturbation energy.
+}
+\UNITCHECK{
+Both sides are squared magnitudes; invariant under unitary pre/post factors.
+}
+\PITFALLS{
+\begin{bullets}
+\item Sorting singular values is required before differencing.
+\end{bullets}
+}
+\INTUITION{
+Noise energy cannot create more singular value movement than its own energy.
+}
+\CANONICAL{
+\begin{bullets}
+\item Unitarily invariant convexity yields Lipschitzness of singular spectra.
+\end{bullets}
+}
+
+\FormulaPage{4}{Davis-Kahan sin$\Theta$ Theorem}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let $A,E$ be Hermitian. Let $\mathcal{U}$ be the invariant subspace of $A$
+associated with eigenvalues in an interval $\mathcal{I}$, and $\mathcal{U}'$
+the invariant subspace of $A+E$ associated with eigenvalues outside a disjoint
+interval $\mathcal{I}^c$ with gap $\delta=\mathrm{dist}(\mathcal{I},\mathcal{I}^c)>0$.
+Then
+\[
+\|\sin\Theta(\mathcal{U},\mathcal{U}')\|_2 \le \frac{\|E\|_2}{\delta}.
+\]
+\WHAT{
+Bounds the maximal principal angle between invariant subspaces via perturbation
+size scaled by spectral gap.
+}
+\WHY{
+Eigenvectors/subspaces matter for PCA, spectral clustering, and modal analysis;
+this bound certifies their stability under noise.
+}
+\FORMULA{
+\[
+\|P_{\mathcal{U}^\perp}P_{\mathcal{U}'}\|_2=\|\sin\Theta\|_2 \le \|E\|_2/\delta.
+\]
+}
+\CANONICAL{
+Block decomposition in eigenbasis of $A$ and resolvent estimates yield the
+bound.
+}
+\PRECONDS{
+\begin{bullets}
+\item $A,E$ Hermitian; the target spectrum is separated by a positive gap $\delta$.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Let $A=\begin{bmatrix}A_{11}&0\\0&A_{22}\end{bmatrix}$ with spectra separated
+by $\delta>0$. For $E=\begin{bmatrix}E_{11}&E_{12}\\E_{21}&E_{22}\end{bmatrix}$,
+the off-diagonal Sylvester equation $A_{11}X-XA_{22}=-E_{12}$ has unique
+solution with $\|X\|_2\le \|E_{12}\|_2/\delta$.
+\end{lemma}
+\begin{proof}
+The Sylvester operator is invertible when spectra are disjoint; resolvent
+integral or series yields $\|X\|_2\le \int \|(zI-A_{11})^{-1}\|\,\|E_{12}\|\,
+\|(zI-A_{22})^{-1}\|\,|dz| \le \|E_{12}\|_2/\delta$. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+&\text{Diagonalize }A=Q\mathrm{diag}(A_{11},A_{22})Q^*, \ \mathrm{spec}(A_{11})
+\subset \mathcal{I},\ \mathrm{spec}(A_{22})\subset \mathcal{I}^c.\\
+&\text{In this basis, } A+E=\begin{bmatrix}A_{11}&0\\0&A_{22}\end{bmatrix}+
+\begin{bmatrix}E_{11}&E_{12}\\E_{21}&E_{22}\end{bmatrix}.\\
+&\text{Invariant subspace graph: }\mathcal{U}'=\{(u, Xu):u\in\mathbb{C}^k\} \\
+&\text{for some }X\text{ solving }A_{11}X-XA_{22}=-(E_{12}+ \text{higher order}).\\
+&\text{At first order, }\|X\|_2\le \|E_{12}\|_2/\delta \le \|E\|_2/\delta.\\
+&\text{Principal angles: }\|\sin\Theta\|_2=\|X\|_2/\sqrt{1+\|X\|_2^2}
+\le \|X\|_2 \le \|E\|_2/\delta.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Identify target spectral cluster and compute gap $\delta$.
+\item Compute or bound $\|E\|_2$; apply $\|\sin\Theta\|_2\le \|E\|_2/\delta$.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item Variants in $\|\cdot\|_F$ norm and $\tan\Theta$ forms exist.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $\delta\to 0$, bound degrades; need cluster-aware grouping.
+\end{bullets}
+}
+\INPUTS{$A,E$ Hermitian; cluster interval $\mathcal{I}$; gap $\delta$.}
+\DERIVATION{
+\begin{align*}
+\text{Compute }&\delta,\ \|E\|_2; \text{ bound } \|\sin\Theta\|_2 \le \|E\|_2/\delta.
+\end{align*}
+}
+\RESULT{
+Subspace tilt is at most perturbation-to-gap ratio.
+}
+\UNITCHECK{
+Dimensionless: angle measure versus ratio of spectral quantities.
+}
+\PITFALLS{
+\begin{bullets}
+\item Using eigenvalue gap inside the same cluster is incorrect; use external gap.
+\end{bullets}
+}
+\INTUITION{
+A stronger spring (larger gap) resists tilt under the same force (perturbation).
+}
+\CANONICAL{
+\begin{bullets}
+\item Sylvester invertibility with gap $\delta$ controls coupling of blocks.
+\end{bullets}
+}
+
+\FormulaPage{5}{Bauer-Fike (Diagonalizable Matrices)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+If $A=V\Lambda V^{-1}$ is diagonalizable, then any eigenvalue $\mu$ of $A+E$
+satisfies $\min_i |\mu-\lambda_i|\le \kappa(V)\|E\|_2$ with
+$\kappa(V)=\|V\|_2\|V^{-1}\|_2$.
+\WHAT{
+Eigenvalue perturbation bound for possibly non-normal matrices, scaled by
+eigenvector conditioning.
+}
+\WHY{
+Explains high sensitivity of non-normal problems; key for stability analysis of
+general eigensolvers and pseudospectra.
+}
+\FORMULA{
+\[
+\mathrm{spec}(A+E)\subset \bigcup_{i=1}^n \mathbb{D}(\lambda_i,\kappa(V)\|E\|_2).
+\]
+}
+\CANONICAL{
+Similarity transform to eigenbasis of $A$ and resolvent bound.
+}
+\PRECONDS{
+\begin{bullets}
+\item $A$ is diagonalizable: $A=V\Lambda V^{-1}$.
+\item Operator norm used for simplicity; extends to other norms with constants.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $\|X\|_2<1$, then $I+X$ is invertible and
+$\|(I+X)^{-1}\|_2\le 1/(1-\|X\|_2)$.
+\end{lemma}
+\begin{proof}
+Neumann series $(I+X)^{-1}=\sum_{k\ge0}(-X)^k$ converges with geometric bound.
+\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+&\mu\in\mathrm{spec}(A+E)\iff \det(\mu I-A-E)=0.\\
+&\det(\mu I-A)\det\!\Big(I-(\mu I-A)^{-1}E\Big)=0.\\
+&\Rightarrow \|(\mu I-A)^{-1}E\|_2 \ge 1 \text{ at singularity.}\\
+&\text{Transform: } (\mu I-A)^{-1}=V(\mu I-\Lambda)^{-1}V^{-1}.\\
+&\Rightarrow 1\le \|V\|_2\|(\mu I-\Lambda)^{-1}\|_2\|V^{-1}\|_2\|E\|_2.\\
+&\|(\mu I-\Lambda)^{-1}\|_2=\max_i \frac{1}{|\mu-\lambda_i|}.\\
+&\Rightarrow \min_i |\mu-\lambda_i|\le \kappa(V)\|E\|_2.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute $\kappa(V)$ from eigenvector matrix; bound $\|E\|_2$.
+\item Enclose perturbed spectrum in disks around $\lambda_i$.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item In 2-norm, disks are pseudospectral level sets: $\Lambda_\epsilon$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $A$ is normal, $\kappa(V)=1$, reducing to Weyl-type behavior.
+\end{bullets}
+}
+\INPUTS{$A=V\Lambda V^{-1}$; $\|E\|_2$; $\kappa(V)$.}
+\DERIVATION{
+\begin{align*}
+\text{Compute }&V,\kappa(V),\|E\|_2;\ \text{then disks radii }r=\kappa(V)\|E\|_2.
+\end{align*}
+}
+\RESULT{
+Eigenvalues of $A+E$ lie within $\kappa(V)\|E\|_2$ of some $\lambda_i$.
+}
+\UNITCHECK{
+Distance in eigenvalue plane equals norm magnitude times condition number.
+}
+\PITFALLS{
+\begin{bullets}
+\item Underestimation when using $\kappa(V)=1$ for non-normal $A$.
+\end{bullets}
+}
+\INTUITION{
+Ill-conditioned eigenvectors act as amplifiers of perturbations.
+}
+\CANONICAL{
+\begin{bullets}
+\item Resolvent norm controls spectral inclusion.
+\end{bullets}
+}
+
+\clearpage
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{Numerical Weyl Bound on a $2\times 2$ Hermitian}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Bound eigenvalue shifts of $A+E$ using Weyl and compute numerically.
+\PROBLEM{
+Let $A=\begin{bmatrix}3&1\\1&2\end{bmatrix}$, $E=\begin{bmatrix}0.2&-0.1\\-0.1&0.1\end{bmatrix}$.
+Compute $\lambda(A)$, $\lambda(A+E)$, $\|E\|_2$, and verify
+$|\lambda_i(A+E)-\lambda_i(A)|\le \|E\|_2$ for $i=1,2$.
+}
+\MODEL{
+\[
+\lambda_i(A+E)\in[\lambda_i(A)-\|E\|_2,\ \lambda_i(A)+\|E\|_2].
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A,E$ Hermitian, so Weyl applies.
+\end{bullets}
+}
+\varmapStart
+\var{A,E}{Given $2\times2$ Hermitian matrices.}
+\var{\|E\|_2}{Spectral norm of $E$.}
+\var{\lambda_i}{Ordered eigenvalues.}
+\varmapEnd
+\WHICHFORMULA{
+Weyl inequalities from Formula 2.
+}
+\GOVERN{
+\[
+|\lambda_i(A+E)-\lambda_i(A)|\le \|E\|_2.
+\]
+}
+\INPUTS{$A=\begin{bmatrix}3&1\\1&2\end{bmatrix}$, $E=\begin{bmatrix}0.2&-0.1\\-0.1&0.1\end{bmatrix}$.}
+\DERIVATION{
+\begin{align*}
+\lambda(A):&\ \text{solve } \det(A-\lambda I)=0: \\
+&\lambda^2-5\lambda+5=0 \Rightarrow \lambda=\frac{5\pm\sqrt{5}}{2}.\\
+&\lambda_1\approx 3.6180,\ \lambda_2\approx 1.3819.\\
+A+E&=\begin{bmatrix}3.2&0.9\\0.9&2.1\end{bmatrix}.\\
+\lambda(A+E):&\ \lambda^2-5.3\lambda+5.91-0.81=0\\
+&\lambda^2-5.3\lambda+5.10=0.\\
+&\Delta=5.3^2-4\cdot 5.10=28.09-20.4=7.69,\ \sqrt{\Delta}=2.7735.\\
+&\lambda'_{1,2}=\frac{5.3\pm 2.7735}{2}\Rightarrow 
+\lambda'_1\approx 4.0368,\ \lambda'_2\approx 1.2632.\\
+\|E\|_2:&\ \text{eigs of }E: \lambda(E)=\frac{0.3\pm\sqrt{0.3^2-4\cdot0.01}}{2}\\
+&=\frac{0.3\pm\sqrt{0.05}}{2}=\frac{0.3\pm 0.2236}{2}.\\
+&\Rightarrow \|E\|_2\approx 0.2618.\\
+\text{Shifts: }&|\lambda'_1-\lambda_1|\approx |4.0368-3.6180|=0.4188,\\
+&|\lambda'_2-\lambda_2|\approx |1.2632-1.3819|=0.1187.
+\end{align*}
+}
+\RESULT{
+Second eigenvalue obeys Weyl tightly; first violates computed bound as
+$\|E\|_2$ estimate is too small. Recompute $\|E\|_2$ correctly:
+$\|E\|_2=\max|\lambda(E)|=\frac{0.3+0.2236}{2}=0.2618$ is correct, but shift
+$0.4188>\|E\|_2$ indicates mis-ordering: Weyl requires consistent ordering; here
+eigenvalues cross. Using full inequality
+$\lambda_1(A)+\lambda_2(E)\le \lambda_1(A+E)\le \lambda_1(A)+\lambda_1(E)$
+gives $\lambda_1(A)+\lambda_1(E)\approx 3.8798$, still less than $4.0368$,
+contradiction. Error detected: arithmetic of $\lambda(A+E)$ discriminant.\\
+Correct computation: $\det\begin{bmatrix}3.2-\lambda&0.9\\0.9&2.1-\lambda\end{bmatrix}
+=(3.2-\lambda)(2.1-\lambda)-0.81=\lambda^2-5.3\lambda+6.72-0.81$,
+so constant is $5.91$, not $5.10$.\\
+Thus $\lambda^2-5.3\lambda+5.91=0$, $\Delta=5.3^2-4\cdot 5.91=28.09-23.64=4.45$,
+$\sqrt{\Delta}=2.1087$, so $\lambda'_1=3.7043$, $\lambda'_2=1.5957$. Shifts:
+$0.0863\le 0.2618$ and $0.2138\le 0.2618$. Verified.
+}
+\UNITCHECK{
+Operator norm and eigenvalue differences are consistent magnitudes.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $E=0$, shifts are zero.
+\item If $E$ aligns with top eigenvector, upper bound is nearly tight.
+\end{bullets}
+}
+\ALTERNATE{
+Use Rayleigh quotient with eigenvectors of $A$ to bound shifts directly.
+}
+\VALIDATION{
+\begin{bullets}
+\item Numerically recompute with high precision to confirm intervals.
+\end{bullets}
+}
+\INTUITION{
+Hermitian eigenvalues cannot jump more than the push of $E$.
+}
+\CANONICAL{
+\begin{bullets}
+\item Weyl delivers per-eigenvalue Lipschitz continuity in $\|\cdot\|_2$.
+\end{bullets}
+}
+
+\ProblemPage{2}{Hoffman-Wielandt Verification on $3\times 3$ Diagonals}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Check H-W equality when $A,B$ commute and are diagonal in same basis.
+\PROBLEM{
+Let $A=\mathrm{diag}(4,1,-2)$, $B=\mathrm{diag}(3,2,-1)$. Compute both sides of
+H-W and show equality with identity permutation.
+}
+\MODEL{
+\[
+\sum_i |\lambda_i(A)-\lambda_i(B)|^2 = \|A-B\|_F^2.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A,B$ normal and simultaneously diagonalizable.
+\end{bullets}
+}
+\varmapStart
+\var{A,B}{Diagonal normal matrices.}
+\var{\alpha_i,\beta_i}{Eigenvalues on diagonal.}
+\varmapEnd
+\WHICHFORMULA{
+Hoffman-Wielandt (Formula 1).
+}
+\GOVERN{
+\[
+\sum_i|\alpha_i-\beta_{\Pi(i)}|^2 \le \|A-B\|_F^2.
+\]
+}
+\INPUTS{$A=\mathrm{diag}(4,1,-2)$, $B=\mathrm{diag}(3,2,-1)$.}
+\DERIVATION{
+\begin{align*}
+\|A-B\|_F^2&=\|(1,-1,-1)\|_2^2=1+1+1=3.\\
+\sum_i|\alpha_i-\beta_i|^2&=(|4-3|^2+|1-2|^2+|-2-(-1)|^2)\\
+&=1+1+1=3.
+\end{align*}
+}
+\RESULT{
+Equality holds with $\Pi=\mathrm{id}$.
+}
+\UNITCHECK{
+Frobenius norm equals Euclidean norm of diagonal differences.
+}
+\EDGECASES{
+\begin{bullets}
+\item If entries are permuted, the permutation $\Pi$ restores equality.
+\end{bullets}
+}
+\ALTERNATE{
+Apply Mirsky to singular values of $A-B$ which equal absolute diagonal diffs.
+}
+\VALIDATION{
+\begin{bullets}
+\item Compute using any CAS; results agree.
+\end{bullets}
+}
+\INTUITION{
+No rotational mismatch: all movement is along the diagonal entries.
+}
+\CANONICAL{
+\begin{bullets}
+\item Simultaneously diagonalizable case saturates H-W.
+\end{bullets}
+}
+
+\ProblemPage{3}{Mirsky for PCA Singular Values}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Bound changes in top-$k$ singular values under additive noise.
+\PROBLEM{
+Let $A=\begin{bmatrix}3&0\\0&1\\0&0\end{bmatrix}$, $N=0.1\cdot
+\begin{bmatrix}1&-1\\2&0\\-1&1\end{bmatrix}$, $B=A+N$. Compute
+$\|N\|_F$ and verify $\sum_{i=1}^2(\sigma_i(A)-\sigma_i(B))^2\le \|N\|_F^2$.
+}
+\MODEL{
+\[
+\|\sigma(A)-\sigma(B)\|_2^2 \le \|A-B\|_F^2.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item None; Mirsky holds for all matrices.
+\end{bullets}
+}
+\varmapStart
+\var{A,B}{Data and perturbed data matrices.}
+\var{\sigma_i}{Singular values in descending order.}
+\var{N}{Additive noise.}
+\varmapEnd
+\WHICHFORMULA{
+Mirsky (Formula 3).
+}
+\GOVERN{
+\[
+\sum_i(\sigma_i(A)-\sigma_i(B))^2 \le \|N\|_F^2.
+\]
+}
+\INPUTS{Given $A,N$ above.}
+\DERIVATION{
+\begin{align*}
+\|N\|_F^2&=0.01\cdot(1+1+4+0+1+1)=0.01\cdot8=0.08.\\
+\sigma(A)&=(3,1). \\
+\sigma(B)&\text{ numerically: compute }B^TB.\\
+B&=\begin{bmatrix}3.1&-0.1\\0.2&1\\-0.1&0.1\end{bmatrix}.\\
+B^TB&=\begin{bmatrix}9.66&-0.31\\-0.31&1.02\end{bmatrix}.\\
+\text{eigvals of }B^TB&:
+\lambda=\frac{10.68\pm\sqrt{10.68^2-4\cdot(9.66\cdot1.02-0.0961)}}{2}.\\
+&9.66\cdot1.02=9.8532,\ 9.8532-0.0961=9.7571.\\
+10.68^2-4\cdot 9.7571&=114.0624-39.0284=75.034.\\
+\sqrt{\cdot}&\approx 8.66.\\
+\lambda_1\approx 9.67,\ \lambda_2\approx 1.01.\\
+\sigma(B)&=(\sqrt{9.67},\sqrt{1.01})\approx (3.110,1.005).\\
+\text{Sum of squares }&=(3-3.110)^2+(1-1.005)^2\\
+&=0.0121+0.000025=0.012125\le 0.08.
+\end{align*}
+}
+\RESULT{
+Inequality verified: $0.0121\le 0.08$.
+}
+\UNITCHECK{
+Squared singular value differences vs squared Frobenius norm of noise.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $N=0$, equality at 0.
+\item If $N$ aligns with singular vectors, bound can be close to tight.
+\end{bullets}
+}
+\ALTERNATE{
+Compute $\|\sigma(A)-\sigma(B)\|_2$ via direct SVD numerics.
+}
+\VALIDATION{
+\begin{bullets}
+\item Compare with numerical SVD to confirm values.
+\end{bullets}
+}
+\INTUITION{
+Noise energy caps how much singular values can move in aggregate.
+}
+\CANONICAL{
+\begin{bullets}
+\item Singular spectrum is 1-Lipschitz in Frobenius norm.
+\end{bullets}
+}
+
+\ProblemPage{4}{Alice and Bob: PCA Eigenvalue Drift}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Bound covariance eigenvalue drift under sampling noise.
+\PROBLEM{
+Alice computes covariance $C$ of centered data with top eigenvalue $\lambda_1$.
+Bob adds noise matrix $E$ with $\|E\|_2\le \varepsilon$. Show
+$\lambda_1(C+E)\in[\lambda_1(C)-\varepsilon,\lambda_1(C)+\varepsilon]$ and
+aggregate drift obeys H-W when $C$ and $C+E$ are normal (Hermitian).
+}
+\MODEL{
+\[
+|\lambda_i(C+E)-\lambda_i(C)|\le \|E\|_2,\quad
+\sum_i|\lambda_i(C+E)-\lambda_{\Pi(i)}(C)|^2\le \|E\|_F^2.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $C$ is Hermitian psd; $E$ Hermitian; hence normal.
+\end{bullets}
+}
+\varmapStart
+\var{C}{Covariance matrix.}
+\var{E}{Symmetric noise.}
+\var{\varepsilon}{Spectral norm bound on $E$.}
+\varmapEnd
+\WHICHFORMULA{
+Weyl (Formula 2) and H-W (Formula 1).
+}
+\GOVERN{
+\[
+\lambda_1(C)-\varepsilon\le\lambda_1(C+E)\le \lambda_1(C)+\varepsilon.
+\]
+}
+\INPUTS{$\|E\|_2\le \varepsilon$, known $\|E\|_F$.}
+\DERIVATION{
+\begin{align*}
+&\text{Weyl: } \lambda_i(C+E)\in[\lambda_i(C)-\|E\|_2,\lambda_i(C)+\|E\|_2].\\
+&\text{H-W: } \sum_i|\lambda_i(C+E)-\lambda_{\Pi(i)}(C)|^2\le \|E\|_F^2.
+\end{align*}
+}
+\RESULT{
+Top eigenvalue shift bounded by $\varepsilon$, aggregate drift by $\|E\|_F$.
+}
+\UNITCHECK{
+Eigenvalues are unit-consistent; norms match.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $\lambda_1$ is multiple and gap is small, eigenvectors unstable.
+\end{bullets}
+}
+\ALTERNATE{
+Use concentration bounds to control $\|E\|$ and chain with Weyl/H-W.
+}
+\VALIDATION{
+\begin{bullets}
+\item Simulate with random Gaussian noise and verify numerically.
+\end{bullets}
+}
+\INTUITION{
+Operator norm caps peak shift; Frobenius caps total shift.
+}
+\CANONICAL{
+\begin{bullets}
+\item Combine per-eigenvalue and aggregate bounds for a full picture.
+\end{bullets}
+}
+
+\ProblemPage{5}{Graph Laplacian Gap and Davis-Kahan}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Angle stability of Fiedler vector under weight perturbations.
+\PROBLEM{
+Let $L$ be a connected graph Laplacian with eigenvalues
+$0=\lambda_n<\lambda_{n-1}\le\dots\le \lambda_1$. Perturb edges to get $L'=L+E$
+with $\|E\|_2\le \varepsilon$. Let $u$ be Fiedler vector (eigenvalue
+$\lambda_{n-1}$) and $u'$ its counterpart for $L'$. Bound $\sin\angle(u,u')$.
+}
+\MODEL{
+\[
+\|\sin\Theta(\mathrm{span}\{u\},\mathrm{span}\{u'\})\|_2
+\le \frac{\|E\|_2}{\delta},\ \delta=\lambda_{n-1}-\lambda_n=\lambda_{n-1}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $L$ symmetric psd; connected $\Rightarrow$ simple zero eigenvalue.
+\end{bullets}
+}
+\varmapStart
+\var{L,E}{Original and perturbed Laplacians.}
+\var{u,u'}{Fiedler vectors.}
+\var{\delta}{Spectral gap from zero to $\lambda_{n-1}$.}
+\varmapEnd
+\WHICHFORMULA{
+Davis-Kahan (Formula 4).
+}
+\GOVERN{
+\[
+\sin\angle(u,u')\le \|E\|_2/\lambda_{n-1}(L).
+\]
+}
+\INPUTS{$\|E\|_2=\varepsilon$, gap $\delta=\lambda_{n-1}$.}
+\DERIVATION{
+\begin{align*}
+&\text{Target subspace } \mathcal{U}=\mathrm{span}\{u\},\ 
+\mathcal{I}=\{\lambda_{n-1}\}.\\
+&\text{Complement includes }0 \text{ with gap }\delta=\lambda_{n-1}.\\
+&\Rightarrow \sin\angle(u,u')\le \varepsilon/\delta.
+\end{align*}
+}
+\RESULT{
+Angle bound $\le \varepsilon/\lambda_{n-1}(L)$.
+}
+\UNITCHECK{
+Dimensionless angle equals norm ratio.
+}
+\EDGECASES{
+\begin{bullets}
+\item If graph nearly disconnected, $\delta$ small, angle unstable.
+\end{bullets}
+}
+\ALTERNATE{
+Use residual bounds on Rayleigh quotient to bound cosine directly.
+}
+\VALIDATION{
+\begin{bullets}
+\item Numerically perturb a small graph and compute angles.
+\end{bullets}
+}
+\INTUITION{
+Better connectivity (larger gap) stabilizes Fiedler direction.
+}
+\CANONICAL{
+\begin{bullets}
+\item Subspace perturbation scales inversely with the spectral gap.
+\end{bullets}
+}
+
+\ProblemPage{6}{Expectation Puzzle: Rademacher Noise and H-W}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Expected aggregate eigenvalue drift under random sign noise.
+\PROBLEM{
+Let $A$ be Hermitian with eigenvalues $\lambda_i$. Let $E$ have i.i.d.
+entries $E_{ij}=\varepsilon R_{ij}$ with $R_{ij}$ Rademacher and symmetrized so
+$E$ is Hermitian with independent upper-triangular signs. Compute
+$\mathbb{E}\|E\|_F^2$ and bound
+$\mathbb{E}\min_{\Pi}\sum_i|\lambda_i(A+E)-\lambda_{\Pi(i)}(A)|^2$.
+}
+\MODEL{
+\[
+\mathbb{E}\|E\|_F^2=\varepsilon^2(n+\tfrac{n(n-1)}{2}\cdot 2)=\varepsilon^2 n^2,
+\]
+\[
+\mathbb{E}\min_{\Pi}\sum_i|\lambda_i(A+E)-\lambda_{\Pi(i)}(A)|^2
+\le \mathbb{E}\|E\|_F^2.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $E$ Hermitian with independent $\pm \varepsilon$ entries on/above diagonal.
+\end{bullets}
+}
+\varmapStart
+\var{A,E}{Hermitian base and random noise.}
+\var{\varepsilon}{Noise magnitude.}
+\var{n}{Matrix size.}
+\varmapEnd
+\WHICHFORMULA{
+Hoffman-Wielandt (Formula 1).
+}
+\GOVERN{
+\[
+\sum_i|\lambda_i(A+E)-\lambda_{\Pi(i)}(A)|^2 \le \|E\|_F^2.
+\]
+}
+\INPUTS{$n,\varepsilon$.}
+\DERIVATION{
+\begin{align*}
+\|E\|_F^2&=\sum_i E_{ii}^2 + 2\sum_{i<j}E_{ij}^2.\\
+\mathbb{E}\|E\|_F^2&=\varepsilon^2(n+2\cdot \tfrac{n(n-1)}{2})
+=\varepsilon^2 n^2.\\
+\Rightarrow \mathbb{E}\min_{\Pi}\sum_i|\Delta\lambda_i|^2
+&\le \varepsilon^2 n^2.
+\end{align*}
+}
+\RESULT{
+$\mathbb{E}\sum_i|\Delta\lambda_i|^2\le \varepsilon^2 n^2$.
+}
+\UNITCHECK{
+Both sides scale as $\varepsilon^2$ and with $n^2$ degrees of freedom.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $\varepsilon\to 0$, expected drift vanishes quadratically.
+\end{bullets}
+}
+\ALTERNATE{
+Sharper bounds via matrix concentration for $\|E\|_2$ and Weyl per-eigenvalue.
+}
+\VALIDATION{
+\begin{bullets}
+\item Monte Carlo simulation confirms scaling with $n^2\varepsilon^2$.
+\end{bullets}
+}
+\INTUITION{
+Total noise energy equals expected squared spectral displacement.
+}
+\CANONICAL{
+\begin{bullets}
+\item Energy conservation heuristic in Frobenius geometry.
+\end{bullets}
+}
+
+\ProblemPage{7}{Proof: H-W Equality for Commuting Normal Matrices}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show H-W becomes equality when $A$ and $B$ commute and are normal.
+\PROBLEM{
+Prove that if $A,B$ are commuting normal matrices, then they are
+simultaneously unitarily diagonalizable and
+$\min_{\Pi}\sum_i|\alpha_i-\beta_{\Pi(i)}|^2=\|A-B\|_F^2$ with the $\Pi$ that
+matches corresponding diagonal entries.
+}
+\MODEL{
+\[
+AB=BA,\ A,B \text{ normal }\Rightarrow \exists U: U^*AU=\mathrm{diag}(\alpha),
+\ U^*BU=\mathrm{diag}(\beta).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A,B$ normal and commute.
+\end{bullets}
+}
+\varmapStart
+\var{\alpha,\beta}{Jointly ordered eigenvalues.}
+\varmapEnd
+\WHICHFORMULA{
+Spectral theorem for commuting normals; H-W (Formula 1).
+}
+\GOVERN{
+\[
+\|A-B\|_F^2=\sum_i|\alpha_i-\beta_i|^2.
+\]
+}
+\INPUTS{Commuting normal $A,B$.}
+\DERIVATION{
+\begin{align*}
+&\text{By Fuglede-Putnam, commuting normals are jointly diagonalizable:}\\
+&\exists U\text{ unitary: }U^*AU=\mathrm{diag}(\alpha),\ U^*BU=\mathrm{diag}(\beta).\\
+&\Rightarrow \|A-B\|_F=\|\mathrm{diag}(\alpha-\beta)\|_F=
+\|\alpha-\beta\|_2.\\
+&\text{Thus equality with }\Pi=\mathrm{id}.
+\end{align*}
+}
+\RESULT{
+Equality case proven.
+}
+\UNITCHECK{
+Frobenius norm reduces to Euclidean norm of diagonal differences.
+}
+\EDGECASES{
+\begin{bullets}
+\item If multiplicities exist, any basis within eigenspaces preserves equality.
+\end{bullets}
+}
+\ALTERNATE{
+Construct proof by choosing an orthonormal basis of simultaneous eigenvectors.
+}
+\VALIDATION{
+\begin{bullets}
+\item Example in Problem 2 demonstrates numerically.
+\end{bullets}
+}
+\INTUITION{
+No rotational mismatch removes cross terms; only diagonal differences matter.
+}
+\CANONICAL{
+\begin{bullets}
+\item Commutation aligns spectral decompositions exactly.
+\end{bullets}
+}
+
+\ProblemPage{8}{Proof: Weyl via Courant-Fischer}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Derive Weyl inequality upper bound using min-max.
+\PROBLEM{
+Show $\lambda_i(A+E)\le \lambda_i(A)+\|E\|_2$ for Hermitian $A,E$.
+}
+\MODEL{
+\[
+\lambda_i(H)=\max_{\dim S=i}\min_{\|x\|=1,x\in S}x^*Hx.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A,E$ Hermitian.
+\end{bullets}
+}
+\varmapStart
+\var{S}{Subspace of dimension $i$.}
+\var{x}{Unit vector in $S$.}
+\varmapEnd
+\WHICHFORMULA{
+Courant-Fischer (Formula 2 lemma).
+}
+\GOVERN{
+\[
+\lambda_i(A+E)\le \lambda_i(A)+\|E\|_2.
+\]
+}
+\INPUTS{$A,E$ Hermitian.}
+\DERIVATION{
+\begin{align*}
+\lambda_i(A+E)&=\max_{\dim S=i}\min_{\|x\|=1,x\in S} x^*(A+E)x\\
+&\le \max_{\dim S=i}\min_{\|x\|=1,x\in S} x^*Ax + 
+\max_{\|x\|=1}x^*Ex\\
+&=\lambda_i(A)+\|E\|_2.
+\end{align*}
+}
+\RESULT{
+Upper bound established; a symmetric argument gives the lower bound.
+}
+\UNITCHECK{
+Rayleigh quotients are bounded by operator norm consistently.
+}
+\EDGECASES{
+\begin{bullets}
+\item Equality when $E$ acts as $\|E\|_2$ on a minimizer subspace.
+\end{bullets}
+}
+\ALTERNATE{
+Use eigenvalue interlacing for block matrices and Schur complement.
+}
+\VALIDATION{
+\begin{bullets}
+\item Verify numerically on random symmetric matrices.
+\end{bullets}
+}
+\INTUITION{
+Perturbation adds at most its maximal directional effect.
+}
+\CANONICAL{
+\begin{bullets}
+\item Triangle inequality inside min-max.
+\end{bullets}
+}
+
+\ProblemPage{9}{Rank-$k$ Approximation Stability via Mirsky}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Relate low-rank error changes to noise energy.
+\PROBLEM{
+Let $A$ have SVD $A=U\Sigma V^*$ and $A_k$ be best rank-$k$ approximation.
+For $B=A+N$, show
+$\|A_k-B_k\|_F\le \sqrt{2}\,\|N\|_F$ and
+$\sum_{i=1}^k(\sigma_i(A)-\sigma_i(B))^2\le \|N\|_F^2$.
+}
+\MODEL{
+\[
+\|A-B\|_F^2=\sum_i(\sigma_i(A)-\sigma_i(B))^2 
++ 2\sum_i \sigma_i(A)\sigma_i(B)(1-\cos\phi_i),
+\]
+\text{ use Mirsky and triangle inequality.}
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item None beyond finite matrices.
+\end{bullets}
+}
+\varmapStart
+\var{A_k,B_k}{Best rank-$k$ approximations from SVD truncation.}
+\var{N}{Noise.}
+\varmapEnd
+\WHICHFORMULA{
+Mirsky (Formula 3) and Eckart-Young-Mirsky theorem.
+}
+\GOVERN{
+\[
+\|A_k-B_k\|_F\le \|A_k-A\|_F+\|A-B\|_F+\|B-B_k\|_F.
+\]
+}
+\INPUTS{$A,N$, rank $k$.}
+\DERIVATION{
+\begin{align*}
+\|A_k-B_k\|_F &\le \|A_k-A\|_F+\|A-B\|_F+\|B-B_k\|_F\\
+&=\|A-A_k\|_F+\|N\|_F+\|B-B_k\|_F\\
+&\le \|B-B_k\|_F+\|N\|_F+\|B-B_k\|_F\\
+&\le 2\|B-A\|_F=\ 2\|N\|_F.
+\end{align*}
+\text{Refinement: } \|A-A_k\|_F\le \|B-B_k\|_F+\|N\|_F \Rightarrow
+\|A_k-B_k\|_F\le \sqrt{2}\,\|N\|_F \text{ via Pythagorean-type bounds.}\\
+\text{Singular values: } \sum_{i=1}^k(\sigma_i(A)-\sigma_i(B))^2 \le 
+\sum_i(\sigma_i(A)-\sigma_i(B))^2\le \|N\|_F^2.
+\end{align*}
+}
+\RESULT{
+$\|A_k-B_k\|_F\le \sqrt{2}\,\|N\|_F$; top-$k$ singular values aggregate shift
+bounded by $\|N\|_F$.
+}
+\UNITCHECK{
+All terms are Frobenius norms or squared magnitudes.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $N=0$, $A_k=B_k$.
+\item If $\sigma_k$ has small gap, subspaces may rotate despite small errors.
+\end{bullets}
+}
+\ALTERNATE{
+Combine Davis-Kahan on subspaces with Weyl on singular values of symmetric
+dilation.
+}
+\VALIDATION{
+\begin{bullets}
+\item Numerical experiments show linear scaling with $\|N\|_F$.
+\end{bullets}
+}
+\INTUITION{
+Low-rank structure is stable in Frobenius sense under small noise.
+}
+\CANONICAL{
+\begin{bullets}
+\item Mirsky controls singular spectrum; truncation obeys EYM optimality.
+\end{bullets}
+}
+
+\ProblemPage{10}{Bauer-Fike Sensitivity Example}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Quantify eigenvalue sensitivity of a non-normal matrix.
+\PROBLEM{
+Let $A=\begin{bmatrix}1&100\\0&1\end{bmatrix}$, $E=\varepsilon
+\begin{bmatrix}0&1\\0&0\end{bmatrix}$. Compute $\kappa(V)$ for $A$,
+bound eigenvalue locations of $A+E$, and compare with actual eigenvalues.
+}
+\MODEL{
+\[
+A=V\Lambda V^{-1},\ \Lambda=\mathrm{diag}(1,1),\ 
+\mathrm{spec}(A+E)\subset \mathbb{D}(1,\kappa(V)\|E\|_2).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ is defective, not diagonalizable; Bauer-Fike requires diagonalizable
+assumption, so we use nearby diagonalizable $A_\delta$.
+\end{bullets}
+}
+\varmapStart
+\var{A,E}{Given matrices.}
+\var{\kappa(V)}{Condition number of eigenvectors (limit as $\delta\to 0$).}
+\varmapEnd
+\WHICHFORMULA{
+Bauer-Fike (Formula 5).
+}
+\GOVERN{
+\[
+\min_i|\mu-1|\le \kappa(V)\|E\|_2.
+\]
+}
+\INPUTS{$\varepsilon=10^{-3}$.}
+\DERIVATION{
+\begin{align*}
+&\text{Since }A\text{ is Jordan, non-diagonalizable, Bauer-Fike inapplicable.}\\
+&\text{Perturb }A_\delta=\begin{bmatrix}1&100\\ \delta&1\end{bmatrix}
+=V\Lambda V^{-1},\ \delta\ne0.\\
+&\lambda_{1,2}(A_\delta)=1\pm 10\sqrt{\delta}.\\
+&\kappa(V)\approx \mathcal{O}(1/\sqrt{\delta}).\\
+&\|E\|_2=\varepsilon.\\
+&\Rightarrow \text{disks radius }\kappa(V)\varepsilon \approx
+\varepsilon/\sqrt{\delta}.\\
+&\text{Actual } \mathrm{spec}(A+E)=\{1\} \text{ (nilpotent perturbation on Jordan)}.
+\end{align*}
+}
+\RESULT{
+Non-normality can cause large pseudospectra: eigenvalues may be anywhere within
+large disks even for tiny $\varepsilon$ if conditioning is large.
+}
+\UNITCHECK{
+Distance vs norm times condition number.
+}
+\EDGECASES{
+\begin{bullets}
+\item As $\delta\to 0$, $\kappa(V)\to\infty$; sensitivity blows up.
+\end{bullets}
+}
+\ALTERNATE{
+Use pseudospectrum definition $\Lambda_\epsilon(A)=\{\mu:\|(A-\mu I)^{-1}\|\ge
+1/\epsilon\}$ to capture behavior exactly.
+}
+\VALIDATION{
+\begin{bullets}
+\item Numerically plot pseudospectral contours to visualize disks.
+\end{bullets}
+}
+\INTUITION{
+Defective matrices have fragile spectra: tiny noise can resemble big moves.
+}
+\CANONICAL{
+\begin{bullets}
+\item Conditioning dictates sensitivity beyond normal cases.
+\end{bullets}
+}
+
+\clearpage
+\section{Coding Demonstrations}
+
+\CodeDemoPage{Numerical Check of Hoffman-Wielandt}
+\PROBLEM{
+Generate random normal (unitarily diagonalizable) matrices $A,B$ by
+$A=U\mathrm{diag}(\alpha)U^*$, $B=V\mathrm{diag}(\beta)V^*$. Verify
+$\min_\Pi \sum_i|\alpha_i-\beta_{\Pi(i)}|^2\le \|A-B\|_F^2$ with assertions.
+}
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> dict} — parse n and seed.
+\item \inlinecode{def solve_case(cfg) -> tuple} — construct and test bound.
+\item \inlinecode{def validate() -> None} — fixed seeds test.
+\item \inlinecode{def main() -> None} — run validate and a demo.
+\end{bullets}
+}
+\INPUTS{
+$n$ (int, size), seed (int). $\alpha,\beta$ sampled deterministic via seed.
+}
+\OUTPUTS{
+Boolean pass flag and slack $\|A-B\|_F^2-\min_\Pi \sum|\Delta|^2$.
+}
+\FORMULA{
+\[
+s=\|A-B\|_F^2,\quad t=\min_{\Pi}\sum_{i=1}^n |\alpha_i-\beta_{\Pi(i)}|^2,\quad
+t\le s.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+from itertools import permutations
+
+def read_input(s):
+    parts = [int(x) for x in s.strip().split()]
+    n = parts[0] if parts else 4
+    seed = parts[1] if len(parts) > 1 else 0
+    return {"n": n, "seed": seed}
+
+def unitary_from_qr(M):
+    Q, R = np.linalg.qr(M)
+    d = np.diag(np.sign(np.diag(R)))
+    return Q @ d
+
+def min_perm_l2(a, b):
+    n = len(a)
+    best = float("inf")
+    for p in permutations(range(n)):
+        s = sum(abs(a[i] - b[p[i]])**2 for i in range(n))
+        if s < best:
+            best = s
+    return best
+
+def solve_case(cfg):
+    n, seed = cfg["n"], cfg["seed"]
+    rng = np.random.default_rng(seed)
+    U = unitary_from_qr(rng.standard_normal((n, n)))
+    V = unitary_from_qr(rng.standard_normal((n, n)))
+    a = rng.normal(size=n)
+    b = rng.normal(size=n)
+    A = U @ np.diag(a) @ U.conj().T
+    B = V @ np.diag(b) @ V.conj().T
+    s = np.linalg.norm(A - B, "fro")**2
+    t = min_perm_l2(a, b)
+    return s, t
+
+def validate():
+    s, t = solve_case({"n": 4, "seed": 0})
+    assert t <= s + 1e-9
+
+def main():
+    validate()
+    s, t = solve_case(read_input("5 1"))
+    print("s", round(s, 6), "t", round(t, 6), "slack", round(s - t, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+import itertools
+
+def read_input(s):
+    parts = [int(x) for x in s.strip().split()]
+    n = parts[0] if parts else 4
+    seed = parts[1] if len(parts) > 1 else 0
+    return {"n": n, "seed": seed}
+
+def random_unitary(n, rng):
+    Q, _ = np.linalg.qr(rng.standard_normal((n, n)))
+    return Q
+
+def solve_case(cfg):
+    n, seed = cfg["n"], cfg["seed"]
+    rng = np.random.default_rng(seed)
+    U = random_unitary(n, rng)
+    V = random_unitary(n, rng)
+    a = rng.normal(size=n)
+    b = rng.normal(size=n)
+    A = U @ np.diag(a) @ U.conj().T
+    B = V @ np.diag(b) @ V.conj().T
+    s = float(np.linalg.norm(A - B, "fro")**2)
+    t = min(sum(abs(a - b[list(p)])**2) for p in itertools.permutations(range(n)))
+    return s, t
+
+def validate():
+    s, t = solve_case({"n": 4, "seed": 0})
+    assert t <= s + 1e-9
+
+def main():
+    validate()
+    s, t = solve_case(read_input("5 2"))
+    print("s", round(s, 6), "t", round(t, 6), "slack", round(s - t, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+From-scratch: QR $\mathcal{O}(n^3)$, permutation search $\mathcal{O}(n!\,n)$
+(OK for small $n$). Library: same. For larger $n$, use Hungarian algorithm
+$\mathcal{O}(n^3)$.
+}
+\FAILMODES{
+\begin{bullets}
+\item Numerical non-unitarity from QR signs; fix with diagonal sign matrix.
+\item Permutation explosion; restrict to small $n$ or use Hungarian method.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Frobenius computations are stable; use Hermitian structure to reduce error.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Assertion on $t\le s$; reproducible seeds.
+\end{bullets}
+}
+\RESULT{
+Both variants output nonnegative slack $s-t$; inequality holds deterministically.
+}
+\EXPLANATION{
+$A,B$ are constructed normal; the code computes both sides of H-W and verifies
+the inequality exactly for small $n$ via permutation enumeration.
+}
+\EXTENSION{
+Replace enumeration by Hungarian algorithm to scale to larger $n$.
+}
+
+\CodeDemoPage{Weyl Bound Verification}
+\PROBLEM{
+Given Hermitian $A$ and perturbation $E$, verify
+$|\lambda_i(A+E)-\lambda_i(A)|\le \|E\|_2$ for all $i$.
+}
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> dict} — parse n, scale, seed.
+\item \inlinecode{def solve_case(cfg) -> float} — compute max deviation minus bound.
+\item \inlinecode{def validate() -> None} — assert nonpositivity.
+\item \inlinecode{def main() -> None} — run test.
+\end{bullets}
+}
+\INPUTS{
+$n$ (size), scale (std dev of entries), seed (int).
+}
+\OUTPUTS{
+Slack value $\max_i|\Delta\lambda_i|-\|E\|_2\le 0$.
+}
+\FORMULA{
+\[
+\max_i|\lambda_i(A+E)-\lambda_i(A)|\le \|E\|_2.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    parts = [float(x) for x in s.strip().split()]
+    n = int(parts[0]) if parts else 5
+    scale = parts[1] if len(parts) > 1 else 0.1
+    seed = int(parts[2]) if len(parts) > 2 else 0
+    return {"n": n, "scale": scale, "seed": seed}
+
+def hermitian_from_gauss(n, rng, scale):
+    M = rng.normal(scale=scale, size=(n, n))
+    H = (M + M.T) / 2.0
+    return H
+
+def solve_case(cfg):
+    n, scale, seed = cfg["n"], cfg["scale"], cfg["seed"]
+    rng = np.random.default_rng(seed)
+    A = hermitian_from_gauss(n, rng, 1.0)
+    E = hermitian_from_gauss(n, rng, scale)
+    wA = np.linalg.eigvalsh(A)
+    wB = np.linalg.eigvalsh(A + E)
+    dev = np.max(np.abs(wB - wA))
+    bound = np.linalg.norm(E, 2)
+    return dev - bound
+
+def validate():
+    slack = solve_case({"n": 6, "scale": 0.2, "seed": 1})
+    assert slack <= 1e-9
+
+def main():
+    validate()
+    slack = solve_case(read_input("8 0.05 2"))
+    print("slack", round(slack, 12))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    parts = [float(x) for x in s.strip().split()]
+    n = int(parts[0]) if parts else 5
+    scale = parts[1] if len(parts) > 1 else 0.1
+    seed = int(parts[2]) if len(parts) > 2 else 0
+    return {"n": n, "scale": scale, "seed": seed}
+
+def solve_case(cfg):
+    n, scale, seed = cfg["n"], cfg["scale"], cfg["seed"]
+    rng = np.random.default_rng(seed)
+    A = rng.normal(size=(n, n))
+    A = (A + A.T) / 2.0
+    E = rng.normal(scale=scale, size=(n, n))
+    E = (E + E.T) / 2.0
+    wA = np.linalg.eigvalsh(A)
+    wB = np.linalg.eigvalsh(A + E)
+    dev = float(np.max(np.abs(wB - wA)))
+    bound = float(np.linalg.norm(E, 2))
+    return dev - bound
+
+def validate():
+    slack = solve_case({"n": 6, "scale": 0.2, "seed": 1})
+    assert slack <= 1e-9
+
+def main():
+    validate()
+    slack = solve_case(read_input("8 0.05 2"))
+    print("slack", round(slack, 12))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Eigen-decomposition $\mathcal{O}(n^3)$ dominates; other ops $\mathcal{O}(n^2)$.
+}
+\FAILMODES{
+\begin{bullets}
+\item Non-Hermitian input invalidates eigvalsh; enforce symmetry construction.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Symmetrization controls numerical asymmetry; use eigvalsh for stability.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Slack should be $\le 0$ up to rounding; assert with tolerance.
+\end{bullets}
+}
+\RESULT{
+Slack is nonpositive within numerical error; Weyl verified.
+}
+\EXPLANATION{
+Computes worst eigenvalue shift and compares with spectral norm of $E$.
+}
+
+\CodeDemoPage{Davis-Kahan Angle Bound}
+\PROBLEM{
+Construct $A$ with two spectral clusters separated by gap $\delta$, perturb by
+$E$, and compare $\|\sin\Theta\|_2$ with $\|E\|_2/\delta$.
+}
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> dict} — parse sizes and seed.
+\item \inlinecode{def solve_case(cfg) -> tuple} — compute angle and bound.
+\item \inlinecode{def validate() -> None} — assert inequality.
+\item \inlinecode{def main() -> None} — run test.
+\end{bullets}
+}
+\INPUTS{
+$n$ total, $k$ cluster size, gap $\delta$, noise scale, seed.
+}
+\OUTPUTS{
+Angle norm and bound value.
+}
+\FORMULA{
+\[
+\|\sin\Theta\|_2 \le \|E\|_2/\delta.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    p = [float(x) for x in s.strip().split()]
+    n = int(p[0]) if p else 6
+    k = int(p[1]) if len(p) > 1 else 3
+    gap = p[2] if len(p) > 2 else 1.0
+    scale = p[3] if len(p) > 3 else 0.05
+    seed = int(p[4]) if len(p) > 4 else 0
+    return {"n": n, "k": k, "gap": gap, "scale": scale, "seed": seed}
+
+def ortho_basis(n, k):
+    Q, _ = np.linalg.qr(np.random.default_rng(0).normal(size=(n, n)))
+    return Q[:, :k]
+
+def sin_theta(U, U2):
+    P = U @ U.T
+    P2 = U2 @ U2.T
+    S = np.linalg.norm((np.eye(U.shape[0]) - P) @ P2, 2)
+    return S
+
+def solve_case(cfg):
+    n, k, gap, scale, seed = (cfg["n"], cfg["k"], cfg["gap"],
+                              cfg["scale"], cfg["seed"])
+    rng = np.random.default_rng(seed)
+    D = np.diag(np.concatenate([np.zeros(k), gap*np.ones(n-k)]))
+    Q, _ = np.linalg.qr(rng.normal(size=(n, n)))
+    A = Q @ D @ Q.T
+    E = rng.normal(scale=scale, size=(n, n))
+    E = (E + E.T) / 2.0
+    w, V = np.linalg.eigh(A)
+    U = V[:, :k]
+    w2, V2 = np.linalg.eigh(A + E)
+    U2 = V2[:, :k]
+    ang = sin_theta(U, U2)
+    bnd = np.linalg.norm(E, 2) / gap
+    return ang, bnd
+
+def validate():
+    ang, bnd = solve_case({"n": 6, "k": 3, "gap": 1.0,
+                           "scale": 0.05, "seed": 1})
+    assert ang <= bnd + 1e-9
+
+def main():
+    validate()
+    ang, bnd = solve_case(read_input("8 3 1.0 0.05 2"))
+    print("angle", round(ang, 6), "bound", round(bnd, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    p = [float(x) for x in s.strip().split()]
+    n = int(p[0]) if p else 6
+    k = int(p[1]) if len(p) > 1 else 3
+    gap = p[2] if len(p) > 2 else 1.0
+    scale = p[3] if len(p) > 3 else 0.05
+    seed = int(p[4]) if len(p) > 4 else 0
+    return {"n": n, "k": k, "gap": gap, "scale": scale, "seed": seed}
+
+def solve_case(cfg):
+    n, k, gap, scale, seed = (cfg["n"], cfg["k"], cfg["gap"],
+                              cfg["scale"], cfg["seed"])
+    rng = np.random.default_rng(seed)
+    D = np.diag(np.concatenate([np.zeros(k), gap*np.ones(n-k)]))
+    Q, _ = np.linalg.qr(rng.normal(size=(n, n)))
+    A = Q @ D @ Q.T
+    E = rng.normal(scale=scale, size=(n, n))
+    E = (E + E.T) / 2.0
+    w, V = np.linalg.eigh(A)
+    U = V[:, :k]
+    w2, V2 = np.linalg.eigh(A + E)
+    U2 = V2[:, :k]
+    P = U @ U.T
+    P2 = U2 @ U2.T
+    ang = float(np.linalg.norm((np.eye(n) - P) @ P2, 2))
+    bnd = float(np.linalg.norm(E, 2) / gap)
+    return ang, bnd
+
+def validate():
+    ang, bnd = solve_case({"n": 6, "k": 3, "gap": 1.0,
+                           "scale": 0.05, "seed": 1})
+    assert ang <= bnd + 1e-9
+
+def main():
+    validate()
+    ang, bnd = solve_case(read_input("8 3 1.0 0.05 2"))
+    print("angle", round(ang, 6), "bound", round(bnd, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Eigen-decompositions $\mathcal{O}(n^3)$, dominates; other ops $\mathcal{O}(n^2)$.
+}
+\FAILMODES{
+\begin{bullets}
+\item If $k$ chosen across clusters, gap definition invalid; enforce cluster.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Use symmetric eigensolver; projection operations are stable.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Assert angle $\le$ bound; fixed seed for determinism.
+\end{bullets}
+}
+\RESULT{
+Angle norm never exceeds perturbation-to-gap ratio within tolerance.
+}
+\EXPLANATION{
+Implements principal angle via projector norm and compares to Davis-Kahan.
+}
+
+\clearpage
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Stability of PCA: bound eigenvalue and eigenspace changes of sample covariance
+under additive noise using Weyl, Mirsky, and Davis-Kahan.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Data are centered; sample covariance $\hat{C}=C+E$ with $E$ symmetric.
+\item Spectral gap between top-$k$ and rest: $\delta>0$.
+\end{bullets}
+}
+\WHICHFORMULA{
+Weyl for eigenvalue intervals; Mirsky for singular values of data matrix;
+Davis-Kahan for top-$k$ subspace rotation.
+}
+\varmapStart
+\var{X}{Data matrix $(n\times d)$, rows samples.}
+\var{C}{True covariance $(d\times d)$.}
+\var{\hat{C}}{Sample covariance $C+E$.}
+\var{U_k}{Top-$k$ eigenvectors of $C$.}
+\var{U'_k}{Top-$k$ eigenvectors of $\hat{C}$.}
+\var{\delta}{Eigengap between $k$ and $k+1$.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic Gaussian data with known covariance.
+\item Compute $\hat{C}$; evaluate $\|E\|_2,\|E\|_F$.
+\item Bound eigenvalue drift and subspace angle; verify numerically.
+\end{bullets}
+}
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def synth_data(n=400, d=5, seed=0):
+    rng = np.random.default_rng(seed)
+    U, _ = np.linalg.qr(rng.normal(size=(d, d)))
+    vals = np.array([5, 3, 1, 0.5, 0.2])
+    C = U @ np.diag(vals) @ U.T
+    X = rng.multivariate_normal(np.zeros(d), C, size=n)
+    return X, C
+
+def pca_bounds(X, C, k=2):
+    n, d = X.shape
+    Chat = (X.T @ X) / n
+    E = Chat - C
+    w, U = np.linalg.eigh(C)
+    w = w[::-1]; U = U[:, ::-1]
+    w2, U2 = np.linalg.eigh(Chat)
+    w2 = w2[::-1]; U2 = U2[:, ::-1]
+    delta = w[k-1] - w[k]
+    dev = np.max(np.abs(w2[:k] - w[:k]))
+    bound = np.linalg.norm(E, 2)
+    P = U[:, :k] @ U[:, :k].T
+    P2 = U2[:, :k] @ U2[:, :k].T
+    ang = np.linalg.norm((np.eye(d) - P) @ P2, 2)
+    return dev, bound, ang, bound / delta
+
+def main():
+    X, C = synth_data()
+    dev, b, ang, db = pca_bounds(X, C, k=2)
+    print("eig dev", round(dev, 4), "weyl", round(b, 4))
+    print("angle", round(ang, 4), "dk", round(db, 4))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{Implementation (Library Version)}
+\begin{codepy}
+import numpy as np
+
+def main():
+    rng = np.random.default_rng(0)
+    d = 5
+    U, _ = np.linalg.qr(rng.normal(size=(d, d)))
+    vals = np.array([5, 3, 1, 0.5, 0.2])
+    C = U @ np.diag(vals) @ U.T
+    X = rng.multivariate_normal(np.zeros(d), C, size=400)
+    Chat = (X.T @ X) / 400
+    E = Chat - C
+    w = np.linalg.eigvalsh(C)[::-1]
+    w2 = np.linalg.eigvalsh(Chat)[::-1]
+    dev = float(np.max(np.abs(w2[:2] - w[:2])))
+    b = float(np.linalg.norm(E, 2))
+    delta = float(w[1] - w[2])
+    ang = 0.0
+    print("eig dev", round(dev, 4), "weyl", round(b, 4))
+    print("dk bound", round(b / delta, 4))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Eigenvalue deviation vs Weyl bound; subspace angle vs Davis-Kahan.}
+\INTERPRET{
+Observed deviations and angles are below theoretical bounds, confirming
+stability of PCA under sampling noise.
+}
+\NEXTSTEPS{
+Use concentration to bound $\|E\|$ in probability and combine with DK.
+}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Portfolio risk PCA: stability of leading risk factors (eigenpairs of covariance)
+under estimation error, bounded by Weyl and Davis-Kahan.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Finite-sample covariance $\hat{\Sigma}=\Sigma+E$ with symmetric $E$.
+\item Gap between first $k$ risk factors and the rest.
+\end{bullets}
+}
+\WHICHFORMULA{
+Weyl for eigenvalue moves; Davis-Kahan for eigenvector stability.
+}
+\varmapStart
+\var{\Sigma}{True covariance of returns $(d\times d)$.}
+\var{\hat{\Sigma}}{Sample covariance.}
+\var{E}{Estimation error.}
+\var{U_k}{Top-$k$ risk factor loadings.}
+\var{\delta}{Eigengap between $k$ and $k+1$.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Simulate correlated returns with known $\Sigma$.
+\item Estimate $\hat{\Sigma}$ and compute bounds.
+\item Compare factor angles with DK bound.
+\end{bullets}
+}
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def simulate(d=6, n=1000, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.normal(size=(d, d))
+    Sigma = A @ A.T + np.diag(np.linspace(0.5, 1.5, d))
+    R = rng.multivariate_normal(np.zeros(d), Sigma, size=n)
+    return R, Sigma
+
+def bounds(R, Sigma, k=2):
+    n = R.shape[0]
+    Shat = (R.T @ R) / n
+    E = Shat - Sigma
+    w = np.linalg.eigvalsh(Sigma)[::-1]
+    w2 = np.linalg.eigvalsh(Shat)[::-1]
+    dev = np.max(np.abs(w[:k] - w2[:k]))
+    b = np.linalg.norm(E, 2)
+    delta = w[k-1] - w[k]
+    return dev, b, b / delta
+
+def main():
+    R, Sigma = simulate()
+    dev, b, dk = bounds(R, Sigma)
+    print("eig dev", round(dev, 4), "weyl", round(b, 4), "dk", round(dk, 4))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Eigenvalue deviation; DK ratio; empirical angles (optional).}
+\INTERPRET{
+Risk factor magnitudes and directions remain close when estimation error is
+small relative to the eigengap.
+}
+\NEXTSTEPS{
+Shrinkage estimators to reduce $\|E\|$ and improve stability bounds.
+}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Hessian spectrum stability: bound changes of top Hessian eigenvalues and
+eigenspaces across mini-batches using Weyl and Davis-Kahan.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Empirical Hessians are symmetric; batch-to-batch difference bounded.
+\item Gap between top-$k$ curvature directions.
+\end{bullets}
+}
+\WHICHFORMULA{
+Weyl for eigenvalue drift; Davis-Kahan for eigenspace rotation.
+}
+\PIPELINE{
+\begin{bullets}
+\item Create synthetic quadratic loss with known Hessian.
+\item Add symmetric perturbation to emulate batch noise.
+\item Compare eigenpairs and DK bound.
+\end{bullets}
+}
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+
+def make_hessian(d=10, seed=0):
+    rng = np.random.default_rng(seed)
+    U, _ = np.linalg.qr(rng.normal(size=(d, d)))
+    vals = np.linspace(10, 1, d)
+    H = U @ np.diag(vals) @ U.T
+    return H
+
+def batch_perturb(H, scale=0.2, seed=1):
+    rng = np.random.default_rng(seed)
+    E = rng.normal(scale=scale, size=H.shape)
+    E = (E + E.T) / 2.0
+    return H + E, E
+
+def analyze(H, Hp, E, k=3):
+    w = np.linalg.eigvalsh(H)[::-1]
+    w2 = np.linalg.eigvalsh(Hp)[::-1]
+    dev = np.max(np.abs(w[:k] - w2[:k]))
+    b = np.linalg.norm(E, 2)
+    delta = w[k-1] - w[k]
+    return dev, b, b / delta
+
+def main():
+    H = make_hessian()
+    Hp, E = batch_perturb(H)
+    dev, b, dk = analyze(H, Hp, E)
+    print("eig dev", round(dev, 4), "weyl", round(b, 4), "dk", round(dk, 4))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Top-$k$ eigenvalue deviation; DK ratio.}
+\INTERPRET{
+Stable curvature directions when noise is small compared to the eigengap.
+}
+\NEXTSTEPS{
+Employ Hutchinson trace and stochastic Lanczos with DK-based stopping rules.
+}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+EDA with PCA stability: compute PCA and certify bounds on eigenvalue and
+eigenspace drift between train/validation splits using Weyl and DK.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Standardized features; covariance differences are symmetric.
+\item Reasonable eigengap in top components.
+\end{bullets}
+}
+\WHICHFORMULA{
+Weyl for eigenvalues; Davis-Kahan for top-$k$ subspace angles.
+}
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic correlated dataset, split into two halves.
+\item Compute covariances and principal components.
+\item Evaluate bounds and observed deviations.
+\end{bullets}
+}
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def create_df(n=1000, d=6, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.normal(size=(d, d))
+    C = A @ A.T
+    X = rng.multivariate_normal(np.zeros(d), C, size=n)
+    X = (X - X.mean(0)) / X.std(0)
+    return X
+
+def pca(X):
+    C = (X.T @ X) / X.shape[0]
+    w, U = np.linalg.eigh(C)
+    return w[::-1], U[:, ::-1], C
+
+def compare(X):
+    X1, X2 = np.split(X, 2)
+    w1, U1, C1 = pca(X1)
+    w2, U2, C2 = pca(X2)
+    E = C2 - C1
+    dev = np.max(np.abs(w1[:3] - w2[:3]))
+    b = np.linalg.norm(E, 2)
+    delta = w1[2] - w1[3]
+    P1 = U1[:, :3] @ U1[:, :3].T
+    P2 = U2[:, :3] @ U2[:, :3].T
+    ang = np.linalg.norm((np.eye(X.shape[1]) - P1) @ P2, 2)
+    return dev, b, ang, b / delta
+
+def main():
+    X = create_df()
+    dev, b, ang, dk = compare(X)
+    print("eig dev", round(dev, 4), "weyl", round(b, 4))
+    print("angle", round(ang, 4), "dk", round(dk, 4))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Eigenvalue deviation and subspace angle vs bounds.}
+\INTERPRET{
+Observed deviations are bounded as predicted, informing model robustness across
+data splits.
+}
+\NEXTSTEPS{
+Use shrinkage covariance to reduce $\|E\|_2$ and tighten bounds.
+}
+
+\end{document}

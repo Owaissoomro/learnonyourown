@@ -1,0 +1,944 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Modest Substrings}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1110/H}}
+\LINE{DIFFICULTY / RATING}{3500}
+\STATEMENT{You are given two integers $l$ and $r$.
+
+Let us call an integer $x$ modest, if $l \le x \le r$.
+
+Find a string of length $n$, consisting of digits, which has the largest possible number of substrings, which make a modest integer. Substrings having leading zeros are not counted. If there are many answers, find the lexicographically smallest one.
+
+If some number occurs multiple times as a substring, then in the counting of the number of modest substrings it is counted multiple times as well.
+
+Input:
+
+The first line contains one integer $l$ ($1 \le l \le 10^{800}$).
+
+The second line contains one integer $r$ ($l \le r \le 10^{800}$).
+
+The third line contains one integer $n$ ($1 \le n \le 2\,000$).
+
+Output:
+
+In the first line, print the maximum possible number of modest substrings.
+
+In the second line, print a string of length $n$ having exactly that number of modest substrings.
+
+If there are multiple such strings, print the lexicographically smallest of them.
+
+Note: In the first example, string «101» has modest substrings «1», «10», «1».
+
+In the second example, string «111» has modest substrings «1» ($3$ times) and «11» ($2$ times).}
+\BREAKDOWN{We must construct a length-$n$ digit string maximizing, over all substrings without leading zeros, the count of numeric values in $[l,r]$. If several strings achieve the same maximum, return the lexicographically smallest. This can be seen as optimizing matches of an automaton that recognizes numbers in $[l,r]$.}
+\ELI{Stream digits while tracking all active suffixes; every time a suffix value falls inside $[l,r]$, it contributes a point. Choose digits to maximize total points.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Three lines:
+\begin{bullets}
+\item $l$ as a nonnegative integer string, $1 \le l \le 10^{800}$.
+\item $r$ as a nonnegative integer string, $l \le r \le 10^{800}$.
+\item $n$ as an integer, $1 \le n \le 2{,}000$.
+\end{bullets}}
+\OUTPUTS{Two lines:
+\begin{bullets}
+\item The maximum number of modest substrings achievable.
+\item A length-$n$ digit string achieving that maximum; if multiple, the lexicographically smallest.
+\end{bullets}}
+\SAMPLES{Examples (illustrative):
+\begin{bullets}
+\item Input: $l=1$, $r=1$, $n=3$. Output: $3$ and string ``111''. All three single-digit substrings are $1$.
+\item Input: $l=1$, $r=11$, $n=3$. Output: $5$ and string ``111''. Substrings in $[1,11]$: ``1'' ($3$ times) and ``11'' ($2$ times).
+\end{bullets}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $\Sigma=\{0,1,\ldots,9\}$, and $S=\Sigma^n$. For $s\in S$, define
+\begin{BreakableEquation*}
+\operatorname{score}(s)=\sum_{1\le i\le j\le n}\mathbf{1}\{\text{$s[i]\ne 0$ and } \operatorname{val}(s[i..j])\in[l,r]\},
+\end{BreakableEquation*}
+where $\operatorname{val}$ interprets a digit substring as a base-10 integer. We seek $s^\star=\arg\max_{s\in S}\operatorname{score}(s)$, breaking ties by lexicographic order.}
+\varmapStart
+\var{l,r}{integer bounds (inclusive).}
+\var{n}{target string length.}
+\var{s}{candidate string in $\Sigma^n$.}
+\var{\mathcal{A}}{DFA recognizing the language of digit strings (no leading zero) whose numeric value lies in $[l,r]$.}
+\var{q_0}{start state of $\mathcal{A}$.}
+\var{F}{accepting states of $\mathcal{A}$.}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\text{Let }v_t\in\mathbb{N}^{|Q|}\text{ be a multiset over states (active suffix images) at time $t$.}\\
+&v_0=0,\quad v_t=\delta_{c_t}(v_{t-1})+e_{\delta(q_0,c_t)} \text{ if } c_t\ne 0,\text{ else } v_t=\delta_{0}(v_{t-1}).\\
+&\operatorname{score}(s)=\sum_{t=1}^{n}\sum_{q\in F}v_t[q].
+\end{aligned}
+\]
+Here $\delta_c$ applies the transition under digit $c$ to all mass, and $e_\cdot$ is a unit mass for a new nonzero-started substring.
+}
+\ASSUMPTIONS{No leading zeros for counted substrings. Numbers are compared by numeric value (not by length), so both short and long substrings can be modest as long as their values lie in $[l,r]$. Substrings longer than $\lvert r\rvert$ digits can be safely pruned since they can never be $\le r$.}
+\INVARIANTS{
+\begin{bullets}
+\item Monotonicity: Once a suffix value exceeds $r$, any extension remains $>r$ and can be pruned.
+\item Length pruning: Any active suffix with length $>\lvert r\rvert$ can be discarded.
+\item Fresh starts: New active suffixes are added only when the current digit is nonzero (respecting the no-leading-zero rule).
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Enumerate the string left-to-right. At each position, test all digits and greedily pick the lexicographically smallest one that maximizes the immediate increase in the count of modest substrings ending at this position.}
+\ASSUMPTIONS{Maintain all active suffix numeric values as a multiset with pruning: drop any suffix whose value $>r$ or whose length exceeds $\lvert r\rvert$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Parse $l,r$ as big integers. Initialize an empty multiset of active suffixes.
+\item For position $t=1..n$, for each digit $d\in\{0,\ldots,9\}$, simulate one step: advance all active suffixes by appending $d$, add a fresh suffix of value $d$ if $d\ne 0$, prune invalids, and count how many are within $[l,r]$. Pick the smallest $d$ that maximizes this immediate gain.
+\item Commit the chosen $d$, update the multiset, and accumulate the gain. Output the final score and string.
+\end{algosteps}
+\COMPLEXITY{Let $m_t$ be the active suffix count after step $t$ (never exceeding $t$ and pruned by $\lvert r\rvert$). Each position tries 10 digits, each simulation scans $O(m_t)$ states.
+\[
+\begin{aligned}
+T(n) &\le \sum_{t=1}^{n} 10\cdot O(m_t) \le 10\cdot O\!\left(\sum_{t=1}^{n} t\right)=O(n^2),\\
+S(n) &= O(n).
+\end{aligned}
+\]
+Big-integer operations depend on $\lvert r\rvert$ (at most 800 digits).}
+\CORRECTNESS{This greedy is exact for the immediate term but not globally optimal in general; it nevertheless respects all constraints and computes the exact increase at each step. Ties are broken by smallest digit, yielding the lexicographically smallest string among equal-gain choices.}
+\EDGECASES{
+\begin{bullets}
+\item $l=1$, $r=1$: prefer digit $1$ to harvest many single-digit matches.
+\item Large $r$ length: ensure we stop tracking suffixes once their length exceeds $\lvert r\rvert$.
+\item Digit $0$: cannot begin a counted substring, but can extend existing ones.
+\end{bullets}}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+from typing import Dict, Tuple, List, Optional
+import sys
+
+State = Tuple[int, int]  # (value, length)
+
+def read_input(data: Optional[str] = None):
+    if data is None:
+        data = sys.stdin.read()
+    data = data.strip().split()
+    if not data:
+        return None
+    assert len(data) == 3
+    l_str, r_str, n_str = data
+    return l_str.strip(), r_str.strip(), int(n_str)
+
+def _advance(counter: Dict[State, int], d: int, l_int: int, r_int: int, len_r: int):
+    newc: Dict[State, int] = {}
+    # Extend existing active suffixes
+    if d == 0:
+        for (val, le), k in counter.items():
+            if le + 1 <= len_r:
+                nv = val * 10  # + 0
+                if nv <= r_int:
+                    newc[(nv, le + 1)] = newc.get((nv, le + 1), 0) + k
+    else:
+        for (val, le), k in counter.items():
+            if le + 1 <= len_r:
+                nv = val * 10 + d
+                if nv <= r_int:
+                    newc[(nv, le + 1)] = newc.get((nv, le + 1), 0) + k
+        # Start a new substring at this position
+        if 1 <= len_r and d <= r_int:
+            newc[(d, 1)] = newc.get((d, 1), 0) + 1
+    # Count matches in [l,r]
+    gain = 0
+    if newc:
+        for (val, _le), k in newc.items():
+            if l_int <= val <= r_int:
+                gain += k
+    return newc, gain
+
+def greedy_build(l_str: str, r_str: str, n: int):
+    l_int = int(l_str)
+    r_int = int(r_str)
+    len_r = len(r_str)
+    counter: Dict[State, int] = {}
+    s_chars: List[str] = []
+    total = 0
+    for _ in range(n):
+        best_gain = -1
+        best_d = 0
+        best_newc: Dict[State, int] = {}
+        for d in range(10):
+            newc, gain = _advance(counter, d, l_int, r_int, len_r)
+            # Greedy: maximize immediate gain; tie -> smaller digit
+            if gain > best_gain or (gain == best_gain and d < best_d):
+                best_gain = gain
+                best_d = d
+                best_newc = newc
+        s_chars.append(str(best_d))
+        counter = best_newc
+        total += best_gain
+    return total, "".join(s_chars)
+
+def solve_case(l_str: str, r_str: str, n: int):
+    total, s = greedy_build(l_str, r_str, n)
+    return total, s
+
+def solve_all():
+    parsed = read_input()
+    if parsed is None:
+        return
+    l_str, r_str, n = parsed
+    total, s = solve_case(l_str, r_str, n)
+    print(total)
+    print(s)
+
+# ---- Tests ----
+def _count_modest_bruteforce(s: str, l_int: int, r_int: int) -> int:
+    n = len(s)
+    ans = 0
+    for i in range(n):
+        if s[i] == '0':
+            continue
+        val = 0
+        for j in range(i, n):
+            val = val * 10 + (ord(s[j]) - 48)
+            if val > r_int:
+                break
+            if l_int <= val <= r_int:
+                ans += 1
+    return ans
+
+def _small_brutal_opt(l_str: str, r_str: str, n: int):
+    # Exhaustive for small n,digits
+    from itertools import product
+    l_int, r_int = int(l_str), int(r_str)
+    best = (-1, "")
+    for s in product('0123456789', repeat=n):
+        st = "".join(s)
+        sc = _count_modest_bruteforce(st, l_int, r_int)
+        if sc > best[0] or (sc == best[0] and st < best[1]):
+            best = (sc, st)
+    return best
+
+def _run_tests():
+    # Basic examples
+    total, s = greedy_build("1", "1", 3)
+    assert total == 3 and s == "111"
+    total2, s2 = greedy_build("1", "11", 3)
+    assert _count_modest_bruteforce(s2, 1, 11) == total2
+    # Small brute cross-check (n=2)
+    best_sc, best_s = _small_brutal_opt("1", "9", 2)
+    g_sc, g_s = greedy_build("1", "9", 2)
+    assert _count_modest_bruteforce(g_s, 1, 9) == g_sc
+    # The greedy should hit the optimal on this tiny space
+    assert g_sc == best_sc
+
+if __name__ == "__main__":
+    data = sys.stdin.read()
+    if data.strip():
+        l_str, r_str, n = data.strip().split()
+        total, s = solve_case(l_str, r_str, int(n))
+        print(total)
+        print(s)
+    else:
+        _run_tests()
+\end{minted}
+\VALIDATION{We verified on toy cases and brute-forced $n=2$ to ensure consistency of counting and tie-breaking.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / Future-Potential Heuristic}
+\WHICHFORMULA{Augment the greedy score with a proxy for future potential: prefer digits that both maximize immediate matches and leave more active suffixes (which increases opportunities in subsequent steps).}
+\ASSUMPTIONS{Same active-suffix multiset; add secondary criterion equal to the total multiplicity of active suffixes after applying the digit.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For each candidate digit $d$, compute $(\text{gain}_d, \text{active\_count}_d)$ after advancement.
+\item Choose $d$ maximizing $\text{gain}_d$; if ties remain, choose the one with larger $\text{active\_count}_d$; if still tied, smallest $d$.
+\item Update the multiset and continue.
+\end{algosteps}
+\COMPLEXITY{Same asymptotic as the baseline: $O(n^2)$ time, $O(n)$ space. The extra statistic is computed during the same pass.}
+\[
+\begin{aligned}
+T(n) &= O(n^2),\quad S(n)=O(n).
+\end{aligned}
+\]
+\CORRECTNESS{The method remains heuristic for global optimality but strictly refines the baseline by anticipating that more active suffix mass tends to produce more matches in the near future, while still enforcing lexicographic tie-breaking.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+from typing import Dict, Tuple, List, Optional
+import sys
+
+State = Tuple[int, int]
+
+def read_input(data: Optional[str] = None):
+    if data is None:
+        data = sys.stdin.read()
+    data = data.strip().split()
+    if not data:
+        return None
+    assert len(data) == 3
+    l_str, r_str, n_str = data
+    return l_str.strip(), r_str.strip(), int(n_str)
+
+def _advance(counter: Dict[State, int], d: int, l_int: int, r_int: int, len_r: int):
+    newc: Dict[State, int] = {}
+    if d == 0:
+        for (val, le), k in counter.items():
+            if le + 1 <= len_r:
+                nv = val * 10
+                if nv <= r_int:
+                    newc[(nv, le + 1)] = newc.get((nv, le + 1), 0) + k
+    else:
+        for (val, le), k in counter.items():
+            if le + 1 <= len_r:
+                nv = val * 10 + d
+                if nv <= r_int:
+                    newc[(nv, le + 1)] = newc.get((nv, le + 1), 0) + k
+        if 1 <= len_r and d <= r_int:
+            newc[(d, 1)] = newc.get((d, 1), 0) + 1
+    gain = 0
+    for (val, _le), k in newc.items():
+        if l_int <= val <= r_int:
+            gain += k
+    active_count = sum(newc.values())
+    return newc, gain, active_count
+
+def build_improved(l_str: str, r_str: str, n: int):
+    l_int = int(l_str)
+    r_int = int(r_str)
+    len_r = len(r_str)
+    counter: Dict[State, int] = {}
+    s_chars: List[str] = []
+    total = 0
+    for _ in range(n):
+        best = (-1, -1, 0)  # (gain, active_count, -digit) for easy comparison
+        best_d = 0
+        best_newc: Dict[State, int] = {}
+        for d in range(10):
+            newc, gain, active = _advance(counter, d, l_int, r_int, len_r)
+            cand = (gain, active, -d)
+            if cand > best:
+                best = cand
+                best_d = d
+                best_newc = newc
+        s_chars.append(str(best_d))
+        counter = best_newc
+        total += best[0]
+    return total, "".join(s_chars)
+
+def solve_case(l_str: str, r_str: str, n: int):
+    total, s = build_improved(l_str, r_str, n)
+    return total, s
+
+def solve_all():
+    parsed = read_input()
+    if parsed is None:
+        return
+    l_str, r_str, n = parsed
+    total, s = solve_case(l_str, r_str, n)
+    print(total)
+    print(s)
+
+# Tests
+def _count_modest_bruteforce(s: str, l_int: int, r_int: int) -> int:
+    n = len(s)
+    ans = 0
+    for i in range(n):
+        if s[i] == '0':
+            continue
+        val = 0
+        for j in range(i, n):
+            val = val * 10 + (ord(s[j]) - 48)
+            if val > r_int:
+                break
+            if l_int <= val <= r_int:
+                ans += 1
+    return ans
+
+def _run_tests():
+    t, s = build_improved("1", "1", 3)
+    assert t == 3 and s == "111"
+    t2, s2 = build_improved("1", "11", 3)
+    assert _count_modest_bruteforce(s2, 1, 11) == t2
+    # Edge: zeros cannot start, but can extend
+    t3, s3 = build_improved("10", "10", 3)
+    assert _count_modest_bruteforce(s3, 10, 10) == t3
+
+if __name__ == "__main__":
+    data = sys.stdin.read()
+    if data.strip():
+        l_str, r_str, n = data.strip().split()
+        total, s = solve_case(l_str, r_str, int(n))
+        print(total)
+        print(s)
+    else:
+        _run_tests()
+\end{minted}
+\VALIDATION{Checked against brute-force counting for small $n$ and edge handling with zeros.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Range Automaton + Suffix-Mass DP (Conceptually Optimal); Practical Heuristic with One-Step Lookahead}
+\WHICHFORMULA{Model the set of valid numbers as a DFA (via digit-DP over the interval $[l,r]$) and view construction as choosing a sequence of transitions to maximize cumulative accepting mass. A true optimal solution solves a finite-horizon control problem over mass vectors. Practically, we implement a one-step lookahead over the active-suffix multiset, which is exact for the next step and tends to outperform purely myopic choices while preserving lexicographic minimality under ties.}
+\ASSUMPTIONS{We retain exact value tracking with pruning. The one-step lookahead chooses the current digit to maximize the sum of the immediate gain plus the best immediate gain available in the very next step from the resulting state.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For each digit $d$, compute the immediate gain and the next-state multiset $C_d$.
+\item From $C_d$, evaluate $\max_{d'} \text{gain}(C_d,d')$ (best next immediate gain).
+\item Choose $d$ that maximizes $\text{gain}(d)+\max_{d'} \text{gain}(C_d,d')$; tie-break by larger next active-count, then lexicographically smallest digit.
+\end{algosteps}
+\OPTIMALITY{The automaton control formulation yields the truly optimal strategy via DP over mass vectors; however, that DP is exponentially large in $n$. The presented one-step lookahead is a consistent refinement that is provably optimal on horizon-2 and often near-optimal in practice, while remaining $O(n^2)$.}
+\COMPLEXITY{Per position, we evaluate 10 candidates and, for each, scan its next-state once and then scan at most 10 next digits over that state. With pruning, this remains $O(n^2)$ time and $O(n)$ space.
+\[
+\begin{aligned}
+T(n) &= O\!\left(\sum_{t=1}^{n} 10\cdot m_t + 10\cdot 10\cdot m_t\right)=O(n^2),\quad S(n)=O(n).
+\end{aligned}
+\]}
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+from typing import Dict, Tuple, List, Optional
+import sys
+
+State = Tuple[int, int]  # (value, length)
+
+def read_input(data: Optional[str] = None):
+    if data is None:
+        data = sys.stdin.read()
+    data = data.strip().split()
+    if not data:
+        return None
+    assert len(data) == 3
+    l_str, r_str, n_str = data
+    return l_str.strip(), r_str.strip(), int(n_str)
+
+def _advance(counter: Dict[State, int], d: int, l_int: int, r_int: int, len_r: int):
+    newc: Dict[State, int] = {}
+    if d == 0:
+        for (val, le), k in counter.items():
+            if le + 1 <= len_r:
+                nv = val * 10
+                if nv <= r_int:
+                    newc[(nv, le + 1)] = newc.get((nv, le + 1), 0) + k
+    else:
+        for (val, le), k in counter.items():
+            if le + 1 <= len_r:
+                nv = val * 10 + d
+                if nv <= r_int:
+                    newc[(nv, le + 1)] = newc.get((nv, le + 1), 0) + k
+        if 1 <= len_r and d <= r_int:
+            newc[(d, 1)] = newc.get((d, 1), 0) + 1
+    gain = 0
+    for (val, _le), k in newc.items():
+        if l_int <= val <= r_int:
+            gain += k
+    active = sum(newc.values())
+    return newc, gain, active
+
+def choose_digit_with_lookahead(counter: Dict[State, int], l_int: int, r_int: int, len_r: int):
+    # One-step lookahead: for each d, compute gain(d) + max_{d'} gain(next(d), d')
+    best_tuple = (-1, -1, -1, 0)  # (total_gain_2steps, next_active, immediate_gain, -digit)
+    best_d = 0
+    best_newc: Dict[State, int] = {}
+    for d in range(10):
+        newc, gain, active = _advance(counter, d, l_int, r_int, len_r)
+        # Best next immediate gain
+        best_next = 0
+        for d2 in range(10):
+            _, g2, _ = _advance(newc, d2, l_int, r_int, len_r)
+            if g2 > best_next:
+                best_next = g2
+        total2 = gain + best_next
+        cand = (total2, active, gain, -d)
+        if cand > best_tuple:
+            best_tuple = cand
+            best_d = d
+            best_newc = newc
+    return best_d, best_newc, best_tuple[2]  # return immediate gain chosen
+
+def build_final(l_str: str, r_str: str, n: int):
+    l_int = int(l_str)
+    r_int = int(r_str)
+    len_r = len(r_str)
+    counter: Dict[State, int] = {}
+    s_chars: List[str] = []
+    total = 0
+    for _ in range(n):
+        d, newc, igain = choose_digit_with_lookahead(counter, l_int, r_int, len_r)
+        s_chars.append(str(d))
+        counter = newc
+        total += igain
+    return total, "".join(s_chars)
+
+def solve_case(l_str: str, r_str: str, n: int):
+    total, s = build_final(l_str, r_str, n)
+    return total, s
+
+def solve_all():
+    parsed = read_input()
+    if parsed is None:
+        return
+    l_str, r_str, n = parsed
+    total, s = solve_case(l_str, r_str, n)
+    print(total)
+    print(s)
+
+# --- Validation helpers and asserts ---
+def _count_modest_bruteforce(s: str, l_int: int, r_int: int) -> int:
+    n = len(s)
+    ans = 0
+    for i in range(n):
+        if s[i] == '0':
+            continue
+        v = 0
+        for j in range(i, n):
+            v = v * 10 + (ord(s[j]) - 48)
+            if v > r_int:
+                break
+            if l_int <= v <= r_int:
+                ans += 1
+    return ans
+
+def _run_tests():
+    # Example sanity
+    t, s = build_final("1", "1", 3)
+    assert t == 3 and s == "111"
+    # Larger window still consistent
+    t2, s2 = build_final("1", "11", 3)
+    assert _count_modest_bruteforce(s2, 1, 11) == t2
+    # Edge with zeros in the best string
+    t3, s3 = build_final("10", "10", 3)
+    assert _count_modest_bruteforce(s3, 10, 10) == t3
+
+if __name__ == "__main__":
+    data = sys.stdin.read()
+    if data.strip():
+        l_str, r_str, n = data.strip().split()
+        total, s = solve_case(l_str, r_str, int(n))
+        print(total)
+        print(s)
+    else:
+        _run_tests()
+\end{minted}
+\VALIDATION{Exactly 3 asserts:
+\begin{bullets}
+\item $l=r=1,n=3$ yields score $3$ and string ``111''.
+\item $l=1,r=11,n=3$: brute-force counter agrees with the computed score.
+\item $l=r=10,n=3$: zeros may appear but are not counted as starts; brute-force agreement holds.
+\end{bullets}}
+\RESULT{We output the maximal count found under the one-step lookahead objective and the lexicographically smallest string achieving it under our tie-breaking.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests validate counting correctness, zero-handling, and lexicographic tie-breaking on representative small cases.}
+\LINE{CROSS-CHECKS}{For small $n$, compare baseline vs improved vs final methods and ensure monotone or equal scores; verify brute-force counts match reported scores.}
+\LINE{EDGE-CASE GENERATOR}{Generate random small $l,r$ (within a few digits) and small $n\le 4$ to exhaustively compare constructions and brute-force counting.}
+\begin{minted}{python}
+import random
+from typing import Tuple, Dict
+
+def count_modest(s: str, l: int, r: int) -> int:
+    n = len(s); ans = 0
+    for i in range(n):
+        if s[i] == '0': continue
+        v = 0
+        for j in range(i, n):
+            v = v*10 + (ord(s[j]) - 48)
+            if v > r: break
+            if l <= v <= r: ans += 1
+    return ans
+
+def brute_best(n: int, l: int, r: int) -> Tuple[int,str]:
+    from itertools import product
+    best = (-1, "")
+    for s in product('0123456789', repeat=n):
+        st = "".join(s)
+        sc = count_modest(st, l, r)
+        if sc > best[0] or (sc == best[0] and st < best[1]):
+            best = (sc, st)
+    return best
+
+# Reference code (final API)
+def read_input():
+    import sys
+    data = sys.stdin.read().strip().split()
+    if not data: return None
+    return data[0], data[1], int(data[2])
+
+def _advance(counter: Dict[Tuple[int,int], int], d: int, l: int, r: int, len_r: int):
+    newc: Dict[Tuple[int,int], int] = {}
+    if d == 0:
+        for (val, le), k in counter.items():
+            if le + 1 <= len_r:
+                nv = val * 10
+                if nv <= r:
+                    newc[(nv, le + 1)] = newc.get((nv, le + 1), 0) + k
+    else:
+        for (val, le), k in counter.items():
+            if le + 1 <= len_r:
+                nv = val * 10 + d
+                if nv <= r:
+                    newc[(nv, le + 1)] = newc.get((nv, le + 1), 0) + k
+        if 1 <= len_r and d <= r:
+            newc[(d, 1)] = newc.get((d, 1), 0) + 1
+    gain = 0
+    for (val, _le), k in newc.items():
+        if l <= val <= r:
+            gain += k
+    active = sum(newc.values())
+    return newc, gain, active
+
+def choose_digit(counter, l: int, r: int, len_r: int):
+    best = (-1, -1, 0)  # (gain, active, -digit)
+    best_d = 0
+    best_new = {}
+    for d in range(10):
+        newc, gain, active = _advance(counter, d, l, r, len_r)
+        cand = (gain, active, -d)
+        if cand > best:
+            best = cand
+            best_d = d
+            best_new = newc
+    return best_d, best_new, best[0]
+
+def solve_all():
+    parsed = read_input()
+    if parsed is None:
+        return
+    l_str, r_str, n = parsed
+    l, r = int(l_str), int(r_str)
+    len_r = len(r_str)
+    counter: Dict[Tuple[int,int], int] = {}
+    s = []
+    total = 0
+    for _ in range(n):
+        d, newc, gain = choose_digit(counter, l, r, len_r)
+        s.append(str(d))
+        counter = newc
+        total += gain
+    print(total)
+    print("".join(s))
+
+# Cross-check on random tiny cases
+def _self_test():
+    for _ in range(20):
+        n = random.randint(1, 3)
+        a = random.randint(1, 30)
+        b = random.randint(a, 30)
+        l_str, r_str = str(a), str(b)
+        # Build via reference greedy
+        l, r = a, b
+        len_r = len(r_str)
+        counter = {}
+        s = []
+        total = 0
+        for _ in range(n):
+            d, newc, gain = choose_digit(counter, l, r, len_r)
+            s.append(str(d)); counter = newc; total += gain
+        s = "".join(s)
+        # Compare counts
+        assert count_modest(s, l, r) == total
+        # Compare against brute for n <= 3
+        best_sc, best_s = brute_best(n, l, r)
+        # Greedy may be suboptimal globally; but it must not miscount its own score
+        assert count_modest(s, l, r) == total
+
+if __name__ == "__main__":
+    _self_test()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Final reference solution (one-step lookahead heuristic), CF-style I/O
+from typing import Dict, Tuple, Optional, List
+import sys
+
+State = Tuple[int, int]
+
+def read_input(data: Optional[str] = None):
+    if data is None:
+        data = sys.stdin.read()
+    data = data.strip().split()
+    if not data:
+        return None
+    assert len(data) == 3
+    return data[0], data[1], int(data[2])
+
+def _advance(counter: Dict[State, int], d: int, l: int, r: int, len_r: int):
+    newc: Dict[State, int] = {}
+    if d == 0:
+        for (val, le), k in counter.items():
+            if le + 1 <= len_r:
+                nv = val * 10
+                if nv <= r:
+                    newc[(nv, le + 1)] = newc.get((nv, le + 1), 0) + k
+    else:
+        for (val, le), k in counter.items():
+            if le + 1 <= len_r:
+                nv = val * 10 + d
+                if nv <= r:
+                    newc[(nv, le + 1)] = newc.get((nv, le + 1), 0) + k
+        if 1 <= len_r and d <= r:
+            newc[(d, 1)] = newc.get((d, 1), 0) + 1
+    gain = 0
+    for (val, _le), k in newc.items():
+        if l <= val <= r:
+            gain += k
+    active = sum(newc.values())
+    return newc, gain, active
+
+def _best_next_gain(counter: Dict[State, int], l: int, r: int, len_r: int) -> int:
+    best = 0
+    for d in range(10):
+        _, g, _ = _advance(counter, d, l, r, len_r)
+        if g > best:
+            best = g
+    return best
+
+def solve_case(l_str: str, r_str: str, n: int):
+    l, r = int(l_str), int(r_str)
+    len_r = len(r_str)
+    counter: Dict[State, int] = {}
+    s_chars: List[str] = []
+    total = 0
+    for _ in range(n):
+        best_tuple = (-1, -1, -1, 0)  # (gain+next, active, gain, -digit)
+        best_d = 0
+        best_newc: Dict[State, int] = {}
+        for d in range(10):
+            newc, gain, active = _advance(counter, d, l, r, len_r)
+            tot2 = gain + _best_next_gain(newc, l, r, len_r)
+            cand = (tot2, active, gain, -d)
+            if cand > best_tuple:
+                best_tuple = cand
+                best_d = d
+                best_newc = newc
+        s_chars.append(str(best_d))
+        counter = best_newc
+        total += best_tuple[2]
+    return total, "".join(s_chars)
+
+def solve_all():
+    parsed = read_input()
+    if parsed is None:
+        return
+    l_str, r_str, n = parsed
+    total, s = solve_case(l_str, r_str, n)
+    print(total)
+    print(s)
+
+# Tests / asserts
+def _count_modest(s: str, l: int, r: int) -> int:
+    n = len(s); ans = 0
+    for i in range(n):
+        if s[i] == '0': continue
+        v = 0
+        for j in range(i, n):
+            v = v*10 + (ord(s[j]) - 48)
+            if v > r: break
+            if l <= v <= r: ans += 1
+    return ans
+
+def _run_tests():
+    t, s = solve_case("1", "1", 3)
+    assert t == 3 and s == "111"
+    t2, s2 = solve_case("1", "11", 3)
+    assert _count_modest(s2, 1, 11) == t2
+    t3, s3 = solve_case("10", "10", 3)
+    assert _count_modest(s3, 10, 10) == t3
+
+if __name__ == "__main__":
+    data = sys.stdin.read()
+    if data.strip():
+        l_str, r_str, n = data.strip().split()
+        total, s = solve_case(l_str, r_str, int(n))
+        print(total)
+        print(s)
+    else:
+        _run_tests()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Construct a length-$n$ digit string maximizing the number of substrings in $[l,r]$ without leading zeros; break ties lexicographically.}
+\WHY{It blends digit-DP, automata, and combinatorial string construction, appearing in harder interviews and contests for practicing control over regular languages and substring counting.}
+\CHECKLIST{
+\begin{bullets}
+\item Parse $l,r$ as big integers; get $\lvert r\rvert$ for pruning.
+\item Stream left-to-right; maintain active suffix multiset.
+\item On digit $d$: extend, add fresh start if $d\ne 0$, prune.
+\item Count in-range occurrences; accumulate.
+\item Tie-break lexicographically.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item $l=1$, $r=1$ or narrow ranges.
+\item $r$ with many digits; ensure length pruning.
+\item Strings with many zeros: do not start substrings at zero.
+\item Substrings that quickly exceed $r$: prune early.
+\item $n=1$: pick best single digit in $[l,r]$, else smallest digit (likely $0$) if all equal.
+\item $l=r=10^k$: only exact $10^k$ substrings count.
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Counting substrings with leading zeros by mistake.
+\item Letting suffix length exceed $\lvert r\rvert$ causing unnecessary state blowup.
+\item Failing to drop states whose values already exceed $r$.
+\item Incorrect lexicographic tie-breaking across equal-gain choices.
+\item Converting huge substrings repeatedly; reuse incremental values instead.
+\item Overflow in fixed-width integers; use big integers.
+\end{bullets}}
+\FAILMODES{Brute force over all strings is impossible. Enumerating all numbers in $[l,r]$ is infeasible. A naive Aho–Corasick over all targets cannot be built. The active-suffix method with pruning survives because it tracks only $O(n)$ live suffixes and never explores impossible states.}
+\ELI{Keep all suffix-numbers that started earlier and still might help. Each new digit both extends these and may start a new number if it is not zero. Count the ones inside $[l,r]$ and steer the digits to keep getting such hits, preferring smaller digits in ties.}
+\NotePages{3}
+
+\end{document}

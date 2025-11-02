@@ -1,0 +1,2431 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]
+\setlength{\jot}{7pt}
+\setlength{\emergencystretch}{8em}
+\sloppy
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Preconditioning and Iterative Solvers}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+A preconditioned linear system transforms $Ax=b$ into an equivalent system,
+typically $M^{-1}Ax=M^{-1}b$ (left), $AM^{-1}y=b$ with $x=M^{-1}y$ (right),
+or $M_L^{-1}AM_R^{-1}y=M_L^{-1}b$ with $x=M_R^{-1}y$ (two-sided), where
+$A\in\mathbb{R}^{n\times n}$ and $M$ is nonsingular and chosen so that the
+transformed system is easier for an iterative solver. Iterative solvers
+construct sequences $\{x_k\}$ using residuals $r_k=b-Ax_k$ and Krylov spaces
+$\mathcal{K}_k(A,r_0)=\mathrm{span}\{r_0,Ar_0,\dots,A^{k-1}r_0\}$. For SPD $A$,
+(preconditioned) Conjugate Gradient (CG) minimizes the $A$-norm of the error;
+for general $A$, GMRES minimizes the 2-norm of the residual.
+}
+
+\WHY{
+Preconditioning clusters eigenvalues and reduces the condition number of the
+operator seen by the iterative method, accelerating convergence. Iterative
+solvers scale to large sparse problems where direct factorization is costly.
+They also expose structure (symmetry, definiteness, sparsity) and enable
+matrix-free computations via products $Av$ and triangular solves with $M$.
+}
+
+\HOW{
+1. Choose structure: SPD vs. nonsymmetric determines CG vs. GMRES class.
+2. Select preconditioner $M\approx A$ that is cheap to apply and improves the
+spectrum of $M^{-1}A$ (or a symmetric equivalent).
+3. Use error/residual polynomial viewpoint: $e_k=p_k(A)e_0$, $r_k=q_k(A)r_0$.
+4. Establish convergence factors from spectral bounds or field of values; for
+SPD, bounds depend on $\kappa(M^{-1}A)$; for GMRES, use Arnoldi and least
+squares minimization over Krylov spaces.
+}
+
+\ELI{
+Solving $Ax=b$ is like pushing a sled over bumpy terrain. A preconditioner is a
+set of tracks that flattens the bumps so each push (iteration) travels farther.
+CG and GMRES are rules telling you how to push optimally given the tracks.
+}
+
+\SCOPE{
+Valid when matrix-vector products with $A$ and solves with $M$ are available,
+and floating-point errors are moderate. CG requires symmetry and positive
+definiteness in an appropriate inner product; GMRES handles general matrices
+but needs restarts or storage control. Breakdown occurs if $M$ is singular or
+ill-conditioned, or if $A$ is indefinite under CG without safeguards.
+}
+
+\CONFUSIONS{
+Preconditioner vs. pre- and post-multipliers: left/right/two-sided forms are
+equivalent up to variable change. CG vs. steepest descent: both use gradients,
+but CG enforces $A$-conjugacy and achieves faster convergence. GMRES vs. MINRES:
+GMRES for general matrices minimizes residual norm; MINRES assumes symmetric
+(indefinite allowed) and minimizes residual in 2-norm without forming $A^\top$.
+Conditioning of $A$ vs. $M^{-1}A$: only the latter controls the convergence of
+the preconditioned method.
+}
+
+\APPLICATIONS{
+\begin{bullets}
+\item Mathematical foundations: Krylov subspace theory, polynomial approximation.
+\item Computational modeling: PDE discretizations (Poisson, elasticity).
+\item Engineering: circuit simulation, structural analysis, CFD linear solves.
+\item Statistics/ML: normal equations and ridge regression at scale.
+\end{bullets}
+}
+
+\textbf{ANALYTIC STRUCTURE.}
+Preconditioning targets eigenvalue clustering and spectral equivalence:
+$c_1 x^\top Ax \le x^\top M x \le c_2 x^\top Ax$. CG is linear, monotone in
+$A$-norm; residuals follow orthogonality conditions. GMRES relies on Arnoldi,
+producing an upper Hessenberg projection and a convex least squares.
+
+\textbf{CANONICAL LINKS.}
+Steepest descent and Chebyshev semi-iteration motivate optimal parameters and
+CG bounds. Arnoldi underpins GMRES. Spectral theorem gives diagonalization for
+SPD analysis. These feed Formula 1 (Richardson), Formula 2 (PCG bound),
+Formula 3 (GMRES minimal residual), and Formula 4 (preconditioning equivalence).
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item SPD with energy inner product and need for fast convergence: use PCG.
+\item Talk of residual minimization in 2-norm for nonsymmetric $A$: GMRES.
+\item Diagonal dominance or block structure: Jacobi/block preconditioning.
+\item Splitting $A=M-N$: stationary iterations and preconditioners relate.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate to $Ax=b$ form; identify symmetry/definiteness.
+\item Pick $M$ improving $\kappa(M^{-1}A)$ and cheap to apply.
+\item Map to Krylov method; write residual/error polynomial.
+\item Invoke spectral bounds (Chebyshev, condition number).
+\item Validate via residual monotonicity and limit checks.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+For CG: $A$-orthogonality of search directions; decreasing $A$-norm of error.
+For GMRES: orthogonality of residual to $A\mathcal{K}_k$; monotone residual 2-norm.
+
+\textbf{EDGE INTUITION.}
+As $\kappa\to 1$, PCG converges in one or two steps; as $\kappa\to\infty$,
+steepest descent stagnates. For GMRES, clustering of eigenvalues around 1 gives
+rapid decay of residual polynomials; widely spread spectra slow convergence.
+
+\section{Glossary}
+\glossx{Preconditioner}
+{A nonsingular operator $M$ used to transform $Ax=b$ into an equivalent system
+with more favorable spectral properties.}
+{Reduces condition number and clusters eigenvalues to accelerate Krylov methods.}
+{Choose $M\approx A$ so that $M^{-1}A$ is well-conditioned; apply $M^{-1}$ via
+direct/approximate solves at each iteration.}
+{Like wearing snowshoes to avoid sinking while walking on snow.}
+{Pitfall: choosing $M$ that is accurate but too expensive to apply nullifies gains.}
+
+\glossx{Krylov Subspace}
+{$\mathcal{K}_k(A,r_0)=\mathrm{span}\{r_0,Ar_0,\dots,A^{k-1}r_0\}$.}
+{Provides low-dimensional spaces where optimal residual/error approximations live.}
+{Build basis via Arnoldi/Lanczos and compute best approximation under a norm.}
+{Like learning chords: few notes combine to approximate complex sounds.}
+{Example: GMRES residual is the 2-norm minimizer over $r_0$ transformed by polynomials.}
+
+\glossx{Condition Number}
+{$\kappa(B)=\lambda_{\max}(B)/\lambda_{\min}(B)$ for SPD $B$.}
+{Controls convergence rates of steepest descent, Chebyshev, and CG.}
+{Estimate extremal eigenvalues; design $M$ so $\kappa(M^{-1}A)$ is small.}
+{How stretched a rubber sheet is; more stretch means slower progress.}
+{Pitfall: using spectral radius instead of $\kappa$ for CG bounds.}
+
+\glossx{Spectral Equivalence}
+{$c_1 x^\top Ax \le x^\top M x \le c_2 x^\top Ax$ for all $x\ne 0$.}
+{Guarantees $\kappa(M^{-1}A)\le c_2/c_1$, giving uniform convergence bounds.}
+{Construct $M$ from overlapping additive Schwarz or multigrid smoothers.}
+{Two rulers with different scales but measuring the same geometry.}
+{Example: $M$ as lumped mass matrix for $A$ from FEM Poisson operator.}
+
+\section{Symbol Ledger}
+\varmapStart
+\var{A\in\mathbb{R}^{n\times n}}{System matrix; SPD or general.}
+\var{M, M_L, M_R}{Preconditioners; nonsingular; often SPD.}
+\var{b\in\mathbb{R}^n}{Right-hand side vector.}
+\var{x, x_k}{Exact and $k$th iterate.}
+\var{r_k=b-Ax_k}{Residual at step $k$.}
+\var{e_k=x-x_k}{Error at step $k$.}
+\var{\mathcal{K}_k(A,r_0)}{Krylov subspace of order $k$.}
+\var{\kappa(B)}{Condition number of SPD $B$ in 2-norm (eigenvalue ratio).}
+\var{\lambda_{\min},\lambda_{\max}}{Extremal eigenvalues of SPD operators.}
+\var{V_k, H_k}{Arnoldi basis, Hessenberg matrix.}
+\var{p_k,q_k}{Residual/error polynomials of degree $k$.}
+\var{\|\cdot\|_A}{Energy norm: $\|v\|_A=\sqrt{v^\top A v}$.}
+\var{\rho(\cdot)}{Spectral radius.}
+\var{\beta}{Initial residual norm $\beta=\|r_0\|_2$.}
+\varmapEnd
+
+\section{Formula Canon — One Formula Per Page}
+\FormulaPage{1}{Optimal Preconditioned Richardson and Convergence Factor}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For SPD $A$ and SPD preconditioner $M$, the preconditioned Richardson iteration
+$x_{k+1}=x_k+\omega M^{-1}(b-Ax_k)$ converges for
+$\omega\in\left(0,\tfrac{2}{\lambda_{\max}(M^{-1}A)}\right)$, and the optimal
+choice $\omega^\star=\tfrac{2}{\lambda_{\min}(B)+\lambda_{\max}(B)}$ with
+$B=M^{-1}A$ yields contraction factor
+$q^\star=\tfrac{\kappa(B)-1}{\kappa(B)+1}$ in the $M$-norm.
+
+\WHAT{
+Gives the best fixed relaxation parameter $\omega$ for preconditioned
+Richardson and quantifies its linear convergence rate via eigenvalue bounds.}
+
+\WHY{
+Provides a baseline performance and illuminates the role of $\kappa(M^{-1}A)$.
+It motivates Chebyshev acceleration and bounds for CG.}
+
+\FORMULA{
+\[
+x_{k+1}=x_k+\omega M^{-1}(b-Ax_k),\quad
+\|e_{k}\|_M\le q^k \|e_0\|_M,\quad
+q^\star=\frac{\kappa(B)-1}{\kappa(B)+1}.
+\]}
+
+\CANONICAL{
+$A$ SPD, $M$ SPD, so $B=M^{-1}A$ is similar to $M^{-1/2}AM^{-1/2}$ and SPD.
+Consider $M$-inner product $\langle u,v\rangle_M=u^\top M v$.}
+
+\PRECONDS{
+\begin{bullets}
+\item $A$ symmetric positive definite.
+\item $M$ symmetric positive definite and cheaply invertible approximately.
+\item $\omega\in(0,2/\lambda_{\max}(B))$ for convergence.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Let $B$ be SPD. For the iteration $e_{k+1}=(I-\omega B)e_k$,
+$\|e_{k}\|_B\le \rho(I-\omega B)^k \|e_0\|_B$, and
+$\rho(I-\omega B)=\max_{\lambda\in\sigma(B)}|1-\omega\lambda|$.
+\end{lemma}
+\begin{proof}
+Since $B$ is SPD, it has an orthonormal eigenbasis $Q$ with
+$Q^\top B Q=\Lambda=\mathrm{diag}(\lambda_i)$ and $Q^\top Q=I$.
+Then $I-\omega B=Q(I-\omega\Lambda)Q^\top$ and
+$\|(I-\omega B)^k\|_B=\max_i |1-\omega\lambda_i|^k$ in the $B$-norm since
+$\|v\|_B^2=v^\top B v=\|Q^\top v\|_\Lambda^2$ diagonalizes the norm.
+Thus the induced norm equals the spectral radius for normal operators; hence
+$\|e_k\|_B\le \rho(I-\omega B)^k \|e_0\|_B$ and
+$\rho(I-\omega B)=\max_i |1-\omega\lambda_i|$.\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Error recursion: }& e_{k+1}=x-x_{k+1}=x-(x_k+\omega M^{-1}(b-Ax_k)) \\
+&= e_k-\omega M^{-1}(Ax-Ax_k)= (I-\omega M^{-1}A)e_k \\
+&= (I-\omega B)e_k. \\
+\text{By Lemma: }& \|e_k\|_B \le \rho(I-\omega B)^k \|e_0\|_B, \\
+& \rho(I-\omega B)=\max_{\lambda\in[\lambda_{\min},\lambda_{\max}]}
+|1-\omega\lambda|. \\
+\text{Optimize } \omega: & \text{For } \lambda\in[\lambda_{\min},\lambda_{\max}],
+\text{ minimize } \max(|1-\omega\lambda_{\min}|,|1-\omega\lambda_{\max}|). \\
+& \text{By equioscillation, set } 1-\omega\lambda_{\min}=-(1-\omega\lambda_{\max}). \\
+& \Rightarrow \omega^\star=\frac{2}{\lambda_{\min}+\lambda_{\max}}, \\
+& q^\star=|1-\omega^\star\lambda_{\max}|=
+\frac{\lambda_{\max}-\lambda_{\min}}{\lambda_{\max}+\lambda_{\min}} \\
+&= \frac{\kappa(B)-1}{\kappa(B)+1}.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Estimate $\lambda_{\min}(M^{-1}A)$ and $\lambda_{\max}(M^{-1}A)$.
+\item Set $\omega^\star=2/(\lambda_{\min}+\lambda_{\max})$.
+\item Predict $k$ for target tolerance via $k\ge \log(\epsilon^{-1})/\log(q^{-1})$.
+\item Validate with a short run and adjust if estimates are rough.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Chebyshev semi-iteration uses degree-$k$ optimal polynomials on
+$[\lambda_{\min},\lambda_{\max}]$ improving upon fixed $\omega$.
+\item For unpreconditioned case $M=I$, recover classical Richardson.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $\lambda_{\min}\to 0$, then $q^\star\to 1$ and convergence stalls.
+\item If $\lambda_{\min}=\lambda_{\max}$, then $q^\star=0$; one step solves.
+\end{bullets}
+}
+
+\INPUTS{$\lambda_{\min},\lambda_{\max}$ of $B=M^{-1}A$; or $\kappa(B)$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Given } \kappa=\frac{\lambda_{\max}}{\lambda_{\min}},\ 
+q^\star&=\frac{\kappa-1}{\kappa+1}, \\
+k &\ge \frac{\log(\epsilon^{-1})}{\log\left(\frac{\kappa+1}{\kappa-1}\right)}.
+\end{align*}
+}
+
+\RESULT{
+Optimal fixed-step Richardson contraction rate is
+$q^\star=(\kappa-1)/(\kappa+1)$ in $M$-norm.}
+
+\UNITCHECK{
+Dimensionless quantities: eigenvalues and $\omega$ have reciprocal units,
+but in scaled algebra they are pure numbers; $q^\star\in[0,1)$.}
+
+\PITFALLS{
+\begin{bullets}
+\item Using $\| \cdot \|_2$ to measure contraction when lemma is in $B$-norm.
+\item Choosing $\omega$ beyond stability interval leading to divergence.
+\end{bullets}
+}
+
+\INTUITION{
+Balance the worst-case shrinkage at spectrum endpoints; optimal $\omega$
+equalizes endpoint errors, like centering a rubber band between two posts.}
+
+\CANONICAL{
+\begin{bullets}
+\item Error polynomial: $p_1(t)=1-\omega t$ minimized on $[\lambda_{\min},\lambda_{\max}]$.
+\item Spectral equivalence transfers bounds from $A$ to $M^{-1}A$.
+\end{bullets}
+}
+
+\FormulaPage{2}{PCG Convergence Bound via Condition Number}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For SPD $A$ with SPD preconditioner $M$, PCG produces $x_k\in x_0+
+\mathcal{K}_k(M^{-1}A, M^{-1}r_0)$ with error bounded by
+$\|e_k\|_A \le 2\left(\frac{\sqrt{\kappa}-1}{\sqrt{\kappa}+1}\right)^k\|e_0\|_A$,
+where $\kappa=\kappa(M^{-1}A)$.
+
+\WHAT{
+Quantitative rate for PCG in the $A$-norm in terms of the condition number of
+the preconditioned operator.}
+
+\WHY{
+Links preconditioner quality directly to iteration count; guides $M$ design.}
+
+\FORMULA{
+\[
+\|e_k\|_A \le
+2\left(\frac{\sqrt{\kappa(M^{-1}A)}-1}{\sqrt{\kappa(M^{-1}A)}+1}\right)^k
+\|e_0\|_A.
+\]}
+
+\CANONICAL{
+Assume $A$ SPD, $M$ SPD. Define $\tilde{A}=M^{-1/2}AM^{-1/2}$ (SPD) and analyze
+CG on $\tilde{A}$ in Euclidean inner product.}
+
+\PRECONDS{
+\begin{bullets}
+\item Exact arithmetic; SPD $A$ and SPD $M$.
+\item PCG search directions are $A$-conjugate in $M$-inner product.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+(CG optimality) Let $\tilde{A}$ be SPD. After $k$ CG steps on $\tilde{A}\tilde{x}=\tilde{b}$,
+$\tilde{e}_k=\tilde{x}-\tilde{x}_k$ satisfies
+$\|\tilde{e}_k\|_{\tilde{A}}=\min_{p\in\Pi_k,\,p(0)=1}\|p(\tilde{A})\tilde{e}_0\|_{\tilde{A}}$,
+and the minimizing $p$ is the scaled Chebyshev polynomial on
+$[\lambda_{\min}(\tilde{A}),\lambda_{\max}(\tilde{A})]$.
+\end{lemma}
+\begin{proof}
+CG enforces $\tilde{r}_k\perp \mathcal{K}_k(\tilde{A},\tilde{r}_0)$ and
+$\tilde{e}_k\in \tilde{e}_0+\mathcal{K}_k(\tilde{A},\tilde{r}_0)$. Hence
+$\tilde{e}_k=p_k(\tilde{A})\tilde{e}_0$ with $p_k(0)=1$ and degree $k$.
+Minimization over this affine space in $\tilde{A}$-norm is equivalent to
+minimizing the operator norm of $p(\tilde{A})$ on the spectrum; by the spectral
+theorem it is $\max_{\lambda\in[\lambda_{\min},\lambda_{\max}]}\sqrt{\lambda}
+|p(\lambda)|$. The scaled Chebyshev polynomial achieves the extremal bound with
+value $2\left(\frac{\sqrt{\kappa}-1}{\sqrt{\kappa}+1}\right)^k$. Standard CG
+theory establishes that CG attains this minimizer among all degree-$k$
+polynomials with $p(0)=1$ via orthogonality and three-term recurrences.
+\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Similarity: }& \tilde{A}=M^{-1/2}AM^{-1/2},\ 
+\tilde{x}=M^{1/2}x,\ \tilde{b}=M^{-1/2}b. \\
+\text{PCG on }A,M &\text{ equals CG on }\tilde{A}. \\
+\tilde{e}_k&=p_k(\tilde{A})\tilde{e}_0,\ p_k(0)=1. \\
+\|\tilde{e}_k\|_{\tilde{A}}
+&\le \min_{p}\max_{\lambda\in[\lambda_{\min},\lambda_{\max}]}
+\sqrt{\lambda}|p(\lambda)|\ \|\tilde{e}_0\|_2. \\
+\text{Chebyshev } &\Rightarrow
+\|\tilde{e}_k\|_{\tilde{A}}\le
+2\left(\frac{\sqrt{\kappa}-1}{\sqrt{\kappa}+1}\right)^k
+\|\tilde{e}_0\|_{\tilde{A}}. \\
+\text{Back to }A\text{-norm: }&
+\|e_k\|_A=\|\tilde{e}_k\|_{\tilde{A}},\ \|e_0\|_A=\|\tilde{e}_0\|_{\tilde{A}}.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Ensure SPD; construct $M$ SPD with spectral equivalence to $A$.
+\item Estimate $\kappa(M^{-1}A)$ (Lanczos, Gershgorin, power method).
+\item Predict iterations to tolerance from the bound.
+\item Monitor $\|r_k\|$ and $\|e_k\|_A$ surrogate (energy residual).
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Unpreconditioned bound by setting $M=I$.
+\item Energy norm bound equivalent to Euclidean norm bound scaled by $\lambda$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item As $\kappa\to 1$, rate $\to 0$ and convergence is immediate.
+\item Bound can be pessimistic when eigenvalues are clustered with outliers.
+\end{bullets}
+}
+
+\INPUTS{$\kappa(M^{-1}A)$ or $\lambda_{\min},\lambda_{\max}$ of $\tilde{A}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Given target }\epsilon:\
+k &\ge \frac{\log\left(\frac{1}{2}\epsilon^{-1}\right)}
+{\log\left(\frac{\sqrt{\kappa}+1}{\sqrt{\kappa}-1}\right)}.
+\end{align*}
+}
+
+\RESULT{
+PCG error decays at least geometrically with ratio
+$\left(\frac{\sqrt{\kappa}-1}{\sqrt{\kappa}+1}\right)$.}
+
+\UNITCHECK{
+Dimensionless $\kappa$; norm equivalence preserves units; bound is consistent.}
+
+\PITFALLS{
+\begin{bullets}
+\item Using $\kappa(A)$ instead of $\kappa(M^{-1}A)$ for preconditioned CG.
+\item Assuming monotone residual in 2-norm for CG (it is monotone in $A$-norm).
+\end{bullets}
+}
+
+\INTUITION{
+PCG builds polynomials that are small on the spectrum of $\tilde{A}$, like
+fitting a rubber band tightly around clustered eigenvalues.}
+
+\CANONICAL{
+\begin{bullets}
+\item Spectral mapping via $M^{-1/2}AM^{-1/2}$.
+\item Chebyshev optimal polynomials on intervals control worst-case error.
+\end{bullets}
+}
+
+\FormulaPage{3}{GMRES Minimal Residual and Arnoldi with Left Preconditioning}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+GMRES applied to $M^{-1}Ax=M^{-1}b$ computes $x_k\in x_0+
+\mathcal{K}_k(M^{-1}A,M^{-1}r_0)$ such that
+$\|r_k\|_2=\min_{p\in\Pi_k,\,p(0)=1}\|p(M^{-1}A)r_0\|_2$.
+With Arnoldi: $M^{-1}AV_k=V_{k+1}\bar{H}_k$, and
+$\|r_k\|_2=\|\beta e_1-\bar{H}_k y_k\|_2$ minimized over $y_k$.
+
+\WHAT{
+Characterizes GMRES residual as the best 2-norm residual over degree-$k$
+polynomials and gives the concrete least squares problem via Arnoldi.}
+
+\WHY{
+Establishes monotone residual decrease, the role of preconditioning, and the
+computational core: orthonormal basis and small least squares.}
+
+\FORMULA{
+\[
+\|r_k\|_2=\min_{y\in\mathbb{R}^k}\|\beta e_1-\bar{H}_k y\|_2,\quad
+M^{-1}AV_k=V_{k+1}\bar{H}_k,\ \beta=\|M^{-1}r_0\|_2.
+\]}
+
+\CANONICAL{
+Left preconditioning yields the Krylov space of $M^{-1}A$. Arnoldi produces
+$V_{k+1}$ with orthonormal columns and upper Hessenberg $\bar{H}_k$.}
+
+\PRECONDS{
+\begin{bullets}
+\item $M$ nonsingular; matrix-vector $M^{-1}A v$ and $M^{-1}r_0$ available.
+\item Arnoldi process does not break down (or handle happy breakdown).
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+(Arnoldi) Given $B$ and $v_1$ with $\|v_1\|_2=1$, the Arnoldi process builds
+$V_{k+1}$, $H_k$ such that $BV_k=V_{k+1}\bar{H}_k$ and $V_{k+1}^\top V_{k+1}=I$.
+\end{lemma}
+\begin{proof}
+By Gram-Schmidt: set $w=B v_j$, orthogonalize against $v_1,\dots,v_j$ to get
+$h_{ij}$ and residual $w_\perp$. Normalize $v_{j+1}=w_\perp/\|w_\perp\|_2$,
+defining $h_{j+1,j}=\|w_\perp\|_2$. Stacking columns gives
+$BV_k=V_{k+1}\bar{H}_k$, with $\bar{H}_k$ upper Hessenberg by construction.
+Orthogonality follows from Gram-Schmidt; normalization yields $V_{k+1}^\top
+V_{k+1}=I$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Let }& B=M^{-1}A,\ v_1=\frac{M^{-1}r_0}{\beta},\ \beta=\|M^{-1}r_0\|_2. \\
+& \text{Arnoldi: } BV_k=V_{k+1}\bar{H}_k. \\
+x_k&=x_0+V_k y,\ \ r_k=b-Ax_k. \\
+M^{-1}r_k&=M^{-1}r_0 - B V_k y=\beta v_1 - V_{k+1}\bar{H}_k y. \\
+\|r_k\|_2&=\|M^{-1}r_k\|_2 \text{ if }M \text{ well-conditioned for scaling,} \\
+&=\| \beta e_1 - \bar{H}_k y \|_2 \text{ since } V_{k+1} \text{ is orthonormal}. \\
+\text{Minimize }& \| \beta e_1 - \bar{H}_k y \|_2 \Rightarrow \text{ GMRES step.} \\
+\text{Polynomial form: }& r_k=p_k(B)r_0,\ p_k(0)=1,\ \deg(p_k)\le k. \\
+& \Rightarrow \|r_k\|_2=\min_{p}\|p(B)r_0\|_2.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Define $B=M^{-1}A$; compute $v_1=M^{-1}r_0/\|M^{-1}r_0\|$.
+\item Run $k$ Arnoldi steps to get $V_{k+1},\bar{H}_k$.
+\item Solve $\min_y \|\beta e_1-\bar{H}_k y\|_2$; set $x_k=x_0+V_k y$.
+\item Check residual; restart or continue as needed.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Right preconditioning yields residual minimization in the image space,
+with modified least squares.
+\item Without preconditioning, set $M=I$ and $B=A$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Storage grows with $k$; restarts may slow convergence.
+\item Breakdown when $h_{j+1,j}=0$ indicates invariant subspace captured.
+\end{bullets}
+}
+
+\INPUTS{$A$, $M$, $b$, $x_0$, $k$ (iteration count or tolerance).}
+
+\DERIVATION{
+\begin{align*}
+\text{If }h_{j+1,j}=0,&\text{ then } \mathcal{K}_j \text{ is invariant,} \\
+&\text{and GMRES attains exact solution in } j \text{ steps.}
+\end{align*}
+}
+
+\RESULT{
+GMRES residual is the least 2-norm residual over affine Krylov space generated
+by $M^{-1}A$, computable via a small least-squares with $\bar{H}_k$.}
+
+\UNITCHECK{
+All norms are Euclidean; $\beta$ scales the first canonical vector $e_1$.
+Dimensions match via Arnoldi relation.}
+
+\PITFALLS{
+\begin{bullets}
+\item Confusing left with right preconditioning alters the least-squares form.
+\item Ignoring loss of orthogonality; use reorthogonalization if needed.
+\end{bullets}
+}
+
+\INTUITION{
+Project the big problem on a small orthonormal basis where the residual can be
+made as small as possible; $M$ reshapes the landscape for faster decay.}
+
+\CANONICAL{
+\begin{bullets}
+\item Residual polynomial minimization on the spectrum of $M^{-1}A$.
+\item Arnoldi factorization as the computational backbone.
+\end{bullets}
+}
+
+\FormulaPage{4}{Equivalence of Left/Right/Two-Sided Preconditioning}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Solving $Ax=b$ is equivalent to solving
+$M_L^{-1}AM_R^{-1}y=M_L^{-1}b$ and mapping back $x=M_R^{-1}y$.
+Residuals relate by $r=b-Ax=M_L r'$ with $r'=M_L^{-1}b-M_L^{-1}AM_R^{-1}y$.
+
+\WHAT{
+Formal equivalence of different preconditioning placements and how residuals
+and iterates map between the transformed and original systems.}
+
+\WHY{
+Ensures algorithmic correctness under variable changes and clarifies which
+object controls convergence (the preconditioned operator).}
+
+\FORMULA{
+\[
+M_L^{-1}AM_R^{-1}y=M_L^{-1}b,\quad x=M_R^{-1}y,\quad r=M_L r'.
+\]}
+
+\CANONICAL{
+Take nonsingular $M_L,M_R$. Left preconditioning: $M^{-1}Ax=M^{-1}b$
+with $M=M_L$. Right preconditioning: $AM^{-1}y=b$, $x=M^{-1}y$.}
+
+\PRECONDS{
+\begin{bullets}
+\item $M_L,M_R$ nonsingular.
+\item Algorithm must apply $M_L^{-1}$ and $M_R^{-1}$ efficiently.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $y$ solves $M_L^{-1}AM_R^{-1}y=M_L^{-1}b$, then $x=M_R^{-1}y$ solves $Ax=b$,
+and conversely.
+\end{lemma}
+\begin{proof}
+Multiply by $M_L$ on the left: $AM_R^{-1}y=b$. Set $x=M_R^{-1}y$ to get $Ax=b$.
+Conversely, if $Ax=b$ and set $y=M_R x$, then $M_L^{-1}AM_R^{-1}y=
+M_L^{-1}Ax=M_L^{-1}b$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+r'&=M_L^{-1}b-M_L^{-1}AM_R^{-1}y, \\
+M_L r'&=b-AM_R^{-1}y=b-Ax=r.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Choose placement (left/right/two-sided) compatible with solver.
+\item Map iterates and residuals between spaces for stopping tests.
+\item Ensure symmetry/definiteness properties in the working inner product.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item For SPD $A$, pick $M_L=M_R^\top$ to preserve symmetry in transformed space.
+\item Left preconditioning with $M$ equivalent to right with $M^\top$ under CG in
+the $M$-inner product.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Ill-conditioned $M_L$ can amplify residuals when mapped back.
+\item Right preconditioning complicates residual norms if measured in original space.
+\end{bullets}
+}
+
+\INPUTS{$A$, $M_L$, $M_R$, $b$; iterate $y$ or $x$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Stopping: }& \|r\|_2=\|M_L r'\|_2 \le \|M_L\| \|r'\|_2, \\
+& \|r'\|_2 \le \|M_L^{-1}\| \|r\|_2.
+\end{align*}
+}
+
+\RESULT{
+All placements are algebraically equivalent; convergence properties track the
+spectrum of the preconditioned operator used by the algorithm.}
+
+\UNITCHECK{
+Mappings are linear and preserve dimensionality; residual scaling bounded by
+$\|M_L\|$ and $\|M_L^{-1}\|$.}
+
+\PITFALLS{
+\begin{bullets}
+\item Using CG with right preconditioning without maintaining symmetry.
+\item Comparing residuals across spaces without accounting for $M_L$ scaling.
+\end{bullets}
+}
+
+\INTUITION{
+Changing variables before solving is like switching coordinate systems to make
+the geometry friendlier; measurements must be converted back consistently.}
+
+\CANONICAL{
+\begin{bullets}
+\item Variable substitution $x=M_R^{-1}y$.
+\item Residual relation $r=M_L r'$ and norm equivalence via $\|M_L\|$ bounds.
+\end{bullets}
+}
+
+\section{10 Exhaustive Problems and Solutions}
+\ProblemPage{1}{Optimal Richardson on a 2x2 SPD with Jacobi Preconditioner}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given $A=\begin{bmatrix}4&1\\1&3\end{bmatrix}$, $b=\begin{bmatrix}1\\2\end{bmatrix}$,
+$M=\mathrm{diag}(A)$, apply preconditioned Richardson with optimal $\omega$.
+
+\PROBLEM{
+Compute $\omega^\star$, the contraction $q^\star$, and the number of iterations
+to reduce the $M$-norm error by a factor $10^{-6}$. Verify numerically for one
+step from $x_0=\begin{bmatrix}0\\0\end{bmatrix}$.}
+
+\MODEL{
+\[
+B=M^{-1}A,\quad x_{k+1}=x_k+\omega M^{-1}(b-Ax_k).
+\]}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ SPD; $M$ SPD (Jacobi).
+\item Use Formula 1 for optimal $\omega^\star$.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{System matrix.}
+\var{M}{Jacobi preconditioner $\mathrm{diag}(4,3)$.}
+\var{B}{$M^{-1}A$.}
+\var{\omega^\star}{Optimal relaxation parameter.}
+\var{q^\star}{Contraction factor in $M$-norm.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 1 (Optimal Preconditioned Richardson).}
+
+\GOVERN{
+\[
+\omega^\star=\frac{2}{\lambda_{\min}(B)+\lambda_{\max}(B)},\quad
+q^\star=\frac{\kappa(B)-1}{\kappa(B)+1}.
+\]}
+
+\INPUTS{$A=\begin{bmatrix}4&1\\1&3\end{bmatrix}$, $M=\begin{bmatrix}4&0\\0&3\end{bmatrix}$, $x_0=0$.}
+
+\DERIVATION{
+\begin{align*}
+B&=M^{-1}A=\begin{bmatrix}1&1/4\\1/3&1\end{bmatrix}. \\
+\lambda(B)&\text{: solve } \det(B-\lambda I)=0. \\
+\det\begin{bmatrix}1-\lambda&1/4\\1/3&1-\lambda\end{bmatrix}
+&=(1-\lambda)^2-\frac{1}{12}=0. \\
+1-\lambda&=\pm \frac{1}{\sqrt{12}} \Rightarrow
+\lambda_{\max,\min}=1\pm \frac{1}{\sqrt{12}}. \\
+\omega^\star&=\frac{2}{(1-\frac{1}{\sqrt{12}})+(1+\frac{1}{\sqrt{12}})}=1. \\
+\kappa(B)&=\frac{1+\frac{1}{\sqrt{12}}}{1-\frac{1}{\sqrt{12}}}
+=\frac{\sqrt{12}+1}{\sqrt{12}-1}. \\
+q^\star&=\frac{\kappa-1}{\kappa+1}
+=\frac{\frac{\sqrt{12}+1}{\sqrt{12}-1}-1}{\frac{\sqrt{12}+1}{\sqrt{12}-1}+1}
+=\frac{2}{2\sqrt{12}}=\frac{1}{\sqrt{12}}. \\
+x_1&=x_0+\omega^\star M^{-1}b
+=\begin{bmatrix}1/4\\2/3\end{bmatrix}. \\
+r_1&=b-Ax_1=\begin{bmatrix}1\\2\end{bmatrix}-
+\begin{bmatrix}4&1\\1&3\end{bmatrix}\begin{bmatrix}1/4\\2/3\end{bmatrix}
+=\begin{bmatrix}1- (1+2/3)\\2-(1/4+2)\end{bmatrix}=
+\begin{bmatrix}-2/3\\-1/4\end{bmatrix}. \\
+\|e_1\|_M&=\|M^{-1}r_1\|_M \text{ (one-step Richardson)}. \\
+M^{-1}r_1&=\begin{bmatrix}-\frac{1}{6}\\-\frac{1}{12}\end{bmatrix},\
+\|e_1\|_M^2=r_1^\top M^{-1} r_1=\frac{(2/3)^2}{4}+\frac{(1/4)^2}{3}
+=\frac{1}{9}+\frac{1}{48}=\frac{19}{144}.
+\end{align*}
+}
+
+\RESULT{
+$\omega^\star=1$, $q^\star=1/\sqrt{12}\approx 0.288675$. Iterations for
+$10^{-6}$ reduction: $k\ge \lceil \log(10^6)/\log(1/q^\star)\rceil= \lceil
+6\log 10/\log(\sqrt{12})\rceil= \lceil 13.8155/1.2425\rceil=12$.}
+
+\UNITCHECK{
+All quantities dimensionless; norms consistent; $q^\star\in(0,1)$.}
+
+\EDGECASES{
+\begin{bullets}
+\item If off-diagonal entries vanish, $B=I$ and one step solves.
+\item If $M=I$, $\omega^\star$ differs and rate slows.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute $\kappa(B)$ via Rayleigh quotient bounds instead of exact eigenvalues.}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically check $\|e_1\|_M/\|e_0\|_M\le q^\star$ with $e_0=x$.
+\item Compare $x_1$ to exact solution $x=A^{-1}b$.
+\end{bullets}
+}
+
+\INTUITION{
+Jacobi balances rows; here it nearly normalizes $A$ so $\omega=1$ is optimal.}
+
+\CANONICAL{
+\begin{bullets}
+\item $q^\star=(\kappa-1)/(\kappa+1)$.
+\item $\omega^\star=2/(\lambda_{\min}+\lambda_{\max})$ for SPD $B$.
+\end{bullets}
+}
+
+\ProblemPage{2}{PCG on Tridiagonal Poisson with Diagonal Preconditioner}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let $A\in\mathbb{R}^{n\times n}$ be 1D Poisson: $A=\mathrm{tridiag}(-1,2,-1)$,
+$n=5$. Use PCG with $M=\mathrm{diag}(A)=2I$ from $x_0=0$ for $b=\mathbf{1}$.
+
+\PROBLEM{
+Compute $\kappa(M^{-1}A)$, bound the error factor after $k=3$ iterations, and
+produce $x_1$ explicitly.}
+
+\MODEL{
+\[
+\kappa(M^{-1}A)=\frac{\lambda_{\max}(A)}{\lambda_{\min}(A)} \text{ since } M=2I.
+\]}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ SPD with known eigenvalues $\lambda_j=2-2\cos(\frac{j\pi}{n+1})$.
+\item PCG bound from Formula 2.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Poisson matrix.}
+\var{M}{Diagonal $2I$.}
+\var{\kappa}{Condition number of $M^{-1}A$.}
+\var{x_k}{PCG iterates.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 (PCG bound) and Poisson spectrum.}
+
+\GOVERN{
+\[
+\|e_3\|_A \le
+2\left(\frac{\sqrt{\kappa}-1}{\sqrt{\kappa}+1}\right)^3 \|e_0\|_A.
+\]}
+
+\INPUTS{$n=5$, $b=\mathbf{1}$.}
+
+\DERIVATION{
+\begin{align*}
+\lambda_j&=2-2\cos\left(\frac{j\pi}{6}\right),\ j=1,\dots,5. \\
+\lambda_{\min}&=\lambda_1=2-2\cos(\pi/6)=2-2\cdot \frac{\sqrt{3}}{2}=2-\sqrt{3}. \\
+\lambda_{\max}&=\lambda_5=2-2\cos(5\pi/6)=2-2\cdot(-\frac{\sqrt{3}}{2})
+=2+\sqrt{3}. \\
+\kappa&=\frac{2+\sqrt{3}}{2-\sqrt{3}}. \\
+\rho&=\frac{\sqrt{\kappa}-1}{\sqrt{\kappa}+1}
+=\frac{\sqrt{\frac{2+\sqrt{3}}{2-\sqrt{3}}}-1}
+{\sqrt{\frac{2+\sqrt{3}}{2-\sqrt{3}}}+1}. \\
+\text{Numeric: }& \kappa\approx 13.9282,\ \sqrt{\kappa}\approx 3.7335,\ 
+\rho\approx 0.5777. \\
+\|e_3\|_A&\le 2\rho^3 \|e_0\|_A\approx 2\cdot 0.1929\ \|e_0\|_A=0.3858\|e_0\|_A. \\
+\text{First step: }& r_0=b,\ z_0=M^{-1}r_0=\tfrac{1}{2}\mathbf{1},\
+p_0=z_0. \\
+\alpha_0&=\frac{r_0^\top z_0}{p_0^\top A p_0}=
+\frac{\tfrac{5}{2}}{(\tfrac{1}{2}\mathbf{1})^\top A(\tfrac{1}{2}\mathbf{1})}. \\
+A\mathbf{1}&=\begin{bmatrix}1\\0\\0\\0\\1\end{bmatrix} \Rightarrow
+(\tfrac{1}{2}\mathbf{1})^\top A(\tfrac{1}{2}\mathbf{1})
+=\tfrac{1}{4}\cdot 2=\tfrac{1}{2}. \\
+\alpha_0&=\frac{5/2}{1/2}=5. \\
+x_1&=x_0+\alpha_0 p_0=0+5\cdot \tfrac{1}{2}\mathbf{1}=\tfrac{5}{2}\mathbf{1}.
+\end{align*}
+}
+
+\RESULT{
+$\kappa\approx 13.93$, PCG factor after $k=3$ bounded by $\approx 0.386$.
+First iterate $x_1=\tfrac{5}{2}\mathbf{1}$.}
+
+\UNITCHECK{
+Scalars dimensionless; inner products consistent with $A$ SPD.}
+
+\EDGECASES{
+\begin{bullets}
+\item Larger $n$ increases $\kappa$, slowing convergence; need stronger $M$.
+\item With multigrid preconditioning, $\kappa$ becomes mesh-independent.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use Gershgorin discs to bound $\lambda_{\min},\lambda_{\max}$ then apply Formula 2.}
+
+\VALIDATION{
+\begin{bullets}
+\item Compare to direct solve for $n=5$; compute $\|r_1\|_2$.
+\item Empirically measure $\|e_k\|_A$ decay vs. bound.
+\end{bullets}
+}
+
+\INTUITION{
+Diagonal preconditioning normalizes the main diagonal, but coupling persists,
+so CG still needs multiple steps.}
+
+\CANONICAL{
+\begin{bullets}
+\item PCG iteration bound depends on $\kappa(M^{-1}A)$.
+\item Poisson spectrum is known analytically for validation.
+\end{bullets}
+}
+
+\ProblemPage{3}{GMRES vs. Left Preconditioned GMRES on Nonsymmetric 3x3}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let $A=\begin{bmatrix}4&1&0\\-1&3&1\\0&-1&2\end{bmatrix}$,
+$M=\mathrm{diag}(4,3,2)$, $b=(1,0,1)^\top$, $x_0=0$.
+
+\PROBLEM{
+Compute the first GMRES step for unpreconditioned and left-preconditioned
+systems. Compare residual norms and explain the effect of $M$.}
+
+\MODEL{
+\[
+\text{GMRES: } x_1=x_0+\alpha r_0,\ 
+\alpha=\arg\min_\alpha \|b-A(x_0+\alpha r_0)\|_2.
+\]}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item One-step GMRES equals steepest residual minimization along $r_0$.
+\item Left preconditioning replaces $A$ by $B=M^{-1}A$ and $r_0$ by $M^{-1}r_0$.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Nonsymmetric matrix.}
+\var{M}{Diagonal preconditioner.}
+\var{r_0}{Initial residual $b$.}
+\var{\alpha}{Line-search parameter.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 3 (GMRES minimal residual with left preconditioning).}
+
+\GOVERN{
+\[
+\alpha=\frac{(Ar_0)^\top r_0}{\|Ar_0\|_2^2},\quad
+\alpha_M=\frac{(Br_0)^\top M^{-1}r_0}{\|Br_0\|_2^2}.
+\]}
+
+\INPUTS{$A$, $M$, $b=(1,0,1)^\top$, $x_0=0$.}
+
+\DERIVATION{
+\begin{align*}
+r_0&=b=\begin{bmatrix}1\\0\\1\end{bmatrix},\ Ar_0=
+\begin{bmatrix}4\\-1\\2\end{bmatrix}. \\
+\alpha&=\frac{(Ar_0)^\top r_0}{\|Ar_0\|_2^2}
+=\frac{4\cdot 1+(-1)\cdot 0+2\cdot 1}{4^2+(-1)^2+2^2}
+=\frac{6}{21}=\frac{2}{7}. \\
+r_1&=r_0-\alpha Ar_0=
+\begin{bmatrix}1\\0\\1\end{bmatrix}-\frac{2}{7}\begin{bmatrix}4\\-1\\2\end{bmatrix}
+=\begin{bmatrix}-\frac{1}{7}\\\frac{2}{7}\\\frac{3}{7}\end{bmatrix}. \\
+\|r_1\|_2&=\sqrt{\frac{1+4+9}{49}}=\sqrt{\frac{14}{49}}=\sqrt{\frac{2}{7}}. \\
+\text{Preconditioned: }& B=M^{-1}A=
+\begin{bmatrix}1&1/4&0\\-1/3&1&1/3\\0&-1/2&1\end{bmatrix}. \\
+u_0&=M^{-1}r_0=\begin{bmatrix}1/4\\0\\1/2\end{bmatrix},\
+Bu_0=\begin{bmatrix}1/4\\1/6\\1/2\end{bmatrix}. \\
+\alpha_M&=\frac{(Bu_0)^\top u_0}{\|Bu_0\|_2^2}
+=\frac{1/16+0+1/4}{1/16+1/36+1/4}
+=\frac{5/16}{(9+4+36)/144}=\frac{45}{49}\approx 0.9184. \\
+u_1&=u_0-\alpha_M Bu_0,\ 
+u_1=\begin{bmatrix}1/4\\0\\1/2\end{bmatrix}-0.9184
+\begin{bmatrix}1/4\\1/6\\1/2\end{bmatrix}. \\
+\|M^{-1}r_1^M\|_2&=\|u_1\|_2\approx
+\left\|\begin{bmatrix}0.25-0.2296\\-0.1531\\0.5-0.4592\end{bmatrix}\right\|_2
+=\|\begin{bmatrix}0.0204\\-0.1531\\0.0408\end{bmatrix}\|_2 \approx 0.1602.
+\end{align*}
+}
+
+\RESULT{
+Unpreconditioned $\|r_1\|_2=\sqrt{2/7}\approx 0.5345$. Preconditioned
+scaled residual norm $\|M^{-1}r_1^M\|_2\approx 0.1602$, showing stronger
+reduction after one step.}
+
+\UNITCHECK{
+Norms are 2-norms; left preconditioning measures residual in preconditioned
+space; mapping back uses $M$.}
+
+\EDGECASES{
+\begin{bullets}
+\item If $M=A$, one step solves: $B=I$, $u_1=0$.
+\item If $M$ poorly scaled, improvement may vanish.
+\end{bullets}
+}
+
+\ALTERNATE{
+Carry one full Arnoldi step to solve the exact small least squares instead of
+line search along $r_0$.}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute $x_1$ and check $r_1=b-Ax_1$ explicitly.
+\item Compare to direct solve $A^{-1}b$.
+\end{bullets}
+}
+
+\INTUITION{
+Scaling rows/columns makes the first step more effective in reducing residual.}
+
+\CANONICAL{
+\begin{bullets}
+\item GMRES minimizes $\|\beta e_1-\bar{H}_1 y\|_2$.
+\item Left preconditioning uses $B=M^{-1}A$ throughout.
+\end{bullets}
+}
+
+\ProblemPage{4}{Proof: Symmetry of Preconditioned Operator in $M$-Inner Product}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show that for SPD $A$ and SPD $M$, the operator $B=M^{-1}A$ is self-adjoint in
+the $M$-inner product: $\langle Bu,v\rangle_M=\langle u,Bv\rangle_M$.
+
+\PROBLEM{
+Prove symmetry, concluding that CG on $B$ with $M$-inner product is valid.}
+
+\MODEL{
+\[
+\langle u,v\rangle_M=u^\top M v,\quad B=M^{-1}A.
+\]}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ and $M$ symmetric positive definite.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{SPD matrix.}
+\var{M}{SPD preconditioner.}
+\var{B}{$M^{-1}A$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Relates to Formula 2 via similarity transform $\tilde{A}=M^{-1/2}AM^{-1/2}$.}
+
+\GOVERN{
+\[
+\langle Bu,v\rangle_M=(Bu)^\top M v=u^\top A v.
+\]}
+
+\INPUTS{$u,v\in\mathbb{R}^n$.}
+
+\DERIVATION{
+\begin{align*}
+\langle Bu,v\rangle_M&=(M^{-1}Au)^\top M v=u^\top A^\top v=u^\top A v, \\
+\langle u,Bv\rangle_M&=u^\top M (M^{-1}A v)=u^\top A v.
+\end{align*}
+}
+
+\RESULT{
+$\langle Bu,v\rangle_M=\langle u,Bv\rangle_M$; $B$ is $M$-self-adjoint.}
+
+\UNITCHECK{
+Bilinear forms produce scalars; symmetry uses $A=A^\top$.}
+
+\EDGECASES{
+\begin{bullets}
+\item If $A$ not symmetric, property fails; use GMRES instead of CG.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use $\tilde{A}=M^{-1/2}AM^{-1/2}$ and observe
+$B=M^{-1/2}\tilde{A}M^{1/2}$ is similar to a symmetric matrix.}
+
+\VALIDATION{
+\begin{bullets}
+\item Numeric test with random SPD $A,M$: check equality up to rounding.
+\end{bullets}
+}
+
+\INTUITION{
+The $M$-inner product compensates the asymmetry of $M^{-1}A$, restoring
+self-adjointness.}
+
+\CANONICAL{
+\begin{bullets}
+\item CG requires self-adjointness in some inner product; here it holds. 
+\end{bullets}
+}
+
+\ProblemPage{5}{Steepest Descent vs. PCG Rate on Clustered Spectra}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Consider SPD $A$ with eigenvalues $\{1,1,1,100\}$. Let $M$ cluster spectrum to
+$\{1,2\}$ for $M^{-1}A$. Compare rates of steepest descent (SD) and PCG.
+
+\PROBLEM{
+Compute $q^\star_{\text{SD}}$ and the PCG bound, and discuss the iteration
+advantage.}
+
+\MODEL{
+\[
+q^\star_{\text{SD}}=\frac{\kappa-1}{\kappa+1},\quad
+\text{PCG } \rho_{\text{PCG}}=\frac{\sqrt{\kappa}-1}{\sqrt{\kappa}+1}.
+\]}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item SD and PCG bounds apply in energy norm.
+\item $\kappa(A)=100$; $\kappa(M^{-1}A)=2$.
+\end{bullets}
+}
+
+\varmapStart
+\var{\kappa}{Condition number.}
+\var{q^\star_{\text{SD}}}{Optimal SD contraction.}
+\var{\rho_{\text{PCG}}}{PCG contraction.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formulas 1 and 2 for SD (Richardson with optimal $\omega$) and PCG.}
+
+\GOVERN{
+\[
+q^\star=\frac{\kappa-1}{\kappa+1},\quad
+\rho=\frac{\sqrt{\kappa}-1}{\sqrt{\kappa}+1}.
+\]}
+
+\INPUTS{$\kappa(A)=100$, $\kappa(M^{-1}A)=2$.}
+
+\DERIVATION{
+\begin{align*}
+q^\star_{\text{SD}}(A)&=\frac{100-1}{100+1}=\frac{99}{101}\approx 0.9802. \\
+\rho_{\text{PCG}}&=\frac{\sqrt{2}-1}{\sqrt{2}+1}=
+\frac{(\sqrt{2}-1)^2}{2-1}=(3-2\sqrt{2})\approx 0.1716. \\
+\text{Iterations for }10^{-6}:&
+\ k_{\text{SD}}\approx \frac{6\ln 10}{\ln(1/0.9802)}\approx 300. \\
+&k_{\text{PCG}}\approx \frac{\ln(0.5\times 10^6)}{\ln((1+0.1716)/(1-0.1716))}
+\approx 9.
+\end{align*}
+}
+
+\RESULT{
+SD needs about $300$ iterations; PCG about $9$ by the bound, a dramatic gain.}
+
+\UNITCHECK{
+All ratios are dimensionless; logs applied to $>1$ arguments.}
+
+\EDGECASES{
+\begin{bullets}
+\item If $\kappa\to 1$, both converge in one or few steps.
+\item Outliers degrade SD much more than PCG due to square root in bound.
+\end{bullets}
+}
+
+\ALTERNATE{
+Chebyshev semi-iteration lies between SD and CG; compute its rate with degree.}
+
+\VALIDATION{
+\begin{bullets}
+\item Simulate with random eigenbasis having given eigenvalues and compare. 
+\end{bullets}
+}
+
+\INTUITION{
+PCG uses conjugacy to avoid redoing work; SD keeps zigzagging across extremes.}
+
+\CANONICAL{
+\begin{bullets}
+\item Bounds hinge on $\kappa$ and degree-$k$ extremal polynomials.
+\end{bullets}
+}
+
+\ProblemPage{6}{Alice and Bob Choose Preconditioners with Hidden Equivalence}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Alice uses left preconditioner $M_L$; Bob uses right preconditioner $M_R$ with
+$M_L=M_R^\top$. Both run CG appropriately.
+
+\PROBLEM{
+Show that their iterates map by $x^{(A)}_k=M_R^{-\top} x^{(B)}_k$ when both
+measure orthogonality in the same energy inner product, exposing a hidden
+equivalence.}
+
+\MODEL{
+\[
+\text{Alice: } M_L^{-1}Ax=M_L^{-1}b,\ 
+\text{Bob: } A M_R^{-1} y=b,\ x=M_R^{-1}y.
+\]}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ SPD; $M_R$ SPD; $M_L=M_R^\top$.
+\item Both apply CG in their native symmetric inner products.
+\end{bullets}
+}
+
+\varmapStart
+\var{M_L,M_R}{Preconditioners related by transpose.}
+\var{x^{(A)}_k,x^{(B)}_k}{Iterates for Alice and Bob.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 4 (equivalence) and Formula 2 (CG in appropriate inner product).}
+
+\GOVERN{
+\[
+M_L^{-1}AM_R^{-1} y = M_L^{-1}b,\ x=M_R^{-1}y.
+\]}
+
+\INPUTS{$A$ SPD; $M_R$ SPD; $x_0=y_0=0$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Bob solves }& \tilde{A}y=\tilde{b},\ \tilde{A}=M_L^{-1}AM_R^{-1},\
+\tilde{b}=M_L^{-1}b. \\
+\text{Alice solves }& \tilde{A}x'=\tilde{b}\text{ directly with }x'=x. \\
+\text{Thus }& y_k=x_k' \text{ in the transformed system. } \\
+x^{(B)}_k&=M_R^{-1} y_k= M_R^{-1} x_k'. \\
+x^{(A)}_k&=x_k' \text{ mapped by } M_R^{-\top} \text{ if inner products match.} \\
+\text{Since }& M_R\text{ SPD},\ M_R^{-\top}=M_R^{-1},\ \Rightarrow
+x^{(A)}_k=M_R^{-1} x^{(B)}_k.
+\end{align*}
+}
+
+\RESULT{
+The sequences correspond via $x^{(A)}_k=M_R^{-1}x^{(B)}_k$, revealing the same
+trajectory in different coordinates.}
+
+\UNITCHECK{
+Mappings preserve dimensions; SPD ensures inverse equals inverse transpose.}
+
+\EDGECASES{
+\begin{bullets}
+\item If $M_L\ne M_R^\top$, equivalence fails for CG symmetry needs.
+\end{bullets}
+}
+
+\ALTERNATE{
+Show equivalence via similarity: $M_R^{1/2} x^{(B)}_k$ equals
+$M_R^{-1/2} x^{(A)}_k$ after transforming to $\tilde{A}$.}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerical experiment with random SPD $A,M$ to verify mapping exactly in
+exact arithmetic.
+\end{bullets}
+}
+
+\INTUITION{
+They walk the same path drawn on different, but aligned, grids.}
+
+\CANONICAL{
+\begin{bullets}
+\item Two-sided preconditioning unifies left/right placements.
+\end{bullets}
+}
+
+\ProblemPage{7}{Dice Puzzle: Randomized Richardson Steps and Expected Contraction}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For SPD $B$, randomized Richardson picks $\omega\in\{\omega_1,\omega_2\}$ with
+equal probability at each step. What is the expected squared $B$-norm reduction
+in one step?
+
+\PROBLEM{
+Given $\omega_1=2/(\lambda_{\min}+\lambda_{\max})$ and
+$\omega_2=1/\lambda_{\max}$, compute
+$\mathbb{E}[\|e_{k+1}\|_B^2]/\|e_k\|_B^2$.}
+
+\MODEL{
+\[
+e_{k+1}=(I-\omega B)e_k,\ \|e_{k+1}\|_B^2\le
+\max_{\lambda\in[\lambda_{\min},\lambda_{\max}]}(1-\omega\lambda)^2\|e_k\|_B^2.
+\]}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Worst-case over spectrum; independence across steps.
+\end{bullets}
+}
+
+\varmapStart
+\var{\lambda_{\min},\lambda_{\max}}{Spectral bounds of $B$.}
+\var{\omega_1,\omega_2}{Two relaxation choices.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 1 (Richardson spectral contraction).}
+
+\GOVERN{
+\[
+q(\omega)=\max_{\lambda\in[\lambda_{\min},\lambda_{\max}]}
+|1-\omega\lambda|.
+\]}
+
+\INPUTS{$\omega_1=\frac{2}{\lambda_{\min}+\lambda_{\max}}$, 
+$\omega_2=\frac{1}{\lambda_{\max}}$.}
+
+\DERIVATION{
+\begin{align*}
+q(\omega_1)&=\frac{\lambda_{\max}-\lambda_{\min}}{\lambda_{\max}+\lambda_{\min}}
+=\frac{\kappa-1}{\kappa+1}. \\
+q(\omega_2)&=\max\left(|1-\lambda_{\min}/\lambda_{\max}|,\ 0\right)
+=1-\frac{1}{\kappa}. \\
+\mathbb{E}\left[\frac{\|e_{k+1}\|_B^2}{\|e_k\|_B^2}\right]
+&\le \tfrac{1}{2}\left(q(\omega_1)^2+q(\omega_2)^2\right) \\
+&=\tfrac{1}{2}\left(\left(\frac{\kappa-1}{\kappa+1}\right)^2+
+\left(1-\frac{1}{\kappa}\right)^2\right).
+\end{align*}
+}
+
+\RESULT{
+Expected worst-case squared contraction per step is bounded by
+$\tfrac{1}{2}\left(\left(\frac{\kappa-1}{\kappa+1}\right)^2+
+\left(1-\frac{1}{\kappa}\right)^2\right)$.}
+
+\UNITCHECK{
+Dimensionless; values in $(0,1)$ for $\kappa>1$.}
+
+\EDGECASES{
+\begin{bullets}
+\item $\kappa\to 1$: expectation $\to 0$ (one-step solve).
+\item $\kappa\to\infty$: expectation $\to \tfrac{1}{2}(1+1)=1$ (no gain).
+\end{bullets}
+}
+
+\ALTERNATE{
+Choose $\omega$ from Chebyshev set to get deterministic optimal degree-$k$.}
+
+\VALIDATION{
+\begin{bullets}
+\item Simulate with diagonal $B=\mathrm{diag}(\lambda_{\min},\lambda_{\max})$.
+\end{bullets}
+}
+
+\INTUITION{
+Mixing a safe and an optimal step averages performance; benefit depends on
+spectral spread.}
+
+\CANONICAL{
+\begin{bullets}
+\item Contraction governed by spectral endpoints.
+\end{bullets}
+}
+
+\ProblemPage{8}{Proof: Finite Termination of CG in Exact Arithmetic}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show CG (and PCG on $\tilde{A}$) solves SPD systems in at most $n$ steps in
+exact arithmetic.
+
+\PROBLEM{
+Prove that $r_k=0$ for some $k\le n$ when Krylov space reaches degree $n$.}
+
+\MODEL{
+\[
+r_k\perp \mathcal{K}_k(A,r_0),\ r_k\in \mathcal{K}_{k+1}(A,r_0).
+\]}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Exact arithmetic; $A$ SPD.
+\end{bullets}
+}
+
+\varmapStart
+\var{r_k}{Residual at step $k$.}
+\var{\mathcal{K}_k}{Krylov subspace.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 and Krylov subspace properties.}
+
+\GOVERN{
+\[
+\dim \mathcal{K}_n(A,r_0)\le n,\ \text{and } \{r_0,Ar_0,\dots,A^{n-1}r_0\}
+\text{ are linearly dependent}.
+\]}
+
+\INPUTS{$n=\dim(A)$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Suppose }& r_k\ne 0 \text{ for } k<n. \\
+\text{CG ensures }& r_k\perp \mathcal{K}_k(A,r_0),\
+r_k\in \mathcal{K}_{k+1}(A,r_0). \\
+\text{If }& \dim\mathcal{K}_{m} \text{ reaches the minimal polynomial degree }d
+\le n, \\
+\text{then }& p_d(A)r_0=0 \text{ for some degree-}d\ p_d \text{ with }p_d(0)=1. \\
+\text{CG produces }& r_d=p_d(A)r_0=0 \text{ by optimality over polynomials.}
+\end{align*}
+}
+
+\RESULT{
+CG terminates in at most $n$ steps (degree $\le n$ minimal polynomial).}
+
+\UNITCHECK{
+Subspace dimensions are integers; no unit issues.}
+
+\EDGECASES{
+\begin{bullets}
+\item With clustered or repeated eigenvalues, $d\ll n$ and termination is earlier.
+\end{bullets}
+}
+
+\ALTERNATE{
+Prove via Lanczos tridiagonalization yielding exact solve when Krylov space
+spans the invariant subspace of involved eigenvalues.}
+
+\VALIDATION{
+\begin{bullets}
+\item Test on diagonal matrices with $m$ distinct eigenvalues; CG stops at $m$.
+\end{bullets}
+}
+
+\INTUITION{
+CG builds a polynomial that zeroes eigencomponents one by one; after enough
+degrees, all components vanish.}
+
+\CANONICAL{
+\begin{bullets}
+\item Minimal polynomial degree bounds iterations.
+\end{bullets}
+}
+
+\ProblemPage{9}{Combo: Gershgorin Bounds Guide Preconditioner Choice}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For strictly diagonally dominant $A$, use Gershgorin discs to argue that Jacobi
+preconditioner reduces $\kappa$. Quantify bounds for a sample $3\times 3$.
+
+\PROBLEM{
+Given $A=\begin{bmatrix}5&-1&0\\-1&4&-1\\0&-1&3\end{bmatrix}$, bound
+$\kappa(A)$ and $\kappa(M^{-1}A)$ using Gershgorin; compare.}
+
+\MODEL{
+\[
+\lambda(A)\subset \bigcup_i D(a_{ii},R_i),\ R_i=\sum_{j\ne i}|a_{ij}|.
+\]}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ SPD and strictly diagonally dominant.
+\item $M=\mathrm{diag}(A)$.
+\end{bullets}
+}
+
+\varmapStart
+\var{D(c,r)}{Gershgorin disc centered at $c$ radius $r$.}
+\var{\kappa}{Condition number upper bound via interval ratio.}
+\varmapEnd
+
+\WHICHFORMULA{
+Gershgorin theorem and Formula 1 intuition for scaling.}
+
+\GOVERN{
+\[
+\lambda_{\min}\ge \min_i (a_{ii}-R_i),\quad
+\lambda_{\max}\le \max_i (a_{ii}+R_i).
+\]}
+
+\INPUTS{$A$ as above; $M=\mathrm{diag}(5,4,3)$.}
+
+\DERIVATION{
+\begin{align*}
+R_1&=1,\ R_2=2,\ R_3=1. \\
+\lambda_{\min}(A)&\ge \min(5-1,4-2,3-1)=\min(4,2,2)=2. \\
+\lambda_{\max}(A)&\le \max(5+1,4+2,3+1)=\max(6,6,4)=6. \\
+\kappa(A)&\le 6/2=3. \\
+B&=M^{-1}A=\begin{bmatrix}1&-1/5&0\\-1/4&1&-1/4\\0&-1/3&1\end{bmatrix}. \\
+R_1'&=1/5,\ R_2'=1/2,\ R_3'=1/3. \\
+\lambda_{\min}(B)&\ge \min(1-1/5,1-1/2,1-1/3)=\min(4/5,1/2,2/3)=1/2. \\
+\lambda_{\max}(B)&\le \max(1+1/5,1+1/2,1+1/3)=\max(6/5,3/2,4/3)=3/2. \\
+\kappa(B)&\le (3/2)/(1/2)=3.
+\end{align*}
+}
+
+\RESULT{
+Both bounds give $\kappa\le 3$; Jacobi scaling maintains a favorable bound and
+often tightens it in practice; here bounds are equal but $B$ is closer to $I$.}
+
+\UNITCHECK{
+Bounds are dimensionless; discs apply in complex plane though $A$ real SPD.}
+
+\EDGECASES{
+\begin{bullets}
+\item If $A$ is nearly singular, Gershgorin may be too loose; use Lanczos.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use row/column equilibration to further tighten spectral clustering.}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute exact eigenvalues numerically to confirm tightening.
+\end{bullets}
+}
+
+\INTUITION{
+Jacobi reduces off-diagonal influence relative to diagonal, clustering around 1.}
+
+\CANONICAL{
+\begin{bullets}
+\item Diagonal dominance suggests Jacobi as a natural preconditioner.
+\end{bullets}
+}
+
+\ProblemPage{10}{Combo: Energy Norm Equivalence Under Spectral Equivalence}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Suppose $c_1 x^\top A x\le x^\top M x\le c_2 x^\top A x$. Show that PCG error
+in $A$-norm is bounded by the same PCG on $\tilde{A}=M^{-1/2}AM^{-1/2}$ with
+$\kappa\le c_2/c_1$.
+
+\PROBLEM{
+Derive the bound and discuss mesh independence for multigrid $M$.}
+
+\MODEL{
+\[
+\tilde{A}=M^{-1/2}AM^{-1/2},\ \kappa(\tilde{A})\le c_2/c_1.
+\]}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A,M$ SPD; spectral equivalence constants $c_1,c_2>0$.
+\end{bullets}
+}
+
+\varmapStart
+\var{c_1,c_2}{Spectral equivalence constants.}
+\var{\kappa}{Condition number bound.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 with $\kappa\le c_2/c_1$.}
+
+\GOVERN{
+\[
+\|e_k\|_A \le 2\left(\frac{\sqrt{\kappa}-1}{\sqrt{\kappa}+1}\right)^k\|e_0\|_A.
+\]}
+
+\INPUTS{$c_1,c_2$ with $c_2/c_1$ moderate (e.g., independent of mesh size).}
+
+\DERIVATION{
+\begin{align*}
+x^\top M x &\le c_2 x^\top A x \Rightarrow
+\lambda_{\max}(M^{-1}A)\le c_2. \\
+x^\top M x &\ge c_1 x^\top A x \Rightarrow
+\lambda_{\min}(M^{-1}A)\ge c_1. \\
+\kappa(M^{-1}A)&\le c_2/c_1. \\
+\text{Apply Formula 2 to obtain the PCG bound with this }\kappa.
+\end{align*}
+}
+
+\RESULT{
+PCG convergence is bounded uniformly by $c_2/c_1$; if $c_2/c_1$ is mesh
+independent (e.g., multigrid), then iterations are mesh independent.}
+
+\UNITCHECK{
+All constants dimensionless; norms consistent under equivalence.}
+
+\EDGECASES{
+\begin{bullets}
+\item If $c_1\to 0$, bound deteriorates; preconditioner is ineffective.
+\end{bullets}
+}
+
+\ALTERNATE{
+Prove via Rayleigh quotient inequalities:
+$\kappa=\max \frac{x^\top A x}{x^\top M x}/
+\min \frac{x^\top A x}{x^\top M x}$.}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerical PDE experiments show iteration counts independent of mesh $h$.
+\end{bullets}
+}
+
+\INTUITION{
+Spectral equivalence means $M$ measures the same energy as $A$ up to constants,
+so CG sees a uniformly conditioned problem.}
+
+\CANONICAL{
+\begin{bullets}
+\item Mesh independence arises from uniform spectral equivalence.
+\end{bullets}
+}
+
+\section{Coding Demonstrations}
+\CodeDemoPage{Preconditioned Conjugate Gradient (PCG) with Jacobi Preconditioner}
+\PROBLEM{
+Implement PCG for SPD $A$ using Jacobi preconditioner $M=\mathrm{diag}(A)$.
+Verify convergence against the Formula 2 bound and correctness vs. direct solve.}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> dict} — parse $n$, seed, and tol.
+\item \inlinecode{def solve_case(obj) -> tuple} — run PCG and return stats.
+\item \inlinecode{def validate() -> None} — assertions for correctness.
+\item \inlinecode{def main() -> None} — orchestrate.
+\end{bullets}
+}
+
+\INPUTS{
+$n$ (size), seed (int), tol (float), maxit (int). Generates SPD $A$ and $b$.}
+
+\OUTPUTS{
+$x$ (solution), iterations $k$, residual history, and bound sequence.}
+
+\FORMULA{
+\[
+\|e_k\|_A \le
+2\left(\frac{\sqrt{\kappa}-1}{\sqrt{\kappa}+1}\right)^k\|e_0\|_A,\ 
+\kappa=\frac{\lambda_{\max}(M^{-1}A)}{\lambda_{\min}(M^{-1}A)}.
+\]}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    toks = s.split()
+    return {"n": int(toks[0]), "seed": int(toks[1]),
+            "tol": float(toks[2]), "maxit": int(toks[3])}
+
+def make_spd(n, seed=0):
+    rng = np.random.default_rng(seed)
+    Q, _ = np.linalg.qr(rng.normal(size=(n, n)))
+    vals = np.linspace(1.0, 20.0, n)
+    A = (Q * vals) @ Q.T
+    return A
+
+def pcg(A, b, tol=1e-10, maxit=200):
+    n = A.shape[0]
+    D = np.diag(A)
+    assert np.all(D > 0)
+    Msolve = lambda r: r / D
+    x = np.zeros(n)
+    r = b - A @ x
+    z = Msolve(r)
+    p = z.copy()
+    rz_old = r @ z
+    hist = [np.linalg.norm(r)]
+    for k in range(1, maxit + 1):
+        Ap = A @ p
+        alpha = rz_old / (p @ Ap)
+        x = x + alpha * p
+        r = r - alpha * Ap
+        nr = np.linalg.norm(r)
+        hist.append(nr)
+        if nr < tol:
+            break
+        z = Msolve(r)
+        rz_new = r @ z
+        beta = rz_new / rz_old
+        p = z + beta * p
+        rz_old = rz_new
+    return x, k, np.array(hist)
+
+def bound_seq(A, Mdiag, hist0):
+    # estimate kappa by Rayleigh bounds on M^{-1}A via power and inverse power
+    Dinv = 1.0 / Mdiag
+    Bmv = lambda v: Dinv * (A @ v)
+    n = A.shape[0]
+    v = np.ones(n) / np.sqrt(n)
+    for _ in range(40):
+        v = Bmv(v)
+        v = v / np.linalg.norm(v)
+    lam_max = v @ (Bmv(v))
+    w = np.ones(n) / np.sqrt(n)
+    for _ in range(40):
+        w = np.linalg.solve(A, w * Mdiag)
+        w = w / np.linalg.norm(w)
+    lam_min = 1.0 / (w @ (Bmv(w)))
+    kappa = lam_max / lam_min
+    rho = (np.sqrt(kappa) - 1.0) / (np.sqrt(kappa) + 1.0)
+    bnd = [hist0 * (2.0 * (rho ** k)) for k in range(0, 1000)]
+    return kappa, np.array(bnd)
+
+def solve_case(obj):
+    n, seed, tol, maxit = obj["n"], obj["seed"], obj["tol"], obj["maxit"]
+    A = make_spd(n, seed)
+    x_true = np.ones(n)
+    b = A @ x_true
+    x, k, hist = pcg(A, b, tol=tol, maxit=maxit)
+    kappa, bnd = bound_seq(A, np.diag(A), hist[0])
+    return x, x_true, k, hist, bnd[:len(hist)], kappa
+
+def validate():
+    obj = {"n": 40, "seed": 0, "tol": 1e-10, "maxit": 200}
+    x, x_true, k, hist, bnd, kappa = solve_case(obj)
+    assert np.linalg.norm(A := make_spd(40, 0) @ x - A @ x_true) < 1e-6
+    assert (hist <= bnd + 1e-8).all()
+
+def main():
+    validate()
+    obj = {"n": 60, "seed": 1, "tol": 1e-8, "maxit": 300}
+    x, x_true, k, hist, bnd, kappa = solve_case(obj)
+    print("iter", k, "kappa_est", round(kappa, 2),
+          "r0", round(hist[0], 3), "rk", round(hist[-1], 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    n, seed, tol, maxit = s.split()
+    return {"n": int(n), "seed": int(seed), "tol": float(tol),
+            "maxit": int(maxit)}
+
+def generate(n, seed):
+    rng = np.random.default_rng(seed)
+    A = np.eye(n)
+    A += rng.standard_normal((n, n))
+    A = A.T @ A + n * np.eye(n)  # SPD
+    b = np.ones(n)
+    return A, b
+
+def pcg_np(A, b, tol=1e-10, maxit=200):
+    D = np.diag(A)
+    x = np.zeros_like(b)
+    r = b - A @ x
+    z = r / D
+    p = z.copy()
+    rz = float(r @ z)
+    hist = [np.linalg.norm(r)]
+    for k in range(1, maxit + 1):
+        Ap = A @ p
+        alpha = rz / float(p @ Ap)
+        x += alpha * p
+        r -= alpha * Ap
+        nr = np.linalg.norm(r)
+        hist.append(nr)
+        if nr < tol:
+            break
+        z = r / D
+        rz_new = float(r @ z)
+        beta = rz_new / rz
+        p = z + beta * p
+        rz = rz_new
+    return x, k, np.array(hist)
+
+def validate():
+    A, b = generate(30, 0)
+    x, k, hist = pcg_np(A, b, tol=1e-10, maxit=200)
+    x_ref = np.linalg.solve(A, b)
+    assert np.linalg.norm(A @ x - b) < 1e-6
+    assert np.linalg.norm(x - x_ref) / np.linalg.norm(x_ref) < 1e-6
+
+def main():
+    validate()
+    A, b = generate(50, 1)
+    x, k, hist = pcg_np(A, b, tol=1e-8, maxit=300)
+    print("iter", k, "r_end", round(hist[-1], 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Time $\mathcal{O}(k \cdot \mathrm{nnz}(A))$ for matvecs plus $\mathcal{O}(kn)$
+for SAXPYs; space $\mathcal{O}(n)$.}
+
+\FAILMODES{
+\begin{bullets}
+\item Zero diagonal in $M$; guard with assert and fallback.
+\item Loss of conjugacy from rounding; restart or refine tolerance.
+\item Bad $\kappa$ estimate; bound still valid but loose.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Use residual recomputation to avoid drift.
+\item Diagonal scaling improves conditioning of dot products.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compare to direct $\ell_2$ residual; assert decrease.
+\item Check bound sequence dominates residual history.
+\end{bullets}
+}
+
+\RESULT{
+PCG converges in far fewer steps than steepest descent when $M$ lowers
+$\kappa$; bound tracks decay within a small factor.}
+
+\EXPLANATION{
+Implements PCG recurrences exactly; Jacobi $M$ approximates $A$ cheaply; bound
+derived from Formula 2 is verified empirically.}
+
+\EXTENSION{
+Block-Jacobi or ILU(0) preconditioners, and energy-norm a posteriori estimates.}
+
+\CodeDemoPage{Left-Preconditioned GMRES with Arnoldi (No SciPy)}
+\PROBLEM{
+Implement GMRES with left Jacobi preconditioning using explicit Arnoldi and
+solve the least squares with NumPy. Compare residual histories with and without
+preconditioning.}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> dict} — parse $n$, seed, maxit.
+\item \inlinecode{def gmres(A,b,M,maxit,tol) -> tuple} — GMRES core.
+\item \inlinecode{def validate() -> None} — assertions on monotone residuals.
+\item \inlinecode{def main() -> None} — run demo and print summary.
+\end{bullets}
+}
+
+\INPUTS{
+$n$, seed; generate nonsymmetric $A$ with controlled spectrum; $b$.}
+
+\OUTPUTS{
+$x_k$ at each restartless step, residual norms, and comparison arrays.}
+
+\FORMULA{
+\[
+M^{-1}AV_k=V_{k+1}\bar{H}_k,\quad
+\min_y \|\beta e_1-\bar{H}_k y\|_2.
+\]}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    n, seed, maxit = s.split()
+    return {"n": int(n), "seed": int(seed), "maxit": int(maxit)}
+
+def make_ns(n, seed):
+    rng = np.random.default_rng(seed)
+    U, _ = np.linalg.qr(rng.normal(size=(n, n)))
+    V, _ = np.linalg.qr(rng.normal(size=(n, n)))
+    vals = np.linspace(0.5, 2.0, n)
+    A = U @ np.diag(vals) @ V.T
+    return A
+
+def gmres_left(A, b, maxit=30, tol=1e-10):
+    n = A.shape[0]
+    D = np.diag(A)
+    D[D == 0] = 1.0
+    Minv = lambda r: r / np.abs(D)
+    Bmv = lambda v: Minv(A @ v)
+    x = np.zeros_like(b)
+    r = b - A @ x
+    u = Minv(r)
+    beta = np.linalg.norm(u)
+    V = np.zeros((n, maxit + 1))
+    H = np.zeros((maxit + 1, maxit))
+    res = [np.linalg.norm(r)]
+    if beta == 0:
+        return x, np.array(res)
+    V[:, 0] = u / beta
+    for j in range(maxit):
+        w = Bmv(V[:, j])
+        for i in range(j + 1):
+            H[i, j] = V[:, i] @ w
+            w = w - H[i, j] * V[:, i]
+        H[j + 1, j] = np.linalg.norm(w)
+        if H[j + 1, j] != 0 and j + 1 < maxit + 1:
+            V[:, j + 1] = w / H[j + 1, j]
+        e1 = np.zeros(j + 2)
+        e1[0] = beta
+        y, *_ = np.linalg.lstsq(H[: j + 2, : j + 1], e1, rcond=None)
+        x = x + V[:, : j + 1] @ y
+        r = b - A @ x
+        res.append(np.linalg.norm(r))
+        if res[-1] < tol:
+            break
+    return x, np.array(res)
+
+def validate():
+    n = 30
+    A = make_ns(n, 0)
+    b = np.arange(1, n + 1, dtype=float)
+    x1, r1 = gmres_left(A, b, maxit=20, tol=1e-12)
+    assert np.all(np.diff(r1) <= 1e-12 + 0.0)
+    assert np.linalg.norm(A @ x1 - b) < 1e-6
+
+def main():
+    validate()
+    n = 60
+    A = make_ns(n, 1)
+    b = np.ones(n)
+    x, r = gmres_left(A, b, maxit=30, tol=1e-10)
+    print("gmres iters", len(r) - 1, "r_end", round(r[-1], 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def gmres_left_lib(A, b, maxit=30, tol=1e-10):
+    n = A.shape[0]
+    D = np.diag(A)
+    D[D == 0] = 1.0
+    Minv = lambda r: r / np.abs(D)
+    Bmv = lambda v: Minv(A @ v)
+    x = np.zeros_like(b)
+    r = b - A @ x
+    u = Minv(r)
+    beta = np.linalg.norm(u)
+    Q = np.zeros((n, maxit + 1))
+    H = np.zeros((maxit + 1, maxit))
+    res = [np.linalg.norm(r)]
+    if beta == 0:
+        return x, np.array(res)
+    Q[:, 0] = u / beta
+    for k in range(maxit):
+        w = Bmv(Q[:, k])
+        H[: k + 1, k] = Q[:, : k + 1].T @ w
+        w = w - Q[:, : k + 1] @ H[: k + 1, k]
+        H[k + 1, k] = np.linalg.norm(w)
+        if H[k + 1, k] != 0 and k + 1 < maxit + 1:
+            Q[:, k + 1] = w / H[k + 1, k]
+        e1 = np.zeros(k + 2)
+        e1[0] = beta
+        y, *_ = np.linalg.lstsq(H[: k + 2, : k + 1], e1, rcond=None)
+        x = x + Q[:, : k + 1] @ y
+        r = b - A @ x
+        res.append(np.linalg.norm(r))
+        if res[-1] < tol:
+            break
+    return x, np.array(res)
+
+def validate():
+    A = np.array([[4.,1.],[2.,3.]])
+    b = np.array([1.,2.])
+    x, r = gmres_left_lib(A, b, maxit=5, tol=1e-12)
+    assert np.linalg.norm(A @ x - b) < 1e-6
+    assert np.all(np.diff(r) <= 1e-12 + 0.0)
+
+def main():
+    validate()
+    n = 40
+    rng = np.random.default_rng(2)
+    A = rng.normal(size=(n, n))
+    b = rng.normal(size=n)
+    x, r = gmres_left_lib(A, b, maxit=25, tol=1e-8)
+    print("iters", len(r) - 1, "r_end", round(r[-1], 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Time $\mathcal{O}(k \cdot \mathrm{nnz}(A) + k^2 n)$ due to orthogonalization;
+space $\mathcal{O}(kn)$.}
+
+\FAILMODES{
+\begin{bullets}
+\item Loss of orthogonality; use modified Gram-Schmidt twice.
+\item Zero diagonal in $M$; replace with absolute diagonal or shift.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Reorthogonalize when $h_{k+1,k}$ small; monitor orthogonality.
+\item Scale by $M$ to reduce dynamic range in Arnoldi vectors.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Assert monotone residual decay; compare to direct solve.
+\item Cross-check residuals computed via $b-Ax_k$ and least-squares value.
+\end{bullets}
+}
+
+\RESULT{
+Left preconditioning reduces iterations and residuals decrease monotonically.}
+
+\EXPLANATION{
+Implements Arnoldi factorization and least-squares residual minimization per
+Formula 3; $M$ improves the spectrum of $M^{-1}A$, aiding convergence.}
+
+\EXTENSION{
+Implement restarts and compare with no restarts; add Householder Arnoldi.}
+
+\section{Applied Domains — Detailed End-to-End Scenarios}
+\DomainPage{Machine Learning}
+\SCENARIO{
+Solve ridge regression normal equations $(X^\top X+\lambda I)\beta=X^\top y$
+using PCG with Jacobi preconditioning.}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $X\in\mathbb{R}^{n\times d}$ with $n\gg d$; $(X^\top X+\lambda I)$ SPD.
+\item Diagonal of $X^\top X$ is cheap and effective preconditioner.
+\end{bullets}
+}
+
+\WHICHFORMULA{
+Formula 2 (PCG bound) guides iteration count via $\kappa(M^{-1}(X^\top X+\lambda I))$.}
+
+\varmapStart
+\var{X}{Design matrix.}
+\var{y}{Targets.}
+\var{\lambda}{Ridge parameter.}
+\var{\beta}{Coefficients.}
+\var{M}{Jacobi preconditioner $\mathrm{diag}(X^\top X+\lambda I)$.}
+\varmapEnd
+
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic $(X,y)$ with controlled conditioning.
+\item Form $A=X^\top X+\lambda I$, $b=X^\top y$.
+\item Run PCG with $M=\mathrm{diag}(A)$; compare to direct solve.
+\end{bullets}
+}
+
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def gen_data(n=2000, d=100, noise=0.1, seed=0):
+    rng = np.random.default_rng(seed)
+    X = rng.normal(size=(n, d))
+    true = np.linspace(1, 0.1, d)
+    y = X @ true + noise * rng.normal(size=n)
+    return X, y, true
+
+def ridge_pcg(X, y, lam=1e-1, tol=1e-8, maxit=200):
+    A = X.T @ X + lam * np.eye(X.shape[1])
+    b = X.T @ y
+    D = np.diag(A)
+    x = np.zeros_like(b)
+    r = b - A @ x
+    z = r / D
+    p = z.copy()
+    rz = float(r @ z)
+    for k in range(1, maxit + 1):
+        Ap = A @ p
+        alpha = rz / float(p @ Ap)
+        x += alpha * p
+        r -= alpha * Ap
+        if np.linalg.norm(r) < tol:
+            break
+        z = r / D
+        rz_new = float(r @ z)
+        beta = rz_new / rz
+        p = z + beta * p
+        rz = rz_new
+    return x, k
+
+def main():
+    X, y, true = gen_data()
+    beta, k = ridge_pcg(X, y)
+    err = np.linalg.norm(beta - true) / np.linalg.norm(true)
+    print("pcg iters", k, "rel_err", round(err, 4))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{Implementation (Library Version)}
+\begin{codepy}
+import numpy as np
+
+def main():
+    X, y, true = gen_data(n=3000, d=120, noise=0.2, seed=1)
+    lam = 1e-1
+    A = X.T @ X + lam * np.eye(X.shape[1])
+    b = X.T @ y
+    beta = np.linalg.solve(A, b)
+    err = np.linalg.norm(beta - true) / np.linalg.norm(true)
+    print("direct err", round(err, 4))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\METRICS{Relative parameter error and residual norm $\|A\beta-b\|_2$.}
+\INTERPRET{$M$ scales features; PCG converges rapidly due to improved $\kappa$.}
+\NEXTSTEPS{Use block-diagonal $M$ for grouped features or use pre-whitening.}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Compute mean-variance optimal weights by solving $(\Sigma+\gamma I)w=\mu$ using
+PCG with diagonal preconditioning.}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\Sigma$ SPD covariance; $\gamma\ge 0$ makes it strictly SPD.
+\item Diagonal of $\Sigma+\gamma I$ is a viable preconditioner.
+\end{bullets}
+}
+
+\WHICHFORMULA{
+Formula 2 for PCG with $A=\Sigma+\gamma I$.}
+
+\varmapStart
+\var{\Sigma}{Covariance matrix.}
+\var{\gamma}{Ridge term ensuring SPD.}
+\var{\mu}{Expected returns vector.}
+\var{w}{Portfolio weights.}
+\var{M}{Jacobi preconditioner.}
+\varmapEnd
+
+\PIPELINE{
+\begin{bullets}
+\item Simulate returns; estimate $\Sigma$ and $\mu$.
+\item Solve linear system for $w$ with PCG.
+\item Verify residual and compare to direct solve.
+\end{bullets}
+}
+
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def simulate(d=50, n=2000, seed=0):
+    rng = np.random.default_rng(seed)
+    F = rng.normal(size=(n, d))
+    X = F + 0.1 * rng.normal(size=(n, d))
+    mu = X.mean(axis=0)
+    Sigma = np.cov(X, rowvar=False)
+    return Sigma, mu
+
+def solve_weights(Sigma, mu, gamma=1e-2, tol=1e-8, maxit=500):
+    A = Sigma + gamma * np.eye(Sigma.shape[0])
+    b = mu
+    D = np.diag(A)
+    x = np.zeros_like(b)
+    r = b - A @ x
+    z = r / D
+    p = z.copy()
+    rz = float(r @ z)
+    for k in range(1, maxit + 1):
+        Ap = A @ p
+        alpha = rz / float(p @ Ap)
+        x += alpha * p
+        r -= alpha * Ap
+        if np.linalg.norm(r) < tol:
+            break
+        z = r / D
+        rz_new = float(r @ z)
+        beta = rz_new / rz
+        p = z + beta * p
+        rz = rz_new
+    return x, k
+
+def main():
+    Sigma, mu = simulate()
+    w, k = solve_weights(Sigma, mu)
+    print("pcg iters", k, "residual",
+          round(np.linalg.norm((Sigma+1e-2*np.eye(len(mu)))@w-mu), 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\METRICS{$\|(\Sigma+\gamma I)w-\mu\|_2$ and iteration count.}
+\INTERPRET{Diagonal $M$ scales variances, improving conditioning.}
+\NEXTSTEPS{Use factor-model preconditioner leveraging low-rank structure.}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Solve least-squares layer fit $(X^\top X)\theta=X^\top y$ via PCG; compare to
+gradient descent steps, showing preconditioning advantage.}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Quadratic loss; $(X^\top X)$ SPD; features standardized.
+\item Jacobi preconditioner approximates curvature.
+\end{bullets}
+}
+
+\WHICHFORMULA{
+Formula 2; PCG vs. GD rates depend on $\kappa$.}
+
+\PIPELINE{
+\begin{bullets}
+\item Generate $(X,y)$.
+\item Run fixed steps of GD and PCG to same tolerance.
+\item Compare RMSE and iterations.
+\end{bullets}
+}
+
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+
+def data(n=5000, d=200, seed=0):
+    rng = np.random.default_rng(seed)
+    X = rng.normal(size=(n, d))
+    w = rng.normal(size=d)
+    y = X @ w + 0.05 * rng.normal(size=n)
+    return X, y, w
+
+def gd(X, y, lr=1e-3, it=200):
+    d = X.shape[1]
+    theta = np.zeros(d)
+    for _ in range(it):
+        g = X.T @ (X @ theta - y)
+        theta -= lr * g
+    return theta
+
+def pcg_ls(X, y, tol=1e-6, maxit=1000):
+    A = X.T @ X
+    b = X.T @ y
+    D = np.diag(A) + 1e-12
+    x = np.zeros_like(b)
+    r = b - A @ x
+    z = r / D
+    p = z.copy()
+    rz = float(r @ z)
+    for k in range(1, maxit + 1):
+        Ap = A @ p
+        alpha = rz / float(p @ Ap)
+        x += alpha * p
+        r -= alpha * Ap
+        if np.linalg.norm(r) < tol:
+            break
+        z = r / D
+        rz_new = float(r @ z)
+        beta = rz_new / rz
+        p = z + beta * p
+        rz = rz_new
+    return x, k
+
+def main():
+    X, y, w = data()
+    th_gd = gd(X, y, lr=1e-4, it=200)
+    th_pcg, k = pcg_ls(X, y)
+    rmse_gd = np.linalg.norm(X @ th_gd - y) / np.sqrt(len(y))
+    rmse_pcg = np.linalg.norm(X @ th_pcg - y) / np.sqrt(len(y))
+    print("GD rmse", round(rmse_gd, 3), "PCG rmse", round(rmse_pcg, 3),
+          "pcg iters", k)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\METRICS{RMSE on training set; iteration counts for GD and PCG.}
+\INTERPRET{PCG reaches low RMSE faster due to curvature-aware steps.}
+\NEXTSTEPS{Use L-BFGS or Gauss-Newton with inner PCG solves.}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+On synthetic analytics data, solve standardization and linear regression via
+GMRES on normal equations with preconditioning; report residual decay.}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $X$ columns standardized; normal equations are moderately conditioned.
+\item Left Jacobi preconditioning on $A=X^\top X$.
+\end{bullets}
+}
+
+\WHICHFORMULA{
+Formula 3 (GMRES with preconditioning) on $A\theta=b$.}
+
+\PIPELINE{
+\begin{bullets}
+\item Create synthetic dataframe as array; standardize.
+\item Build $A=X^\top X$, $b=X^\top y$.
+\item Run left-preconditioned GMRES for limited steps.
+\end{bullets}
+}
+
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def synth(n=4000, d=150, seed=0):
+    rng = np.random.default_rng(seed)
+    X = rng.normal(size=(n, d))
+    X = (X - X.mean(0)) / X.std(0)
+    w = np.linspace(2.0, 0.5, d)
+    y = X @ w + rng.normal(size=n) * 0.2
+    return X, y
+
+def gmres_left_A(A, b, it=30, tol=1e-8):
+    n = A.shape[0]
+    D = np.diag(A) + 1e-12
+    Minv = lambda r: r / D
+    Bmv = lambda v: Minv(A @ v)
+    x = np.zeros_like(b)
+    r = b - A @ x
+    u = Minv(r)
+    beta = np.linalg.norm(u)
+    V = np.zeros((n, it + 1))
+    H = np.zeros((it + 1, it))
+    res = [np.linalg.norm(r)]
+    if beta == 0:
+        return x, np.array(res)
+    V[:, 0] = u / beta
+    for j in range(it):
+        w = Bmv(V[:, j])
+        for i in range(j + 1):
+            H[i, j] = V[:, i] @ w
+            w = w - H[i, j] * V[:, i]
+        H[j + 1, j] = np.linalg.norm(w)
+        if H[j + 1, j] != 0:
+            V[:, j + 1] = w / H[j + 1, j]
+        e1 = np.zeros(j + 2)
+        e1[0] = beta
+        y, *_ = np.linalg.lstsq(H[: j + 2, : j + 1], e1, rcond=None)
+        x = x + V[:, : j + 1] @ y
+        r = b - A @ x
+        res.append(np.linalg.norm(r))
+        if res[-1] < tol:
+            break
+    return x, np.array(res)
+
+def main():
+    X, y = synth()
+    A = X.T @ X
+    b = X.T @ y
+    x, res = gmres_left_A(A, b, it=20, tol=1e-8)
+    print("gmres iters", len(res) - 1, "res_end", round(res[-1], 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\METRICS{Residual $\|A\theta-b\|_2$ and iteration count.}
+\INTERPRET{Standardization plus Jacobi clustering speeds GMRES.}
+\NEXTSTEPS{Use pre-whitening ($X \leftarrow X R^{-1}$) as stronger $M$.}
+
+\end{document}

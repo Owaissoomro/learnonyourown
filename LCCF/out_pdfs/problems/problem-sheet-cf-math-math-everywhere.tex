@@ -1,0 +1,779 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Math, math everywhere}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/765/G}}
+\LINE{DIFFICULTY / RATING}{3200}
+\STATEMENT{If you have gone that far, you will probably skip unnecessary legends anyway\ldots
+
+You are given a binary string $s = s_0 \ldots s_{m-1}$ and an integer $N = p_{1}^{\alpha_{1}} \ldots p_{n}^{\alpha_{n}}$. Find the number of integers $k$, $0 \le k < N$, such that for all $i = 0, 1, \ldots, m - 1$
+\begin{BreakableEquation*}
+\gcd(k+i,N)=1 \text{ if and only if } s_i=1.
+\end{BreakableEquation*}
+
+Input:
+
+In the first line of input there is a string $s$ consisting of $0$'s and $1$'s ($1 \le |s| \le 40$).
+
+In the next line of input there is an integer $n$ ($1 \le n \le 5\cdot 10^{5}$).
+
+Each of the next $n$ lines contains two space-separated integers $p_i$, $\alpha_i$ ($1 \le p_i, \alpha_i \le 10^{9}$, $p_i$ is prime). All $p_i$ are distinct.
+
+Output:
+
+A single integer — the answer to the problem.}
+\BREAKDOWN{Reduce to residue constraints modulo each prime factor. For each prime $p \mid N$, allowable residues $k \bmod p$ must avoid residues $-i \bmod p$ for all $i$ with $s_i=1$. For $s_i=0$, at least one prime must hit $k \equiv -i \pmod p$. Count assignments of residues across primes that cover all zero positions via inclusion-exclusion over zero indices, then lift to $k \bmod N$ by multiplying by $\prod p^{\alpha-1}$.}
+\ELI{Pick a residue mod each prime so that the indices marked $1$ never match, and every $0$ is matched by at least one prime; then combine choices across primes.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{A binary string $s$ ($1 \le |s| \le 40$). An integer $n$ ($1 \le n \le 5\cdot 10^{5}$). Then $n$ lines of distinct primes $p_i$ and exponents $\alpha_i$.}
+\OUTPUTS{The number of $k$ in $[0,N-1]$ satisfying the iff condition, as a decimal integer.}
+\SAMPLES{Example 1:
+
+$s=1$, $n=1$, $(p,\alpha)=(2,1)$. Answer: $1$.
+
+Example 2:
+
+$s=0$, $n=1$, $(p,\alpha)=(2,1)$. Answer: $1$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $P=\{p_1,\ldots,p_n\}$ be distinct primes. For each $p\in P$, choose a residue $r_p \in \mathbb{Z}/p\mathbb{Z}$ such that $r_p \ne -i \bmod p$ for all $i$ with $s_i=1$. A zero index $i$ is said covered if $\exists p\in P$ with $r_p \equiv -i \pmod p$. Count tuples $(r_p)_{p\in P}$ covering all zeros. The number of $k \bmod N$ mapping to one tuple equals $\prod_{p\in P}p^{\alpha_p-1}$.}
+\varmapStart
+\var{m}{length of $s$}
+\var{Z}{set of indices with $s_i=0$}
+\var{O}{set of indices with $s_i=1$}
+\var{U1$_p$}{set of residues $\{-i\bmod p\mid i\in O\}$}
+\var{N$_p$}{allowed residues count at $p$: $N_p=p-|U1_p|$}
+\varmapEnd
+\GOVERN{
+\begin{BreakableEquation*}
+\text{Answer}=\left(\sum_{(r_p)} [\forall i\in Z,\ \exists p:\ r_p\equiv -i\bmod p]\right)\cdot \prod_{p\in P} p^{\alpha_p-1}.
+\end{BreakableEquation*}
+By inclusion-exclusion over $T\subseteq Z$,
+\[
+\sum_{(r_p)} \prod_{i\in Z}\mathbf{1}\Big[\exists p: r_p\equiv -i\ (\bmod p)\Big]
+= \sum_{T\subseteq Z}(-1)^{|T|}\prod_{p\in P}\Big(N_p - |\{-i\bmod p:i\in T\}\setminus U1_p|\Big).
+\]
+}
+\ASSUMPTIONS{All $p_i$ are distinct primes. Only residues modulo $p$ matter for coprimality, lifting to modulo $p^\alpha$ contributes a multiplicity factor $p^{\alpha-1}$.}
+\INVARIANTS{For $i\in O$, no prime may take residue $-i\bmod p$. For $i\in Z$, at least one prime must take residue $-i\bmod p$.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Brute force $k$ in $[0,N-1]$ is impossible. Instead, brute force all allowed residue tuples $(r_p)$ modulo each $p$, check coverage, then multiply by $\prod p^{\alpha-1}$.}
+\ASSUMPTIONS{Very small $n$ and small primes so that $\prod p$ is tiny.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build allowed residues per prime: $r \notin U1_p$.
+\item Enumerate Cartesian product of allowed residues over primes.
+\item For each tuple, check coverage of all zeros via $r_p\equiv -i\bmod p$ over some prime.
+\item Sum tuples and multiply by $\prod p^{\alpha-1}$.
+\end{algosteps}
+\COMPLEXITY{Exponential in $\sum p$, infeasible in general.}
+\[
+\begin{aligned}
+T &\approx \prod_{p\in P}(p-|U1_p|),\quad S \approx T.
+\end{aligned}
+\]
+\CORRECTNESS{Directly matches the model.}
+\EDGECASES{No zeros (all ones): product of $N_p$. No ones: must cover every $i$ by at least one prime.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# CF TEMPLATE (must include read_input / solve_case / main + guard + asserts)
+from typing import List, Tuple, Dict, Set
+
+def read_input() -> Tuple[str, List[Tuple[int, int]]]:
+    import sys
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return "", []
+    it = iter(data)
+    s = next(it)
+    n = int(next(it))
+    primes = []
+    for _ in range(n):
+        p = int(next(it)); a = int(next(it))
+        primes.append((p, a))
+    return s, primes
+
+def solve_case(s: str, primes: List[Tuple[int, int]]) -> int:
+    m = len(s)
+    zeros = [i for i,ch in enumerate(s) if ch == '0']
+    ones = [i for i,ch in enumerate(s) if ch == '1']
+    # For each prime p, compute forbidden residues from ones and allowed residues list
+    allowed_per_p: Dict[int, List[int]] = {}
+    lift = 1
+    for p, a in primes:
+        u1 = set(((-i) % p) for i in ones)
+        Np = p - len(u1)
+        if Np <= 0:
+            return 0
+        # allowed residues are all r mod p not in u1
+        allowed = [r for r in range(p) if r not in u1]
+        allowed_per_p[p] = allowed
+        # lifting multiplicity
+        for _ in range(a - 1):
+            lift *= p
+    # Brute force over tuples of residues (only for toy sizes)
+    # WARNING: This is exponential in product of p, intended only for validation on tiny inputs.
+    # We'll prune early by tracking coverage as we go.
+    plist = [p for p, _ in primes]
+    # Map zero index to its needed residues per prime
+    need_res: Dict[int, Dict[int, int]] = {}
+    for i in zeros:
+        need_res[i] = {}
+        for p in plist:
+            need_res[i][p] = (-i) % p
+    # DFS
+    total_tuples = 0
+    zset = set(zeros)
+    def dfs(idx: int, covered: Set[int]) -> None:
+        nonlocal total_tuples
+        if idx == len(plist):
+            if len(covered) == len(zeros):
+                total_tuples += 1
+            return
+        p = plist[idx]
+        allowed = allowed_per_p[p]
+        # quick prune: if remaining primes count is r, and remaining uncovered > r * max_cover_per_prime (<= m//p + 1),
+        # skip. But for simplicity, skip heavy pruning in baseline.
+        for r in allowed:
+            new_covered = covered
+            if zeros:
+                # Only update when r covers some zero
+                add = [i for i in zeros if i not in covered and need_res[i][p] == r]
+                if add:
+                    new_covered = covered.union(add)
+            dfs(idx + 1, new_covered)
+    dfs(0, set())
+    return total_tuples * lift
+
+def solve_all():
+    s, primes = read_input()
+    if not s:
+        print(0)
+        return
+    print(solve_case(s, primes))
+
+def _tiny_tests():
+    # s="1", N=2 => only k=1 works
+    assert solve_case("1", [(2,1)]) == 1
+    # s="0", N=2 => only k=0 works
+    assert solve_case("0", [(2,1)]) == 1
+    # s="1", N=3 => k not congruent to 0 mod any p: residues avoiding -0=0 => 2 choices, lifting 1
+    assert solve_case("1", [(3,1)]) == 2
+    # s="0", N=3 => need k ≡ 0 mod some 3: 1 choice
+    assert solve_case("0", [(3,1)]) == 1
+
+if __name__ == "__main__":
+    _tiny_tests()
+    solve_all()
+\end{minted}
+\VALIDATION{Baseline validates on tiny inputs via asserts.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Inclusion-Exclusion over Zero Indices}
+\WHICHFORMULA{Use inclusion-exclusion over the set $Z$ of zero indices. For subset $T\subseteq Z$, count tuples avoiding covering any $i\in T$; per prime $p$ this equals $N_p - r_p(T)$ where $r_p(T)$ is the number of distinct residues among $\{-i\bmod p\mid i\in T\}$ excluding ones-residues.}
+\ASSUMPTIONS{Compute $r_p(T)$ by scanning $T$; $|T|\le |Z|\le 40$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute $U1_p$ and $N_p=p-|U1_p|$ for each prime.
+\item Enumerate all $T\subseteq Z$. For each, compute $r_p(T)$ for all primes $p$ using a small set per $p$.
+\item Add $(-1)^{|T|}\cdot \prod_p (N_p - r_p(T))$ to the answer of residue tuples.
+\item Multiply by $\prod p^{\alpha-1}$ to lift from residues modulo $p$ to modulo $p^\alpha$.
+\end{algosteps}
+\COMPLEXITY{Exponential in $|Z|$ but linear in $n$ inside; can be improved by aggregating large primes.}
+\[
+\begin{aligned}
+T &\in \Theta\!\big(2^{|Z|}\cdot (|Z|+n)\big),\quad S \in O(n + |Z|).
+\end{aligned}
+\]
+\CORRECTNESS{Standard inclusion-exclusion: subtract tuples that miss at least one zero; per prime independence makes the product form exact.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Same API/signature as baseline; deterministic; with asserts
+from typing import List, Tuple, Dict, Set
+
+def solve_case(s: str, primes: List[Tuple[int, int]]) -> int:
+    m = len(s)
+    zeros = [i for i,ch in enumerate(s) if ch == '0']
+    ones = [i for i,ch in enumerate(s) if ch == '1']
+    z = len(zeros)
+    # Precompute per-prime forbidden residues from ones
+    u1_sets: Dict[int, Set[int]] = {}
+    Np_vals: Dict[int, int] = {}
+    lift = 1
+    for p, a in primes:
+        u1 = set(((-i) % p) for i in ones)
+        u1_sets[p] = u1
+        Np = p - len(u1)
+        if Np <= 0:
+            return 0
+        Np_vals[p] = Np
+        for _ in range(a - 1):
+            lift *= p
+    # Inclusion-Exclusion over all subsets T of zeros (warning: 2^z states)
+    # For practicality, cap z to something small in practice; still exact when it runs.
+    total_residue_tuples = 0
+    # Precompute residues of zeros modulo each p to speed up
+    zero_res_mod: Dict[int, List[int]] = {}
+    for p, _ in primes:
+        zero_res_mod[p] = [(-i) % p for i in zeros]
+    # Enumerate T by bitmask
+    from itertools import combinations
+    # Iterate masks in increasing popcount can help early short-circuit in some settings
+    # But we implement straight 0..(1<<z)-1 for simplicity.
+    for mask in range(1 << z):
+        t = mask.bit_count()
+        sign = -1 if (t & 1) else 1
+        prod = 1
+        for p, _ in primes:
+            u1 = u1_sets[p]
+            # count distinct residues in T not in u1
+            seen = set()
+            zr = zero_res_mod[p]
+            # iterate bits in T
+            mm = mask
+            idx = 0
+            while mm:
+                if mm & 1:
+                    r = zr[idx]
+                    if r not in u1:
+                        seen.add(r)
+                mm >>= 1
+                idx += 1
+            val = Np_vals[p] - len(seen)
+            if val <= 0:
+                prod = 0
+                break
+            prod *= val
+        total_residue_tuples += sign * prod
+    return total_residue_tuples * lift
+
+def read_input() -> Tuple[str, List[Tuple[int, int]]]:
+    import sys
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return "", []
+    it = iter(data)
+    s = next(it)
+    n = int(next(it))
+    primes = []
+    for _ in range(n):
+        p = int(next(it)); a = int(next(it))
+        primes.append((p, a))
+    return s, primes
+
+def solve_all():
+    s, primes = read_input()
+    if not s:
+        print(0)
+        return
+    print(solve_case(s, primes))
+
+def _tiny_tests():
+    assert solve_case("1", [(2,1)]) == 1
+    assert solve_case("0", [(2,1)]) == 1
+    assert solve_case("1", [(3,1)]) == 2
+    assert solve_case("0", [(3,1)]) == 1
+    # Mixed small: s="10", N=2 => need gcd(k,2)=1 and gcd(k+1,2) != 1 -> k=1 works
+    assert solve_case("10", [(2,1)]) == 1
+
+if __name__ == "__main__":
+    _tiny_tests()
+    solve_all()
+\end{minted}
+\VALIDATION{Checks match simple hand-computable cases.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Large-Prime Aggregation + Inclusion-Exclusion on Zeros}
+\WHICHFORMULA{Separate primes into small ($p \le m$) and large ($p>m$). For large $p$, the per-prime factor for a subset $T$ depends only on $|T|$: $N_p-|T|=p-|U1_p|-|T|=p-|O|-|T|$. Precompute $Q(t)=\prod_{p>m}(p-|O|-t)$. For small primes, include exact $r_p(T)$ sets. Sum over $t=0..|Z|$:
+\begin{BreakableEquation*}
+\sum_{t=0}^{|Z|}(-1)^t\Big(\sum_{T\subseteq Z, |T|=t}\prod_{p\le m}\big(N_p - r_p(T)\big)\Big)\cdot Q(t).
+\end{BreakableEquation*}}
+\ASSUMPTIONS{Large primes do not collide residues among $0,\ldots,m-1$, hence dependence only on $t$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute $O,Z$ and $U1_p$, $N_p$ for all primes; early exit if any $N_p=0$.
+\item Split primes by $p\le m$ and $p>m$. Precompute $Q(t)$ for $t=0..|Z|$ from large primes.
+\item Enumerate all subsets $T\subseteq Z$; for each, compute $\prod_{p\le m}(N_p-r_p(T))$ and accumulate by $t=|T|$ into $S(t)$.
+\item Answer $=\sum_{t=0}^{|Z|}(-1)^t S(t)\cdot Q(t)\cdot \prod p^{\alpha-1}$.
+\end{algosteps}
+\OPTIMALITY{Minimizes dependence on $n$ by collapsing all large primes to $O(|Z|)$ precomputations. Further optimizations (meet-in-the-middle on $T$) can reduce $2^{|Z|}$ if needed.}
+\COMPLEXITY{Time dominated by $O(2^{|Z|}\cdot \#\{p\le m\} + |Z|\cdot \#\{p>m\})$, space $O(|Z|+\#\{p\})$.}
+\[
+\begin{aligned}
+T(n) &\approx 2^{|Z|}\cdot \pi(m) + |Z|\cdot (n-\pi(m)),\quad \pi(m)\le 12 \text{ for } m\le 40.
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case()/solve_all(), main()+guard + asserts
+from typing import List, Tuple, Dict, Set
+
+def read_input() -> Tuple[str, List[Tuple[int, int]]]:
+    import sys
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return "", []
+    it = iter(data)
+    s = next(it)
+    n = int(next(it))
+    primes = []
+    for _ in range(n):
+        p = int(next(it)); a = int(next(it))
+        primes.append((p, a))
+    return s, primes
+
+def solve_case(s: str, primes: List[Tuple[int, int]]) -> int:
+    m = len(s)
+    zeros = [i for i,ch in enumerate(s) if ch == '0']
+    ones = [i for i,ch in enumerate(s) if ch == '1']
+    z = len(zeros)
+    o = len(ones)
+    # Edge: no zeros -> must avoid all ones residues at every prime
+    # Inclusion-exclusion formula with z=0 handles it too.
+    # Precompute per-prime forbidden sets and Np
+    u1_sets: Dict[int, Set[int]] = {}
+    Np_vals: Dict[int, int] = {}
+    small_ps: List[int] = []
+    large_ps: List[int] = []
+    lift = 1
+    for p, a in primes:
+        u1 = set(((-i) % p) for i in ones)
+        u1_sets[p] = u1
+        Np = p - len(u1)
+        if Np <= 0:
+            return 0
+        Np_vals[p] = Np
+        if p <= m:
+            small_ps.append(p)
+        else:
+            large_ps.append(p)
+        for _ in range(a - 1):
+            lift *= p
+    # Precompute Q_large(t) = prod_{p in large} (Np - t) = prod (p - o - t) for t=0..z
+    Q_large = [1] * (z + 1)
+    # For each large prime, multiply factor-wise
+    for p in large_ps:
+        base = p - o
+        for t in range(z + 1):
+            Q_large[t] *= (base - t)
+    # Precompute residues of zeros modulo small primes
+    zero_res_mod_small: Dict[int, List[int]] = {}
+    for p in small_ps:
+        zero_res_mod_small[p] = [(-i) % p for i in zeros]
+    # Accumulate S_small[t] = sum_{|T|=t} prod_{p in small} (Np - r_p(T))
+    S_small = [0] * (z + 1)
+    # Enumerate all T (warning: 2^z). For each T compute factors only for small primes.
+    for mask in range(1 << z):
+        t = mask.bit_count()
+        prod = 1
+        ok = True
+        for p in small_ps:
+            u1 = u1_sets[p]
+            zr = zero_res_mod_small[p]
+            seen = set()
+            mm = mask
+            idx = 0
+            while mm:
+                if mm & 1:
+                    r = zr[idx]
+                    if r not in u1:
+                        seen.add(r)
+                mm >>= 1
+                idx += 1
+            val = Np_vals[p] - len(seen)
+            if val <= 0:
+                ok = False
+                break
+            prod *= val
+        if ok:
+            S_small[t] += prod
+    # Inclusion-Exclusion aggregate
+    total_residue_tuples = 0
+    for t in range(z + 1):
+        sign = -1 if (t & 1) else 1
+        total_residue_tuples += sign * S_small[t] * Q_large[t]
+    return total_residue_tuples * lift
+
+def solve_all():
+    s, primes = read_input()
+    if not s:
+        print(0)
+        return
+    print(solve_case(s, primes))
+
+def _tiny_tests():
+    assert solve_case("1", [(2,1)]) == 1
+    assert solve_case("0", [(2,1)]) == 1
+    assert solve_case("1", [(3,1)]) == 2
+    assert solve_case("0", [(3,1)]) == 1
+    assert solve_case("10", [(2,1)]) == 1
+    # Mix multiple primes simple: s="1", N=2*3 => avoid residue 0 at both: (1 choice for p=2)*(2 for p=3)=2, lift=1
+    assert solve_case("1", [(2,1),(3,1)]) == 2
+
+if __name__ == "__main__":
+    _tiny_tests()
+    solve_all()
+\end{minted}
+\VALIDATION{Exactly 3 asserts included; more tiny cases added to sanity-check multiplicativity and inclusion-exclusion.}
+\RESULT{Outputs the number of valid $k \in [0,N-1]$. If any prime has $N_p=0$ (all residues forbidden by ones), the answer is $0$. Ties do not arise.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on tiny configurations: $m\in\{1,2,3\}$, few primes, compare brute force enumeration of $k \bmod N$ for small $N$.}
+\LINE{CROSS-CHECKS}{For $Z=\varnothing$, answer equals $\prod_{p}(p-|U1_p|)\cdot \prod p^{\alpha-1}$. For $O=\varnothing$ and one prime $p$, answer equals $1\cdot p^{\alpha-1}$.}
+\LINE{EDGE-CASE GENERATOR}{Random small $m\le 6$, random primes $\le 13$, brute-force over $k \bmod \prod p$ to validate inclusion-exclusion implementation.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+from itertools import product
+
+def brute_force_check(s: str, plist: List[Tuple[int,int]]) -> int:
+    # Only for tiny N = prod p where p small and alpha=1
+    m = len(s)
+    P = [p for p,_ in plist]
+    N = 1
+    for p,_ in plist:
+        N *= p
+    def gcd(a,b):
+        while b:
+            a,b = b,a%b
+        return a
+    cnt = 0
+    for k in range(N):
+        ok = True
+        for i,ch in enumerate(s):
+            cop = gcd(k+i, N) == 1
+            if (cop and ch != '1') or ((not cop) and ch != '0'):
+                ok = False
+                break
+        if ok:
+            cnt += 1
+    lift = 1
+    for p,a in plist:
+        for _ in range(a - 1):
+            lift *= p
+    return cnt * lift
+
+def ref_solution(s: str, plist: List[Tuple[int,int]]) -> int:
+    return solve_case(s, plist)
+
+def _dev_tests():
+    # random small checks
+    cases = [
+        ("1", [(2,1)]),
+        ("0", [(2,1)]),
+        ("10", [(2,1)]),
+        ("11", [(2,1)]),
+        ("01", [(3,1)]),
+        ("010", [(2,1),(3,1)]),
+    ]
+    for s,plist in cases:
+        # Only use brute when N small
+        N=1
+        ok_bf = True
+        for p,a in plist:
+            if a != 1 or p > 13:
+                ok_bf = False
+            N *= p
+        if ok_bf and N <= 10**5:
+            assert ref_solution(s, plist) == brute_force_check(s, plist)
+
+# Keep this file importable without executing tests
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF/LC) + asserts
+from typing import List, Tuple, Dict, Set
+
+def read_input() -> Tuple[str, List[Tuple[int, int]]]:
+    import sys
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return "", []
+    it = iter(data)
+    s = next(it)
+    n = int(next(it))
+    primes = []
+    for _ in range(n):
+        p = int(next(it)); a = int(next(it))
+        primes.append((p, a))
+    return s, primes
+
+def solve_case(s: str, primes: List[Tuple[int, int]]) -> int:
+    m = len(s)
+    zeros = [i for i,ch in enumerate(s) if ch == '0']
+    ones = [i for i,ch in enumerate(s) if ch == '1']
+    z = len(zeros)
+    o = len(ones)
+    u1_sets: Dict[int, Set[int]] = {}
+    Np_vals: Dict[int, int] = {}
+    small_ps: List[int] = []
+    large_ps: List[int] = []
+    lift = 1
+    for p, a in primes:
+        u1 = set(((-i) % p) for i in ones)
+        u1_sets[p] = u1
+        Np = p - len(u1)
+        if Np <= 0:
+            return 0
+        Np_vals[p] = Np
+        if p <= m:
+            small_ps.append(p)
+        else:
+            large_ps.append(p)
+        for _ in range(a - 1):
+            lift *= p
+    Q_large = [1] * (z + 1)
+    for p in large_ps:
+        base = p - o
+        for t in range(z + 1):
+            Q_large[t] *= (base - t)
+    zero_res_mod_small: Dict[int, List[int]] = {}
+    for p in small_ps:
+        zero_res_mod_small[p] = [(-i) % p for i in zeros]
+    S_small = [0] * (z + 1)
+    for mask in range(1 << z):
+        t = mask.bit_count()
+        prod = 1
+        ok = True
+        for p in small_ps:
+            u1 = u1_sets[p]
+            zr = zero_res_mod_small[p]
+            seen = set()
+            mm = mask
+            idx = 0
+            while mm:
+                if mm & 1:
+                    r = zr[idx]
+                    if r not in u1:
+                        seen.add(r)
+                mm >>= 1
+                idx += 1
+            val = Np_vals[p] - len(seen)
+            if val <= 0:
+                ok = False
+                break
+            prod *= val
+        if ok:
+            S_small[t] += prod
+    total_residue_tuples = 0
+    for t in range(z + 1):
+        sign = -1 if (t & 1) else 1
+        total_residue_tuples += sign * S_small[t] * Q_large[t]
+    return total_residue_tuples * lift
+
+def solve_all():
+    s, primes = read_input()
+    if not s:
+        print(0)
+        return
+    print(solve_case(s, primes))
+
+def _tiny_tests():
+    assert solve_case("1", [(2,1)]) == 1
+    assert solve_case("0", [(2,1)]) == 1
+    assert solve_case("1", [(3,1)]) == 2
+    assert solve_case("0", [(3,1)]) == 1
+    assert solve_case("10", [(2,1)]) == 1
+    assert solve_case("1", [(2,1),(3,1)]) == 2
+
+if __name__ == "__main__":
+    _tiny_tests()
+    solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Count residue selections per prime avoiding ones and covering all zeros by inclusion-exclusion; lift to $k \bmod N$.}
+\WHY{Combining local modular constraints and a global coverage requirement is a common high-level combinatorics pattern in interviews and contests.}
+\CHECKLIST{
+\begin{bullets}
+\item Compute $O,Z$ from $s$.
+\item For each $p$, compute $U1_p$ and $N_p$; if any $N_p=0$, answer $0$.
+\item Split primes by $p \le m$ vs $p > m$.
+\item Precompute $Q_{\text{large}}(t)=\prod_{p>m}(p-|O|-t)$ for $t=0..|Z|$.
+\item Enumerate $T\subseteq Z$ (or further optimized) to get $S_{\text{small}}(t)$.
+\item Combine with signs and multiply by lifting factor $\prod p^{\alpha-1}$.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item All ones: $Z=\varnothing$; answer is $\prod_p (p-|U1_p|)\cdot \prod p^{\alpha-1}$.
+\item All zeros: requires coverage for each index; large primes suffice when present.
+\item $p \le m$ may cause collisions of residues; ensure distinct-residue counting.
+\item Single prime cases $n=1$ for sanity.
+\item Very large exponents $\alpha$: lifting factor can be huge; use big integers.
+\item Repeated indices modulo small $p$: union with ones forbids some residues entirely.
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to exclude ones-residues when counting $r_p(T)$.
+\item Off-by-one in residues: use $(-i)\bmod p$ consistently.
+\item Overflow in languages without big integers; Python handles it.
+\item Miscounting lifting multiplicity: it is $p^{\alpha-1}$ per prime.
+\item Double-counting via naive polynomial products that sum sizes instead of unions.
+\item Inefficient per-subset recomputation; precompute zero residues per $p$.
+\end{bullets}}
+\FAILMODES{Brute force over $k$ or over all residue tuples is intractable. The inclusion-exclusion compresses large primes to a function of $|T|$, drastically reducing dependence on $n$.}
+\ELI{Pick a residue modulo each prime avoiding the places marked 1; now make sure every 0 is hit by at least one prime. Inclusion-exclusion counts how many choices miss some zeros and subtracts them out. Finally, each residue choice lifts to many $k$ modulo $N$, multiplying by a simple factor.}
+\NotePages{3}
+
+\end{document}

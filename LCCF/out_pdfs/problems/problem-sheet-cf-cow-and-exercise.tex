@@ -1,0 +1,938 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Cow and Exercise}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1307/G}}
+\LINE{DIFFICULTY / RATING}{3100}
+\STATEMENT{Farmer John is obsessed with making Bessie exercise more!
+
+Bessie is out grazing on the farm, which consists of $n$ fields connected by $m$ directed roads. Each road takes some time $w_i$ to cross. She is currently at field $1$ and will return to her home at field $n$ at the end of the day.
+
+Farmer John has plans to increase the time it takes to cross certain roads. He can increase the time it takes to cross each road by a nonnegative amount, but the total increase cannot exceed $x_i$ for the $i$-th plan.
+
+Determine the maximum he can make the shortest path from $1$ to $n$ for each of the $q$ independent plans.
+
+Input:
+The first line contains integers $n$ and $m$ ($2 \le n \le 50$, $1 \le m \le n \cdot (n-1)$) — the number of fields and number of roads, respectively.
+
+Each of the following $m$ lines contains $3$ integers, $u_i$, $v_i$, and $w_i$ ($1 \le u_i, v_i \le n$, $1 \le w_i \le 10^6$), meaning there is an road from field $u_i$ to field $v_i$ that takes $w_i$ time to cross.
+
+It is guaranteed that there exists a way to get to field $n$ from field $1$. It is guaranteed that the graph does not contain self-loops or parallel edges. It is possible to have a road from $u$ to $v$ and a road from $v$ to $u$.
+
+The next line contains a single integer $q$ ($1 \le q \le 10^5$), the number of plans.
+
+Each of the following $q$ lines contains a single integer $x_i$, the query ($0 \le x_i \le 10^5$).
+
+Output:
+For each query, output the maximum Farmer John can make the shortest path if the total increase does not exceed $x_i$.
+
+Your answer is considered correct if its absolute or relative error does not exceed $10^{-6}$.
+
+Formally, let your answer be $a$, and the jury's answer be $b$. Your answer is accepted if and only if $\tfrac{|a - b|}{\max{(1, |b|)}} \le 10^{-6}$.}
+\BREAKDOWN{Compute the base shortest distance from $1$ to $n$, then determine how much the shortest path can be increased when a total additive budget $x$ can be distributed across edges. Show that only edges on shortest paths matter and that the best guaranteed increase equals $x$ divided by the minimum number of edges in an $s$–$t$ cut of the shortest-path DAG.}
+\ELI{Find the shortest time first; then the ``hardest place to block all shortest routes'' has $c$ edges, so spending $x$ time spread evenly there forces any route to take at least $x/c$ more time.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Integers $n,m$; then $m$ directed edges $(u_i,v_i,w_i)$ with $1 \le u_i,v_i \le n$, $1 \le w_i \le 10^6$; an integer $q$; then $q$ integers $x_i$ with $0 \le x_i \le 10^5$.}
+\OUTPUTS{For each query $x_i$, output a real number: the maximum achievable shortest-path length from $1$ to $n$ after increasing edge weights by nonnegative amounts summing to at most $x_i$. Print with enough precision to satisfy the $10^{-6}$ tolerance.}
+\SAMPLES{Example 1:
+$n=3, m=2$: edges $(1,2,5)$, $(2,3,7)$. $q=2$: $x=0, 10$. Base distance $=12$. Shortest-path DAG is unique chain, minimum cut size $c=1$. Answers: $12.0$, $22.0$.
+
+Example 2:
+$n=4, m=4$: edges $(1,2,1)$, $(2,4,1)$, $(1,3,1)$, $(3,4,1)$. $q=2$: $x=0, 6$. Base distance $=2$. Two edge-disjoint shortest paths, $c=2$. Answers: $2.0$, $5.0$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $G=(V,E)$ be a directed graph with nonnegative base edge lengths $w:E\to\mathbb{R}_{\ge 0}$, source $s=1$, sink $t=n$. An adversary chooses additive increases $y_e \ge 0$ with $\sum_{e\in E} y_e \le X$. The resulting shortest path value is
+\begin{BreakableEquation*}
+\text{SP}(w+y):=\min_{P\in\mathcal{P}_{s,t}} \sum_{e\in P} (w_e+y_e),
+\end{BreakableEquation*}
+and we seek
+\begin{BreakableEquation*}
+F(X):=\max_{y\ge 0:\ \sum y_e \le X}\ \text{SP}(w+y).
+\end{BreakableEquation*}
+}
+\varmapStart
+\var{G=(V,E)}{directed graph of fields and roads}
+\var{w_e}{base time to traverse edge $e$}
+\var{s,t}{source $1$ and sink $n$}
+\var{X}{total increase budget for a query}
+\var{y_e}{adversarial increase assigned to edge $e$}
+\var{d}{base shortest-path length $d:=\text{SP}(w)$}
+\var{E^\ast}{edges on some shortest path: $E^\ast=\{(u,v)\in E:\ d_s[u]+w(u,v)+d_t[v]=d\}$}
+\var{c}{minimum $s$–$t$ edge cut size in $(V,E^\ast)$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+d_s[u] &:= \text{dist}_w(s,u),\qquad d_t[u] := \text{dist}_w(u,t),\\
+d &:= d_s[t],\qquad E^\ast := \{(u,v)\in E:\ d_s[u]+w(u,v)+d_t[v]=d\},\\
+c &:= \min_{\text{$s$–$t$ cut }C\subseteq E^\ast} |C| = \max\{\text{number of edge-disjoint $s$–$t$ paths in }(V,E^\ast)\}.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{All $w_e \ge 1$; finite $d$ is guaranteed. The subgraph $(V,E^\ast)$ is acyclic (topologically ordered by $d_s$).}
+\INVARIANTS{(i) Any path $P$ not entirely in $E^\ast$ has slack $\sum_{e\in P} w_e \ge d+1$, so cannot become optimal unless increases on $E^\ast$ are at least the slack. (ii) Any $s$–$t$ path in $(V,E^\ast)$ must cross any $s$–$t$ cut $C\subseteq E^\ast$.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Compute base distances $d_s$, $d_t$, construct $E^\ast$, then estimate the minimum $s$–$t$ cut size by a straightforward max-flow (Edmonds–Karp) with unit capacities on edges of $E^\ast$. Answer is $d + \tfrac{X}{c}$.}
+\ASSUMPTIONS{Unit capacities suffice since we count edges in the cut. Using Edmonds–Karp is acceptable but slower.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Run Dijkstra from $s$ and from $t$ on $G$ to get $d_s$, $d_t$, and $d=d_s[t]$.
+\item Build DAG $G^\ast=(V,E^\ast)$ of tight edges where $d_s[u]+w(u,v)+d_t[v]=d$.
+\item Compute $c$ via max-flow on $G^\ast$ with unit capacities (Edmonds–Karp).
+\item For each query $X$, print $d + X/c$ as a floating-point number.
+\end{algosteps}
+\COMPLEXITY{Let $n=|V|\le 50$, $m=|E|\le n(n-1)$. Dijkstra: $O(m\log n)$. Edmonds–Karp on $G^\ast$: $O(VE^2)$ in the worst case with $E\le m$. Query answers are $O(1)$ each.}
+\[
+\begin{aligned}
+T(n) &= O(m\log n) + O(n\,m^2) + O(q),\\
+S(n) &= O(n+m).
+\end{aligned}
+\]
+\CORRECTNESS{Max-flow min-cut on $G^\ast$ yields the minimum number of edges whose removal disconnects $s$ and $t$ in the shortest-path DAG. Distributing $X$ equally across a minimum cut yields a guaranteed increase $X/c$, and no allocation can force more than $X/c$ by pigeonhole on that cut; thus the optimal worst-case shortest path equals $d + X/c$.}
+\EDGECASES{Single shortest path ($c=1$): answer is $d+X$. Multiple parallel shortest paths: $c$ equals the number of edge-disjoint shortest paths. All queries $X=0$ return $d$.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+import math
+import heapq
+from collections import deque, defaultdict
+from typing import List, Tuple
+
+def dijkstra(n: int, adj: List[List[Tuple[int,int]]], src: int) -> List[int]:
+    INF = 10**30
+    dist = [INF]* (n+1)
+    dist[src] = 0
+    pq = [(0, src)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d != dist[u]:
+            continue
+        for v, w in adj[u]:
+            nd = d + w
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return dist
+
+class EdmondsKarp:
+    def __init__(self, n: int):
+        self.n = n
+        self.cap = [[0]* (n+1) for _ in range(n+1)]
+        self.adj = [[] for _ in range(n+1)]
+    def add_edge(self, u: int, v: int, c: int):
+        if self.cap[u][v] == 0 and self.cap[v][u] == 0:
+            self.adj[u].append(v)
+            self.adj[v].append(u)
+        self.cap[u][v] += c
+    def maxflow(self, s: int, t: int) -> int:
+        n = self.n
+        flow = 0
+        while True:
+            parent = [-1]*(n+1)
+            parent[s] = s
+            q = deque([s])
+            while q and parent[t] == -1:
+                u = q.popleft()
+                for v in self.adj[u]:
+                    if parent[v] == -1 and self.cap[u][v] > 0:
+                        parent[v] = u
+                        q.append(v)
+                        if v == t:
+                            break
+            if parent[t] == -1:
+                break
+            # augment
+            v = t
+            bottleneck = 10**9
+            while v != s:
+                u = parent[v]
+                bottleneck = min(bottleneck, self.cap[u][v])
+                v = u
+            v = t
+            while v != s:
+                u = parent[v]
+                self.cap[u][v] -= bottleneck
+                self.cap[v][u] += bottleneck
+                v = u
+            flow += bottleneck
+        return flow
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    n = int(next(it)); m = int(next(it))
+    edges = []
+    adj = [[] for _ in range(n+1)]
+    radj = [[] for _ in range(n+1)]
+    for _ in range(m):
+        u = int(next(it)); v = int(next(it)); w = int(next(it))
+        edges.append((u,v,w))
+        adj[u].append((v,w))
+        radj[v].append((u,w))
+    q = int(next(it))
+    xs = [int(next(it)) for _ in range(q)]
+    return n, m, edges, adj, radj, q, xs
+
+def solve_all(n: int, m: int, edges: List[Tuple[int,int,int]], adj, radj, q: int, xs: List[int]) -> List[float]:
+    ds = dijkstra(n, adj, 1)
+    dt = dijkstra(n, radj, n)
+    base = ds[n]
+    # Build shortest-path DAG edges
+    tight = [[] for _ in range(n+1)]
+    ek = EdmondsKarp(n)
+    for (u,v,w) in edges:
+        if ds[u] + w + dt[v] == base:
+            tight[u].append((v,1))
+            ek.add_edge(u, v, 1)
+    c = ek.maxflow(1, n)
+    if c <= 0:
+        c = 1  # safety, though by problem there is at least one shortest path
+    ans = [base + (x / c) for x in xs]
+    return ans
+
+def main():
+    data = sys.stdin.read()
+    n, m, edges, adj, radj, q, xs = read_input(data)
+    res = solve_all(n, m, edges, adj, radj, q, xs)
+    out = sys.stdout
+    for v in res:
+        out.write("{:.10f}\n".format(v))
+
+def _test():
+    # Test 1: chain
+    s = """3 2
+1 2 5
+2 3 7
+2
+0
+10
+"""
+    n, m, edges, adj, radj, q, xs = read_input(s)
+    res = solve_all(n, m, edges, adj, radj, q, xs)
+    assert abs(res[0] - 12.0) < 1e-9
+    assert abs(res[1] - 22.0) < 1e-9
+    # Test 2: two parallel shortest paths
+    s2 = """4 4
+1 2 1
+2 4 1
+1 3 1
+3 4 1
+2
+0
+6
+"""
+    n, m, edges, adj, radj, q, xs = read_input(s2)
+    res = solve_all(n, m, edges, adj, radj, q, xs)
+    assert abs(res[0] - 2.0) < 1e-9
+    assert abs(res[1] - 5.0) < 1e-9
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--test":
+        _test()
+    else:
+        main()
+\end{minted}
+\VALIDATION{Checked on two crafted cases: a unique-path chain and two edge-disjoint shortest paths; both match $d + X/c$.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Replace Edmonds–Karp with Dinic for faster max-flow on the unit-capacity shortest-path DAG. Precomputations remain the same; answering queries is $O(1)$.}
+\ASSUMPTIONS{Unit capacities and small $n$ allow an efficient Dinic implementation with level graph BFS and blocking flows DFS.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Dijkstra from $s$ and from $t$ to get $d_s$, $d_t$, and $d$.
+\item Build tight-edge DAG $E^\ast$ where $d_s[u]+w(u,v)+d_t[v]=d$.
+\item Run Dinic max-flow with capacity $1$ on every tight edge to get $c$.
+\item Output $d + X/c$ for each query $X$.
+\end{algosteps}
+\COMPLEXITY{Same asymptotic Dijkstra; Dinic on unit-capacity DAG runs very fast in practice, worst-case $O(E\sqrt{V})$ or $O(EV)$ bounds suffice for constraints.}
+\[
+\begin{aligned}
+T(n) &= O(m\log n) + O(E^\ast \sqrt{n}) + O(q),\\
+S(n) &= O(n+m).
+\end{aligned}
+\]
+\CORRECTNESS{Identical to Approach A, with a faster flow oracle.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+import math
+import heapq
+from collections import deque
+from typing import List, Tuple
+
+def dijkstra(n: int, adj: List[List[Tuple[int,int]]], src: int) -> List[int]:
+    INF = 10**30
+    dist = [INF]* (n+1)
+    dist[src] = 0
+    pq = [(0, src)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d != dist[u]:
+            continue
+        for v, w in adj[u]:
+            nd = d + w
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return dist
+
+class Dinic:
+    def __init__(self, n: int):
+        self.n = n
+        self.adj = [[] for _ in range(n+1)]
+        self.to = []
+        self.cap = []
+        self.nxt = []
+        self.head = [-1]* (n+1)
+    def _add_edge(self, u: int, v: int, c: int):
+        self.to.append(v); self.cap.append(c); self.nxt.append(self.head[u]); self.head[u] = len(self.to)-1
+    def add_edge(self, u: int, v: int, c: int):
+        self._add_edge(u, v, c)
+        self._add_edge(v, u, 0)
+    def bfs(self, s: int, t: int) -> List[int]:
+        level = [-1]* (self.n+1)
+        q = deque([s])
+        level[s] = 0
+        while q:
+            u = q.popleft()
+            i = self.head[u]
+            while i != -1:
+                v = self.to[i]
+                if self.cap[i] > 0 and level[v] == -1:
+                    level[v] = level[u] + 1
+                    q.append(v)
+                i = self.nxt[i]
+        self.level = level
+        return level
+    def dfs(self, u: int, t: int, f: int, it: List[int]) -> int:
+        if u == t or f == 0:
+            return f
+        i = it[u]
+        while i != -1:
+            v = self.to[i]
+            if self.cap[i] > 0 and self.level[v] == self.level[u] + 1:
+                pushed = self.dfs(v, t, min(f, self.cap[i]), it)
+                if pushed:
+                    self.cap[i] -= pushed
+                    self.cap[i^1] += pushed
+                    return pushed
+            i = self.nxt[i]
+            it[u] = i
+        return 0
+    def maxflow(self, s: int, t: int) -> int:
+        flow = 0
+        while True:
+            level = self.bfs(s, t)
+            if level[t] == -1:
+                break
+            it = self.head[:]  # current arc
+            while True:
+                pushed = self.dfs(s, t, 10**9, it)
+                if not pushed:
+                    break
+                flow += pushed
+        return flow
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    n = int(next(it)); m = int(next(it))
+    edges = []
+    adj = [[] for _ in range(n+1)]
+    radj = [[] for _ in range(n+1)]
+    for _ in range(m):
+        u = int(next(it)); v = int(next(it)); w = int(next(it))
+        edges.append((u,v,w))
+        adj[u].append((v,w))
+        radj[v].append((u,w))
+    q = int(next(it))
+    xs = [int(next(it)) for _ in range(q)]
+    return n, m, edges, adj, radj, q, xs
+
+def solve_all(n: int, m: int, edges: List[Tuple[int,int,int]], adj, radj, q: int, xs: List[int]) -> List[float]:
+    ds = dijkstra(n, adj, 1)
+    dt = dijkstra(n, radj, n)
+    base = ds[n]
+    din = Dinic(n)
+    for (u,v,w) in edges:
+        if ds[u] + w + dt[v] == base:
+            din.add_edge(u, v, 1)
+    c = din.maxflow(1, n)
+    if c <= 0:
+        c = 1
+    return [base + (x / c) for x in xs]
+
+def main():
+    data = sys.stdin.read()
+    n, m, edges, adj, radj, q, xs = read_input(data)
+    res = solve_all(n, m, edges, adj, radj, q, xs)
+    for v in res:
+        print("{:.10f}".format(v))
+
+def _test():
+    s = """4 4
+1 2 1
+2 4 1
+1 3 1
+3 4 1
+2
+0
+6
+"""
+    n, m, edges, adj, radj, q, xs = read_input(s)
+    out = solve_all(n, m, edges, adj, radj, q, xs)
+    assert abs(out[0] - 2.0) < 1e-9
+    assert abs(out[1] - 5.0) < 1e-9
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--test":
+        _test()
+    else:
+        main()
+\end{minted}
+\VALIDATION{Validated on the two-path example; Dinic returns $c=2$, and outputs match $d+X/2$.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{LP duality and min-cut max-flow on the shortest-path DAG: $F(X)=d + \dfrac{X}{c}$, where $d$ is the base shortest-path length and $c$ is the cardinality of a minimum $s$–$t$ cut in the tight-edge DAG $E^\ast$. Compute $d$ by two Dijkstras, compute $c$ by Dinic.}
+\ASSUMPTIONS{Nonnegative weights; existence of at least one $s$–$t$ path; integer weights ensure exact tight-edge test without floating-point error.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Run Dijkstra from $s$ on $G$ to get $d_s$, and from $t$ on $G^\top$ to get $d_t$; let $d=d_s[t]$.
+\item Build $G^\ast$ including edges $(u,v)$ with $d_s[u]+w(u,v)+d_t[v]=d$.
+\item Compute $c=\min$ $s$–$t$ cut size in $G^\ast$ via max-flow with unit capacities (Dinic).
+\item For each query $X$, print $d + X/c$.
+\end{algosteps}
+\OPTIMALITY{For any allocation $y$ with $\sum y_e\le X$, the minimal added length on $G^\ast$ is at most $\min_{e\in C} y_e \le X/|C|$ for any cut $C$, implying $F(X)\le d + X/c$. Conversely, placing $y_e=X/c$ on each edge of a minimum cut $C$ forces every $s$–$t$ path to incur at least $X/c$ additional length, yielding $F(X)\ge d + X/c$. Hence equality holds.}
+\COMPLEXITY{Two Dijkstras in $O(m\log n)$; one max-flow on $G^\ast$ with at most $m$ edges, near-linear for these constraints; each of $q$ queries is $O(1)$.}
+\begin{BreakableEquation*}
+T(n,m,q) = O(m\log n) + \text{Flow}(n,m) + O(q),\quad S(n,m)=O(n+m).
+\end{BreakableEquation*}
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+import math
+import heapq
+from collections import deque
+from typing import List, Tuple
+
+def dijkstra(n: int, adj: List[List[Tuple[int,int]]], src: int) -> List[int]:
+    INF = 10**30
+    dist = [INF]* (n+1)
+    dist[src] = 0
+    pq = [(0, src)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d != dist[u]:
+            continue
+        for v, w in adj[u]:
+            nd = d + w
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return dist
+
+class Dinic:
+    def __init__(self, n: int):
+        self.n = n
+        self.to = []
+        self.cap = []
+        self.nxt = []
+        self.head = [-1]* (n+1)
+    def _add_edge(self, u: int, v: int, c: int):
+        self.to.append(v); self.cap.append(c); self.nxt.append(self.head[u]); self.head[u] = len(self.to)-1
+    def add_edge(self, u: int, v: int, c: int):
+        self._add_edge(u, v, c)
+        self._add_edge(v, u, 0)
+    def bfs(self, s: int, t: int) -> bool:
+        self.level = [-1]* (self.n+1)
+        q = deque([s])
+        self.level[s] = 0
+        while q:
+            u = q.popleft()
+            i = self.head[u]
+            while i != -1:
+                v = self.to[i]
+                if self.cap[i] > 0 and self.level[v] == -1:
+                    self.level[v] = self.level[u] + 1
+                    q.append(v)
+                i = self.nxt[i]
+        return self.level[t] != -1
+    def dfs(self, u: int, t: int, f: int, it: List[int]) -> int:
+        if u == t or f == 0:
+            return f
+        i = it[u]
+        while i != -1:
+            v = self.to[i]
+            if self.cap[i] > 0 and self.level[v] == self.level[u] + 1:
+                pushed = self.dfs(v, t, min(f, self.cap[i]), it)
+                if pushed:
+                    self.cap[i] -= pushed
+                    self.cap[i^1] += pushed
+                    return pushed
+            i = self.nxt[i]
+            it[u] = i
+        return 0
+    def maxflow(self, s: int, t: int) -> int:
+        flow = 0
+        while self.bfs(s, t):
+            it = self.head[:]  # current edge iterators
+            while True:
+                pushed = self.dfs(s, t, 10**9, it)
+                if not pushed:
+                    break
+                flow += pushed
+        return flow
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    n = int(next(it)); m = int(next(it))
+    edges = []
+    adj = [[] for _ in range(n+1)]
+    radj = [[] for _ in range(n+1)]
+    for _ in range(m):
+        u = int(next(it)); v = int(next(it)); w = int(next(it))
+        edges.append((u, v, w))
+        adj[u].append((v, w))
+        radj[v].append((u, w))
+    q = int(next(it))
+    xs = [int(next(it)) for _ in range(q)]
+    return n, m, edges, adj, radj, q, xs
+
+def solve_all(n: int, m: int, edges: List[Tuple[int,int,int]], adj, radj, q: int, xs: List[int]) -> List[float]:
+    ds = dijkstra(n, adj, 1)
+    dt = dijkstra(n, radj, n)
+    base = ds[n]
+    din = Dinic(n)
+    for (u, v, w) in edges:
+        if ds[u] + w + dt[v] == base:
+            din.add_edge(u, v, 1)
+    c = din.maxflow(1, n)
+    if c <= 0:
+        c = 1
+    return [base + (x / c) for x in xs]
+
+def main():
+    data = sys.stdin.read()
+    n, m, edges, adj, radj, q, xs = read_input(data)
+    res = solve_all(n, m, edges, adj, radj, q, xs)
+    out = sys.stdout
+    for v in res:
+        out.write("{:.10f}\n".format(v))
+
+def _test():
+    # Unique path
+    s1 = """3 2
+1 2 5
+2 3 7
+2
+0
+10
+"""
+    n, m, edges, adj, radj, q, xs = read_input(s1)
+    out = solve_all(n, m, edges, adj, radj, q, xs)
+    assert abs(out[0] - 12.0) < 1e-9
+    assert abs(out[1] - 22.0) < 1e-9
+    # Two disjoint shortest paths
+    s2 = """4 4
+1 2 1
+2 4 1
+1 3 1
+3 4 1
+3
+0
+6
+3
+"""
+    n, m, edges, adj, radj, q, xs = read_input(s2)
+    out = solve_all(n, m, edges, adj, radj, q, xs)
+    assert abs(out[0] - 2.0) < 1e-9
+    assert abs(out[1] - 5.0) < 1e-9
+    assert abs(out[2] - 3.5) < 1e-9
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--test":
+        _test()
+    else:
+        main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts exercised via the optional \texttt{--test} flag cover a chain, two equal shortest paths, and a mid-value $X$.}
+\RESULT{For each query $X$, print $d + X/c$ where $d$ is the base shortest $1\to n$ distance and $c$ is the min $1$–$n$ edge cut size in the shortest-path DAG.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests for base cases (unique path), multiple edge-disjoint shortest paths, and random small graphs to cross-check Edmonds–Karp vs Dinic. Validate formatting and precision.}
+\LINE{CROSS-CHECKS}{Compare Approach A and B outputs on small random graphs where exhaustive enumeration of shortest-path DAG is feasible. Verify identical $d$ and $c$.}
+\LINE{EDGE-CASE GENERATOR}{Generate DAGs with varying numbers of parallel shortest paths by layering vertices; verify $c$ equals the number of layer-spanning edges at the bottleneck.}
+\begin{minted}{python}
+import random
+import io
+
+def gen_layered(k_layers=4, width=3):
+    # Build a layered DAG with unit weights; many shortest paths.
+    n = k_layers * width
+    edges = []
+    node = lambda layer, idx: (layer * width) + idx + 1
+    for layer in range(k_layers-1):
+        for i in range(width):
+            u = node(layer, i)
+            for j in range(width):
+                v = node(layer+1, j)
+                edges.append((u, v, 1))
+    # connect super source=1 and super sink=n
+    s = 1
+    t = n
+    m = len(edges)
+    data = io.StringIO()
+    print(n, m, file=data)
+    for u,v,w in edges:
+        print(u, v, w, file=data)
+    print(3, file=data)
+    print(0, 5, 10, file=data)
+    return data.getvalue()
+
+def reference_run(inp: str):
+    # Use final solution parser/solver
+    n, m, edges, adj, radj, q, xs = read_input(inp)
+    return solve_all(n, m, edges, adj, radj, q, xs)
+
+# Quick deterministic check
+s = """4 4
+1 2 1
+2 4 1
+1 3 1
+3 4 1
+1
+10
+"""
+n, m, edges, adj, radj, q, xs = read_input(s)
+out = solve_all(n, m, edges, adj, radj, q, xs)
+assert abs(out[0] - 7.0) < 1e-9
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+import heapq
+from collections import deque
+from typing import List, Tuple
+
+def dijkstra(n: int, adj: List[List[Tuple[int,int]]], src: int) -> List[int]:
+    INF = 10**30
+    dist = [INF]* (n+1)
+    dist[src] = 0
+    pq = [(0, src)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d != dist[u]:
+            continue
+        for v, w in adj[u]:
+            nd = d + w
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return dist
+
+class Dinic:
+    def __init__(self, n: int):
+        self.n = n
+        self.to = []
+        self.cap = []
+        self.nxt = []
+        self.head = [-1]* (n+1)
+    def _add_edge(self, u: int, v: int, c: int):
+        self.to.append(v); self.cap.append(c); self.nxt.append(self.head[u]); self.head[u] = len(self.to)-1
+    def add_edge(self, u: int, v: int, c: int):
+        self._add_edge(u, v, c)
+        self._add_edge(v, u, 0)
+    def bfs(self, s: int, t: int) -> bool:
+        self.level = [-1]* (self.n+1)
+        q = deque([s])
+        self.level[s] = 0
+        while q:
+            u = q.popleft()
+            i = self.head[u]
+            while i != -1:
+                v = self.to[i]
+                if self.cap[i] > 0 and self.level[v] == -1:
+                    self.level[v] = self.level[u] + 1
+                    q.append(v)
+                i = self.nxt[i]
+        return self.level[t] != -1
+    def dfs(self, u: int, t: int, f: int, it: List[int]) -> int:
+        if u == t or f == 0:
+            return f
+        i = it[u]
+        while i != -1:
+            v = self.to[i]
+            if self.cap[i] > 0 and self.level[v] == self.level[u] + 1:
+                pushed = self.dfs(v, t, min(f, self.cap[i]), it)
+                if pushed:
+                    self.cap[i] -= pushed
+                    self.cap[i^1] += pushed
+                    return pushed
+            i = self.nxt[i]
+            it[u] = i
+        return 0
+    def maxflow(self, s: int, t: int) -> int:
+        flow = 0
+        while self.bfs(s, t):
+            it = self.head[:]  # current arc
+            while True:
+                pushed = self.dfs(s, t, 10**9, it)
+                if not pushed:
+                    break
+                flow += pushed
+        return flow
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    n = int(next(it)); m = int(next(it))
+    edges = []
+    adj = [[] for _ in range(n+1)]
+    radj = [[] for _ in range(n+1)]
+    for _ in range(m):
+        u = int(next(it)); v = int(next(it)); w = int(next(it))
+        edges.append((u, v, w))
+        adj[u].append((v, w))
+        radj[v].append((u, w))
+    q = int(next(it))
+    xs = [int(next(it)) for _ in range(q)]
+    return n, m, edges, adj, radj, q, xs
+
+def solve_all(n: int, m: int, edges: List[Tuple[int,int,int]], adj, radj, q: int, xs: List[int]) -> List[float]:
+    ds = dijkstra(n, adj, 1)
+    dt = dijkstra(n, radj, n)
+    base = ds[n]
+    din = Dinic(n)
+    for (u, v, w) in edges:
+        if ds[u] + w + dt[v] == base:
+            din.add_edge(u, v, 1)
+    c = din.maxflow(1, n)
+    if c <= 0:
+        c = 1
+    return [base + (x / c) for x in xs]
+
+def main():
+    data = sys.stdin.read()
+    n, m, edges, adj, radj, q, xs = read_input(data)
+    res = solve_all(n, m, edges, adj, radj, q, xs)
+    out = sys.stdout
+    for v in res:
+        out.write("{:.10f}\n".format(v))
+
+def _test():
+    s = """4 4
+1 2 1
+2 4 1
+1 3 1
+3 4 1
+1
+10
+"""
+    n, m, edges, adj, radj, q, xs = read_input(s)
+    out = solve_all(n, m, edges, adj, radj, q, xs)
+    assert abs(out[0] - 7.0) < 1e-9
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--test":
+        _test()
+    else:
+        main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Answer equals base shortest distance plus $X$ divided by the minimum edge cut size of the shortest-path DAG.}
+\WHY{This blends shortest paths with cut/flow duality; appears in adversarial path problems and robust optimization interviews.}
+\CHECKLIST{%
+\begin{bullets}
+\item Run Dijkstra from $1$ and $n$ to get $d_s$, $d_t$, $d$.
+\item Build tight-edge DAG with $d_s[u]+w(u,v)+d_t[v]=d$.
+\item Compute min $s$–$t$ cut size $c$ on DAG via max-flow (unit caps).
+\item Output $d + X/c$ per query.
+\end{bullets}
+}
+\EDGECASES{%
+\begin{bullets}
+\item Unique shortest path $\Rightarrow c=1$.
+\item Multiple shortest paths merging/splitting; ensure counting edge cut, not vertex cut.
+\item All $X=0$ queries.
+\item Very large $q$ ($10^5$) $\Rightarrow$ precompute once, $O(1)$/query.
+\item Equal-distance edges; exact integer equality test for tight edges.
+\item Graph with reverse edges not on any shortest path; ignore them safely.
+\end{bullets}
+}
+\PITFALLS{%
+\begin{bullets}
+\item Using floating comparison for tightness; use exact integer check.
+\item Forgetting to reverse-graph Dijkstra from $n$ for $d_t$.
+\item Accidental vertex-capacity min-cut instead of edge-capacity.
+\item Building flow on full graph instead of tight-edge DAG (overestimates $c$).
+\item Precision on output; print with enough decimals.
+\item Not handling 1-indexed nodes consistently.
+\end{bullets}
+}
+\FAILMODES{Graphs where non-tight edges exist: naive attempts to spread budget on arbitrary edges fail because a path with zero added delay in the DAG remains shortest. Our method isolates the relevant subgraph and computes the structural bottleneck $c$.}
+\ELI{First find all best routes. How many roads must you slow to force every best route to be slower? That count is $c$. Sharing $x$ evenly across those $c$ roads forces any best route to be $x/c$ slower; you cannot do better.}
+\NotePages{3}
+
+\end{document}

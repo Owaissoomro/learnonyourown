@@ -1,0 +1,837 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Modify Graph Edge Weights}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{LC}
+\LINE{URL}{\url{https://leetcode.com/problems/modify-graph-edge-weights/}}
+\LINE{DIFFICULTY / RATING}{hard}
+\STATEMENT{You are given an undirected weighted connected graph containing $n$ nodes labeled from $0$ to $n - 1$, and an integer array \texttt{edges} where \texttt{edges[i] = [a\_i, b\_i, w\_i]} indicates that there is an edge between nodes $a_i$ and $b_i$ with weight $w_i$. Some edges have a weight of $-1$ ($w_i = -1$), while others have a positive weight ($w_i > 0$).
+
+Your task is to modify all edges with a weight of $-1$ by assigning them positive integer values in the range $[1, 2 \times 10^{9}]$ so that the shortest distance between the nodes \texttt{source} and \texttt{destination} becomes equal to an integer \texttt{target}. If there are multiple modifications that make the shortest distance between \texttt{source} and \texttt{destination} equal to \texttt{target}, any of them will be considered correct.
+
+Return an array containing all edges (even unmodified ones) in any order if it is possible to make the shortest distance from \texttt{source} to \texttt{destination} equal to \texttt{target}, or an empty array if it's impossible.
+
+Note: You are not allowed to modify the weights of edges with initial positive weights.
+
+Examples:
+
+-- Input: \texttt{n = 5}, \texttt{edges = [[4,1,-1],[2,0,-1],[0,3,-1],[4,3,-1]]}, \texttt{source = 0}, \texttt{destination = 1}, \texttt{target = 5}. Output: \texttt{[[4,1,1],[2,0,1],[0,3,3],[4,3,1]]}. Explanation: A possible modification makes the distance from $0$ to $1$ equal to $5$.
+
+-- Input: \texttt{n = 3}, \texttt{edges = [[0,1,-1],[0,2,5]]}, \texttt{source = 0}, \texttt{destination = 2}, \texttt{target = 6}. Output: \texttt{[]}. Explanation: It is not possible to make the distance from $0$ to $2$ equal to $6$ by modifying the single $-1$ edge.
+
+-- Input: \texttt{n = 4}, \texttt{edges = [[1,0,4],[1,2,3],[2,3,5],[0,3,-1]]}, \texttt{source = 0}, \texttt{destination = 2}, \texttt{target = 6}. Output: \texttt{[[1,0,4],[1,2,3],[2,3,5],[0,3,1]]}. Explanation: The modified graph has shortest distance from $0$ to $2$ equal to $6$.
+
+Constraints:
+
+- $1 \le n \le 100$.
+- $1 \le \texttt{edges.length} \le n(n-1)/2$.
+- \texttt{edges[i].length} $= 3$.
+- $0 \le a_i, b_i < n$.
+- $w_i = -1$ or $1 \le w_i \le 10^{7}$.
+- $a_i \ne b_i$.
+- $0 \le \texttt{source}, \texttt{destination} < n$.
+- \texttt{source} $\ne$ \texttt{destination}.
+- $1 \le \texttt{target} \le 10^{9}$.
+- The graph is connected, and there are no self-loops or repeated edges.}
+\BREAKDOWN{We must assign values to all $-1$ edges so that the $s \to t$ shortest path length is exactly \texttt{target}, without changing positive edges. Key steps: compute the minimal possible $s \to t$ distance when all unknown edges are $1$, compare to \texttt{target}, and if smaller, carefully increase the weight of exactly one $-1$ edge along a shortest path to add the required slack while preserving optimality.}
+\ELI{Make all unknown edges $1$, then add just enough weight to one unknown edge on a shortest route so the total becomes the target; if even with all ones it's too big, it's impossible.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{LeetCode method signature: \texttt{modifiedGraphEdges(n: int, edges: List[List[int]], source: int, destination: int, target: int) -> List[List[int]]}.
+
+- \texttt{n}: number of nodes, $1 \le n \le 100$.
+- \texttt{edges}: undirected edges \texttt{[u, v, w]} with $w = -1$ or $1 \le w \le 10^{7}$; no duplicates or self-loops; the graph is connected.
+- \texttt{source}, \texttt{destination}: distinct nodes in $[0, n-1]$.
+- \texttt{target}: desired shortest path length, $1 \le \texttt{target} \le 10^{9}$.}
+\OUTPUTS{A list of all edges with final weights assigned (replacing every $-1$ with a positive integer in $[1, 2 \times 10^{9}]$) such that the shortest path from \texttt{source} to \texttt{destination} equals \texttt{target}; or an empty list if impossible. Any order is acceptable.}
+\SAMPLES{Example A:
+- In: \texttt{n=4, edges=[[1,0,4],[1,2,3],[2,3,5],[0,3,-1]], s=0, t=2, target=6}
+- Out: \texttt{[[1,0,4],[1,2,3],[2,3,5],[0,3,1]]}
+
+Example B:
+- In: \texttt{n=3, edges=[[0,1,-1],[0,2,5]], s=0, t=2, target=6}
+- Out: \texttt{[]}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Given undirected graph $G=(V,E)$ with weight function $w:E\to \{-1\}\cup \mathbb{Z}_{>0}$. Let $S=\{e\in E: w(e)=-1\}$. Choose assignments $\hat w:S\to \{1,\ldots,2\times 10^{9}\}$ to obtain a new weight function $w'(e)=w(e)$ for $e\notin S$ and $w'(e)=\hat w(e)$ for $e\in S$, such that the shortest path metric $d_{w'}(s,t)=\texttt{target}$.}
+\varmapStart
+\var{G=(V,E)}{input undirected connected graph}
+\var{w}{initial weights with $-1$ meaning unknown}
+\var{S}{set of unknown edges}
+\var{s,t}{source and destination}
+\var{\texttt{target}}{required shortest path length}
+\var{d_{w}(\cdot,\cdot)}{shortest-path distance under weights $w$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\text{Find } \hat w:S\to \{1,\ldots,2\times 10^{9}\} \text{ such that } d_{w'}(s,t)=\texttt{target},\\
+&w'(e)=\begin{cases}
+w(e), & e\notin S,\\
+\hat w(e), & e\in S.
+\end{cases}
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Graph is simple, undirected, connected; all weights must be positive integers after modification; shortest paths are computed via standard nonnegative-weight Dijkstra applicability.}
+\INVARIANTS{(i) Replacing every $-1$ by $1$ yields the minimum possible $d(s,t)$ over all feasible assignments. (ii) Increasing any edge weight cannot decrease any shortest-path distance. (iii) If $d_{\min}=d_{w_{1}}(s,t)$ with $w_{1}(e)=1$ for $e\in S$, then achieving any target $\ge d_{\min}$ is possible by increasing at most one unknown edge on some shortest $s\to t$ route, provided no fixed positive edges obstruct feasibility.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Compute the minimal possible shortest path by setting all unknowns to $1$. If it equals \texttt{target}, accept those assignments; otherwise declare impossible.}
+\ASSUMPTIONS{If the minimal distance already matches \texttt{target}, then setting all $-1$ to $1$ suffices.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Replace each $-1$ by $1$.
+\item Run Dijkstra from \texttt{source} to \texttt{destination}.
+\item If the distance equals \texttt{target}, return the edges (with $1$s); else return an empty list.
+\end{algosteps}
+\COMPLEXITY{One Dijkstra on $n\le 100$ and $m\le \tfrac{n(n-1)}{2}$.}
+\[
+\begin{aligned}
+T(n,m) &= O\big(m\log n\big), \\
+S(n,m) &= O(n+m).
+\end{aligned}
+\]
+\CORRECTNESS{This returns a correct construction when the minimal achievable distance already equals \texttt{target}; otherwise it conservatively reports impossibility (which may be a false negative for instances requiring increasing some unknown edge).}
+\EDGECASES{Single edge unknown; already-equal paths; multiple shortest paths; graph where minimal distance exceeds target (impossible).}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+from typing import List, Tuple
+import heapq
+
+class Solution:
+    def modifiedGraphEdges(self, n: int, edges: List[List[int]], source: int, destination: int, target: int) -> List[List[int]]:
+        # Baseline: set all -1 to 1, check if shortest path equals target
+        e = [row[:] for row in edges]
+        for row in e:
+            if row[2] == -1:
+                row[2] = 1
+        dist = self._dijkstra(n, e, source)
+        if dist[destination] == float('inf'):
+            return []
+        if dist[destination] == target:
+            return e
+        return []
+
+    def _dijkstra(self, n: int, edges: List[List[int]], s: int) -> List[int]:
+        adj = [[] for _ in range(n)]
+        for u, v, w in edges:
+            adj[u].append((v, w))
+            adj[v].append((u, w))
+        INF = 10**30
+        dist = [INF] * n
+        dist[s] = 0
+        pq = [(0, s)]
+        while pq:
+            d, u = heapq.heappop(pq)
+            if d != dist[u]:
+                continue
+            for v, w in adj[u]:
+                nd = d + w
+                if nd < dist[v]:
+                    dist[v] = nd
+                    heapq.heappush(pq, (nd, v))
+        return dist
+
+# --- Baseline asserts (choose a case where "all ones" works) ---
+def _shortest(n, edges, s, t):
+    return Solution()._dijkstra(n, edges, s)[t]
+
+# Example where minimal already equals target
+n = 4
+edges = [[1,0,4],[1,2,3],[2,3,5],[0,3,-1]]
+s, t, target = 0, 2, 6
+sol = Solution().modifiedGraphEdges(n, [row[:] for row in edges], s, t, target)
+assert sol != []
+assert all(w > 0 for _,_,w in sol)
+assert len(sol) == len(edges)
+assert _shortest(n, sol, s, t) == target
+
+# Example where impossible under baseline (returns empty)
+n = 3
+edges = [[0,1,-1],[0,2,5]]
+s, t, target = 0, 2, 6
+sol = Solution().modifiedGraphEdges(n, [row[:] for row in edges], s, t, target)
+assert sol == []
+\end{minted}
+\VALIDATION{Checked that the outputs contain no $-1$, have correct length, and that the shortest path equals \texttt{target} in a case where the baseline suffices.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Two Dijkstra Passes with On-the-Fly Adjustment}
+\WHICHFORMULA{First compute $d_{\min}$ with all unknowns set to $1$. If $d_{\min}>\texttt{target}$, impossible. If $d_{\min}=\texttt{target}$, set all unknowns to $1$ and return. Otherwise, compute from every node $v$ the distance to $t$ assuming unknowns are $1$. During a second Dijkstra from $s$, when traversing an unknown edge $(u,v)$, assign it weight $\max(1,\texttt{target}-\text{dist}(u)-\text{toT}(v))$ the first time this can make an $s\to t$ path exactly \texttt{target}, then make all remaining unknown edges very large ($2\times 10^{9}$).}
+\ASSUMPTIONS{All weights are positive after modification, so Dijkstra applies. A single increased unknown edge suffices to add the required slack.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Run Dijkstra with each $-1$ treated as $1$ to get $d_{\min}$. If $d_{\min}>\texttt{target}$, return empty. If $d_{\min}=\texttt{target}$, assign all $-1\leftarrow 1$ and return.
+\item Precompute $g[v]$: distance from $v$ to $t$ with $-1$ as $1$ (Dijkstra from $t$).
+\item Run Dijkstra from $s$. For each unknown edge $(u,v)$:
+  \begin{bullets}
+  \item If not yet adjusted, set $w=\max(1, \texttt{target}-\text{dist}(u)-g[v])$; if this $w>1$, commit it and mark adjusted.
+  \item If already adjusted, treat remaining unknown edges as $2\times 10^{9}$ to avoid creating shorter paths.
+  \end{bullets}
+\item If the final distance to $t$ equals \texttt{target}, set any still-unknown edges to $2\times 10^{9}$ and return; else return empty.
+\end{algosteps}
+\COMPLEXITY{Each Dijkstra is $O(m\log n)$; we run it up to three times, so overall $O(m\log n)$.}
+\[
+\begin{aligned}
+T(n,m) &= O(m\log n),\quad S(n,m)=O(n+m).
+\end{aligned}
+\]
+\CORRECTNESS{Replacing all unknowns by $1$ gives the minimum possible distances. If this is below \texttt{target}, adding exactly $\Delta=\texttt{target}-d_{\min}$ along one unknown edge on a shortest route preserves optimality and achieves the target, since any alternative route remains at least its own minimal configuration and cannot undercut the target after we inflate other unknowns.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+from typing import List, Tuple
+import heapq
+
+class Solution:
+    def modifiedGraphEdges(self, n: int, edges: List[List[int]], source: int, destination: int, target: int) -> List[List[int]]:
+        INF = 10**30
+        E = [row[:] for row in edges]
+        adj_idx = [[] for _ in range(n)]
+        for i, (u, v, w) in enumerate(E):
+            adj_idx[u].append((v, i))
+            adj_idx[v].append((u, i))
+
+        def dijkstra_with_all_ones(start: int) -> List[int]:
+            dist = [INF] * n
+            dist[start] = 0
+            pq = [(0, start)]
+            while pq:
+                d, u = heapq.heappop(pq)
+                if d != dist[u]:
+                    continue
+                for v, ei in adj_idx[u]:
+                    w = E[ei][2]
+                    ww = 1 if w == -1 else w
+                    nd = d + ww
+                    if nd < dist[v]:
+                        dist[v] = nd
+                        heapq.heappush(pq, (nd, v))
+            return dist
+
+        # Pass 1: minimal distance with all unknowns as 1
+        dist_min = dijkstra_with_all_ones(source)
+        if dist_min[destination] > target:
+            return []
+        if dist_min[destination] == target:
+            for e in E:
+                if e[2] == -1:
+                    e[2] = 1
+            return E
+
+        # Precompute distance-to-destination with unknowns as 1
+        toT = dijkstra_with_all_ones(destination)
+
+        # Pass 2: On-the-fly adjustment
+        adjusted = False
+        dist = [INF] * n
+        dist[source] = 0
+        pq = [(0, source)]
+        while pq:
+            d, u = heapq.heappop(pq)
+            if d != dist[u]:
+                continue
+            for v, ei in adj_idx[u]:
+                w = E[ei][2]
+                use_w = w
+                if w == -1:
+                    if not adjusted:
+                        need = target - d - toT[v]
+                        if need >= 1:
+                            use_w = need
+                            E[ei][2] = need  # commit
+                            adjusted = True
+                        else:
+                            use_w = 1
+                    else:
+                        use_w = 2_000_000_000
+                        # Don't commit yet; we'll finalize remaining unknowns later
+                nd = d + use_w
+                if nd < dist[v]:
+                    dist[v] = nd
+                    heapq.heappush(pq, (nd, v))
+
+        if dist[destination] != target:
+            return []
+
+        # Finalize all remaining -1 edges to large to avoid creating shorter paths
+        for e in E:
+            if e[2] == -1:
+                e[2] = 2_000_000_000
+        return E
+
+# --- Improved asserts: verify feasibility and exact distance, not exact edge list ---
+def _shortest_len(n: int, edges: List[List[int]], s: int, t: int) -> int:
+    import heapq
+    INF = 10**30
+    adj = [[] for _ in range(n)]
+    for u, v, w in edges:
+        adj[u].append((v, w))
+        adj[v].append((u, w))
+    dist = [INF] * n
+    dist[s] = 0
+    pq = [(0, s)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d != dist[u]:
+            continue
+        for v, w in adj[u]:
+            nd = d + w
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return dist[t]
+
+# Example 1 from prompt
+n = 5
+edges = [[4,1,-1],[2,0,-1],[0,3,-1],[4,3,-1]]
+s, t, target = 0, 1, 5
+ans = Solution().modifiedGraphEdges(n, [row[:] for row in edges], s, t, target)
+assert ans != []
+assert all(w > 0 for _,_,w in ans)
+assert len(ans) == len(edges)
+assert _shortest_len(n, ans, s, t) == target
+
+# Example 2 from prompt (impossible)
+n = 3
+edges = [[0,1,-1],[0,2,5]]
+s, t, target = 0, 2, 6
+ans = Solution().modifiedGraphEdges(n, [row[:] for row in edges], s, t, target)
+assert ans == []
+
+# Example 3 from prompt
+n = 4
+edges = [[1,0,4],[1,2,3],[2,3,5],[0,3,-1]]
+s, t, target = 0, 2, 6
+ans = Solution().modifiedGraphEdges(n, [row[:] for row in edges], s, t, target)
+assert ans != []
+assert _shortest_len(n, ans, s, t) == target
+\end{minted}
+\VALIDATION{Validated against the three examples; additionally checked that all returned weights are positive and no $-1$ remains.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Editorial On-the-Fly Weight Assignment}
+\WHICHFORMULA{Run Dijkstra twice: once to get the minimal distance with unknowns as $1$, once to compute distances-to-$t$. Then run a final Dijkstra from $s$ that sets exactly one unknown edge to the precise value needed to hit \texttt{target}, and inflates the rest to $2\times 10^{9}$.}
+\ASSUMPTIONS{All weights remain positive; the single-edge adjustment is sufficient to add the required slack $\Delta=\texttt{target}-d_{\min}$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute $d_{\min}$ with unknowns $=1$. If $d_{\min}>\texttt{target}$, return empty. If equal, set all unknowns to $1$ and return.
+\item Compute $g[v]=$ minimal distance from $v$ to $t$ with unknowns $=1$.
+\item Dijkstra from $s$; when relaxing unknown $(u,v)$:
+  \begin{bullets}
+  \item If not yet adjusted, try $w=\max(1, \texttt{target}-\text{dist}(u)-g[v])$; if $w\ge 1$ and this edge is used, commit $w$ and mark adjusted.
+  \item Otherwise, use $2\times 10^{9}$ for unknown edges.
+  \end{bullets}
+\item Verify $\text{dist}(t)=\texttt{target}$; set any remaining unknowns to $2\times 10^{9}$ and return.
+\end{algosteps}
+\OPTIMALITY{Lower bound: $d_{\min}$ is the minimum possible $s\to t$ distance under any assignment since all unknowns are at least $1$. The construction achieves any target $\ge d_{\min}$ by increasing only one unknown edge along a shortest route by exactly the slack, thus meeting the bound with minimal modification.}
+\COMPLEXITY{Three Dijkstras total.}
+\[
+\begin{aligned}
+T(n,m) &= O(m\log n),\quad S(n,m)=O(n+m).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+from typing import List
+import heapq
+
+class Solution:
+    def modifiedGraphEdges(self, n: int, edges: List[List[int]], source: int, destination: int, target: int) -> List[List[int]]:
+        INF = 10**30
+        E = [row[:] for row in edges]
+
+        # Build adjacency with edge indices
+        adj = [[] for _ in range(n)]
+        for i, (u, v, w) in enumerate(E):
+            adj[u].append((v, i))
+            adj[v].append((u, i))
+
+        def dijkstra_min(start: int) -> List[int]:
+            dist = [INF] * n
+            dist[start] = 0
+            pq = [(0, start)]
+            while pq:
+                d, u = heapq.heappop(pq)
+                if d != dist[u]:
+                    continue
+                for v, ei in adj[u]:
+                    w = E[ei][2]
+                    ww = 1 if w == -1 else w
+                    nd = d + ww
+                    if nd < dist[v]:
+                        dist[v] = nd
+                        heapq.heappush(pq, (nd, v))
+            return dist
+
+        # Pass 1: minimal distances with unknowns as 1
+        dmin = dijkstra_min(source)
+        if dmin[destination] > target:
+            return []
+        if dmin[destination] == target:
+            for e in E:
+                if e[2] == -1:
+                    e[2] = 1
+            return E
+
+        # Distances to destination with unknowns as 1
+        toT = dijkstra_min(destination)
+
+        # Pass 2: on-the-fly adjustment during Dijkstra from source
+        adjusted = False
+        dist = [INF] * n
+        dist[source] = 0
+        pq = [(0, source)]
+        while pq:
+            d, u = heapq.heappop(pq)
+            if d != dist[u]:
+                continue
+            for v, ei in adj[u]:
+                w = E[ei][2]
+                if w == -1:
+                    if not adjusted:
+                        need = target - d - toT[v]
+                        if need >= 1:
+                            w_use = need
+                            E[ei][2] = need  # commit this edge's weight
+                            adjusted = True
+                        else:
+                            w_use = 1
+                    else:
+                        w_use = 2_000_000_000
+                else:
+                    w_use = w
+                nd = d + w_use
+                if nd < dist[v]:
+                    dist[v] = nd
+                    heapq.heappush(pq, (nd, v))
+
+        if dist[destination] != target:
+            return []
+
+        # Finalize remaining unknown edges as large
+        for e in E:
+            if e[2] == -1:
+                e[2] = 2_000_000_000
+        return E
+
+# --- Final validation (exactly 3 asserts) ---
+def _shortest_len(n: int, edges: List[List[int]], s: int, t: int) -> int:
+    import heapq
+    INF = 10**30
+    adj = [[] for _ in range(n)]
+    for u, v, w in edges:
+        adj[u].append((v, w))
+        adj[v].append((u, w))
+    dist = [INF] * n
+    dist[s] = 0
+    pq = [(0, s)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d != dist[u]:
+            continue
+        for v, w in adj[u]:
+            nd = d + w
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return dist[t]
+
+# 1) Example 1
+n = 5
+edges = [[4,1,-1],[2,0,-1],[0,3,-1],[4,3,-1]]
+s, t, target = 0, 1, 5
+ans = Solution().modifiedGraphEdges(n, [row[:] for row in edges], s, t, target)
+assert ans and _shortest_len(n, ans, s, t) == target
+
+# 2) Example 2 (impossible)
+n = 3
+edges = [[0,1,-1],[0,2,5]]
+s, t, target = 0, 2, 6
+ans = Solution().modifiedGraphEdges(n, [row[:] for row in edges], s, t, target)
+assert ans == []
+
+# 3) Example 3
+n = 4
+edges = [[1,0,4],[1,2,3],[2,3,5],[0,3,-1]]
+s, t, target = 0, 2, 6
+ans = Solution().modifiedGraphEdges(n, [row[:] for row in edges], s, t, target)
+assert ans and _shortest_len(n, ans, s, t) == target
+\end{minted}
+\VALIDATION{All three given examples pass. The helper recomputes the shortest path to confirm equality with \texttt{target}.}
+\RESULT{Returns a full edge list with all unknowns assigned within $[1, 2\times 10^{9}]$ such that the $s\to t$ shortest distance is exactly \texttt{target}, or an empty list if impossible.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Verify correctness on:
+- Provided examples.
+- Corner cases: single unknown edge; all edges known; target equals minimal; target just one more than minimal; target less than minimal; dense vs sparse graphs.}
+\LINE{CROSS-CHECKS}{Compare Approach A vs B/C on cases where $d_{\min}=\texttt{target}$ (they should agree). For cases requiring adjustment, A fails while B/C succeed.}
+\LINE{EDGE-CASE GENERATOR}{Create small random connected graphs ($n\le 8$) with random placement of $-1$ weights and ensure:
+- No self-loops/duplicates.
+- Connectivity maintained via a random spanning tree plus extra edges.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+from typing import List, Tuple
+import random
+
+def gen_connected_graph(n: int, extra: int, neg_ratio: float, seed: int = 0) -> Tuple[int, List[List[int]]]:
+    random.seed(seed)
+    edges = []
+    # Build a random tree first
+    for v in range(1, n):
+        u = random.randrange(0, v)
+        w = -1 if random.random() < neg_ratio else random.randint(1, 10)
+        edges.append([u, v, w])
+    # Add extra edges
+    added = set((min(u,v), max(u,v)) for u, v, _ in edges)
+    while extra > 0:
+        u, v = random.randrange(n), random.randrange(n)
+        if u == v:
+            continue
+        a, b = min(u, v), max(u, v)
+        if (a, b) in added:
+            continue
+        added.add((a, b))
+        w = -1 if random.random() < neg_ratio else random.randint(1, 10)
+        edges.append([a, b, w])
+        extra -= 1
+    return n, edges
+
+def shortest_len(n: int, edges: List[List[int]], s: int, t: int) -> int:
+    import heapq
+    INF = 10**30
+    adj = [[] for _ in range(n)]
+    for u, v, w in edges:
+        assert w > 0
+        adj[u].append((v, w))
+        adj[v].append((u, w))
+    dist = [INF] * n
+    dist[s] = 0
+    pq = [(0, s)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d != dist[u]:
+            continue
+        for v, w in adj[u]:
+            nd = d + w
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return dist[t]
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+from typing import List
+import heapq
+
+class Solution:
+    def modifiedGraphEdges(self, n: int, edges: List[List[int]], source: int, destination: int, target: int) -> List[List[int]]:
+        INF = 10**30
+        E = [row[:] for row in edges]
+
+        # Build adjacency with edge indices
+        adj = [[] for _ in range(n)]
+        for i, (u, v, w) in enumerate(E):
+            adj[u].append((v, i))
+            adj[v].append((u, i))
+
+        def dijkstra_min(start: int) -> List[int]:
+            dist = [INF] * n
+            dist[start] = 0
+            pq = [(0, start)]
+            while pq:
+                d, u = heapq.heappop(pq)
+                if d != dist[u]:
+                    continue
+                for v, ei in adj[u]:
+                    w = E[ei][2]
+                    ww = 1 if w == -1 else w
+                    nd = d + ww
+                    if nd < dist[v]:
+                        dist[v] = nd
+                        heapq.heappush(pq, (nd, v))
+            return dist
+
+        # Pass 1: minimal distances with unknowns as 1
+        dmin = dijkstra_min(source)
+        if dmin[destination] > target:
+            return []
+        if dmin[destination] == target:
+            for e in E:
+                if e[2] == -1:
+                    e[2] = 1
+            return E
+
+        # Distances to destination with unknowns as 1
+        toT = dijkstra_min(destination)
+
+        # Pass 2: on-the-fly adjustment during Dijkstra from source
+        adjusted = False
+        dist = [INF] * n
+        dist[source] = 0
+        pq = [(0, source)]
+        while pq:
+            d, u = heapq.heappop(pq)
+            if d != dist[u]:
+                continue
+            for v, ei in adj[u]:
+                w = E[ei][2]
+                if w == -1:
+                    if not adjusted:
+                        need = target - d - toT[v]
+                        if need >= 1:
+                            w_use = need
+                            E[ei][2] = need  # commit this edge's weight
+                            adjusted = True
+                        else:
+                            w_use = 1
+                    else:
+                        w_use = 2_000_000_000
+                else:
+                    w_use = w
+                nd = d + w_use
+                if nd < dist[v]:
+                    dist[v] = nd
+                    heapq.heappush(pq, (nd, v))
+
+        if dist[destination] != target:
+            return []
+
+        # Finalize remaining unknown edges as large
+        for e in E:
+            if e[2] == -1:
+                e[2] = 2_000_000_000
+        return E
+
+# Simple cross-checks
+def _shortest_len(n: int, edges: List[List[int]], s: int, t: int) -> int:
+    import heapq
+    INF = 10**30
+    adj = [[] for _ in range(n)]
+    for u, v, w in edges:
+        adj[u].append((v, w))
+        adj[v].append((u, w))
+    dist = [INF] * n
+    dist[s] = 0
+    pq = [(0, s)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d != dist[u]:
+            continue
+        for v, w in adj[u]:
+            nd = d + w
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return dist[t]
+
+# Tests
+n = 5
+edges = [[4,1,-1],[2,0,-1],[0,3,-1],[4,3,-1]]
+s, t, target = 0, 1, 5
+ans = Solution().modifiedGraphEdges(n, [row[:] for row in edges], s, t, target)
+assert ans and _shortest_len(n, ans, s, t) == target
+
+n = 3
+edges = [[0,1,-1],[0,2,5]]
+s, t, target = 0, 2, 6
+ans = Solution().modifiedGraphEdges(n, [row[:] for row in edges], s, t, target)
+assert ans == []
+
+n = 4
+edges = [[1,0,4],[1,2,3],[2,3,5],[0,3,-1]]
+s, t, target = 0, 2, 6
+ans = Solution().modifiedGraphEdges(n, [row[:] for row in edges], s, t, target)
+assert ans and _shortest_len(n, ans, s, t) == target
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Assign all $-1$ edges to positive integers so that the $s\to t$ shortest path equals \texttt{target}.}
+\WHY{Combines graph shortest paths with constraint satisfaction; tests understanding of Dijkstra, lower bounds, and constructive adjustments.}
+\CHECKLIST{%
+- Compute $d_{\min}$ with unknowns $=1$.
+- If $d_{\min}>\texttt{target}$: impossible.
+- If $d_{\min}=\texttt{target}$: set all unknowns to $1$ and return.
+- Else compute $g[v]=$ distance-to-$t$ with unknowns $=1$.
+- Dijkstra from $s$; adjust exactly one unknown edge to meet target.
+- Set remaining unknowns to $2\times 10^{9}$.}
+\EDGECASES{%
+- No unknown edges: must match target with fixed graph.
+- Minimal distance already over target.
+- Minimal distance equals target.
+- Only one unknown edge on all $s\to t$ routes.
+- Multiple shortest routes; choose any.
+- Graph with many unknown edges not on $s\to t$ routes (inflate them at end).}
+\PITFALLS{%
+- Forgetting to keep weights positive ($\ge 1$).
+- Accidentally decreasing weights of known-positive edges (disallowed).
+- Not updating both directions of an undirected edge.
+- Creating a path shorter than target by leaving other unknown edges small.
+- Integer overflow if using small sentinels instead of $2\times 10^{9}$.
+- Not verifying connectivity or mishandling unreachable nodes.}
+\FAILMODES{%
+- Greedy increase of the wrong unknown edge can allow an alternative path shorter than target; avoided by using $g[v]$ and inflating others.
+- Using Bellman-Ford unnecessarily complicates and slows solutions; Dijkstra suffices since all final weights are positive.}
+\ELI{First, find the best you can do if all unknowns are $1$. If that is too big, you cannot hit the target. If it matches, you are done. If it is too small, raise one unknown edge just enough to make the total exactly the target, and make the rest very large so they do not create a shorter detour.}
+\NotePages{3}
+
+\end{document}

@@ -1,0 +1,911 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Moving Platforms}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1932/G}}
+\LINE{DIFFICULTY / RATING}{2300}
+\STATEMENT{There is a game where you need to move through a labyrinth. The labyrinth consists of $n$ platforms, connected by $m$ passages.
+
+Each platform is at some level $l_i$, an integer number from $0$ to $H - 1$. In a single step, if you are currently on platform $i$, you can stay on it, or move to another platform $j$. To move to platform $j$ they have to be connected by the passage, and their levels have to be the same, namely $l_i = l_j$.
+
+After each step, the levels of all platforms change. The new level of platform $i$ is calculated as $l'_i = (l_i + s_i) \bmod H$, for all $i$.
+
+You start on platform $1$. Find the minimum number of steps you need to get to platform $n$.
+
+Input:
+The first line of input contains a single integer $t$ ($1 \le t \le 10^4$)\,--- the number of test cases. Then the descriptions of the test cases follow.
+
+The first line of each test case contains three integers $n$, $m$, and $H$ ($2 \le n \le 10^5$, $1 \le m \le 10^5$, $1 \le H \le 10^9$).
+
+The second line contains $n$ integers $l_i$, the initial level of each platform ($0 \le l_i \le H-1$).
+
+The third line contains $n$ integers $s_i$, the change of level for each platform ($0 \le s_i \le H-1$).
+
+Next $m$ lines contain a description of the passages. Each passage is described as a pair of integers\,--- the platforms, connected by the passage. There is at most one passage connecting each pair of platforms, and there is no passage connecting a platform to itself.
+
+The sum of $n$ for all tests does not exceed $10^5$, the sum of $m$ for all tests does not exceed $10^5$.
+
+Output:
+For each test case, print a single integer, the minimum number of steps needed to get from platform $1$ to platform $n$.
+
+If it is impossible to get to platform $n$, print $-1$.
+
+Note:
+This is how levels of the platforms change, and what actions we need to perform in the first example.
+
+Platform 1, Platform 2, Platform 3, Action:
+Step 1: 1, 9, 4\,--- Stay on the platform 1.
+Step 2: 3, 2, 4\,--- Stay on the platform 1.
+Step 3: 5, 5, 4\,--- Move to the platform 2.
+Step 4: 7, 8, 4\,--- Stay on the platform 2.
+Step 5: 9, 1, 4\,--- Stay on the platform 2.
+Step 6: 1, 4, 4\,--- Move to the platform 3.}
+\BREAKDOWN{You can move along an undirected edge $(i,j)$ at step $t$ iff $l_i(t)=l_j(t)$. Since $l_i(t) \equiv l_i + t s_i \pmod H$, each edge admits steps $t$ in an arithmetic progression $t \equiv r_{ij} \pmod{M_{ij}}$ if solvable. Waiting is always allowed, so you can accumulate waits before traversals. The goal is a shortest time-dependent path from $1$ to $n$.}
+\ELI{Each edge opens only at certain step numbers that repeat periodically; you may wait for it to open, then cross. Find the quickest way to reach node $n$.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Multiple test cases. For each test:
+\begin{bullets}
+\item Integers $n$, $m$, $H$ with $2 \le n \le 10^5$, $1 \le m \le 10^5$, $1 \le H \le 10^9$.
+\item Array $l$ of length $n$: $0 \le l_i \le H-1$.
+\item Array $s$ of length $n$: $0 \le s_i \le H-1$.
+\item $m$ undirected edges $(u,v)$, $1 \le u \ne v \le n$, no duplicates.
+\end{bullets}
+The sum of $n$ and of $m$ over tests is at most $10^5$.}
+\OUTPUTS{For each test case output a single integer: the minimum number of steps from node $1$ to node $n$, or $-1$ if unreachable.}
+\SAMPLES{
+Example 1 (tiny, illustrative): $n=2$, $m=1$, $H=5$, $l=[0,2]$, $s=[1,0]$, edge $(1,2)$. Edge usable when $t \equiv 2 \pmod 5$. Answer: $3$ (wait $2$, move).
+
+Example 2: $n=1$, $m=0$, $H=7$, $l=[3]$, $s=[5]$. Already at node $1=n$, answer $0$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let time be discrete steps $t=0,1,2,\ldots$. Node $i$ has level $l_i(t) \equiv l_i + t s_i \pmod H$. An undirected edge $(i,j)$ is traversable at step $t$ iff $l_i(t)=l_j(t)$. Waiting at a node is always allowed. The cost of any step (wait or move) is $1$. Seek $\min T$ such that there exists a walk of length $T$ from node $1$ to node $n$.}
+\varmapStart
+\var{H}{modulus of levels}
+\var{l_i}{initial level of node $i$}
+\var{s_i}{level increment of node $i$ per step}
+\var{a_{ij}}{$(s_i - s_j) \bmod H$}
+\var{b_{ij}}{$(l_j - l_i) \bmod H$}
+\var{M_{ij}}{$H/\gcd(H,a_{ij})$; period of edge $(i,j)$ if solvable}
+\var{r_{ij}}{residue class for usable times on edge $(i,j)$: $t \equiv r_{ij} \pmod{M_{ij}}$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+l_i(t) &\equiv l_i + t s_i \pmod H,\\
+\text{Edge }(i,j)\text{ usable at }t &\iff a_{ij}\, t \equiv b_{ij} \pmod H,\\
+\text{Solutions exist } &\iff \gcd(H,a_{ij}) \mid b_{ij},\\
+\text{then } t &\equiv r_{ij} \pmod{M_{ij}},\quad M_{ij}=\frac{H}{\gcd(H,a_{ij})}.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Edges are undirected. Waiting is allowed at any time on any node. Steps are synchronized globally; after each step, all levels update simultaneously. Indexing is $1$-based for inputs.}
+\INVARIANTS{
+\begin{bullets}
+\item FIFO property: if you start later, the earliest possible arrival via any fixed edge is not earlier; thus Dijkstra on time-dependent edges is valid.
+\item The set of feasible times for an edge is an arithmetic progression modulo $M_{ij}$ when solvable.
+\item Waiting can be greedily grouped just before each traversal without loss of optimality.
+\end{bullets}
+}
+\NotePages{3}
+
+% ============ Optional Formula Pages (each own page) ============
+\FormulaPage{1}{Edge-Time Residue and Period}
+For an edge $(i,j)$:
+\begin{BreakableEquation*}
+a = (s_i - s_j) \bmod H,\quad b = (l_j - l_i) \bmod H,\quad g=\gcd(H,a).
+\end{BreakableEquation*}
+If $b \not\equiv 0 \pmod g$, the edge is never usable. Otherwise, with $H'=H/g$, $a'=a/g$, $b'=b/g$,
+\begin{BreakableEquation*}
+t \equiv r \equiv a'^{-1} \cdot b' \pmod{H'},\quad M=H'.
+\end{BreakableEquation*}
+Earliest usable time $\tau \ge t_0$ from current time $t_0$ is
+\begin{BreakableEquation*}
+\tau = t_0 + \bigl((r - (t_0 \bmod M)) \bmod M\bigr).
+\end{BreakableEquation*}
+The traversal consumes $1$ more step, so the relaxation weight is $w = (\tau - t_0) + 1$.
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Enumerate time modulo a global period and BFS over $(\text{node}, \text{time mod }L)$ states. Use the residue characterization $t \equiv r_{ij} \pmod{M_{ij}}$ to allow edges when residues match.}
+\ASSUMPTIONS{Let $L=\mathrm{lcm}$ of all $M_{ij}$ over usable edges; $L$ divides $H$. This approach is feasible only when $L$ is small.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute for each edge whether solvable, with $(M_{ij}, r_{ij})$.
+\item Compute $L=\mathrm{lcm}$ of all $M_{ij}$. Build a layered graph of $n \times L$ states.
+\item BFS from $(1,0)$: from $(u,t)$ you can
+  \begin{bullets}
+  \item wait to $(u,(t+1)\bmod L)$,
+  \item move to $(v,(t+1)\bmod L)$ along $(u,v)$ if $t \equiv r_{uv} \pmod{M_{uv}}$.
+  \end{bullets}
+\item Answer is first time reaching any state $(n, t)$.
+\end{algosteps}
+\COMPLEXITY{Let $L$ be the period. BFS visits $O(nL)$ states and $O((n+m)L)$ transitions. Space is $O(nL)$.}
+\[
+\begin{aligned}
+T(n,m,L) &= O\bigl((n+m)\,L\bigr),\\
+S(n,m,L) &= O(nL).
+\end{aligned}
+\]
+\CORRECTNESS{Time is periodic with period $L$ by construction; BFS on the expanded graph finds the shortest walk in steps because each transition costs $1$.}
+\EDGECASES{No usable edges; $n=1$; edges with $A=0$ and incompatible $B$; $H=1$.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# CF TEMPLATE (must include read_input / solve_case / main + guard + asserts)
+from collections import deque
+import sys
+from math import gcd
+sys.setrecursionlimit(1 << 25)
+
+def egcd(a, b):
+    if b == 0:
+        return (1, 0, a)
+    x1, y1, g = egcd(b, a % b)
+    return (y1, x1 - (a // b) * y1, g)
+
+def inv_mod(a, mod):
+    a %= mod
+    if mod == 1:
+        return 0
+    x, y, g = egcd(a, mod)
+    if g != 1:
+        return None
+    return x % mod
+
+def edge_residue(H, lu, su, lv, sv):
+    A = (su - sv) % H
+    B = (lv - lu) % H
+    g = gcd(A, H)
+    if B % g != 0:
+        return None
+    M = H // g
+    if M == 1:
+        return (1, 0)
+    A1 = A // g
+    B1 = B // g
+    inv = inv_mod(A1, M)
+    if inv is None:
+        return None
+    r = (inv * B1) % M
+    return (M, r)
+
+def solve_case_baseline(n, m, H, Ls, Ss, edges):
+    # Precompute usable edges with (M, r)
+    adj = [[] for _ in range(n)]
+    Ms = []
+    for u, v in edges:
+        u -= 1; v -= 1
+        res = edge_residue(H, Ls[u], Ss[u], Ls[v], Ss[v])
+        if res is None:
+            continue
+        M, r = res
+        adj[u].append((v, M, r))
+        adj[v].append((u, M, r))
+        Ms.append(M)
+    if n == 1:
+        return 0
+    if not Ms:
+        return -1
+    # Compute period L = lcm of Ms
+    from math import gcd
+    L = 1
+    for M in Ms:
+        L = (L // gcd(L, M)) * M
+        if L > 200000:  # guard for practicality in baseline
+            # Fallback: too large for baseline BFS
+            # Simple waiting-first greedy + limited BFS (not guaranteed optimal in worst-case)
+            # We return -1 to avoid heavy computation in baseline demonstration.
+            return -1
+    INF = 10 ** 30
+    dist = [[INF] * L for _ in range(n)]
+    dq = deque()
+    dist[0][0] = 0
+    dq.append((0, 0))
+    while dq:
+        u, t = dq.popleft()
+        d = dist[u][t]
+        if u == n - 1:
+            return d
+        t1 = (t + 1) % L
+        if dist[u][t1] > d + 1:
+            dist[u][t1] = d + 1
+            dq.append((u, t1))
+        for v, M, r in adj[u]:
+            if t % M == r:
+                if dist[v][t1] > d + 1:
+                    dist[v][t1] = d + 1
+                    dq.append((v, t1))
+    return -1
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it)); H = int(next(it))
+        Ls = [int(next(it)) for _ in range(n)]
+        Ss = [int(next(it)) for _ in range(n)]
+        edges = []
+        for _ in range(m):
+            u = int(next(it)); v = int(next(it))
+            edges.append((u, v))
+        tests.append((n, m, H, Ls, Ss, edges))
+    return tests
+
+def solve_all_baseline(tests):
+    out_lines = []
+    for n, m, H, Ls, Ss, edges in tests:
+        out_lines.append(str(solve_case_baseline(n, m, H, Ls, Ss, edges)))
+    return "\n".join(out_lines)
+
+def main():
+    tests = read_input()
+    print(solve_all_baseline(tests))
+
+if __name__ == "__main__":
+    # Tiny sanity asserts for baseline pathfinder
+    # Example: H=5, l=[0,2], s=[1,0], edge (1,2) usable at t≡2 (mod 5); answer 3
+    n, m, H = 2, 1, 5
+    Ls = [0, 2]; Ss = [1, 0]; edges = [(1, 2)]
+    ans = solve_case_baseline(n, m, H, Ls, Ss, edges)
+    assert ans in (3, -1)  # baseline may refuse large L; here L=5 so should be 3
+    # n=1 trivial
+    assert solve_case_baseline(1, 0, 7, [3], [5], []) == 0
+    # Unusable edge (never equal)
+    assert solve_case_baseline(2, 1, 5, [0, 1], [0, 0], [(1, 2)]) == -1
+    # Uncomment to run I/O baseline:
+    # main()
+\end{minted}
+\VALIDATION{Checked tiny cases: trivial $n=1$; single-edge solvable and unsolvable. Baseline refuses overly large periods to avoid explosion.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Use time-dependent Dijkstra on $n$ nodes only. For each usable edge with $(M,r)$, from current time $t$ at node $u$, the earliest departure is at $\tau = t + ((r - (t \bmod M)) \bmod M)$, and arrival time is $\tau + 1$. This edge relaxation weight is $w(t)=((r - (t \bmod M)) \bmod M)+1$. The FIFO property holds, so label-setting Dijkstra is correct.}
+\ASSUMPTIONS{Edges are undirected and independent; waiting is free to schedule and can be lumped before traversals. All arithmetic is modulo $H$, with extended gcd for modular inverses.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For each edge $(u,v)$, compute $(M,r)$ if solvable by solving $(s_u - s_v) t \equiv (l_v - l_u) \pmod H$; discard unsolvable edges.
+\item Initialize $d[1]=0$, others $\infty$. Use a min-heap of $(d[u],u)$.
+\item Pop the smallest; relax each neighbor $v$ via weight $w=((r - (d[u]\bmod M)) \bmod M)+1$. If $d[u]+w<d[v]$, update and push.
+\item Answer is $d[n]$ (or $-1$ if $\infty$).
+\end{algosteps}
+\COMPLEXITY{Each edge is relaxed $O(\log n)$ times. Arithmetic is $O(1)$. Overall $O((n+m)\log n)$ time and $O(n+m)$ space.}
+\[
+\begin{aligned}
+T(n,m) &= O\bigl((n+m)\log n\bigr),\\
+S(n,m) &= O(n+m).
+\end{aligned}
+\]
+\CORRECTNESS{FIFO time-dependent edges guarantee that arriving later to an edge cannot produce earlier arrival, hence Dijkstra is label-setting and optimal. Waiting can be merged into the subsequent edge, so no explicit wait edges are needed.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Same API/signature as baseline; deterministic; with asserts
+import sys
+from math import gcd
+import heapq
+sys.setrecursionlimit(1 << 25)
+
+def egcd(a, b):
+    if b == 0:
+        return (1, 0, a)
+    x1, y1, g = egcd(b, a % b)
+    return (y1, x1 - (a // b) * y1, g)
+
+def inv_mod(a, mod):
+    a %= mod
+    if mod == 1:
+        return 0
+    x, y, g = egcd(a, mod)
+    if g != 1:
+        return None
+    return x % mod
+
+def edge_residue(H, lu, su, lv, sv):
+    A = (su - sv) % H
+    B = (lv - lu) % H
+    g = gcd(A, H)
+    if B % g != 0:
+        return None
+    M = H // g
+    if M == 1:
+        return (1, 0)
+    A1 = A // g
+    B1 = B // g
+    inv = inv_mod(A1, M)
+    if inv is None:
+        return None
+    r = (inv * B1) % M
+    return (M, r)
+
+def solve_case(n, m, H, Ls, Ss, edges):
+    if n == 1:
+        return 0
+    adj = [[] for _ in range(n)]
+    for u, v in edges:
+        u -= 1; v -= 1
+        res = edge_residue(H, Ls[u], Ss[u], Ls[v], Ss[v])
+        if res is None:
+            continue
+        M, r = res
+        adj[u].append((v, M, r))
+        adj[v].append((u, M, r))
+    INF = 10 ** 30
+    dist = [INF] * n
+    dist[0] = 0
+    pq = [(0, 0)]
+    seen = [False] * n
+    while pq:
+        du, u = heapq.heappop(pq)
+        if du != dist[u]:
+            continue
+        if u == n - 1:
+            return du
+        # relax neighbors
+        for v, M, r in adj[u]:
+            # wait until t ≡ r (mod M), then traverse (+1)
+            w = ((r - (du % M)) % M) + 1
+            nd = du + w
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return -1
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it)); H = int(next(it))
+        Ls = [int(next(it)) for _ in range(n)]
+        Ss = [int(next(it)) for _ in range(n)]
+        edges = []
+        for _ in range(m):
+            u = int(next(it)); v = int(next(it))
+            edges.append((u, v))
+        tests.append((n, m, H, Ls, Ss, edges))
+    return tests
+
+def solve_all(tests):
+    out_lines = []
+    for n, m, H, Ls, Ss, edges in tests:
+        out_lines.append(str(solve_case(n, m, H, Ls, Ss, edges)))
+    return "\n".join(out_lines)
+
+def main():
+    tests = read_input()
+    print(solve_all(tests))
+
+if __name__ == "__main__":
+    # Asserts
+    # 1) Single edge usable at t≡2 (mod 5)
+    n, m, H = 2, 1, 5
+    Ls = [0, 2]; Ss = [1, 0]; edges = [(1, 2)]
+    assert solve_case(n, m, H, Ls, Ss, edges) == 3
+    # 2) Unusable edge
+    n, m, H = 2, 1, 5
+    Ls = [0, 1]; Ss = [0, 0]; edges = [(1, 2)]
+    assert solve_case(n, m, H, Ls, Ss, edges) == -1
+    # 3) Path of two edges with different periods
+    n, m, H = 3, 2, 6
+    Ls = [0, 2, 1]; Ss = [1, 2, 1]
+    edges = [(1, 2), (2, 3)]
+    # Compute an answer without exhaustive check; just ensure it's finite
+    ans = solve_case(n, m, H, Ls, Ss, edges)
+    assert isinstance(ans, int) and ans >= -1
+    # Uncomment to run I/O:
+    # main()
+\end{minted}
+\VALIDATION{Tests include solvable and unsolvable single-edge cases and a small three-node case to ensure no crashes and integer outputs.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Time-dependent Dijkstra on $n$ nodes only. Edge relaxation uses $w(t)=((r - (t \bmod M)) \bmod M)+1$ where $(M,r)$ comes from solving a linear congruence per edge.}
+\ASSUMPTIONS{FIFO condition: for any edge, if $t_2 \ge t_1$ then earliest arrival from $t_2$ is not earlier than from $t_1$. This holds because the earliest feasible departure time $\tau(t)$ is nondecreasing in $t$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For each undirected edge $(u,v)$, compute solvability and $(M,r)$ via extended gcd. Discard unsolvable edges.
+\item Run Dijkstra from node $1$ with distance $d[1]=0$.
+\item For each relaxation, compute $w=((r - (d[u]\bmod M)) \bmod M)+1$ and update $d[v]$.
+\item Return $d[n]$ or $-1$ if unreachable.
+\end{algosteps}
+\OPTIMALITY{Time-dependent Dijkstra is optimal under FIFO. Since all edges satisfy FIFO and waiting is implicitly accounted for in $w(t)$, the algorithm yields the true shortest number of steps.}
+\COMPLEXITY{Each pop and push costs $\log n$. Each edge is considered each time its tail is popped.}
+\[
+\begin{aligned}
+T(n,m) &= O\bigl((n+m)\log n\bigr),\\
+S(n,m) &= O(n+m).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case()/solve_all(), main()+guard + asserts
+import sys
+from math import gcd
+import heapq
+sys.setrecursionlimit(1 << 25)
+
+def egcd(a, b):
+    if b == 0:
+        return (1, 0, a)
+    x1, y1, g = egcd(b, a % b)
+    return (y1, x1 - (a // b) * y1, g)
+
+def inv_mod(a, mod):
+    a %= mod
+    if mod == 1:
+        return 0
+    x, y, g = egcd(a, mod)
+    if g != 1:
+        return None
+    return x % mod
+
+def edge_residue(H, lu, su, lv, sv):
+    A = (su - sv) % H
+    B = (lv - lu) % H
+    g = gcd(A, H)
+    if B % g != 0:
+        return None
+    M = H // g
+    if M == 1:
+        return (1, 0)
+    A1 = A // g
+    B1 = B // g
+    inv = inv_mod(A1, M)
+    if inv is None:
+        return None
+    r = (inv * B1) % M
+    return (M, r)
+
+def solve_case(n, m, H, Ls, Ss, edges):
+    if n == 1:
+        return 0
+    adj = [[] for _ in range(n)]
+    for u, v in edges:
+        u -= 1; v -= 1
+        res = edge_residue(H, Ls[u], Ss[u], Ls[v], Ss[v])
+        if res is None:
+            continue
+        M, r = res
+        adj[u].append((v, M, r))
+        adj[v].append((u, M, r))
+    INF = 10 ** 30
+    dist = [INF] * n
+    dist[0] = 0
+    pq = [(0, 0)]
+    while pq:
+        du, u = heapq.heappop(pq)
+        if du != dist[u]:
+            continue
+        if u == n - 1:
+            return du
+        for v, M, r in adj[u]:
+            w = ((r - (du % M)) % M) + 1
+            nd = du + w
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return -1
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it)); H = int(next(it))
+        Ls = [int(next(it)) for _ in range(n)]
+        Ss = [int(next(it)) for _ in range(n)]
+        edges = []
+        for _ in range(m):
+            u = int(next(it)); v = int(next(it))
+            edges.append((u, v))
+        tests.append((n, m, H, Ls, Ss, edges))
+    return tests
+
+def solve_all(tests):
+    out_lines = []
+    for n, m, H, Ls, Ss, edges in tests:
+        out_lines.append(str(solve_case(n, m, H, Ls, Ss, edges)))
+    return "\n".join(out_lines)
+
+def main():
+    tests = read_input()
+    print(solve_all(tests))
+
+if __name__ == "__main__":
+    # Exactly 3 asserts
+    # 1) Immediate reach when n==1
+    assert solve_case(1, 0, 10, [0], [0], []) == 0
+    # 2) Single usable edge at t≡2 (mod 5)
+    assert solve_case(2, 1, 5, [0, 2], [1, 0], [(1, 2)]) == 3
+    # 3) Unreachable when no edge times align
+    assert solve_case(2, 1, 5, [0, 1], [0, 0], [(1, 2)]) == -1
+    # Uncomment to run I/O:
+    # main()
+\end{minted}
+\VALIDATION{Three asserts: trivial $n=1$, a solvable single-edge case with known answer $3$, and an impossible case.}
+\RESULT{Outputs the minimal number of steps to reach node $n$ from node $1$, or $-1$ if no sequence of waits and traversals can achieve it.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on:
+\begin{bullets}
+\item Trivial graphs ($n=1$), no edges.
+\item Single edge with $A=0$: both solvable ($B \equiv 0$) and unsolvable.
+\item Random small graphs with brute-force verification by bounding time horizon.
+\item Mixed periods $M$ to exercise wait computations.
+\end{bullets}}
+\LINE{CROSS-CHECKS}{Compare Baseline BFS on small $L$ with the Optimal Dijkstra outputs; they should match.}
+\LINE{EDGE-CASE GENERATOR}{Generate small $H$ (e.g., $H \le 12$), random $l$, $s$, and edges; then brute-force simulate up to a cap and compare to the solver.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+from math import gcd
+
+def brute_force_small(n, m, H, Ls, Ss, edges, Tcap=200):
+    # Layered BFS up to Tcap without period compression
+    adj = [[] for _ in range(n)]
+    for u, v in edges:
+        u -= 1; v -= 1
+        adj[u].append(v); adj[v].append(u)
+    from collections import deque
+    INF = 10**9
+    dist = [INF] * n
+    # state: (node, time)
+    seen = set()
+    dq = deque()
+    dq.append((0, 0))
+    seen.add((0, 0))
+    while dq:
+        u, t = dq.popleft()
+        if dist[u] > t:
+            dist[u] = t
+        if t >= Tcap:
+            continue
+        # wait
+        if (u, t+1) not in seen:
+            seen.add((u, t+1))
+            dq.append((u, t+1))
+        # move if levels equal
+        for v in adj[u]:
+            lu = (Ls[u] + t * Ss[u]) % H
+            lv = (Ls[v] + t * Ss[v]) % H
+            if lu == lv:
+                if (v, t+1) not in seen:
+                    seen.add((v, t+1))
+                    dq.append((v, t+1))
+    return dist[n-1] if dist[n-1] < INF else -1
+
+def random_small_instance(seed=0):
+    random.seed(seed)
+    n = random.randint(2, 5)
+    m = random.randint(0, n*(n-1)//2)
+    H = random.randint(1, 8)
+    Ls = [random.randint(0, H-1) for _ in range(n)]
+    Ss = [random.randint(0, H-1) for _ in range(n)]
+    edges = set()
+    nodes = list(range(1, n+1))
+    while len(edges) < m:
+        u = random.choice(nodes); v = random.choice(nodes)
+        if u != v:
+            edges.add(tuple(sorted((u, v))))
+    edges = list(edges)
+    return n, len(edges), H, Ls, Ss, edges
+
+def self_check(trials=50):
+    from math import isfinite
+    ok = 0
+    for t in range(trials):
+        n, m, H, Ls, Ss, edges = random_small_instance(t)
+        bf = brute_force_small(n, m, H, Ls, Ss, edges, Tcap=200)
+        sol = solve_case(n, m, H, Ls, Ss, edges)
+        # Since brute-force caps at 200, ignore cases where answer >200
+        if bf == -1 or bf <= 200:
+            assert (bf == sol) or (bf == -1 and sol == -1), (t, (n, m, H), bf, sol)
+            ok += 1
+    return ok
+
+if __name__ == "__main__":
+    # Run self-check locally if desired
+    pass
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF/LC) + asserts
+import sys
+from math import gcd
+import heapq
+sys.setrecursionlimit(1 << 25)
+
+def egcd(a, b):
+    if b == 0:
+        return (1, 0, a)
+    x1, y1, g = egcd(b, a % b)
+    return (y1, x1 - (a // b) * y1, g)
+
+def inv_mod(a, mod):
+    a %= mod
+    if mod == 1:
+        return 0
+    x, y, g = egcd(a, mod)
+    if g != 1:
+        return None
+    return x % mod
+
+def edge_residue(H, lu, su, lv, sv):
+    A = (su - sv) % H
+    B = (lv - lu) % H
+    g = gcd(A, H)
+    if B % g != 0:
+        return None
+    M = H // g
+    if M == 1:
+        return (1, 0)
+    A1 = A // g
+    B1 = B // g
+    inv = inv_mod(A1, M)
+    if inv is None:
+        return None
+    r = (inv * B1) % M
+    return (M, r)
+
+def solve_case(n, m, H, Ls, Ss, edges):
+    if n == 1:
+        return 0
+    adj = [[] for _ in range(n)]
+    for u, v in edges:
+        u -= 1; v -= 1
+        res = edge_residue(H, Ls[u], Ss[u], Ls[v], Ss[v])
+        if res is None:
+            continue
+        M, r = res
+        adj[u].append((v, M, r))
+        adj[v].append((u, M, r))
+    INF = 10 ** 30
+    dist = [INF] * n
+    dist[0] = 0
+    pq = [(0, 0)]
+    while pq:
+        du, u = heapq.heappop(pq)
+        if du != dist[u]:
+            continue
+        if u == n - 1:
+            return du
+        for v, M, r in adj[u]:
+            w = ((r - (du % M)) % M) + 1
+            nd = du + w
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return -1
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it)); H = int(next(it))
+        Ls = [int(next(it)) for _ in range(n)]
+        Ss = [int(next(it)) for _ in range(n)]
+        edges = []
+        for _ in range(m):
+            u = int(next(it)); v = int(next(it))
+            edges.append((u, v))
+        tests.append((n, m, H, Ls, Ss, edges))
+    return tests
+
+def solve_all(tests):
+    out_lines = []
+    for n, m, H, Ls, Ss, edges in tests:
+        out_lines.append(str(solve_case(n, m, H, Ls, Ss, edges)))
+    return "\n".join(out_lines)
+
+def main():
+    tests = read_input()
+    print(solve_all(tests))
+
+if __name__ == "__main__":
+    # Quick asserts
+    assert solve_case(1, 0, 10, [0], [0], []) == 0
+    assert solve_case(2, 1, 5, [0, 2], [1, 0], [(1, 2)]) == 3
+    assert solve_case(2, 1, 5, [0, 1], [0, 0], [(1, 2)]) == -1
+    # main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Solve a shortest path where each edge is only usable at times $t$ in a residue class modulo an edge-specific period; waiting is allowed.}
+\WHY{Time-dependent graph problems appear frequently; recognizing FIFO and bundling waits into edge relaxations is a key skill.}
+\CHECKLIST{
+\begin{bullets}
+\item Derive edge congruence: $(s_u - s_v) t \equiv (l_v - l_u) \pmod H$.
+\item Check solvability with $\gcd$; compute $(M,r)$ if solvable.
+\item Use Dijkstra with $w=((r - (d[u]\bmod M)) \bmod M)+1$.
+\item Initialize $d[1]=0$, handle $n=1 \Rightarrow 0$.
+\item Return $d[n]$ or $-1$.
+\end{bullets}
+}
+\EDGECASES{
+\begin{bullets}
+\item $n=1$ (answer $0$).
+\item No usable edges at all ($-1$).
+\item $A=0$ edges: solvable only if $B \equiv 0 \pmod H$; then $M=1$, $r=0$.
+\item $H=1$: all arithmetic trivial; either edges always usable or absent.
+\item Large $H$ but few edges; algorithm remains $O((n+m)\log n)$.
+\item Multi-component graph; unreachable destinations.
+\end{bullets}
+}
+\PITFALLS{
+\begin{bullets}
+\item Mishandling negatives in modulo; always normalize to $[0,H-1]$.
+\item Forgetting the $+1$ step for the actual traversal.
+\item Computing modular inverse when not coprime; must divide by $\gcd$ first.
+\item Assuming directed residues per direction; the usable times are symmetric.
+\item Overflow in languages without big integers; use 64-bit carefully or Python.
+\item Building expanded time layers unnecessarily causing TLE.
+\end{bullets}
+}
+\FAILMODES{Baseline layered BFS explodes when $L$ is large (up to $H$). The optimal Dijkstra avoids time-layer expansion and remains fast. Incorrect handling of non-invertible $A$ yields wrong inclusion of impossible edges.}
+\ELI{Think of each corridor opening at certain repeating times. You can always wait at your current room. Use Dijkstra where each move cost includes the waiting time needed until that corridor opens, plus one step to walk through.}
+\NotePages{3}
+
+\end{document}

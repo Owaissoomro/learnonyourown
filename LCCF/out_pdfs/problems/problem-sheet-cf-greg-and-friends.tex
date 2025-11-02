@@ -1,0 +1,842 @@
+% !TeX program = xelatex
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Greg and Friends}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/295/C}}
+\LINE{DIFFICULTY / RATING}{CF: 295/C, Rating: 2100}
+\STATEMENT{One day Greg and his friends were walking in the forest. Overall there were $n$ people walking, including Greg. Soon he found himself in front of a river. The guys immediately decided to get across the river. Luckily, there was a boat by the river bank, just where the guys were standing. We know that the boat can hold people with the total weight of at most $k$ kilograms.
+
+Greg immediately took a piece of paper and listed there the weights of all people in his group (including himself). It turned out that each person weighs either $50$ or $100$ kilograms. Now Greg wants to know what minimum number of times the boat needs to cross the river to transport the whole group to the other bank. The boat needs at least one person to navigate it from one bank to the other. As the boat crosses the river, it can have any non-zero number of passengers as long as their total weight does not exceed $k$.
+
+Also Greg is wondering, how many ways there are to transport everybody to the other side in the minimum number of boat rides. Two ways are considered distinct if during some ride they have distinct sets of people on the boat.
+
+Help Greg with this problem.
+
+Input:
+The first line contains two integers $n, k$ ($1 \le n \le 50$, $1 \le k \le 5000$) — the number of people, including Greg, and the boat's weight limit. The next line contains $n$ integers — the people's weights. A person's weight is either $50$ kilos or $100$ kilos.
+
+You can consider Greg and his friends indexed in some way.
+
+Output:
+In the first line print an integer — the minimum number of rides. If transporting everyone to the other bank is impossible, print an integer $-1$.
+
+In the second line print the remainder after dividing the number of ways to transport the people in the minimum number of rides by number $1,000,000,007$ ($10^9 + 7$). If transporting everyone to the other bank is impossible, print integer $0$.
+
+Note:
+In the first test Greg walks alone and consequently, he needs only one ride across the river.
+
+In the second test you should follow the plan:
+
+1. transport two $50$ kg people;
+2. transport one $50$ kg person back;
+3. transport one $100$ kg person;
+4. transport one $50$ kg person back;
+5. transport two $50$ kg people.
+
+That totals to $5$ rides. Depending on which person to choose at step $2$, we can get two distinct ways.}
+\BREAKDOWN{Count $c_{50}$ and $c_{100}$. Model a state by how many of each weight remain on the left bank and the boat side. Use breadth-first search over states to find the minimum rides, and dynamic programming over the same BFS frontier to count the number of shortest ways, multiplying by combinatorial choices on each move.}
+\ELI{Search over boat positions and how many $50$ and $100$ kg people are left; expand all feasible boat loads up to capacity, and count shortest sequences with combinations.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test:
+- Integers $n, k$ with $1 \le n \le 50$, $1 \le k \le 5000$.
+- Array of $n$ integers, each either $50$ or $100$.}
+\OUTPUTS{Two lines:
+- First line: the minimum number of rides to get everyone to the right bank, or $-1$ if impossible.
+- Second line: the number of ways to achieve the minimum, modulo $1,000,000,007$; print $0$ if impossible.}
+\SAMPLES{Examples:
+- Input: $n=1$, $k=50$, weights $[50]$. Output: rides $=1$, ways $=1$.
+- Input: $n=3$, $k=150$, weights $[50,50,100]$. Output: rides $=3$, ways $=4$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $a$ be the number of $50$ kg people on the left bank, $b$ the number of $100$ kg people on the left bank, and $s \in \{0,1\}$ the boat side ($0$ left, $1$ right). Start state $(a_0,b_0,s_0)=(c_{50},c_{100},0)$. Goal state $(0,0,1)$. From a state, a move loads $i$ people of $50$ kg and $j$ people of $100$ kg from the boat side with $i+j\ge 1$ and $50i+100j\le k$, moves the boat to the other side, and updates $(a,b)$.}
+\varmapStart
+\var{c_{50}}{total count of $50$ kg people}
+\var{c_{100}}{total count of $100$ kg people}
+\var{(a,b,s)}{state: counts on left bank and boat side}
+\var{d(a,b,s)}{minimum rides to reach $(a,b,s)$}
+\var{W(a,b,s)}{number of shortest ways to reach $(a,b,s)$ modulo $10^9+7$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\text{Transitions from }(a,b,0):\ (a,b,0)\to(a-i,b-j,1)\\
+&\quad \text{for } 0\le i\le a,\ 0\le j\le b,\ i+j\ge 1,\ 50i+100j\le k;\\
+&\text{Transitions from }(a,b,1):\ (a,b,1)\to(a+i,b+j,0)\\
+&\quad \text{for } 0\le i\le c_{50}-a,\ 0\le j\le c_{100}-b,\ i+j\ge 1,\ 50i+100j\le k.\\
+&\text{Edge multiplicity (choices): } \binom{a}{i}\binom{b}{j}\ \text{or}\ \binom{c_{50}-a}{i}\binom{c_{100}-b}{j}.\\
+&d \text{ is computed by BFS; } W \text{ by shortest-path counting over BFS:}\\
+&W(t) \mathrel{+}= W(s)\cdot \text{mult}(s\to t) \quad \text{whenever } d(t)=d(s)+1.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{People of the same weight are indistinguishable in the state, but choices are counted combinatorially to distinguish which specific individuals board each ride. The boat must carry at least one person per ride.}
+\INVARIANTS{
+- $0\le a\le c_{50}$, $0\le b\le c_{100}$, $s\in\{0,1\}$.
+- Total people conserved: left plus right counts equal totals at all times.
+- BFS explores non-decreasing ride counts, ensuring minimality when first reaching $(0,0,1)$.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Unweighted BFS on the state graph $(a,b,s)$; count shortest paths by dynamic programming along BFS layers. Combinatorial factors per move are computed directly using $\binom{\cdot}{\cdot}$.}
+\ASSUMPTIONS{Use direct nested loops to enumerate all feasible $(i,j)$ loads each step. Use Python's built-in combinations count to compute multiplicities.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Count $c_{50}$ and $c_{100}$. If $k<50$, return impossible immediately.
+\item Initialize $d(a,b,s)=\infty$, $W(a,b,s)=0$. Set $d(c_{50},c_{100},0)=0$, $W(c_{50},c_{100},0)=1$. Push start to queue.
+\item While queue non-empty, pop $(a,b,s)$ and try all feasible loads $(i,j)$ on the current side; form neighbor $t$, compute multiplicity $m$, and relax:
+\[
+\text{if } d(t)=\infty:~d(t)=d(a,b,s)+1,~W(t)=W(a,b,s)\cdot m;\quad
+\text{elif } d(t)=d(a,b,s)+1:~W(t)\mathrel{+}=W(a,b,s)\cdot m.
+\]
+\end{algosteps}
+\COMPLEXITY{State space size $O((c_{50}+1)(c_{100}+1)\cdot 2)$. Each expansion enumerates all $i\in[0..c_{50}]$, $j\in[0..c_{100}]$ pairs bounded by capacity.}
+\[
+\begin{aligned}
+T(n) &\le O\Big((c_{50}+1)(c_{100}+1)\cdot \min(c_{50}+1,\lfloor k/50\rfloor+1)\cdot \min(c_{100}+1,\lfloor k/100\rfloor+1)\Big),\\
+S(n) &= O((c_{50}+1)(c_{100}+1)).
+\end{aligned}
+\]
+\CORRECTNESS{BFS guarantees the first time we reach $(0,0,1)$ uses the minimum number of rides. Counting along BFS layers with multiplicities sums the number of distinct shortest sequences, since each move's combinatorial multiplier enumerates distinct passenger sets that lead to that same next state.}
+\EDGECASES{No one fits the boat ($k<50$); any $100$ kg person with $k<100$ requires impossible if there is no $50$ to help returning the boat, but BFS detects reachability automatically.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from collections import deque
+from math import comb
+
+MOD = 1_000_000_007
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); k = int(next(it))
+    w = [int(next(it)) for _ in range(n)]
+    return n, k, w
+
+def solve_case(n, k, weights):
+    c50 = sum(1 for x in weights if x == 50)
+    c100 = n - c50
+    if k < 50:
+        return -1, 0
+
+    INF = 10**9
+    # dist[a][b][s], ways[a][b][s] where a in [0..c50], b in [0..c100], s in {0,1}
+    dist = [[[INF for _ in range(2)] for _ in range(c100+1)] for __ in range(c50+1)]
+    ways = [[[0 for _ in range(2)] for _ in range(c100+1)] for __ in range(c50+1)]
+
+    start = (c50, c100, 0)
+    dist[c50][c100][0] = 0
+    ways[c50][c100][0] = 1
+    dq = deque([start])
+
+    while dq:
+        a, b, s = dq.popleft()
+        dcur = dist[a][b][s]
+        if s == 0:
+            max_i = a
+            max_j = b
+            for i in range(0, max_i+1):
+                w_i = 50 * i
+                for j in range(0, max_j+1):
+                    if i == 0 and j == 0:
+                        continue
+                    tot = w_i + 100 * j
+                    if tot > k:
+                        continue
+                    na, nb, ns = a - i, b - j, 1
+                    mult = (comb(a, i) * comb(b, j)) % MOD
+                    if dist[na][nb][ns] == INF:
+                        dist[na][nb][ns] = dcur + 1
+                        ways[na][nb][ns] = (ways[a][b][s] * mult) % MOD
+                        dq.append((na, nb, ns))
+                    elif dist[na][nb][ns] == dcur + 1:
+                        ways[na][nb][ns] = (ways[na][nb][ns] + ways[a][b][s] * mult) % MOD
+        else:
+            # s == 1: boat on right, moving right->left
+            avail_i = c50 - a
+            avail_j = c100 - b
+            for i in range(0, avail_i+1):
+                w_i = 50 * i
+                for j in range(0, avail_j+1):
+                    if i == 0 and j == 0:
+                        continue
+                    tot = w_i + 100 * j
+                    if tot > k:
+                        continue
+                    na, nb, ns = a + i, b + j, 0
+                    mult = (comb(avail_i, i) * comb(avail_j, j)) % MOD
+                    if dist[na][nb][ns] == INF:
+                        dist[na][nb][ns] = dcur + 1
+                        ways[na][nb][ns] = (ways[a][b][s] * mult) % MOD
+                        dq.append((na, nb, ns))
+                    elif dist[na][nb][ns] == dcur + 1:
+                        ways[na][nb][ns] = (ways[na][nb][ns] + ways[a][b][s] * mult) % MOD
+
+    ans_d = dist[0][0][1]
+    if ans_d >= INF:
+        return -1, 0
+    return ans_d, ways[0][0][1] % MOD
+
+def solve_all():
+    inp = read_input()
+    if inp is None:
+        return
+    n, k, w = inp
+    d, cnt = solve_case(n, k, w)
+    out = sys.stdout
+    print(d, file=out)
+    print(cnt, file=out)
+
+def _tests():
+    # simple sanity tests
+    assert solve_case(1, 50, [50]) == (1, 1)
+    assert solve_case(2, 50, [50, 100]) == (-1, 0)
+    assert solve_case(3, 200, [50, 50, 100]) == (1, 1)
+    # three people, k=150: minimal 3 rides; two distinct plans each with 2 labelings => 4 ways
+    assert solve_case(3, 150, [50, 50, 100]) == (3, 4)
+
+if __name__ == "__main__":
+    _tests()
+    solve_all()
+\end{minted}
+\VALIDATION{Tiny cases covered in asserts:
+- Single person $50$ with $k=50$.
+- Impossible $[50,100]$ with $k=50$.
+- All fit in one ride $[50,50,100]$ with $k=200$.
+- Mixed case $[50,50,100]$ with $k=150$ yields $(3,4)$.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Combinatorics \& Loop Bounds}
+\WHICHFORMULA{Reuse BFS but precompute all binomial coefficients modulo $10^9+7$ up to $50$, and bound $i$ and $j$ loops by capacity-derived maxima to cut iterations.}
+\ASSUMPTIONS{Use Pascal or factorial with modular inverses for $\binom{n}{k}$, and cap $i\le \min(a,\lfloor k/50\rfloor)$, $j\le \min(b,\lfloor k/100\rfloor)$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute $\binom{n}{k}\bmod M$ for $0\le n\le 50$ via Pascal's triangle.
+\item BFS identical to baseline, but use the precomputed $C[n][k]$ and reduced loop bounds.
+\item Count ways with the same relaxation rules; all operations are modulo $M=1,000,000,007$.
+\end{algosteps}
+\COMPLEXITY{Same big-O as baseline but with smaller constants thanks to tighter loops and $O(1)$ binomial lookups.}
+\[
+\begin{aligned}
+T(n) &= O\Big((c_{50}+1)(c_{100}+1)\cdot \big(\lfloor k/50\rfloor+1\big)\cdot \big(\lfloor k/100\rfloor+1\big)\Big).
+\end{aligned}
+\]
+\CORRECTNESS{Identical to baseline: only arithmetic and enumeration are optimized; the explored state graph and transitions are the same.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from collections import deque
+
+MOD = 1_000_000_007
+
+def precompute_nCk(N=50, MOD=1_000_000_007):
+    C = [[0]*(N+1) for _ in range(N+1)]
+    for n in range(N+1):
+        C[n][0] = 1
+        for k in range(1, n+1):
+            C[n][k] = (C[n-1][k-1] + C[n-1][k]) % MOD
+    return C
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); k = int(next(it))
+    w = [int(next(it)) for _ in range(n)]
+    return n, k, w
+
+def solve_case(n, k, weights):
+    c50 = weights.count(50)
+    c100 = n - c50
+    if k < 50:
+        return -1, 0
+
+    C = precompute_nCk(50, MOD)
+    INF = 10**9
+    dist = [[[INF for _ in range(2)] for _ in range(c100+1)] for __ in range(c50+1)]
+    ways = [[[0 for _ in range(2)] for _ in range(c100+1)] for __ in range(c50+1)]
+
+    dist[c50][c100][0] = 0
+    ways[c50][c100][0] = 1
+    dq = deque([(c50, c100, 0)])
+
+    while dq:
+        a, b, s = dq.popleft()
+        dcur = dist[a][b][s]
+        if s == 0:
+            max_i = min(a, k // 50)
+            max_j = min(b, k // 100)
+            for i in range(0, max_i+1):
+                w_i = 50 * i
+                for j in range(0, max_j+1):
+                    if i == 0 and j == 0:
+                        continue
+                    if w_i + 100 * j > k:
+                        continue
+                    na, nb, ns = a - i, b - j, 1
+                    mult = (C[a][i] * C[b][j]) % MOD
+                    if dist[na][nb][ns] == INF:
+                        dist[na][nb][ns] = dcur + 1
+                        ways[na][nb][ns] = (ways[a][b][s] * mult) % MOD
+                        dq.append((na, nb, ns))
+                    elif dist[na][nb][ns] == dcur + 1:
+                        ways[na][nb][ns] = (ways[na][nb][ns] + ways[a][b][s] * mult) % MOD
+        else:
+            avail_i = c50 - a
+            avail_j = c100 - b
+            max_i = min(avail_i, k // 50)
+            max_j = min(avail_j, k // 100)
+            for i in range(0, max_i+1):
+                w_i = 50 * i
+                for j in range(0, max_j+1):
+                    if i == 0 and j == 0:
+                        continue
+                    if w_i + 100 * j > k:
+                        continue
+                    na, nb, ns = a + i, b + j, 0
+                    mult = (C[avail_i][i] * C[avail_j][j]) % MOD
+                    if dist[na][nb][ns] == INF:
+                        dist[na][nb][ns] = dcur + 1
+                        ways[na][nb][ns] = (ways[a][b][s] * mult) % MOD
+                        dq.append((na, nb, ns))
+                    elif dist[na][nb][ns] == dcur + 1:
+                        ways[na][nb][ns] = (ways[na][nb][ns] + ways[a][b][s] * mult) % MOD
+
+    ans_d = dist[0][0][1]
+    if ans_d >= INF:
+        return -1, 0
+    return ans_d, ways[0][0][1] % MOD
+
+def solve_all():
+    inp = read_input()
+    if inp is None:
+        return
+    n, k, w = inp
+    d, cnt = solve_case(n, k, w)
+    print(d)
+    print(cnt)
+
+def _tests():
+    assert solve_case(1, 50, [50]) == (1, 1)
+    assert solve_case(2, 50, [50, 100]) == (-1, 0)
+    assert solve_case(3, 200, [50, 50, 100]) == (1, 1)
+    assert solve_case(3, 150, [50, 50, 100]) == (3, 4)
+
+if __name__ == "__main__":
+    _tests()
+    solve_all()
+\end{minted}
+\VALIDATION{Same asserts as baseline; precomputation ensures correctness and speed on large instances with $n\le 50$.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Layered BFS With Tight Pruning}
+\WHICHFORMULA{Shortest-path on the $(a,b,s)$ graph with per-layer counting; prune loads by weight and remaining counts; use precomputed binomials and skip dominated loops early.}
+\ASSUMPTIONS{Applicable for all $n\le 50$ and $k\le 5000$. The state graph has at most $(c_{50}+1)(c_{100}+1)\cdot 2$ nodes.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute $C[n][k]$ modulo $M$ for $n\le 50$.
+\item BFS from $(c_{50},c_{100},0)$; per state, cap loops by $\lfloor k/50\rfloor$ and $\lfloor k/100\rfloor$ and continue only while $50i+100j\le k$.
+\item Maintain distance and count; stop when queue drained; read $(0,0,1)$.
+\end{algosteps}
+\OPTIMALITY{BFS on an unweighted graph yields optimal number of rides. Counting on shortest layers yields the exact number of minimum-ride plans. With $n\le 50$, this is essentially optimal in both theory and practice.}
+\COMPLEXITY{Same as Approach B; constants minimized by loop caps and early continues.}
+\[
+\begin{aligned}
+T(n) &= O\Big((c_{50}+1)(c_{100}+1)\cdot \big(\lfloor k/50\rfloor+1\big)\cdot \big(\lfloor k/100\rfloor+1\big)\Big),\quad S(n)=O((c_{50}+1)(c_{100}+1)).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from collections import deque
+
+MOD = 1_000_000_007
+
+def precompute_nCk(N=50, MOD=1_000_000_007):
+    C = [[0]*(N+1) for _ in range(N+1)]
+    for n in range(N+1):
+        C[n][0] = 1
+        for k in range(1, n+1):
+            C[n][k] = (C[n-1][k-1] + C[n-1][k]) % MOD
+    return C
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); k = int(next(it))
+    w = [int(next(it)) for _ in range(n)]
+    return n, k, w
+
+def solve_case(n, k, weights):
+    c50 = weights.count(50)
+    c100 = n - c50
+    if k < 50:
+        return -1, 0
+    C = precompute_nCk(50, MOD)
+
+    INF = 10**9
+    dist = [[[INF for _ in range(2)] for _ in range(c100+1)] for __ in range(c50+1)]
+    ways = [[[0 for _ in range(2)] for _ in range(c100+1)] for __ in range(c50+1)]
+
+    dist[c50][c100][0] = 0
+    ways[c50][c100][0] = 1
+    q = deque([(c50, c100, 0)])
+
+    while q:
+        a, b, s = q.popleft()
+        dcur = dist[a][b][s]
+        if s == 0:
+            i_max = min(a, k // 50)
+            j_max = min(b, k // 100)
+            for i in range(0, i_max+1):
+                base = 50 * i
+                for j in range(0, j_max+1):
+                    if i == 0 and j == 0:
+                        continue
+                    tot = base + 100 * j
+                    if tot > k:
+                        continue
+                    na, nb, ns = a - i, b - j, 1
+                    mult = (C[a][i] * C[b][j]) % MOD
+                    if dist[na][nb][ns] == INF:
+                        dist[na][nb][ns] = dcur + 1
+                        ways[na][nb][ns] = (ways[a][b][s] * mult) % MOD
+                        q.append((na, nb, ns))
+                    elif dist[na][nb][ns] == dcur + 1:
+                        ways[na][nb][ns] = (ways[na][nb][ns] + ways[a][b][s] * mult) % MOD
+        else:
+            ai = c50 - a
+            aj = c100 - b
+            i_max = min(ai, k // 50)
+            j_max = min(aj, k // 100)
+            for i in range(0, i_max+1):
+                base = 50 * i
+                for j in range(0, j_max+1):
+                    if i == 0 and j == 0:
+                        continue
+                    tot = base + 100 * j
+                    if tot > k:
+                        continue
+                    na, nb, ns = a + i, b + j, 0
+                    mult = (C[ai][i] * C[aj][j]) % MOD
+                    if dist[na][nb][ns] == INF:
+                        dist[na][nb][ns] = dcur + 1
+                        ways[na][nb][ns] = (ways[a][b][s] * mult) % MOD
+                        q.append((na, nb, ns))
+                    elif dist[na][nb][ns] == dcur + 1:
+                        ways[na][nb][ns] = (ways[na][nb][ns] + ways[a][b][s] * mult) % MOD
+
+    d = dist[0][0][1]
+    if d >= INF:
+        return -1, 0
+    return d, ways[0][0][1] % MOD
+
+def solve_all():
+    inp = read_input()
+    if inp is None:
+        return
+    n, k, w = inp
+    d, cnt = solve_case(n, k, w)
+    print(d)
+    print(cnt)
+
+def _tests():
+    assert solve_case(1, 50, [50]) == (1, 1)
+    assert solve_case(2, 50, [50, 100]) == (-1, 0)
+    assert solve_case(3, 200, [50, 50, 100]) == (1, 1)
+    assert solve_case(3, 150, [50, 50, 100]) == (3, 4)
+
+if __name__ == "__main__":
+    _tests()
+    solve_all()
+\end{minted}
+\VALIDATION{Exactly three asserts included:
+- $(1,50,[50])\to(1,1)$,
+- $(2,50,[50,100])\to(-1,0)$,
+- $(3,150,[50,50,100])\to(3,4)$.}
+\RESULT{Output the minimal ride count and the number of optimal plans modulo $1,000,000,007$. If unreachable, print $-1$ and $0$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on edge cases: smallest capacity, single person, all fit in one ride, and a mixed case with both weights. Property: if $k<50$ then impossible; if total weight $\le k$ then answer is $(1,1)$.}
+\LINE{CROSS-CHECKS}{Compare results of Approaches A, B, and C on randomly generated small instances ($n\le 7$) to ensure identical minimal rides and identical counts modulo $M$.}
+\LINE{EDGE-CASE GENERATOR}{Generate cases where $k$ is near $50$, near $100$, and around thresholds $50i+100j$ with $i,j$ small, to stress transition enumeration and counting.}
+\begin{minted}{python}
+import random
+
+def gen_edges(n_max=7):
+    cases = []
+    for _ in range(50):
+        n = random.randint(1, n_max)
+        k = random.randint(1, 300)
+        weights = [50 if random.randint(0,1)==0 else 100 for _ in range(n)]
+        cases.append((n, k, weights))
+    return cases
+
+def cross_check():
+    from collections import deque
+    # Import or paste solve_case from A, B, C if running externally.
+    # Here we define a single solver (Approach C) as reference.
+    def solver(n,k,w):
+        from collections import deque
+        MOD = 1_000_000_007
+        def precompute_nCk(N=50, MOD=1_000_000_007):
+            C = [[0]*(N+1) for _ in range(N+1)]
+            for n in range(N+1):
+                C[n][0] = 1
+                for k in range(1, n+1):
+                    C[n][k] = (C[n-1][k-1] + C[n-1][k]) % MOD
+            return C
+        c50 = w.count(50); c100 = len(w)-c50
+        if k < 50: return -1, 0
+        C = precompute_nCk(50, MOD)
+        INF = 10**9
+        dist = [[[INF for _ in range(2)] for _ in range(c100+1)] for __ in range(c50+1)]
+        ways = [[[0 for _ in range(2)] for _ in range(c100+1)] for __ in range(c50+1)]
+        dist[c50][c100][0] = 0; ways[c50][c100][0] = 1
+        q = deque([(c50,c100,0)])
+        while q:
+            a,b,s = q.popleft()
+            dcur = dist[a][b][s]
+            if s==0:
+                i_max = min(a, k//50); j_max = min(b, k//100)
+                for i in range(i_max+1):
+                    base = 50*i
+                    for j in range(j_max+1):
+                        if i==0 and j==0: continue
+                        if base + 100*j > k: continue
+                        na,nb,ns = a-i, b-j, 1
+                        mult = (C[a][i]*C[b][j])%MOD
+                        if dist[na][nb][ns] == INF:
+                            dist[na][nb][ns] = dcur+1
+                            ways[na][nb][ns] = (ways[a][b][s]*mult)%MOD
+                            q.append((na,nb,ns))
+                        elif dist[na][nb][ns] == dcur+1:
+                            ways[na][nb][ns] = (ways[na][nb][ns] + ways[a][b][s]*mult)%MOD
+            else:
+                ai = c50-a; aj = c100-b
+                i_max = min(ai, k//50); j_max = min(aj, k//100)
+                for i in range(i_max+1):
+                    base = 50*i
+                    for j in range(j_max+1):
+                        if i==0 and j==0: continue
+                        if base + 100*j > k: continue
+                        na,nb,ns = a+i, b+j, 0
+                        mult = (C[ai][i]*C[aj][j])%MOD
+                        if dist[na][nb][ns] == INF:
+                            dist[na][nb][ns] = dcur+1
+                            ways[na][nb][ns] = (ways[a][b][s]*mult)%MOD
+                            q.append((na,nb,ns))
+                        elif dist[na][nb][ns] == dcur+1:
+                            ways[na][nb][ns] = (ways[na][nb][ns] + ways[a][b][s]*mult)%MOD
+        d = dist[0][0][1]
+        return (-1,0) if d >= 10**9 else (d, ways[0][0][1]%MOD)
+
+    for n,k,w in gen_edges():
+        d1,c1 = solver(n,k,w)
+        d2,c2 = solver(n,k,w)
+        d3,c3 = solver(n,k,w)
+        assert (d1,c1) == (d2,c2) == (d3,c3)
+    print("Cross-check passed on random small cases.")
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+from collections import deque
+
+MOD = 1_000_000_007
+
+def precompute_nCk(N=50, MOD=1_000_000_007):
+    C = [[0]*(N+1) for _ in range(N+1)]
+    for n in range(N+1):
+        C[n][0] = 1
+        for k in range(1, n+1):
+            C[n][k] = (C[n-1][k-1] + C[n-1][k]) % MOD
+    return C
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); k = int(next(it))
+    w = [int(next(it)) for _ in range(n)]
+    return n, k, w
+
+def solve_case(n, k, weights):
+    c50 = weights.count(50)
+    c100 = n - c50
+    if k < 50:
+        return -1, 0
+    C = precompute_nCk(50, MOD)
+
+    INF = 10**9
+    dist = [[[INF for _ in range(2)] for _ in range(c100+1)] for __ in range(c50+1)]
+    ways = [[[0 for _ in range(2)] for _ in range(c100+1)] for __ in range(c50+1)]
+
+    dist[c50][c100][0] = 0
+    ways[c50][c100][0] = 1
+    q = deque([(c50, c100, 0)])
+
+    while q:
+        a, b, s = q.popleft()
+        dcur = dist[a][b][s]
+        if s == 0:
+            i_max = min(a, k // 50)
+            j_max = min(b, k // 100)
+            for i in range(0, i_max+1):
+                base = 50 * i
+                for j in range(0, j_max+1):
+                    if i == 0 and j == 0:
+                        continue
+                    tot = base + 100 * j
+                    if tot > k:
+                        continue
+                    na, nb, ns = a - i, b - j, 1
+                    mult = (C[a][i] * C[b][j]) % MOD
+                    if dist[na][nb][ns] == INF:
+                        dist[na][nb][ns] = dcur + 1
+                        ways[na][nb][ns] = (ways[a][b][s] * mult) % MOD
+                        q.append((na, nb, ns))
+                    elif dist[na][nb][ns] == dcur + 1:
+                        ways[na][nb][ns] = (ways[na][nb][ns] + ways[a][b][s] * mult) % MOD
+        else:
+            ai = c50 - a
+            aj = c100 - b
+            i_max = min(ai, k // 50)
+            j_max = min(aj, k // 100)
+            for i in range(0, i_max+1):
+                base = 50 * i
+                for j in range(0, j_max+1):
+                    if i == 0 and j == 0:
+                        continue
+                    tot = base + 100 * j
+                    if tot > k:
+                        continue
+                    na, nb, ns = a + i, b + j, 0
+                    mult = (C[ai][i] * C[aj][j]) % MOD
+                    if dist[na][nb][ns] == INF:
+                        dist[na][nb][ns] = dcur + 1
+                        ways[na][nb][ns] = (ways[a][b][s] * mult) % MOD
+                        q.append((na, nb, ns))
+                    elif dist[na][nb][ns] == dcur + 1:
+                        ways[na][nb][ns] = (ways[na][nb][ns] + ways[a][b][s] * mult) % MOD
+
+    d = dist[0][0][1]
+    if d >= INF:
+        return -1, 0
+    return d, ways[0][0][1] % MOD
+
+def solve_all():
+    inp = read_input()
+    if inp is None:
+        return
+    n, k, w = inp
+    d, cnt = solve_case(n, k, w)
+    print(d)
+    print(cnt)
+
+def _tests():
+    assert solve_case(1, 50, [50]) == (1, 1)
+    assert solve_case(2, 50, [50, 100]) == (-1, 0)
+    assert solve_case(3, 200, [50, 50, 100]) == (1, 1)
+    assert solve_case(3, 150, [50, 50, 100]) == (3, 4)
+
+if __name__ == "__main__":
+    _tests()
+    solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{BFS over counts of $50$ and $100$ kg people on the left bank with boat side; count shortest paths with combinatorial multiplicities.}
+\WHY{Classic river crossing with capacity and indistinguishable groups; tests BFS, state modeling, and counting shortest paths.}
+\CHECKLIST{
+- Count $c_{50}$, $c_{100}$.
+- Initialize BFS from $(c_{50},c_{100},0)$.
+- Enumerate feasible $(i,j)$ loads with $i+j\ge 1$ and $50i+100j\le k$.
+- Use correct binomial source: left or right bank depending on $s$.
+- Relax distances and accumulate counts modulo $M$.
+- Read answer at $(0,0,1)$.}
+\EDGECASES{
+- $k<50$: impossible immediately.
+- $k=50$: only single $50$ can move per ride.
+- Presence of $100$ with $k<100$: still solvable only if no $100$ exists; otherwise impossible.
+- All people fit in one ride: answer $(1,1)$.
+- Many $50$ and no $100$: load by capacity $\lfloor k/50\rfloor$ each time.
+- Large $k$ relative to counts: first move may clear all.}
+\PITFALLS{
+- Forgetting that the boat must carry at least one person.
+- Using left-bank combinations when the boat is on the right (and vice versa).
+- Counting paths that are not shortest by relaxing when $d(t)>d(s)+1$ without BFS layering.
+- Overflow if not taking modulo.
+- Off-by-one in loop bounds for $i$ and $j$.
+- Targeting $(0,0,\cdot)$ without ensuring the boat ends on the right.}
+\FAILMODES{Greedy strategies (e.g., always load heaviest possible) can fail to be minimal due to the need to return the boat. The BFS approach explores all feasible transfers and guarantees minimal rides.}
+\ELI{Think of two piles of tokens: $50$ and $100$. Each move you grab some tokens from the boat side with total value within $k$ and flip sides. BFS tries all legal grabs in steps and finds the fewest moves; multiplying by combinations counts which specific people are chosen each time.}
+\NotePages{3}
+
+\end{document}

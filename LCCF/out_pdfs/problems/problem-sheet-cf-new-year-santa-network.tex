@@ -1,0 +1,907 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — New Year Santa Network}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/500/D}}
+\LINE{DIFFICULTY / RATING}{1900}
+\STATEMENT{New Year is coming in Tree World! In this world, as the name implies, there are $n$ cities connected by $n - 1$ roads, and for any two distinct cities there always exists a path between them. The cities are numbered by integers from $1$ to $n$, and the roads are numbered by integers from $1$ to $n - 1$. Let's define $d(u, v)$ as total length of roads on the path between city $u$ and city $v$.
+
+As an annual event, people in Tree World repairs exactly one road per year. As a result, the length of one road decreases. It is already known that in the $i$-th year, the length of the $r_i$-th road is going to become $w_i$, which is shorter than its length before. Assume that the current year is year $1$.
+
+Three Santas are planning to give presents annually to all the children in Tree World. In order to do that, they need some preparation, so they are going to choose three distinct cities $c_1, c_2, c_3$ and make exactly one warehouse in each city. The $k$-th ($1 \le k \le 3$) Santa will take charge of the warehouse in city $c_k$.
+
+It is really boring for the three Santas to keep a warehouse alone. So, they decided to build an only-for-Santa network! The cost needed to build this network equals to $d(c_1, c_2) + d(c_2, c_3) + d(c_3, c_1)$ dollars. Santas are too busy to find the best place, so they decided to choose $c_1, c_2, c_3$ randomly uniformly over all triples of distinct numbers from $1$ to $n$. Santas would like to know the expected value of the cost needed to build the network.
+
+However, as mentioned, each year, the length of exactly one road decreases. So, the Santas want to calculate the expected value after each length change. Help them to calculate the value.
+
+Input:\\
+The first line contains an integer $n$ ($3 \le n \le 10^5$) — the number of cities in Tree World.
+
+Next $n - 1$ lines describe the roads. The $i$-th line of them ($1 \le i \le n - 1$) contains three space-separated integers $a_i, b_i, \ell_i$ ($1 \le a_i, b_i \le n$, $a_i \ne b_i$, $1 \le \ell_i \le 10^3$), denoting that the $i$-th road connects cities $a_i$ and $b_i$, and the length of $i$-th road is $\ell_i$.
+
+The next line contains an integer $q$ ($1 \le q \le 10^5$) — the number of road length changes.
+
+Next $q$ lines describe the length changes. The $j$-th line of them ($1 \le j \le q$) contains two space-separated integers $r_j, w_j$ ($1 \le r_j \le n - 1$, $1 \le w_j \le 10^3$). It means that in the $j$-th repair, the length of the $r_j$-th road becomes $w_j$. It is guaranteed that $w_j$ is smaller than the current length of the $r_j$-th road. The same road can be repaired several times.
+
+Output:\\
+Output $q$ numbers. For each given change, print a line containing the expected cost needed to build the network in Tree World. The answer will be considered correct if its absolute and relative error does not exceed $10^{-6}$.
+
+Note:\\
+Consider the first sample. There are $6$ triples: $(1, 2, 3)$, $(1, 3, 2)$, $(2, 1, 3)$, $(2, 3, 1)$, $(3, 1, 2)$, $(3, 2, 1)$. Because $n = 3$, the cost needed to build the network is always $d(1, 2) + d(2, 3) + d(3, 1)$ for all the triples. So, the expected cost equals to $d(1, 2) + d(2, 3) + d(3, 1)$.}
+\BREAKDOWN{We need the expected sum of pairwise tree distances over a uniformly random ordered triple of distinct nodes, after each single-edge weight decrease. Precompute each edge's contribution coefficient that depends only on the split sizes; update the running expectation in $O(1)$ per query.}
+\ELI{Each edge contributes proportionally to how often a random triple sits on both sides of that edge; multiply the edge length by that probability and add over edges.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test case.\\
+- $n$ (int): number of nodes, $3 \le n \le 10^5$.\\
+- Next $n-1$ lines: $a_i, b_i, \ell_i$ (ints), $1 \le a_i, b_i \le n$, $a_i \ne b_i$, $1 \le \ell_i \le 10^3$.\\
+- $q$ (int): number of updates, $1 \le q \le 10^5$.\\
+- Next $q$ lines: $r_j, w_j$ (ints). Road $r_j$'s new weight becomes $w_j$, with $1 \le r_j \le n-1$ and $1 \le w_j \le 10^3$, and $w_j$ is strictly smaller than the current weight.}
+\OUTPUTS{Exactly $q$ lines. The $j$-th line is the expected cost after applying the $j$-th update. Absolute or relative error $\le 10^{-6}$.}
+\SAMPLES{Example 1\\
+Input:\\
+3\\
+1 2 3\\
+2 3 4\\
+1\\
+1 2\\
+Output:\\
+12.000000000\\
+Explanation: For $n=3$, every edge's coefficient equals $2$. Initial expectation is $2\cdot(3+4)=14$. After setting edge $1$ to $2$, it becomes $2\cdot(2+4)=12$.\\
+
+Example 2\\
+Input:\\
+4\\
+1 2 1\\
+2 3 1\\
+3 4 1\\
+1\\
+2 2\\
+Output:\\
+7.000000000\\
+Explanation: Edge coefficients are $1.5, 2.0, 1.5$ for the three edges (from ends to middle). New expectation is $1.5\cdot 1 + 2.0\cdot 2 + 1.5\cdot 1 = 7$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Given a tree $T=(V,E)$ with positive edge lengths $\{\ell_e\}_{e\in E}$, choose an ordered triple $(c_1,c_2,c_3)$ of distinct vertices uniformly at random from all $n(n-1)(n-2)$ such triples. The random cost is $X = d(c_1,c_2)+d(c_2,c_3)+d(c_3,c_1)$. Maintain $\mathbb{E}[X]$ under point updates $\ell_{e}\gets w$.}
+\varmapStart
+\var{n}{number of nodes}
+\var{E}{set of edges, $\lvert E\rvert = n-1$}
+\var{\ell_e}{length of edge $e$}
+\var{s_e}{size of one side of the cut induced by removing $e$}
+\var{C_e}{edge contribution coefficient to the expectation}
+\var{\mathcal{N}}{total number of unordered triples $\binom{n}{3}$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+\mathbb{E}[X]
+&= \sum_{e\in E} \ell_e \cdot \Pr[\text{a random triple sits on both sides of }e]\cdot 2 \\
+&= \sum_{e\in E} \ell_e \cdot \frac{s_e\,(n-s_e)\,(n-2)}{\binom{n}{3}}
+= \sum_{e\in E} \ell_e \cdot \frac{6\,s_e\,(n-s_e)}{n\,(n-1)} \,.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Tree is connected and acyclic; all edge lengths are positive; updates only decrease a single edge length at a time; triples are ordered with distinct cities, but expectation equals the unordered-triple expectation since each unordered triple has $6$ orderings with identical cost.}
+\INVARIANTS{For each edge $e$, $s_e$ is fixed by the topology and does not change with edge weight updates. The coefficient $C_e=\dfrac{6\,s_e\,(n-s_e)}{n\,(n-1)}$ remains constant across all queries.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Directly simulate the definition: enumerate all triples and sum $d(c_1,c_2)+d(c_2,c_3)+d(c_3,c_1)$, then divide by $n(n-1)(n-2)$. Distances can be found by root-to-node distances and lowest common ancestor (LCA), or by running Dijkstra/BFS $n$ times on this tree with positive weights.}
+\ASSUMPTIONS{Intended for tiny $n$ due to $O(n^3)$ triple enumeration (or $O(n^2)$ if summing over all pairs and multiplying by $(n-2)$).}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute all-pairs distances by rooting the tree and using depth plus parent relations, or run Dijkstra from each node (tree simplifies to $O(n)$ per source).
+\item Enumerate all ordered triples of distinct nodes and sum three distances.
+\item Divide by $n(n-1)(n-2)$; repeat after each update (rebuild distances if needed).
+\end{algosteps}
+\COMPLEXITY{$T(n)$ is $\Theta(n^3)$ if directly enumerating triples using $O(1)$ distance queries after $O(n)$-per-source preprocessing, or $\Theta(n^2)$ if summing over all pairs and multiplying by $(n-2)$. Space $S(n)=\Theta(n)$.}
+\[
+\begin{aligned}
+\text{Triples} &= n(n-1)(n-2) \\
+T(n) &\approx n \cdot (n-1) \cdot (n-2) \quad (\text{dominant term}) \,.
+\end{aligned}
+\]
+\CORRECTNESS{Follows the definition of expectation; enumerating all ordered triples exactly averages the target random variable.}
+\EDGECASES{Star/tree path; $n=3$ minimal case; multiple updates on the same edge; long chains to test distance accumulation.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# CF TEMPLATE (must include read_input / solve_case / main + guard + asserts)
+from typing import List, Tuple
+import sys
+
+def read_input(data: List[int]):
+    it = iter(data)
+    n = next(it)
+    edges = []
+    adj = [[] for _ in range(n+1)]
+    for i in range(1, n):
+        a = next(it); b = next(it); w = next(it)
+        edges.append((a, b, w))
+        adj[a].append((b, w, i))
+        adj[b].append((a, w, i))
+    q = next(it)
+    queries = []
+    for _ in range(q):
+        r = next(it); w = next(it)
+        queries.append((r, w))
+    return n, edges, adj, q, queries
+
+def solve_all_baseline(n: int, edges: List[Tuple[int,int,int]], adj: List[List[Tuple[int,int,int]]], q: int, queries: List[Tuple[int,int]]) -> List[float]:
+    sys.setrecursionlimit(1_000_000)
+    from collections import deque
+
+    def all_pairs_dist(current_edges: List[Tuple[int,int,int]]) -> List[List[int]]:
+        # Build adjacency for current weights
+        g = [[] for _ in range(n+1)]
+        for idx, (u,v,w) in enumerate(current_edges, start=1):
+            g[u].append((v,w))
+            g[v].append((u,w))
+        # For a tree with positive weights, BFS doesn't work if weights >1; do DFS with stack to compute root distances once per source via parent pointers
+        # We'll do n DFS traversals (O(n^2)) which is okay for very small n (baseline/demo)
+        distmat = [[0]*(n+1) for _ in range(n+1)]
+        for s in range(1, n+1):
+            # single-source distances by tree traversal
+            stack = [(s, 0, 0)]  # (node, parent, dist)
+            while stack:
+                u, p, d = stack.pop()
+                distmat[s][u] = d
+                for v,w in g[u]:
+                    if v == p: continue
+                    stack.append((v, u, d+w))
+        return distmat
+
+    def expected_from_dist(distmat: List[List[int]]) -> float:
+        # Sum over ordered triples directly if n small; else sum over unordered pairs times (n-2)
+        if n <= 60:
+            tot = 0
+            for a in range(1, n+1):
+                for b in range(1, n+1):
+                    if b == a: continue
+                    for c in range(1, n+1):
+                        if c == a or c == b: continue
+                        tot += distmat[a][b] + distmat[b][c] + distmat[a][c]
+            return tot / (n*(n-1)*(n-2))
+        else:
+            # Use identity: sum over unordered pairs d(u,v) times (n-2); adjust counting
+            tot_pairs = 0
+            for u in range(1, n+1):
+                for v in range(u+1, n+1):
+                    tot_pairs += distmat[u][v]
+            # Each unordered pair appears in exactly (n-2) unordered triples; expectation over ordered equals same value
+            return ( (n-2) * tot_pairs ) / ( (n*(n-1)*(n-2)) / 6 )
+
+    # Work on a mutable copy of edges
+    cur_edges = list(edges)
+    distmat = all_pairs_dist(cur_edges)
+    ans = expected_from_dist(distmat)
+    out = []
+    for (rid, neww) in queries:
+        # update edge weight (1-based id)
+        u, v, _ = cur_edges[rid-1]
+        cur_edges[rid-1] = (u, v, neww)
+        if n <= 200:
+            distmat = all_pairs_dist(cur_edges)
+            ans = expected_from_dist(distmat)
+        else:
+            # For large n, fall back to efficient coefficient-based update to keep runtime practical
+            # Compute coefficients once
+            if 'coeff' not in solve_all_baseline.__dict__:
+                # build subtree sizes via one DFS
+                g = [[] for _ in range(n+1)]
+                for idx,(x,y,w) in enumerate(edges, start=1):
+                    g[x].append((y, idx))
+                    g[y].append((x, idx))
+                sub = [0]*(n+1)
+                coeff = [0.0]*(n)  # 1..n-1
+                N = n
+                denom = N*(N-1)
+                sys.setrecursionlimit(1_000_000)
+                stack = [(1, 0, 0)]  # (node,parent,state) state 0 enter, 1 exit
+                order = []
+                while stack:
+                    u,p,state = stack.pop()
+                    if state == 0:
+                        stack.append((u,p,1))
+                        for v,ei in g[u]:
+                            if v == p: continue
+                            stack.append((v,u,0))
+                            order.append((u,v,ei))
+                    else:
+                        pass
+                # Second pass to compute subtree sizes
+                # We'll actually do a recursive-like iterative DP
+                # Rebuild explicit parent/children
+                parent = [0]*(n+1)
+                peid = [0]*(n+1)
+                order2 = []
+                st = [1]
+                parent[1]=0
+                while st:
+                    u = st.pop()
+                    order2.append(u)
+                    for v,ei in g[u]:
+                        if v == parent[u]: continue
+                        parent[v]=u; peid[v]=ei
+                        st.append(v)
+                for u in reversed(order2):
+                    s=1
+                    for v,ei in g[u]:
+                        if v == parent[u]: continue
+                        s += sub[v]
+                    sub[u]=s
+                    if u != 1:
+                        s_e = sub[u]
+                        coeff[peid[u]] = 6.0 * s_e * (N - s_e) / denom
+                solve_all_baseline.coeff = coeff
+            coeff = solve_all_baseline.coeff
+            # adjust ans incrementally
+            # Need previous weight; we didn't track ans here, recompute ans once on entering branch
+            if 'ans_init_done' not in solve_all_baseline.__dict__:
+                # compute initial ans from coeff and current edges
+                total = 0.0
+                for i,(x,y,w) in enumerate(cur_edges, start=1):
+                    total += coeff[i]*w
+                ans = total
+                solve_all_baseline.ans_init_done = True
+            oldw = _  # from previous stored in cur_edges before update; but we overwrote; fix: track separately
+            # Since we just overwrote, fetch old from previous stored in cur_edges copy we had: we saved '_' earlier; OK
+            delta = (neww - oldw) * coeff[rid]
+            ans += delta
+        out.append(f"{ans:.10f}")
+    return out
+
+def main():
+    data = sys.stdin.buffer.read().split()
+    if data:
+        ints = list(map(int, data))
+        n, edges, adj, q, queries = read_input(ints)
+        res = solve_all_baseline(n, edges, adj, q, queries)
+        sys.stdout.write("\n".join(res))
+    else:
+        # Self-test on tiny cases
+        n = 3
+        edges = [(1,2,3),(2,3,4)]
+        adj = [[] for _ in range(n+1)]
+        for i,(u,v,w) in enumerate(edges, start=1):
+            adj[u].append((v,w,i)); adj[v].append((u,w,i))
+        q = 1
+        queries = [(1,2)]
+        out = solve_all_baseline(n, edges, adj, q, queries)
+        assert len(out) == 1
+        assert abs(float(out[0]) - 12.0) < 1e-6
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Tiny trees where hand-computation is easy: $n=3$ path and $n=4$ path/star. Compare to $2\sum \ell_e$ when $n=3$.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Count edge contributions combinatorially: an edge $e$ with cut sizes $s$ and $n-s$ contributes $2\ell_e$ to a triple iff the triple has nodes on both sides. The number of unordered such triples is $\binom{s}{2}(n-s) + s\binom{n-s}{2} = \dfrac{s(n-s)(n-2)}{2}$.}
+\ASSUMPTIONS{Tree is static in topology; only edge weights change. Precompute $s$ for every edge once by a single DFS.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Root the tree arbitrarily (at $1$). For each edge to child $v$, compute subtree size $s=\mathrm{sub}(v)$.
+\item Precompute coefficient $C_e = \dfrac{6\,s\,(n-s)}{n\,(n-1)}$ per edge.
+\item Initial expectation $A=\sum_e C_e \cdot \ell_e$.
+\item For each update $(r, w)$: set $A \leftarrow A + (w-\ell_r)\cdot C_r$, then set $\ell_r\leftarrow w$; print $A$.
+\end{algosteps}
+\COMPLEXITY{Precomputation $O(n)$; each query $O(1)$. Total $O(n+q)$.}
+\[
+\begin{aligned}
+T(n,q) &= O(n) + O(q),\quad S(n)=O(n)\,.
+\end{aligned}
+\]
+\CORRECTNESS{By linearity of expectation and the counting identity above, $\mathbb{E}[X]=\sum_e \ell_e \cdot \dfrac{s(n-s)(n-2)}{\binom{n}{3}}= \sum_e \ell_e \cdot \dfrac{6s(n-s)}{n(n-1)}$. Since $s$ is topology-only, updates are linear in $\ell_e$.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Same API/signature as baseline; deterministic; with asserts
+from typing import List, Tuple
+import sys
+
+def read_input(data: List[int]):
+    it = iter(data)
+    n = next(it)
+    edges = [None] * (n)  # 1..n-1
+    adj = [[] for _ in range(n+1)]
+    for i in range(1, n):
+        a = next(it); b = next(it); w = next(it)
+        edges[i] = (a, b, w)
+        adj[a].append((b, i))
+        adj[b].append((a, i))
+    q = next(it)
+    queries = []
+    for _ in range(q):
+        r = next(it); w = next(it)
+        queries.append((r, w))
+    return n, edges, adj, q, queries
+
+def solve_all(n: int, edges: List[Tuple[int,int,int]], adj: List[List[Tuple[int,int]]], q: int, queries: List[Tuple[int,int]]) -> List[str]:
+    sys.setrecursionlimit(1_000_000)
+    # compute subtree sizes and coefficients
+    sub = [0]*(n+1)
+    parent = [0]*(n+1)
+    peid = [0]*(n+1)
+    order = []
+    st = [1]
+    parent[1] = 0
+    while st:
+        u = st.pop()
+        order.append(u)
+        for v,ei in adj[u]:
+            if v == parent[u]: continue
+            parent[v] = u
+            peid[v] = ei
+            st.append(v)
+    for u in reversed(order):
+        s = 1
+        for v,ei in adj[u]:
+            if v == parent[u]: continue
+            s += sub[v]
+        sub[u] = s
+    denom = n*(n-1)
+    coeff = [0.0]*(n)
+    for v in range(2, n+1):
+        s = sub[v]
+        ei = peid[v]
+        coeff[ei] = 6.0 * s * (n - s) / denom
+    # initial answer
+    weights = [0]*(n)
+    ans = 0.0
+    for i in range(1, n):
+        u,v,w = edges[i]
+        weights[i] = w
+        ans += coeff[i] * w
+    out = []
+    for (rid, neww) in queries:
+        ans += (neww - weights[rid]) * coeff[rid]
+        weights[rid] = neww
+        out.append(f"{ans:.10f}")
+    return out
+
+def main():
+    data = sys.stdin.buffer.read().split()
+    if data:
+        ints = list(map(int, data))
+        n, edges, adj, q, queries = read_input(ints)
+        res = solve_all(n, edges, adj, q, queries)
+        sys.stdout.write("\n".join(res))
+    else:
+        # Self-checks
+        n = 3
+        edges = [None, (1,2,3), (2,3,4)]
+        adj = [[] for _ in range(n+1)]
+        for i in range(1, n):
+            u,v,w = edges[i]
+            adj[u].append((v,i)); adj[v].append((u,i))
+        q = 1
+        queries = [(1,2)]
+        out = solve_all(n, edges, adj, q, queries)
+        assert abs(float(out[0]) - 12.0) < 1e-6
+
+        n2 = 4
+        e2 = [None, (1,2,1), (2,3,1), (3,4,1)]
+        a2 = [[] for _ in range(n2+1)]
+        for i in range(1, n2):
+            u,v,w = e2[i]
+            a2[u].append((v,i)); a2[v].append((u,i))
+        q2 = 1
+        out2 = solve_all(n2, e2, a2, q2, [(2,2)])
+        assert abs(float(out2[0]) - 7.0) < 1e-6
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Check $n=3$ path and $n=4$ chain as in the examples. Random small trees: compare to brute-force enumeration from Approach A for $n \le 8$.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Edge-cut counting with fixed coefficients: $C_e=\dfrac{6\,s_e\,(n-s_e)}{n\,(n-1)}$. Maintain $A=\sum_e C_e \ell_e$. On update $(r,w)$, set $A\leftarrow A + (w-\ell_r)\,C_r$.}
+\ASSUMPTIONS{Tree topology fixed; only weights change. All arithmetic in double precision suffices within required error bounds.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item One DFS/BFS to compute subtree sizes and $C_e$ for all edges.
+\item Initialize $A$ as the weighted sum.
+\item For each query, update $A$ in $O(1)$ and print with enough precision.
+\end{algosteps}
+\OPTIMALITY{Any algorithm must at least read the $q$ updates, yielding a lower bound $\Omega(q)$. This method achieves $O(n+q)$ time and $O(n)$ space, which is optimal up to constants for this dynamic expectation problem with fixed topology.}
+\COMPLEXITY{Time $O(n+q)$; space $O(n)$.}
+\[
+\begin{aligned}
+T(n,q) &= O(n) + \sum_{j=1}^{q} O(1) = O(n+q)\,.
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case()/solve_all(), main()+guard + asserts
+from typing import List, Tuple
+import sys
+
+def read_input(data: List[int]):
+    it = iter(data)
+    n = next(it)
+    edges = [None] * (n)  # 1..n-1
+    adj = [[] for _ in range(n+1)]
+    for i in range(1, n):
+        a = next(it); b = next(it); w = next(it)
+        edges[i] = (a, b, w)
+        adj[a].append((b, i))
+        adj[b].append((a, i))
+    q = next(it)
+    queries = []
+    for _ in range(q):
+        r = next(it); w = next(it)
+        queries.append((r, w))
+    return n, edges, adj, q, queries
+
+def solve_all(n: int, edges: List[Tuple[int,int,int]], adj: List[List[Tuple[int,int]]], q: int, queries: List[Tuple[int,int]]) -> List[str]:
+    sys.setrecursionlimit(1_000_000)
+    # iterative DFS to avoid recursion limits
+    parent = [0]*(n+1)
+    peid = [0]*(n+1)
+    order = []
+    st = [1]
+    parent[1] = 0
+    while st:
+        u = st.pop()
+        order.append(u)
+        for v,ei in adj[u]:
+            if v == parent[u]: continue
+            parent[v] = u
+            peid[v] = ei
+            st.append(v)
+    sub = [0]*(n+1)
+    for u in reversed(order):
+        s = 1
+        for v,ei in adj[u]:
+            if v == parent[u]: continue
+            s += sub[v]
+        sub[u] = s
+    denom = n*(n-1)
+    coeff = [0.0]*(n)
+    for v in range(2, n+1):
+        s = sub[v]
+        ei = peid[v]
+        coeff[ei] = 6.0 * s * (n - s) / denom
+    weights = [0]*(n)
+    ans = 0.0
+    for i in range(1, n):
+        u,v,w = edges[i]
+        weights[i] = w
+        ans += coeff[i] * w
+    out = []
+    for (rid, neww) in queries:
+        ans += (neww - weights[rid]) * coeff[rid]
+        weights[rid] = neww
+        out.append(f"{ans:.10f}")
+    return out
+
+def main():
+    data = sys.stdin.buffer.read().split()
+    if data:
+        ints = list(map(int, data))
+        n, edges, adj, q, queries = read_input(ints)
+        res = solve_all(n, edges, adj, q, queries)
+        sys.stdout.write("\n".join(res))
+    else:
+        # Exactly 3 asserts or I/O mini-tests
+        # 1) n=3 simple path
+        n = 3
+        edges = [None, (1,2,3), (2,3,4)]
+        adj = [[] for _ in range(n+1)]
+        for i in range(1, n):
+            u,v,w = edges[i]
+            adj[u].append((v,i)); adj[v].append((u,i))
+        out = solve_all(n, edges, adj, 1, [(1,2)])
+        assert abs(float(out[0]) - 12.0) < 1e-6
+        # 2) n=4 chain
+        n2 = 4
+        e2 = [None, (1,2,1), (2,3,1), (3,4,1)]
+        a2 = [[] for _ in range(n2+1)]
+        for i in range(1, n2):
+            u,v,w = e2[i]
+            a2[u].append((v,i)); a2[v].append((u,i))
+        out2 = solve_all(n2, e2, a2, 1, [(2,2)])
+        assert abs(float(out2[0]) - 7.0) < 1e-6
+        # 3) Star n=4: edge 1-2=5,1-3=1,1-4=1; update edge 1-2 to 3
+        n3 = 4
+        e3 = [None, (1,2,5), (1,3,1), (1,4,1)]
+        a3 = [[] for _ in range(n3+1)]
+        for i in range(1, n3):
+            u,v,w = e3[i]
+            a3[u].append((v,i)); a3[v].append((u,i))
+        out3 = solve_all(n3, e3, a3, 1, [(1,3)])
+        # Coeff for star edges: s=1 => 6*1*3/12=1.5
+        # Initial ans = 1.5*(5+1+1)=10.5, after update -> 1.5*(3+1+1)=7.5
+        assert abs(float(out3[0]) - 7.5) < 1e-6
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Three asserts included in main() when no input is present: $n=3$ path, $n=4$ chain, and $n=4$ star.}
+\RESULT{After each update, we print $\mathbb{E}[d(c_1,c_2)+d(c_2,c_3)+d(c_3,c_1)]$ over uniformly random ordered triples of distinct cities, with absolute/relative error $\le 10^{-6}$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on small graphs where expectations can be computed by enumeration; property checks that the answer is linear in each edge weight; randomized small trees comparing the optimal method to a brute-force computation.}
+\LINE{CROSS-CHECKS}{For $n\le 8$, compare Approach B/C against Approach A's enumeration within $10^{-9}$.}
+\LINE{EDGE-CASE GENERATOR}{Generate stars, paths, balanced binary trees; test repeated updates on the same edge; test decreasing to same as previous values; test minimal $n=3$.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+from typing import List, Tuple
+import random
+random.seed(7)
+
+def gen_path(n: int, w: int = 1) -> Tuple[int, List[Tuple[int,int,int]]]:
+    edges = []
+    for i in range(1, n):
+        edges.append((i, i+1, w))
+    return n, edges
+
+def gen_star(n: int, center: int = 1, w: int = 1) -> Tuple[int, List[Tuple[int,int,int]]]:
+    edges = []
+    for v in range(2, n+1):
+        edges.append((center, v, w))
+    return n, edges
+
+def gen_random_tree(n: int, wmin: int = 1, wmax: int = 5) -> Tuple[int, List[Tuple[int,int,int]]]:
+    parent = [0]*(n+1)
+    edges = []
+    for v in range(2, n+1):
+        p = random.randint(1, v-1)
+        w = random.randint(wmin, wmax)
+        edges.append((p, v, w))
+    return n, edges
+
+def brute_expectation(n: int, edges: List[Tuple[int,int,int]]) -> float:
+    # Build adjacency
+    g = [[] for _ in range(n+1)]
+    for i,(u,v,w) in enumerate(edges, start=1):
+        g[u].append((v,w)); g[v].append((u,w))
+    # all-pairs distances via n DFS traversals
+    dist = [[0]*(n+1) for _ in range(n+1)]
+    for s in range(1, n+1):
+        st = [(s, 0, 0)]
+        while st:
+            u,p,d = st.pop()
+            dist[s][u] = d
+            for v,w in g[u]:
+                if v == p: continue
+                st.append((v,u,d+w))
+    tot = 0
+    for a in range(1, n+1):
+        for b in range(1, n+1):
+            if b == a: continue
+            for c in range(1, n+1):
+                if c == a or c == b: continue
+                    # sum of pairwise distances
+                    pass
+    # We'll use the well-known identity instead of iterating orderings:
+    tot_pairs = 0
+    for u in range(1, n+1):
+        for v in range(u+1, n+1):
+            tot_pairs += dist[u][v]
+    return ((n-2) * tot_pairs) / ((n*(n-1)*(n-2))/6)
+
+def coeff_expectation(n: int, edges: List[Tuple[int,int,int]]) -> float:
+    # compute coefficients and sum
+    adj = [[] for _ in range(n+1)]
+    for i,(u,v,w) in enumerate(edges, start=1):
+        adj[u].append((v,i)); adj[v].append((u,i))
+    parent = [0]*(n+1); peid = [0]*(n+1)
+    order = []
+    st = [1]; parent[1]=0
+    while st:
+        u = st.pop()
+        order.append(u)
+        for v,ei in adj[u]:
+            if v == parent[u]: continue
+            parent[v]=u; peid[v]=ei
+            st.append(v)
+    sub = [0]*(n+1)
+    for u in reversed(order):
+        s = 1
+        for v,ei in adj[u]:
+            if v == parent[u]: continue
+            s += sub[v]
+        sub[u]=s
+    denom = n*(n-1)
+    coeff = [0.0]*(n)
+    ans = 0.0
+    for v in range(2, n+1):
+        s = sub[v]; ei = peid[v]
+        coeff[ei] = 6.0 * s * (n - s) / denom
+    for i,(u,v,w) in enumerate(edges, start=1):
+        ans += coeff[i] * w
+    return ans
+
+def _run_tests():
+    # Path n=4
+    n, e = gen_path(4, 1)
+    assert abs(coeff_expectation(n,e) - 5.0) < 1e-9
+    # Star n=5
+    n, e = gen_star(5, 1, 2)
+    # For star: s=1 for all 4 edges, coeff = 6*1*4/(5*4) = 1.2
+    assert abs(coeff_expectation(n,e) - 1.2* (2*4)) < 1e-9
+    # Random small trees: compare brute vs coeff
+    for n in range(3, 9):
+        for _ in range(5):
+            n2, e = gen_random_tree(n, 1, 5)
+            b = brute_expectation(n2,e)
+            c = coeff_expectation(n2,e)
+            assert abs(b-c) < 1e-8
+
+if __name__ == "__main__":
+    _run_tests()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF/LC) + asserts
+from typing import List, Tuple
+import sys
+
+def read_input(data: List[int]):
+    it = iter(data)
+    n = next(it)
+    edges = [None] * (n)  # 1..n-1
+    adj = [[] for _ in range(n+1)]
+    for i in range(1, n):
+        a = next(it); b = next(it); w = next(it)
+        edges[i] = (a, b, w)
+        adj[a].append((b, i))
+        adj[b].append((a, i))
+    q = next(it)
+    queries = []
+    for _ in range(q):
+        r = next(it); w = next(it)
+        queries.append((r, w))
+    return n, edges, adj, q, queries
+
+def solve_all(n: int, edges: List[Tuple[int,int,int]], adj: List[List[Tuple[int,int]]], q: int, queries: List[Tuple[int,int]]) -> List[str]:
+    sys.setrecursionlimit(1_000_000)
+    # compute subtree sizes
+    parent = [0]*(n+1)
+    peid = [0]*(n+1)
+    order = []
+    st = [1]
+    parent[1]=0
+    while st:
+        u = st.pop()
+        order.append(u)
+        for v,ei in adj[u]:
+            if v == parent[u]: continue
+            parent[v]=u; peid[v]=ei
+            st.append(v)
+    sub = [0]*(n+1)
+    for u in reversed(order):
+        s = 1
+        for v,ei in adj[u]:
+            if v == parent[u]: continue
+            s += sub[v]
+        sub[u]=s
+    denom = n*(n-1)
+    coeff = [0.0]*(n)
+    for v in range(2, n+1):
+        s = sub[v]; ei = peid[v]
+        coeff[ei] = 6.0 * s * (n - s) / denom
+    weights = [0]*(n)
+    ans = 0.0
+    for i in range(1, n):
+        u,v,w = edges[i]
+        weights[i] = w
+        ans += coeff[i] * w
+    out = []
+    for (rid, neww) in queries:
+        ans += (neww - weights[rid]) * coeff[rid]
+        weights[rid] = neww
+        out.append(f"{ans:.10f}")
+    return out
+
+def main():
+    data = sys.stdin.buffer.read().split()
+    if data:
+        ints = list(map(int, data))
+        n, edges, adj, q, queries = read_input(ints)
+        res = solve_all(n, edges, adj, q, queries)
+        sys.stdout.write("\n".join(res))
+    else:
+        # Minimal asserts
+        n = 3
+        edges = [None, (1,2,3), (2,3,4)]
+        adj = [[] for _ in range(n+1)]
+        for i in range(1, n):
+            u,v,w = edges[i]
+            adj[u].append((v,i)); adj[v].append((u,i))
+        out = solve_all(n, edges, adj, 1, [(1,2)])
+        assert abs(float(out[0]) - 12.0) < 1e-6
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{The expected sum of pairwise distances over a random ordered triple equals a fixed linear combination of edge weights with coefficients $C_e=\dfrac{6\,s_e\,(n-s_e)}{n\,(n-1)}$.}
+\WHY{Edge contribution tricks and counting over cuts show up frequently in tree-expectation and dynamic queries problems (Codeforces/ICPC).}
+\CHECKLIST{
+- Root the tree and compute subtree sizes.\\
+- Compute $C_e$ for each edge once.\\
+- Initialize $A=\sum C_e\ell_e$.\\
+- For each update, do $A\mathrel{+}=C_r\cdot(\Delta\ell)$ and print.\\
+- Print with at least $10$ decimals.}
+\EDGECASES{
+- $n=3$: Answer equals $2\sum \ell_e$.\\
+- Star topology: all $s_e=1$ (except orientation), uniform coefficients.\\
+- Path topology: middle edges have larger $s(n-s)$.\\
+- Multiple updates on the same edge.\\
+- Very large $q$ (up to $10^5$).\\
+- Weights can be small/large within bounds.}
+\PITFALLS{
+- Using integer division instead of float for coefficients.\\
+- Forgetting that triples are ordered; fortunately expectation matches unordered.\\
+- Recursion depth on deep trees; prefer iterative DFS or raise recursionlimit.\\
+- Misindexing edges when computing $s$ and mapping to IDs.\\
+- Printing insufficient precision.\\
+- Using $n-2$ in coefficient (it cancels); final coefficient is independent of $n-2$.}
+\FAILMODES{Brute-force enumeration times out even for moderate $n$. Recomputing from scratch per query is too slow; the coefficient trick avoids per-query DFS.}
+\ELI{Every edge splits the tree into two parts. A random triple lies on both sides with a fixed probability that depends only on the split sizes. Multiply by the edge length and add up to get the expected cost. When one edge changes, only its own contribution changes.}
+\NotePages{3}
+
+\end{document}

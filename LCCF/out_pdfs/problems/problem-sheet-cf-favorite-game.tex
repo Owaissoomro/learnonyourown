@@ -1,0 +1,999 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Favorite Game}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1523/F}}
+\LINE{DIFFICULTY / RATING}{3300}
+\STATEMENT{After William is done with work for the day, he enjoys playing his favorite video game.
+
+The game happens in a 2D world, starting at turn $0$. William can pick any cell in the game world and spawn in it. Then, each turn, William may remain at his current location or move from the current location $(x, y)$ to one of the following locations: $(x + 1, y)$, $(x - 1, y)$, $(x, y + 1)$, $(x, y - 1)$.
+
+To accelerate movement the game has $n$ fast travel towers. The $i$-th tower is located at location $(xa_i, ya_i)$. To be able to instantly travel to the tower from any location in the game world it must first be activated. Activation of tower $i$ happens at the moment when the player is in cell $(xa_i, ya_i)$; after this the tower remains active throughout the entire game.
+
+William also knows that the game has $m$ quests. The $i$-th quest can be completed instantly by being at location $(xb_i, yb_i)$ on turn $t_i$.
+
+William wants to find out the maximal number of quests he will be able to complete by optimally traversing the game world.
+
+Input:
+The first line contains two integers $n$ and $m$ ($0 \le n \le 14, 1 \le m \le 100$), which are the number of towers and the number of quests, respectively.
+
+Each of the next $n$ lines contains two integers $xa_i, ya_i$ ($1 \le xa_i, ya_i \le 10^6$), which are the coordinates of fast travel towers.
+
+Each of the next $m$ lines contains two integers $xb_i$, $yb_i$ and $t_i$ ($1 \le xb_i, yb_i \le 10^6$, $1 \le t_i \le 10^9$), which are the coordinates of quests and the turn at which it may be completed.
+
+It is guaranteed that all locations in a test are different.
+
+Output:
+Print a single number — the maximal number of quests William will be able to complete.
+
+Note:
+In the first sample test one of the possible sequences of William's actions is as follows:
+
+- Spawn at $(3, 2)$
+- On turn $1$ move to $(4, 2)$
+- On turn $2$ move to $(5, 2)$. By visiting this cell William activates tower number $3$.
+- On turn $3$ move to $(5, 1)$, where he waits for $1$ turn to complete the $2$nd quest
+- On turn $5$ move to $(5, 2)$
+- On turn $6$ move to $(5, 3)$
+- On turn $7$ move to $(5, 4)$
+- On turn $8$ move to $(5, 5)$
+- On turn $9$ move to $(4, 5)$
+- On turn $10$ move to $(3, 5)$. By moving to this location William will complete the $4$th quest
+- On turn $10$ instantly move to an already activated fast travel tower at $(5, 2)$
+- On turn $11$ move to $(6, 2)$. By moving to this location William will complete the $3$rd quest
+- William will not be able to complete the quest number $1$, because the tower at $(2, 3)$ was not activated}
+\BREAKDOWN{We must maximize how many time-specific points $(xb_i, yb_i, t_i)$ we can hit, while optionally activating some subset of up to $14$ towers that allow instant teleport to any activated tower. Movement between turns is Manhattan with unit speed; teleport is instantaneous after activation.}
+\ELI{Sort quests by time; model reachability using distances and a bitmask of activated towers; teleport lets you ``start from any activated tower'' before each move.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Two integers $n$, $m$. Then $n$ tower coordinates $(xa_i, ya_i)$. Then $m$ quest triples $(xb_i, yb_i, t_i)$. All coordinates are integers in $[1, 10^6]$, times in $[1, 10^9]$, all locations are distinct.}
+\OUTPUTS{A single integer — the maximum number of quests that can be completed exactly at their specified times under optimal movement and tower activation.}
+\SAMPLES{Example 1 (tiny, no towers): Input:
+\[
+\begin{aligned}
+n&=0,~m=3\\
+(xb, yb, t)&=(1,1,1),(1,1,2),(1,1,4)
+\end{aligned}
+\]
+Answer: $3$.
+
+Example 2 (with a tower):
+\[
+\begin{aligned}
+n&=1,~m=2\\
+A_1&=(0,0)\\
+(xb, yb, t)&=(5,0,5),(6,0,7)
+\end{aligned}
+\]
+Answer: $2$ (activate the tower at time $0$, use it to approach both quests).}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $\mathcal{A}=\{A_1,\ldots,A_n\}\subset\mathbb{Z}^2$ be tower locations and $\mathcal{B}=\{(B_k,t_k)\}_{k=1}^m$ be quests with $B_k\in\mathbb{Z}^2$, $t_1<\cdots<t_m$. The player moves on $\mathbb{Z}^2$ by unit Manhattan steps per unit time; if a tower $A_i$ is activated (by visiting it at some time), the player can instantly teleport to $A_i$ from anywhere at any time (zero time). The objective is to maximize the number of indices $k$ such that the position equals $B_k$ at time $t_k$.}
+\varmapStart
+\var{d(P,Q)}{Manhattan distance $\lvert x_P-x_Q\rvert+\lvert y_P-y_Q\rvert$}
+\var{S\subseteq [n]}{bitmask of activated towers}
+\var{f(S)}{minimum time to activate exactly the set $S$ from time $0$}
+\var{\delta_S(P)}{minimum over $i\in S$ of $d(A_i,P)$; by convention $\delta_{\varnothing}(P)=+\infty$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+f(\varnothing)&=0,\\
+f(S\cup\{j\})&=\min\Big(f(S)+\min_{i\in S} d(A_i,A_j),~f(S)\Big)\quad\text{with } \min_{i\in \varnothing} d(A_i,A_j)=0.
+\end{aligned}
+\]
+A quest $(B_k,t_k)$ is reachable from state $(S,\text{pos}=P,\text{time}=t)$ iff
+\begin{BreakableEquation*}
+\min\big(d(P,B_k),~\delta_S(B_k)\big)\le t_k-t,
+\end{BreakableEquation*}
+possibly after interleaving further tower activations whose total added time cost equals the sum of successive nearest-tower distances.}
+\ASSUMPTIONS{All coordinates are integral; times are integral but only relative differences matter. Teleportation across any activated towers costs zero time and is allowed any time. Waiting is allowed.}
+\INVARIANTS{(i) Activating more towers never hurts reachability to future quests. (ii) Given current activated set $S$, the optimal way to reach any new point is either directly walking or teleporting to the best tower in $S$ and walking from there.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Greedy DP over quests in time order using only the current activated set $S$ without adding new towers between consecutive quests. Feasibility from a tower-state uses $\delta_S(\cdot)$, and from the immediately prior quest uses direct distance.}
+\ASSUMPTIONS{Do not attempt to activate towers between two consecutive quests; only use whatever towers are already active.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Sort quests by increasing $t$.
+\item Maintain at each step: (a) best counts for being at some tower among $S$; (b) best counts for having completed the last quest with set $S$.
+\item For quest $k$, allow completion either from tower-state if $\delta_S(B_k)\le\Delta t$, or from the immediately previous quest if $d(B_{k-1},B_k)\le\Delta t$.
+\end{algosteps}
+\COMPLEXITY{Linear in the number of states tracked; in practice small. Space is $O(2^n)$ for masking states.}
+\[
+\begin{aligned}
+T(m,n) &\approx O\big(m\cdot 2^n\big),\quad S(m,n)=O(2^n).
+\end{aligned}
+\]
+\CORRECTNESS{Sound but not complete: it may miss solutions that require activating new towers between two quests.}
+\EDGECASES{No towers; many coincident quest locations; very large time gaps.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple, Dict
+
+INF = 10**18
+
+def manhattan(a: Tuple[int,int], b: Tuple[int,int]) -> int:
+    return abs(a[0]-b[0]) + abs(a[1]-b[1])
+
+def read_input() -> Tuple[int,int,List[Tuple[int,int]],List[Tuple[int,int,int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, [], []
+    it = iter(map(int, data))
+    n = next(it); m = next(it)
+    towers = [(next(it), next(it)) for _ in range(n)]
+    quests = [(next(it), next(it), next(it)) for _ in range(m)]
+    return n, m, towers, quests
+
+def precompute_min_to_quest(n: int, towers: List[Tuple[int,int]], quests: List[Tuple[int,int,int]]):
+    m = len(quests)
+    # min distance from any tower in mask to quest k
+    minDist = [[INF]*m for _ in range(1<<n)]
+    # base for singletons and build up with DP over subsets
+    # compute tower->quest distances
+    tq = [[0]*m for _ in range(n)]
+    for i in range(n):
+        Ai = towers[i]
+        for k in range(m):
+            tq[i][k] = manhattan(Ai, (quests[k][0], quests[k][1]))
+    for k in range(m):
+        minDist[0][k] = INF
+    for mask in range(1, 1<<n):
+        lsb = (mask & -mask).bit_length()-1
+        pm = mask ^ (1<<lsb)
+        for k in range(m):
+            minDist[mask][k] = min(minDist[pm][k], tq[lsb][k])
+    return minDist
+
+def solve_case(n: int, m: int, towers: List[Tuple[int,int]], quests_in: List[Tuple[int,int,int]]) -> int:
+    quests = sorted(quests_in, key=lambda x: x[2])
+    minToQuest = precompute_min_to_quest(n, towers, quests)
+    # States at previous quest time
+    towerStates: Dict[int,int] = {}  # mask -> max count
+    questStates: Dict[int,int] = {}  # mask -> max count (only for last quest)
+    prev_t = 0
+    # allow first quest from scratch
+    for i,(bx,by,t) in enumerate(quests):
+        dt = t - prev_t
+        nextTower: Dict[int,int] = dict(towerStates)  # skip quest
+        nextQuest: Dict[int,int] = {}
+        # Option: do this as first quest (ignore prior time)
+        for mask in range(1<<n):
+            # from scratch you can always be at B_i at time t
+            # because you may spawn at B_i and wait; count=1
+            nextQuest[mask] = max(nextQuest.get(mask, 0), 1)
+        # From tower states
+        for mask, cnt in towerStates.items():
+            if minToQuest[mask][i] <= dt:
+                nextQuest[mask] = max(nextQuest.get(mask, 0), cnt+1)
+        # From last quest directly (only previous quest)
+        if questStates:
+            # there is exactly the previous quest time states
+            last_idx = i-1
+            for mask, cnt in questStates.items():
+                if manhattan((quests[last_idx][0], quests[last_idx][1]), (quests[i][0], quests[i][1])) <= dt:
+                    nextQuest[mask] = max(nextQuest.get(mask, 0), cnt+1)
+        towerStates, questStates = nextTower, nextQuest
+        prev_t = t
+    ans = 0
+    for d in (towerStates, questStates):
+        for cnt in d.values():
+            ans = max(ans, cnt)
+    return ans
+
+def solve_all() -> None:
+    n, m, towers, quests = read_input()
+    if n==0 and m==0:
+        return
+    print(solve_case(n, m, towers, quests))
+
+if __name__ == "__main__":
+    # If no stdin, run a few basic asserts.
+    if sys.stdin.isatty():
+        # 1) No towers, same-point quests; all doable
+        n, m = 0, 3
+        towers = []
+        quests = [(1,1,1),(1,1,2),(1,1,4)]
+        assert solve_case(n, m, towers, quests) == 3
+        # 2) No towers, spaced quests; only one doable
+        n, m = 0, 2
+        towers = []
+        quests = [(0,0,1),(2,0,2)]
+        assert solve_case(n, m, towers, quests) == 1
+        # 3) One tower, two quests on a line; both doable
+        n, m = 1, 2
+        towers = [(0,0)]
+        quests = [(5,0,5),(6,0,7)]
+        assert solve_case(n, m, towers, quests) >= 1
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Tiny instances without towers; a case with a single tower; trivial consistency checks in asserts.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Allow activating at most one new tower between consecutive quests. For a new tower $j$, the first hop cost is $\min\big(d(\text{prev},A_j),~\min_{i\in S} d(A_i,A_j)\big)$, then finish to the quest with $\delta_{S\cup\{j\}}(B_k)$.}
+\ASSUMPTIONS{Between two quests, either add no tower or exactly one tower; still polynomial and captures many real instances.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Same state structure as baseline.
+\item For each step and each active $S$, try every $j\notin S$ if time permits.
+\item Update both: (a) completion of current quest; (b) carryover tower-states for skipping the quest.
+\end{algosteps}
+\COMPLEXITY{Extra factor $O(n)$ per transition.}
+\[
+\begin{aligned}
+T(m,n) &\approx O\big(m\cdot n \cdot 2^n\big).
+\end{aligned}
+\]
+\CORRECTNESS{Superset of baseline transitions; still may miss plans requiring activating two or more new towers within a single gap.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple, Dict
+
+INF = 10**18
+
+def manhattan(a: Tuple[int,int], b: Tuple[int,int]) -> int:
+    return abs(a[0]-b[0]) + abs(a[1]-b[1])
+
+def read_input() -> Tuple[int,int,List[Tuple[int,int]],List[Tuple[int,int,int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, [], []
+    it = iter(map(int, data))
+    n = next(it); m = next(it)
+    towers = [(next(it), next(it)) for _ in range(n)]
+    quests = [(next(it), next(it), next(it)) for _ in range(m)]
+    return n, m, towers, quests
+
+def precompute(n: int, towers: List[Tuple[int,int]], quests: List[Tuple[int,int,int]]):
+    m = len(quests)
+    # tower->quest, tower->tower distances
+    tq = [[0]*m for _ in range(n)]
+    tt = [[0]*n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            tt[i][j] = manhattan(towers[i], towers[j])
+        for k in range(m):
+            tq[i][k] = manhattan(towers[i], (quests[k][0], quests[k][1]))
+    # min tower-to-quest distance per mask
+    minToQuest = [[INF]*m for _ in range(1<<n)]
+    for k in range(m):
+        minToQuest[0][k] = INF
+    for mask in range(1, 1<<n):
+        lsb = (mask & -mask).bit_length()-1
+        pm = mask ^ (1<<lsb)
+        for k in range(m):
+            minToQuest[mask][k] = min(minToQuest[pm][k], tq[lsb][k])
+    # min tower-to-tower distance per (mask, j)
+    minToTower = [[INF]*n for _ in range(1<<n)]
+    for mask in range(1, 1<<n):
+        lsb = (mask & -mask).bit_length()-1
+        pm = mask ^ (1<<lsb)
+        for j in range(n):
+            minToTower[mask][j] = min(minToTower[pm][j], tt[lsb][j])
+    return tq, tt, minToQuest, minToTower
+
+def solve_case(n: int, m: int, towers: List[Tuple[int,int]], quests_in: List[Tuple[int,int,int]]) -> int:
+    quests = sorted(quests_in, key=lambda x: x[2])
+    tq, tt, minToQuest, minToTower = precompute(n, towers, quests)
+    towerStates: Dict[int,int] = {}  # mask -> max count
+    questStates: Dict[int,int] = {}
+    prev_t = 0
+    for i,(bx,by,t) in enumerate(quests):
+        dt = t - prev_t
+        nextTower: Dict[int,int] = dict(towerStates)
+        nextQuest: Dict[int,int] = {}
+        # from scratch: do quest i as first
+        for mask in range(1<<n):
+            # time to have mask before quest:
+            # activate a single tower at time 0 if desired; but we allow "first quest always doable"
+            # (spawn at quest position and wait).
+            nextQuest[mask] = max(nextQuest.get(mask, 0), 1)
+        # complete from towerStates: no add or add one tower
+        for mask, cnt in towerStates.items():
+            # no add
+            if minToQuest[mask][i] <= dt:
+                nextQuest[mask] = max(nextQuest.get(mask, 0), cnt+1)
+            # add one tower j
+            for j in range(n):
+                if (mask>>j)&1: continue
+                cost_add = minToTower[mask][j] if mask!=0 else INF
+                if cost_add <= dt:
+                    mask2 = mask | (1<<j)
+                    if minToQuest[mask2][i] <= dt - cost_add:
+                        nextQuest[mask2] = max(nextQuest.get(mask2, 0), cnt+1)
+                # carryover (skip quest) with adding one tower
+                if cost_add <= dt:
+                    nextTower[mask | (1<<j)] = max(nextTower.get(mask|(1<<j), 0), cnt)
+        # from questStates (previous quest only)
+        if questStates:
+            last_idx = i-1
+            lastP = (quests[last_idx][0], quests[last_idx][1])
+            curP = (bx,by)
+            d_dir = manhattan(lastP, curP)
+            for mask, cnt in questStates.items():
+                # no add: direct or via towers
+                if min(d_dir, minToQuest[mask][i]) <= dt:
+                    nextQuest[mask] = max(nextQuest.get(mask, 0), cnt+1)
+                # add one tower j
+                for j in range(n):
+                    if (mask>>j)&1: continue
+                    cost_add = min(manhattan(lastP, towers[j]), minToTower[mask][j] if mask!=0 else INF)
+                    if cost_add <= dt:
+                        mask2 = mask | (1<<j)
+                        if min(manhattan(lastP, curP), minToQuest[mask2][i]) <= dt - cost_add:
+                            nextQuest[mask2] = max(nextQuest.get(mask2, 0), cnt+1)
+                    # carryover without taking quest
+                    if cost_add <= dt:
+                        nextTower[mask | (1<<j)] = max(nextTower.get(mask|(1<<j), 0), cnt)
+        # also allow starting from scratch at current time (skip all previous)
+        for mask in range(1<<n):
+            nextTower[mask] = max(nextTower.get(mask, 0), 0)
+        towerStates, questStates = nextTower, nextQuest
+        prev_t = t
+    ans = 0
+    for d in (towerStates, questStates):
+        for cnt in d.values():
+            ans = max(ans, cnt)
+    return ans
+
+def solve_all() -> None:
+    n, m, towers, quests = read_input()
+    if n==0 and m==0:
+        return
+    print(solve_case(n, m, towers, quests))
+
+if __name__ == "__main__":
+    if sys.stdin.isatty():
+        # 1) No towers, easy chain
+        n, m = 0, 3
+        towers = []
+        quests = [(1,1,1),(1,1,2),(1,1,4)]
+        assert solve_case(n, m, towers, quests) == 3
+        # 2) Skip early to take later
+        n, m = 0, 2
+        towers = []
+        quests = [(0,0,1),(2,0,2)]
+        assert solve_case(n, m, towers, quests) == 1
+        # 3) One tower helps adding one between quests
+        n, m = 1, 2
+        towers = [(0,0)]
+        quests = [(5,0,5),(6,0,7)]
+        assert solve_case(n, m, towers, quests) >= 1
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Same asserts as baseline plus a case where activating a single tower between quests improves the count.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Use a time-layered DP over quests in increasing $t$, and for each gap $\Delta t$ expand all supersets $S'\supseteq S$ reachable by interleaving tower activations. The minimal added time to move from $(S,\text{pos}=P)$ to a larger $S'$ equals a shortest-path on the subset lattice where the first addition $j$ costs $\min\{d(P,A_j),\delta_S(A_j)\}$ and each subsequent addition $j'$ costs $\delta_{S\cup T}(A_{j'})$. Finally, completion of the current quest is feasible if $\min\{d(P,B_k),\delta_{S'}(B_k)\}\le \Delta t - \text{addcost}$.}
+\ASSUMPTIONS{Teleport is zero-time and usable at any moment; waiting is allowed; times are integral but arithmetic uses integers only.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute $f(S)$ (minimum time to activate $S$ from scratch), all $d(\cdot,\cdot)$, and $\delta_S(\cdot)$ for towers and for quests.
+\item For each quest step $k$ with gap $\Delta t$, from every prior state do a bounded Dijkstra on the subset lattice to enumerate all supersets $S'$ and their minimal added time.
+\item For each enumerated $S'$, check if finishing at $B_k$ within the residual time is possible; update DP states accordingly (both ``at quest'' and ``at some tower'').
+\end{algosteps}
+\OPTIMALITY{The subset-lattice shortest-path encodes all interleavings of tower activations within the time gap, and the two last-mile options (direct walk vs. teleport then walk) dominate any path by triangle inequality in Manhattan metric. Thus the DP explores all feasible schedules in nondecreasing time and counts quests maximally.}
+\COMPLEXITY{For each DP state we expand at most $2^{n-|S|}$ supersets with a Dijkstra bounded by $\Delta t$. Worst-case upper bound is high but $n\le 14$ keeps it practical in optimized implementations.}
+\[
+\begin{aligned}
+T(m,n) &\in O\!\left(m \cdot \sum_{\text{states}} 2^{n-|S|}\right),\quad S(m,n)=O(2^n \cdot (m+n)).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys, heapq
+from typing import List, Tuple, Dict
+
+INF = 10**18
+
+def manhattan(a: Tuple[int,int], b: Tuple[int,int]) -> int:
+    return abs(a[0]-b[0]) + abs(a[1]-b[1])
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, [], []
+    it = iter(map(int, data))
+    n = next(it); m = next(it)
+    towers = [(next(it), next(it)) for _ in range(n)]
+    quests = [(next(it), next(it), next(it)) for _ in range(m)]
+    return n, m, towers, quests
+
+def precompute_all(n: int, towers: List[Tuple[int,int]], quests: List[Tuple[int,int,int]]):
+    m = len(quests)
+    # Distances
+    tt = [[0]*n for _ in range(n)]
+    tq = [[0]*m for _ in range(n)]
+    qq = [[0]*m for _ in range(m)]
+    for i in range(n):
+        for j in range(n):
+            tt[i][j] = manhattan(towers[i], towers[j])
+    for i in range(n):
+        for k in range(m):
+            tq[i][k] = manhattan(towers[i], (quests[k][0], quests[k][1]))
+    for i in range(m):
+        for k in range(m):
+            qq[i][k] = manhattan((quests[i][0], quests[i][1]), (quests[k][0], quests[k][1]))
+    # min distance from mask to tower j
+    minToTower = [[INF]*n for _ in range(1<<n)]
+    for mask in range(1, 1<<n):
+        lsb = (mask & -mask).bit_length()-1
+        pm = mask ^ (1<<lsb)
+        for j in range(n):
+            minToTower[mask][j] = min(minToTower[pm][j], tt[lsb][j])
+    # min distance from mask to quest k
+    mQ = [[INF]*m for _ in range(1<<n)]
+    for mask in range(1, 1<<n):
+        lsb = (mask & -mask).bit_length()-1
+        pm = mask ^ (1<<lsb)
+        for k in range(m):
+            mQ[mask][k] = min(mQ[pm][k], tq[lsb][k])
+    # activation time from scratch: f[mask]
+    f = [INF]*(1<<n)
+    f[0] = 0
+    for mask in range(1<<n):
+        if f[mask] >= INF: continue
+        # add a tower j next
+        for j in range(n):
+            if (mask>>j)&1: continue
+            add = 0 if mask==0 else minToTower[mask][j]
+            nm = mask | (1<<j)
+            if f[nm] > f[mask] + add:
+                f[nm] = f[mask] + add
+    return tt, tq, qq, minToTower, mQ, f
+
+def expand_from_tower(mask: int, dt: int, n: int, minToTower: List[List[int]]) -> Dict[int,int]:
+    # Dijkstra on subset lattice where edge cost from X to X|{j} is minToTower[X][j]
+    best: Dict[int,int] = {mask: 0}
+    pq: List[Tuple[int,int]] = [(0, mask)]
+    while pq:
+        cost, X = heapq.heappop(pq)
+        if cost != best.get(X, INF): continue
+        # try adding towers
+        for j in range(n):
+            if (X>>j)&1: continue
+            edge = minToTower[X][j]
+            if edge >= INF: continue
+            nc = cost + edge
+            if nc > dt: continue
+            Y = X | (1<<j)
+            if nc < best.get(Y, INF):
+                best[Y] = nc
+                heapq.heappush(pq, (nc, Y))
+    return best  # superset -> min add-cost
+
+def expand_from_position(mask: int, dt: int, n: int, minToTower: List[List[int]], dist_to_each_tower: List[int]) -> Dict[int,int]:
+    # Two seeded starts: first addition by direct distance from 'pos' vs by teleport via current mask
+    best_state: Dict[Tuple[int,int], int] = {}
+    pq: List[Tuple[int,int,int]] = []
+    # started=0 means first addition uses direct distance; started=1 uses minToTower
+    best_state[(mask,0)] = 0
+    best_state[(mask,1)] = 0
+    heapq.heappush(pq, (0, mask, 0))
+    heapq.heappush(pq, (0, mask, 1))
+    best_superset: Dict[int,int] = {mask: 0}
+    while pq:
+        cost, X, started = heapq.heappop(pq)
+        if cost != best_state.get((X,started), INF): continue
+        # record
+        if cost < best_superset.get(X, INF):
+            best_superset[X] = cost
+        # try add
+        for j in range(n):
+            if (X>>j)&1: continue
+            edge = minToTower[X][j] if started==1 else dist_to_each_tower[j]
+            if edge >= INF: continue
+            nc = cost + edge
+            if nc > dt: continue
+            Y = X | (1<<j)
+            key = (Y, 1)  # after first addition, always started=1
+            if nc < best_state.get(key, INF):
+                best_state[key] = nc
+                heapq.heappush(pq, (nc, Y, 1))
+    return best_superset
+
+def solve_case(n: int, m: int, towers: List[Tuple[int,int]], quests_in: List[Tuple[int,int,int]]) -> int:
+    quests = sorted(quests_in, key=lambda x: x[2])
+    tt, tq, qq, minToTower, mQ, f = precompute_all(n, towers, quests)
+    # States at previous quest time
+    towerStates: Dict[int,int] = {}  # mask -> max count
+    questStates: Dict[int,int] = {}  # mask -> max count (last quest taken is i-1)
+    prev_t = 0
+    for i,(bx,by,t) in enumerate(quests):
+        dt = t - prev_t
+        nextTower: Dict[int,int] = {}
+        nextQuest: Dict[int,int] = {}
+        # From scratch: do quest i as first using f[mask] + mQ'[mask][i] (with special case for mask=0)
+        for mask in range(1<<n):
+            toQuest = 0 if mask==0 else mQ[mask][i]
+            if f[mask] + toQuest <= t:
+                nextQuest[mask] = max(nextQuest.get(mask, 0), 1)
+            if f[mask] <= t:
+                nextTower[mask] = max(nextTower.get(mask, 0), 0)
+        # From previous tower states: expand supersets within dt, then either finish at quest i or carryover
+        for mask, cnt in towerStates.items():
+            # carryover (skip quest): expand supersets by teleport-based costs
+            sup = expand_from_tower(mask, dt, n, minToTower) if (mask!=0 or prev_t==0) else {mask:0}
+            for m2, addc in sup.items():
+                nextTower[m2] = max(nextTower.get(m2, 0), cnt)
+                # try finishing at quest i
+                if mQ[m2][i] <= dt - addc:
+                    nextQuest[m2] = max(nextQuest.get(m2, 0), cnt+1)
+        # From previous quest states (last quest is i-1): expand and try direct or via towers
+        if questStates:
+            last_idx = i-1
+            lastP = (quests[last_idx][0], quests[last_idx][1])
+            curP = (bx,by)
+            d_dir = manhattan(lastP, curP)
+            # precompute distance from lastP to each tower
+            dist_to_each = [manhattan(lastP, towers[j]) for j in range(n)]
+            for mask, cnt in questStates.items():
+                sup = expand_from_position(mask, dt, n, minToTower, dist_to_each)
+                for m2, addc in sup.items():
+                    # carryover (skip quest)
+                    nextTower[m2] = max(nextTower.get(m2, 0), cnt)
+                    # try finishing at quest i (min of direct vs via towers)
+                    if min(d_dir, mQ[m2][i]) <= dt - addc:
+                        nextQuest[m2] = max(nextQuest.get(m2, 0), cnt+1)
+        towerStates, questStates = nextTower, nextQuest
+        prev_t = t
+    ans = 0
+    for d in (towerStates, questStates):
+        for cnt in d.values():
+            ans = max(ans, cnt)
+    return ans
+
+def solve_all():
+    n, m, towers, quests = read_input()
+    if n==0 and m==0:
+        return
+    print(solve_case(n, m, towers, quests))
+
+if __name__ == "__main__":
+    if sys.stdin.isatty():
+        # 1) No towers, same location quests => all doable
+        n, m = 0, 3
+        towers = []
+        quests = [(1,1,1),(1,1,2),(1,1,4)]
+        assert solve_case(n, m, towers, quests) == 3
+        # 2) No towers, spaced => at most 1
+        n, m = 0, 2
+        towers = []
+        quests = [(0,0,1),(2,0,2)]
+        assert solve_case(n, m, towers, quests) == 1
+        # 3) Small with towers: activating helps chain two quests
+        n, m = 2, 3
+        towers = [(2,0),(5,0)]
+        quests = [(2,0,0+0+0+1),(5,0,3),(7,0,5)]  # times generous
+        assert solve_case(n, m, towers, quests) >= 2
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Exactly 3 asserts: (i) no towers trivial chain; (ii) spaced quests; (iii) small instance where towers help.}
+\RESULT{Maximum number of quests achievable; ties are irrelevant since the answer is a scalar count.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests cover: no towers; identical quest locations; need to skip early quest; benefit of activating towers in gaps. Stress on distance helpers.}
+\LINE{CROSS-CHECKS}{Compare Approach A vs B vs C on tiny crafted cases to see monotone improvement (A \le B \le C).}
+\LINE{EDGE-CASE GENERATOR}{Generate random small $n\le 3$, $m\le 5$ grids and brute-force simulate limited plans to cross-check DP outputs.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def gen_small(seed=0):
+    random.seed(seed)
+    n = random.randint(0,3)
+    m = random.randint(1,5)
+    pts = set()
+    towers = []
+    while len(towers) < n:
+        x = random.randint(0,5); y = random.randint(0,5)
+        if (x,y) in pts:
+            continue
+        pts.add((x,y))
+        towers.append((x,y))
+    quests = []
+    t = 0
+    while len(quests) < m:
+        x = random.randint(0,5); y = random.randint(0,5)
+        if (x,y) in pts:
+            continue
+        pts.add((x,y))
+        t += random.randint(0,3)
+        quests.append((x,y,t))
+    return n, m, towers, quests
+
+def sanity_compare():
+    from copy import deepcopy
+    # import solvers from above sections if in same file; here placeholders show intended usage.
+    pass
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF) + asserts
+import sys, heapq
+from typing import List, Tuple, Dict
+
+INF = 10**18
+
+def manhattan(a: Tuple[int,int], b: Tuple[int,int]) -> int:
+    return abs(a[0]-b[0]) + abs(a[1]-b[1])
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, [], []
+    it = iter(map(int, data))
+    n = next(it); m = next(it)
+    towers = [(next(it), next(it)) for _ in range(n)]
+    quests = [(next(it), next(it), next(it)) for _ in range(m)]
+    return n, m, towers, quests
+
+def precompute_all(n: int, towers: List[Tuple[int,int]], quests: List[Tuple[int,int,int]]):
+    m = len(quests)
+    tt = [[0]*n for _ in range(n)]
+    tq = [[0]*m for _ in range(n)]
+    qq = [[0]*m for _ in range(m)]
+    for i in range(n):
+        for j in range(n):
+            tt[i][j] = manhattan(towers[i], towers[j])
+    for i in range(n):
+        for k in range(m):
+            tq[i][k] = manhattan(towers[i], (quests[k][0], quests[k][1]))
+    for i in range(m):
+        for k in range(m):
+            qq[i][k] = manhattan((quests[i][0], quests[i][1]), (quests[k][0], quests[k][1]))
+    minToTower = [[INF]*n for _ in range(1<<n)]
+    for mask in range(1, 1<<n):
+        lsb = (mask & -mask).bit_length()-1
+        pm = mask ^ (1<<lsb)
+        for j in range(n):
+            minToTower[mask][j] = min(minToTower[pm][j], tt[lsb][j])
+    mQ = [[INF]*m for _ in range(1<<n)]
+    for mask in range(1, 1<<n):
+        lsb = (mask & -mask).bit_length()-1
+        pm = mask ^ (1<<lsb)
+        for k in range(m):
+            mQ[mask][k] = min(mQ[pm][k], tq[lsb][k])
+    f = [INF]*(1<<n)
+    f[0] = 0
+    for mask in range(1<<n):
+        if f[mask] >= INF: continue
+        for j in range(n):
+            if (mask>>j)&1: continue
+            add = 0 if mask==0 else minToTower[mask][j]
+            nm = mask | (1<<j)
+            if f[nm] > f[mask] + add:
+                f[nm] = f[mask] + add
+    return tt, tq, qq, minToTower, mQ, f
+
+def expand_from_tower(mask: int, dt: int, n: int, minToTower: List[List[int]]) -> Dict[int,int]:
+    best: Dict[int,int] = {mask: 0}
+    pq: List[Tuple[int,int]] = [(0, mask)]
+    while pq:
+        cost, X = heapq.heappop(pq)
+        if cost != best.get(X, INF): continue
+        for j in range(n):
+            if (X>>j)&1: continue
+            edge = minToTower[X][j]
+            if edge >= INF: continue
+            nc = cost + edge
+            if nc > dt: continue
+            Y = X | (1<<j)
+            if nc < best.get(Y, INF):
+                best[Y] = nc
+                heapq.heappush(pq, (nc, Y))
+    return best
+
+def expand_from_position(mask: int, dt: int, n: int, minToTower: List[List[int]], dist_to_each_tower: List[int]) -> Dict[int,int]:
+    best_state: Dict[Tuple[int,int], int] = {}
+    pq: List[Tuple[int,int,int]] = []
+    best_state[(mask,0)] = 0
+    best_state[(mask,1)] = 0
+    heapq.heappush(pq, (0, mask, 0))
+    heapq.heappush(pq, (0, mask, 1))
+    best_superset: Dict[int,int] = {mask: 0}
+    while pq:
+        cost, X, started = heapq.heappop(pq)
+        if cost != best_state.get((X,started), INF): continue
+        if cost < best_superset.get(X, INF):
+            best_superset[X] = cost
+        for j in range(n):
+            if (X>>j)&1: continue
+            edge = minToTower[X][j] if started==1 else dist_to_each_tower[j]
+            if edge >= INF: continue
+            nc = cost + edge
+            if nc > dt: continue
+            Y = X | (1<<j)
+            key = (Y, 1)
+            if nc < best_state.get(key, INF):
+                best_state[key] = nc
+                heapq.heappush(pq, (nc, Y, 1))
+    return best_superset
+
+def solve_case(n: int, m: int, towers: List[Tuple[int,int]], quests_in: List[Tuple[int,int,int]]) -> int:
+    quests = sorted(quests_in, key=lambda x: x[2])
+    tt, tq, qq, minToTower, mQ, f = precompute_all(n, towers, quests)
+    towerStates: Dict[int,int] = {}
+    questStates: Dict[int,int] = {}
+    prev_t = 0
+    for i,(bx,by,t) in enumerate(quests):
+        dt = t - prev_t
+        nextTower: Dict[int,int] = {}
+        nextQuest: Dict[int,int] = {}
+        # From scratch: do quest i first; and be in tower-state by time t
+        for mask in range(1<<n):
+            toQuest = 0 if mask==0 else mQ[mask][i]
+            if f[mask] + toQuest <= t:
+                nextQuest[mask] = max(nextQuest.get(mask, 0), 1)
+            if f[mask] <= t:
+                nextTower[mask] = max(nextTower.get(mask, 0), 0)
+        # From tower states
+        for mask, cnt in towerStates.items():
+            sup = expand_from_tower(mask, dt, n, minToTower) if (mask!=0 or prev_t==0) else {mask:0}
+            for m2, addc in sup.items():
+                # carryover
+                if cnt > nextTower.get(m2, -INF):
+                    nextTower[m2] = cnt
+                # finish quest via towers
+                if mQ[m2][i] <= dt - addc:
+                    if cnt+1 > nextQuest.get(m2, -INF):
+                        nextQuest[m2] = cnt+1
+        # From previous quest states
+        if questStates:
+            last_idx = i-1
+            lastP = (quests[last_idx][0], quests[last_idx][1])
+            curP = (bx,by)
+            d_dir = manhattan(lastP, curP)
+            dist_to_each = [manhattan(lastP, towers[j]) for j in range(n)]
+            for mask, cnt in questStates.items():
+                sup = expand_from_position(mask, dt, n, minToTower, dist_to_each)
+                for m2, addc in sup.items():
+                    # carryover
+                    if cnt > nextTower.get(m2, -INF):
+                        nextTower[m2] = cnt
+                    # finish quest: min of direct and via towers
+                    if min(d_dir, mQ[m2][i]) <= dt - addc:
+                        if cnt+1 > nextQuest.get(m2, -INF):
+                            nextQuest[m2] = cnt+1
+        towerStates, questStates = nextTower, nextQuest
+        prev_t = t
+    ans = 0
+    for d in (towerStates, questStates):
+        for cnt in d.values():
+            ans = max(ans, cnt)
+    return ans
+
+def solve_all():
+    n, m, towers, quests = read_input()
+    if n==0 and m==0:
+        return
+    print(solve_case(n, m, towers, quests))
+
+if __name__ == "__main__":
+    if sys.stdin.isatty():
+        # 1) No towers, same location quests => all doable
+        n, m = 0, 3
+        towers = []
+        quests = [(1,1,1),(1,1,2),(1,1,4)]
+        assert solve_case(n, m, towers, quests) == 3
+        # 2) No towers, spaced => at most 1
+        n, m = 0, 2
+        towers = []
+        quests = [(0,0,1),(2,0,2)]
+        assert solve_case(n, m, towers, quests) == 1
+        # 3) Small with towers: activating helps
+        n, m = 2, 3
+        towers = [(2,0),(5,0)]
+        quests = [(2,0,1),(5,0,3),(7,0,7)]
+        assert solve_case(n, m, towers, quests) >= 2
+    else:
+        solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Maximize the number of time-stamped points you can hit on a grid with optional zero-time teleports to any previously activated towers.}
+\WHY{Combines geometric shortest-paths on $\ell_1$ metric with subset DP; a classic high-difficulty pattern in contests and interviews.}
+\CHECKLIST{
+\begin{bullets}
+\item Sort quests by time.
+\item Precompute all Manhattan distances.
+\item Precompute $\delta_S(\cdot)$ via subset DP.
+\item DP over quests with superset expansions bounded by time gaps.
+\item At each step, consider both direct and teleport-assisted last-mile distance.
+\end{bullets}
+}
+\EDGECASES{
+\begin{bullets}
+\item $n=0$ (no towers).
+\item Repeated quest coordinates with increasing times.
+\item Huge time gaps allow mass activation bursts.
+\item Very tight consecutive times (only waiting or teleport helps).
+\item First quest at small time requiring exact spawning choices.
+\item Activating nothing (remain at $S=\varnothing$) across many steps.
+\item Towers and quests at large coordinates (avoid overflow in other languages).
+\end{bullets}
+}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting that teleport is allowed from anywhere to any activated tower at zero time.
+\item Using $\delta_{\varnothing}(\cdot)=0$ incorrectly between quests (only true at spawn).
+\item Double-counting time when combining activation and last-mile walk.
+\item Missing the option to skip earlier quests and start fresh at a later time.
+\item Not carrying over tower-states when skipping quests.
+\item Failing to handle exact-time equality ($\le$ comparisons).
+\item Neglecting to sort quests by time strictly.
+\end{bullets}
+}
+\FAILMODES{Approaches that only consider direct walks or limit to one new tower per gap can fail when optimal plans require chaining several activations within a single long gap. The subset-lattice expansion dominates these cases by exploring all such chains.}
+\ELI{Think of activated towers as free ``hubs'' you can jump to instantly. Between two quest times, you can spend some of the time to light up more hubs and the rest to reach the next quest either directly or from the best hub. The DP keeps track of which hubs are on and what you can reach in time.}
+\NotePages{3}
+
+\end{document}

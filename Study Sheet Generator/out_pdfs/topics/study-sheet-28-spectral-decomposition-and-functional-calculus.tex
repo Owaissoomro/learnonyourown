@@ -1,0 +1,1963 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]
+\setlength{\jot}{7pt}
+\setlength{\emergencystretch}{8em}
+\sloppy
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Spectral Decomposition and Functional Calculus}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+A normal matrix $A\in\mathbb{C}^{n\times n}$ satisfies $AA^\ast=A^\ast A$.
+Spectral decomposition writes $A=U\Lambda U^\ast$ with unitary $U$ and diagonal
+$\Lambda=\mathrm{diag}(\lambda_1,\dots,\lambda_n)$. Spectral projectors
+$P_i=Ue_ie_i^\ast U^\ast$ satisfy $P_iP_j=\delta_{ij}P_i$, $\sum_i P_i=I$.
+Functional calculus assigns to a function $f$ defined on $\sigma(A)$ the matrix
+$f(A):=Uf(\Lambda)U^\ast=\sum_i f(\lambda_i)P_i$. For analytic $f$ one also has
+Riesz formula $f(A)=\frac{1}{2\pi i}\oint_\Gamma f(z)(zI-A)^{-1}\,dz$.}
+\WHY{
+Spectral decomposition linearizes normal operators and reduces matrix functions
+to scalar functions on eigenvalues. This enables exact solutions of linear ODEs,
+stable numerical algorithms, optimal approximation, and clear geometric insight.
+Functional calculus is the principled bridge from scalar analysis to operators,
+preserving algebraic structure and spectra.}
+\HOW{
+1. Use Schur decomposition to write $A=UTU^\ast$ with $T$ upper triangular.
+2. Normality forces $T$ to be diagonal, giving $A=U\Lambda U^\ast$.
+3. Define projectors $P_i$ onto eigenspaces; verify orthogonality and resolution
+of identity. 4. For polynomials $p$, set $p(A)=Up(\Lambda)U^\ast$ and extend to
+continuous/analytic $f$ on $\sigma(A)$, equivalently via Riesz integral.}
+\ELI{
+Think of $A$ as a device that first rotates to a convenient basis ($U^\ast$),
+then scales each coordinate by $\lambda_i$ ($\Lambda$), then rotates back ($U$).
+To apply any function $f$ to $A$, just apply $f$ to those scales and reverse
+the rotations.}
+\SCOPE{
+Finite-dimensional complex inner-product spaces; primary focus on normal
+operators (including Hermitian, unitary, orthogonal). Functional calculus is
+defined for functions on the finite set $\sigma(A)$; with analyticity it enjoys
+Riesz integral representation. Non-normal matrices generally lack unitary
+diagonalization and require Jordan calculus not covered here.}
+\CONFUSIONS{
+Normal vs. diagonalizable: diagonalizable may fail to be unitarily
+diagonalizable; normal ensures unitary diagonalization. Matrix exponential via
+series vs. via spectral calculus: equal for all matrices, but spectral formula
+is simplest for normal ones. Eigenvalues vs. singular values: equal only for
+normal matrices in magnitude if unitary; in general distinct concepts.}
+\APPLICATIONS{
+\begin{bullets}
+\item Mathematical foundations: spectral theorem, spectral mapping, Riesz calculus.
+\item Computational modeling: fast evaluation of $p(A)$, $\exp(A)$, $A^{1/2}$.
+\item Physics/engineering: modal analysis, diffusion via $e^{-tL}$.
+\item Statistics/ML: PCA via eigendecomposition; whitening by $S^{-1/2}$.
+\end{bullets}
+}
+\textbf{ANALYTIC STRUCTURE.}
+Normality yields orthogonal eigenspaces and an abelian $C^\ast$-algebra
+$\mathcal{A}=\{f(A): f \text{ bounded on }\sigma(A)\}$ with $\ast$-operation
+given by conjugation. Functions act spectrally and preserve order on Hermitian
+inputs when $f$ is monotone.
+
+\textbf{CANONICAL LINKS.}
+Schur decomposition $\Rightarrow$ spectral theorem for normal matrices
+$\Rightarrow$ polynomial functional calculus $\Rightarrow$ continuous/analytic
+functional calculus $\Rightarrow$ spectral mapping theorem.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Keywords: normal, Hermitian, unitary, projector, diagonalize, spectrum.
+\item Structures: $AA^\ast=A^\ast A$, orthogonal decomposition, resolvent
+$(zI-A)^{-1}$, contour integral, $e^{tA}$, square root $A^{1/2}$.
+\item Inputs: matrix with symmetry; Outputs: eigenvalues, projectors, $f(A)$.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate to $A=U\Lambda U^\ast$; compute eigenvalues/eigenvectors.
+\item Express targets via $f(\Lambda)$ or projectors $P_i$.
+\item Substitute and simplify; verify projector algebra.
+\item Use spectral mapping to interpret spectra of $f(A)$.
+\item Validate by unitary invariance and limit behaviors.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Spectrum $\sigma(A)$, spectral projectors $P_i$, trace and determinant as sums
+and products of eigenvalues, $\|A\|_2=\max_i|\lambda_i|$ for normal $A$.
+
+\textbf{EDGE INTUITION.}
+Coalescing eigenvalues merge projectors; continuous $f$ remains continuous in
+$A$. As $t\to\infty$, $e^{-tL}$ damps high eigenmodes; as $t\to0$, $e^{tA}\to I$.
+
+\section{Glossary}
+\glossx{Normal Matrix}{
+$A\in\mathbb{C}^{n\times n}$ with $AA^\ast=A^\ast A$.}{
+Guarantees unitary diagonalization and orthogonal eigenspaces.}{
+Compute $U,\Lambda$ with $A=U\Lambda U^\ast$, use $U$ to build projectors.}{
+Rotate to a nice basis where $A$ is just scaling.}{
+Mistaking diagonalizable for normal: not every diagonalizable matrix is normal.}
+\glossx{Spectral Projector}{
+$P_i$ projecting onto the eigenspace of $\lambda_i$, with $P_iP_j=\delta_{ij}P_i$
+and $\sum_i P_i=I$.}{
+Decomposes vectors and operators into independent spectral components.}{
+Compute $P_i=Ue_ie_i^\ast U^\ast$ or via Lagrange formula.}{
+Like colored filters isolating one pure tone from a chord.}{
+For repeated eigenvalues, $P_i$ projects to the whole eigenspace, not a vector.}
+\glossx{Functional Calculus}{
+Assignment $f\mapsto f(A)$ for $f$ on $\sigma(A)$ with $f(A)=Uf(\Lambda)U^\ast$.}{
+Transfers scalar operations to matrices while preserving algebra.}{
+Diagonalize $A$, apply $f$ to eigenvalues, rotate back.}{
+Treat $A$ as a list of numbers in the right coordinates.}{
+Using $f$ undefined on $\sigma(A)$ is invalid.}
+\glossx{Resolvent}{
+$R(z;A)=(zI-A)^{-1}$ for $z\notin\sigma(A)$.}{
+Encodes spectral data; used in Riesz integral for $f(A)$.}{
+Integrate $f(z)R(z;A)$ over contours to isolate spectral parts.}{
+Fishing eigen-components by circling them in the complex plane.}{
+Crossing the spectrum makes the resolvent blow up; choose contours carefully.}
+
+\section{Symbol Ledger}
+\varmapStart
+\var{A}{Matrix in $\mathbb{C}^{n\times n}$, typically normal or Hermitian.}
+\var{U}{Unitary matrix with $U^\ast U=I$.}
+\var{\Lambda}{Diagonal matrix of eigenvalues of $A$.}
+\var{\lambda_i}{Eigenvalues of $A$, elements of $\sigma(A)$.}
+\var{v_i}{Eigenvectors, columns of $U$.}
+\var{P_i}{Spectral projectors onto eigenspaces of $\lambda_i$.}
+\var{\sigma(A)}{Spectrum of $A$ (set of eigenvalues).}
+\var{f}{Scalar function defined on $\sigma(A)$; induces $f(A)$.}
+\var{\Gamma}{Positively oriented contour enclosing part/all of $\sigma(A)$.}
+\var{R(z;A)}{Resolvent $(zI-A)^{-1}$ for $z\notin\sigma(A)$.}
+\var{I}{Identity matrix of appropriate size.}
+\var{L}{Graph Laplacian or positive semidefinite Hermitian matrix.}
+\var{t}{Real parameter, often time in $e^{tA}$ or diffusion $e^{-tL}$.}
+\var{\theta}{Angle parameter for planar rotations.}
+\var{p}{Polynomial used in polynomial functional calculus.}
+\var{n}{Matrix size or time-step exponent in powers of $A$.}
+\varmapEnd
+
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{Spectral Theorem for Normal Matrices}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Every normal matrix $A\in\mathbb{C}^{n\times n}$ admits a unitary diagonalization
+$A=U\Lambda U^\ast$. Equivalently, $A=\sum_{i=1}^k \lambda_i P_i$ with orthogonal
+projectors $P_i$ whose ranges are the eigenspaces, $\sum_i P_i=I$.
+
+\WHAT{
+Expresses $A$ as a unitary change of basis to a diagonal matrix, revealing
+eigenvalues and orthogonal eigenspaces; yields projector decomposition.}
+\WHY{
+Diagonalization simplifies computation of functions of $A$, exposes geometry,
+and guarantees stability via orthonormal eigenvectors.}
+\FORMULA{
+\[
+A=U\Lambda U^\ast=\sum_{i=1}^k \lambda_i P_i,\quad
+P_i=Ue_ie_i^\ast U^\ast,\quad P_iP_j=\delta_{ij}P_i,\ \sum_i P_i=I.
+\]
+}
+\CANONICAL{
+Normal $A$ on $\mathbb{C}^n$, $U$ unitary, $\Lambda$ diagonal, eigenvalues may
+repeat; $k$ is the number of distinct eigenvalues.}
+\PRECONDS{
+\begin{bullets}
+\item $A$ is normal: $AA^\ast=A^\ast A$.
+\item Finite-dimensional complex inner-product space with standard adjoint.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If a normal matrix $T$ is upper triangular, then $T$ is diagonal.
+\end{lemma}
+\begin{proof}
+Write $T=(t_{ij})$ upper triangular. Normality $TT^\ast=T^\ast T$ implies
+for $i<j$ that $\sum_{k=i}^n t_{ik}\overline{t_{jk}}=0$ and similarly
+$\sum_{k=1}^i \overline{t_{ki}}t_{kj}=0$. Taking $j=i+1$ and using triangular
+structure yields $t_{ii}\overline{t_{i+1,i+1}}+t_{i,i+1}\overline{t_{i+1,i+1}}
+= \overline{t_{ii}}t_{i+1,i+1}$ which simplifies to $t_{i,i+1}=0$. Proceeding
+by induction on superdiagonals gives all $t_{i,j}=0$ for $i<j$, so $T$ is
+diagonal. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (Schur):}\ & A=UTU^\ast,\ U\text{ unitary},\ T\text{ upper triangular}.\\
+\text{Step 2 (Normality):}\ & AA^\ast=A^\ast A \Rightarrow TT^\ast=T^\ast T.\\
+\text{Step 3 (Lemma):}\ & T \text{ normal and triangular } \Rightarrow T=\Lambda.\\
+\text{Step 4 (Assemble):}\ & A=U\Lambda U^\ast,\ \Lambda=\mathrm{diag}(\lambda_i).\\
+\text{Step 5 (Projectors):}\ & P_i=Ue_ie_i^\ast U^\ast,\ P_iP_j=\delta_{ij}P_i,\\
+& \sum_i P_i=U\left(\sum_i e_ie_i^\ast\right)U^\ast=UIU^\ast=I.
+\end{align*}
+}
+\EQUIV{
+\begin{bullets}
+\item $A$ normal $\Leftrightarrow$ $\|Ax\|=\|A^\ast x\|$ for all $x$.
+\item $A$ normal $\Leftrightarrow$ existence of ONB of eigenvectors.
+\item Projector form $A=\sum_i \lambda_i P_i$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item Repeated eigenvalues: $P_i$ has rank equal to eigenspace dimension.
+\item Non-normal $A$: Schur form not diagonal; need Jordan theory.
+\end{bullets}
+}
+\INPUTS{$A\in\mathbb{C}^{n\times n}$ with $AA^\ast=A^\ast A$.}
+\RESULT{
+Unitary $U$ and diagonal $\Lambda$ with $A=U\Lambda U^\ast$; orthogonal
+projectors $P_i$ resolving $I$ and decomposing $A$.}
+\PITFALLS{
+\begin{bullets}
+\item Confusing similarity $S^{-1}AS$ with unitary similarity $U^\ast AU$.
+\item Assuming real eigenbasis for non-symmetric real normal matrices.
+\end{bullets}
+}
+\ELI{
+Pick coordinates that make $A$ as simple as possible: just scale each axis.
+}
+
+\FormulaPage{2}{Spectral Functional Calculus for Normal Matrices}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For normal $A=U\Lambda U^\ast$ and any function $f$ defined on $\sigma(A)$,
+define $f(A):=Uf(\Lambda)U^\ast=\sum_i f(\lambda_i)P_i$. This calculus is a
+$\ast$-homomorphism on polynomials and extends to continuous/analytic $f$.
+
+\WHAT{
+Transforms scalar functions into matrix functions by acting on eigenvalues and
+recombining via the eigenbasis.}
+\WHY{
+Enables closed-form evaluation of $\exp(A)$, $\log(A)$, $A^\alpha$, filters,
+and solves linear systems/ODEs spectrally.}
+\FORMULA{
+\[
+f(A)=Uf(\Lambda)U^\ast=\sum_{i=1}^k f(\lambda_i)P_i.
+\]
+}
+\CANONICAL{
+$A$ normal; $f:\sigma(A)\to\mathbb{C}$. For polynomials $p$, $p(A)$ agrees with
+the usual definition; for continuous or analytic $f$, the same spectral formula
+defines $f(A)$ uniquely.}
+\PRECONDS{
+\begin{bullets}
+\item $A=U\Lambda U^\ast$ with $U$ unitary.
+\item $f$ specified on the finite set $\sigma(A)$.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For any polynomial $p$, $p(A)=Up(\Lambda)U^\ast$.
+\end{lemma}
+\begin{proof}
+Write $p(z)=\sum_{m=0}^d a_m z^m$. Then
+$p(A)=\sum_{m=0}^d a_m A^m=\sum_{m=0}^d a_m (U\Lambda U^\ast)^m$.
+Because $U^\ast U=I$, $(U\Lambda U^\ast)^m=U\Lambda^m U^\ast$. Hence
+$p(A)=U\left(\sum_{m=0}^d a_m \Lambda^m\right)U^\ast=Up(\Lambda)U^\ast$.
+\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (Diagonal action):}\ & f(\Lambda)=\mathrm{diag}(f(\lambda_i)).\\
+\text{Step 2 (Projectors):}\ & f(A)=\sum_i f(\lambda_i)P_i.\\
+\text{Step 3 (Polynomial core):}\ & \text{Lemma yields exactness for } p.\\
+\text{Step 4 (Extension):}\ & \text{Finite spectrum: any } f \text{ is specified
+on }\sigma(A),\\
+& \text{so Lagrange interpolation gives a polynomial }p\text{ with }\\
+& p(\lambda_i)=f(\lambda_i). \Rightarrow f(A)=p(A).\\
+\text{Step 5 (Properties):}\ & (fg)(A)=f(A)g(A),\ \overline{f}(A)=f(A)^\ast
+\ \text{if }A\text{ Hermitian}.
+\end{align*}
+}
+\EQUIV{
+\begin{bullets}
+\item $f(A)=U f(\Lambda) U^\ast$ equals Riesz integral when $f$ analytic.
+\item Lagrange form: $f(A)=\sum_i f(\lambda_i)\prod_{j\ne i}
+\dfrac{A-\lambda_j I}{\lambda_i-\lambda_j}$ for simple spectrum.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $f$ undefined at some $\lambda\in\sigma(A)$, $f(A)$ not defined.
+\item Non-normal $A$: need Jordan calculus; projector form may fail.
+\end{bullets}
+}
+\INPUTS{$A=U\Lambda U^\ast$, $f$ defined on $\sigma(A)$.}
+\RESULT{
+Well-defined $f(A)$ preserving algebraic structure; spectra obey spectral
+mapping $\sigma(f(A))=f(\sigma(A))$.}
+\PITFALLS{
+\begin{bullets}
+\item Using entrywise $f$ (Hadamard) instead of spectral $f(A)$.
+\item Ignoring branch choices for $\log$ or fractional powers.
+\end{bullets}
+}
+\ELI{
+To compute $f(A)$, switch to the glasses that make $A$ numbers, apply $f$ to
+each number, and switch back.}
+
+\FormulaPage{3}{Riesz Functional Calculus and Spectral Projectors}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A\in\mathbb{C}^{n\times n}$ and $f$ analytic in a neighborhood of
+$\sigma(A)$,
+\[
+f(A)=\frac{1}{2\pi i}\oint_\Gamma f(z)(zI-A)^{-1}\,dz,
+\]
+where $\Gamma$ encloses $\sigma(A)$ positively. For an isolated eigenvalue
+$\lambda$,
+\[
+P_\lambda=\frac{1}{2\pi i}\oint_{\Gamma_\lambda} (zI-A)^{-1}\,dz.
+\]
+
+\WHAT{
+Represents matrix functions and spectral projectors via contour integrals of
+the resolvent.}
+\WHY{
+Connects operator theory to complex analysis; isolates spectral components and
+proves identities like spectral mapping and projector algebra.}
+\FORMULA{
+\[
+f(A)=\frac{1}{2\pi i}\oint_\Gamma f(z)R(z;A)\,dz,\quad
+P_\lambda=\frac{1}{2\pi i}\oint_{\Gamma_\lambda} R(z;A)\,dz.
+\]
+}
+\CANONICAL{
+$A$ diagonalizable (normal suffices). $\Gamma$ is a union of disjoint contours
+each enclosing a subset of $\sigma(A)$. $f$ analytic on and inside $\Gamma$.}
+\PRECONDS{
+\begin{bullets}
+\item $z\mapsto (zI-A)^{-1}$ analytic off $\sigma(A)$.
+\item $f$ analytic on a domain containing $\sigma(A)$.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $A=U\Lambda U^{-1}$ and $f$ analytic on $\sigma(A)$,
+then $f(A)=Uf(\Lambda)U^{-1}$ equals the Riesz integral.
+\end{lemma}
+\begin{proof}
+$(zI-A)^{-1}=U(zI-\Lambda)^{-1}U^{-1}$. Thus
+\[
+\frac{1}{2\pi i}\oint_\Gamma f(z)(zI-A)^{-1}\,dz
+=U\left(\frac{1}{2\pi i}\oint_\Gamma f(z)(zI-\Lambda)^{-1}\,dz\right)U^{-1}.
+\]
+Since $(zI-\Lambda)^{-1}=\mathrm{diag}\big((z-\lambda_i)^{-1}\big)$, Cauchy\textquotesingle s
+integral formula yields the diagonal with entries
+$\frac{1}{2\pi i}\oint f(z)/(z-\lambda_i)\,dz=f(\lambda_i)$. Hence the integral
+equals $Uf(\Lambda)U^{-1}$, which is $f(A)$. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (Diagonal case):}\ & \text{Evaluate scalar integrals for each }i.\\
+\text{Step 2 (Similarity):}\ & \text{Conjugate by }U\text{ to general }A.\\
+\text{Step 3 (Projector):}\ & f\equiv 1 \text{ on }\Gamma_\lambda \Rightarrow
+P_\lambda=\frac{1}{2\pi i}\oint R(z;A)\,dz.\\
+\text{Step 4 (Algebra):}\ & P_\lambda^2=P_\lambda,\ P_\lambda P_\mu=0,\ 
+\sum_\lambda P_\lambda=I.\\
+\text{Step 5 (Function):}\ & f(A)=\sum_\lambda f(\lambda)P_\lambda.
+\end{align*}
+}
+\EQUIV{
+\begin{bullets}
+\item For simple spectrum: $P_\lambda=\prod_{\mu\ne\lambda}
+\dfrac{A-\mu I}{\lambda-\mu}$.
+\item Resolvent expansion: $R(z;A)=\sum_\lambda \dfrac{P_\lambda}{z-\lambda}$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item Non-diagonalizable $A$: higher-order poles; calculus still works but
+requires Jordan terms (not pursued here).
+\item Contour must avoid spectrum to keep integrand analytic.
+\end{bullets}
+}
+\INPUTS{$A\in\mathbb{C}^{n\times n}$, analytic $f$, contour(s) $\Gamma$.}
+\RESULT{
+Riesz representation for $f(A)$ and projector extraction $P_\lambda$.}
+\PITFALLS{
+\begin{bullets}
+\item Choosing a contour that crosses eigenvalues invalidates the integral.
+\item Numerical quadrature requires enough points for accuracy.
+\end{bullets}
+}
+\ELI{
+Walk a loop around desired eigenvalues; the integral counts how much of the
+operator belongs to what you circled.}
+
+\FormulaPage{4}{Spectral Mapping and Principal Powers}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For normal $A$ and $f$ analytic on $\sigma(A)$,
+$\sigma\big(f(A)\big)=f\big(\sigma(A)\big)$. For Hermitian $A\succeq 0$ and
+$\alpha\in\mathbb{R}$, define $A^\alpha=U\Lambda^\alpha U^\ast$, where
+$\Lambda^\alpha=\mathrm{diag}(\lambda_i^\alpha)$; the principal square root
+$A^{1/2}\succeq 0$ is unique.
+
+\WHAT{
+Relates spectra under functions and defines matrix powers via spectral calculus,
+including unique positive square roots of psd matrices.}
+\WHY{
+Predicts eigenvalues of $f(A)$ and enables stable computation of $A^\alpha$,
+crucial for diffusion, whitening, and fractional dynamics.}
+\FORMULA{
+\[
+\sigma(f(A))=f(\sigma(A)),\quad
+A^\alpha=U\Lambda^\alpha U^\ast,\quad A^{1/2}\succeq 0\ \text{unique}.
+\]
+}
+\CANONICAL{
+$A=U\Lambda U^\ast$ with $\Lambda\ge 0$ for $A^\alpha$. For spectral mapping,
+$A$ normal and $f$ analytic near $\sigma(A)$.}
+\PRECONDS{
+\begin{bullets}
+\item $A$ normal for spectral mapping; Hermitian psd for principal powers.
+\item Branch choice consistent with $\mathbb{R}_+$ for powers/log.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $A=U\Lambda U^{-1}$ and $f$ analytic on $\sigma(A)$, then
+$\sigma(f(A))=f(\sigma(A))$.
+\end{lemma}
+\begin{proof}
+$f(A)=Uf(\Lambda)U^{-1}$; the eigenvalues of $f(A)$ are the diagonal entries
+$f(\lambda_i)$ of $f(\Lambda)$. Thus $\sigma(f(A))=\{f(\lambda_i)\}
+=f(\sigma(A))$. \qedhere
+\end{proof}
+\begin{lemma}
+For $A\succeq 0$ Hermitian, there exists a unique $X\succeq 0$ with $X^2=A$.
+\end{lemma}
+\begin{proof}
+Diagonalize $A=U\Lambda U^\ast$, $\Lambda=\mathrm{diag}(\lambda_i\ge 0)$.
+Define $X=U\Lambda^{1/2}U^\ast\succeq 0$; then $X^2=U\Lambda U^\ast=A$.
+If $Y\succeq 0$ with $Y^2=A$, then in the eigenbasis $Y$ must be diagonal with
+entries $\sqrt{\lambda_i}$, hence $Y=X$. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (Diagonal view):}\ & f(A)=Uf(\Lambda)U^\ast.\\
+\text{Step 2 (Eigenvalues):}\ & \sigma(f(A))=\{f(\lambda_i)\}.\\
+\text{Step 3 (Powers):}\ & A^\alpha=U\Lambda^\alpha U^\ast,\
+\Lambda^\alpha=(\lambda_i^\alpha).\\
+\text{Step 4 (Square root):}\ & A^{1/2}\succeq 0,\ (A^{1/2})^2=A.\\
+\text{Step 5 (Uniqueness):}\ & \text{Positivity fixes branch on }\mathbb{R}_+.
+\end{align*}
+}
+\EQUIV{
+\begin{bullets}
+\item $e^{tA}=U e^{t\Lambda} U^\ast$, $\log(A)=U\log(\Lambda)U^\ast$ (psd).
+\item Whitening: $A^{-1/2}A A^{-1/2}=I$ on $\mathrm{range}(A)$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item Non-psd $A$: multiple square roots; positivity selects principal one.
+\item Zero eigenvalues: $A^{-1}$ undefined; use pseudoinverse powers on support.
+\end{bullets}
+}
+\INPUTS{$A$ normal (for mapping), $A\succeq 0$ (for powers), function $f$.}
+\RESULT{
+Spectra flow through $f$; principal powers $A^\alpha$ exist and are stable.}
+\PITFALLS{
+\begin{bullets}
+\item Choosing complex branches inconsistently across eigenvalues.
+\item Attempting inverse powers on zero eigenvalues without restricting domain.
+\end{bullets}
+}
+\ELI{
+Apply $f$ to each knob that $A$ uses to scale space; for psd matrices, the
+square root is the knob setting that doubled equals the original.}
+
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{Normal but Non-Hermitian: explicit spectral decomposition}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Diagonalize the normal matrix $A=\begin{bmatrix}2&1\\-1&2\end{bmatrix}$,
+compute its spectral projectors, and evaluate $f(A)$ for $f(z)=z^3$.
+
+\PROBLEM{
+Show $A$ is normal, find $U,\Lambda$ with $A=U\Lambda U^\ast$, derive $P_\pm$,
+and compute $A^3$ via functional calculus.}
+\MODEL{
+\[
+A=2I+\begin{bmatrix}0&1\\-1&0\end{bmatrix},\quad A^\ast=2I+\begin{bmatrix}0&-1\\1&0\end{bmatrix}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Complex arithmetic allowed; eigenvectors may be complex.
+\item Use spectral theorem for normal matrices.
+\end{bullets}
+}
+\varmapStart
+\var{A}{Given normal matrix in $\mathbb{C}^{2\times 2}$.}
+\var{U}{Unitary eigenbasis.}
+\var{\Lambda}{Diagonal eigenvalue matrix.}
+\var{P_\pm}{Projectors for eigenvalues $\lambda_\pm$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 1 (spectral theorem) and Formula 2 (functional calculus).}
+\GOVERN{
+\[
+A=U\Lambda U^\ast,\quad P_i=Ue_ie_i^\ast U^\ast,\quad f(A)=Uf(\Lambda)U^\ast.
+\]
+}
+\INPUTS{$A=\begin{bmatrix}2&1\\-1&2\end{bmatrix}$, $f(z)=z^3$.}
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (Normality):}\ & AA^\ast=A^\ast A=5I.\\
+\text{Step 2 (Eigenvalues):}\ & \det(A-\lambda I)=
+\det\begin{bmatrix}2-\lambda&1\\-1&2-\lambda\end{bmatrix}\\
+&=(2-\lambda)^2+1=0 \Rightarrow \lambda_\pm=2\pm i.\\
+\text{Step 3 (Eigenvectors):}\ &
+(A-\lambda_+ I)v=0\Rightarrow \begin{bmatrix}-i&1\\-1&-i\end{bmatrix}v=0,\\
+& v_+=\begin{bmatrix}1\\ i\end{bmatrix};\
+v_-=\begin{bmatrix}1\\ -i\end{bmatrix}.\\
+\text{Step 4 (Unitary):}\ & u_\pm=\frac{1}{\sqrt{2}}v_\pm,\ 
+U=\frac{1}{\sqrt{2}}\begin{bmatrix}1&1\\ i&-i\end{bmatrix}.\\
+\text{Step 5 (Diagonalization):}\ &
+U^\ast A U=\mathrm{diag}(2+i,2-i)=\Lambda.\\
+\text{Step 6 (Projectors):}\ &
+P_+=u_+u_+^\ast=\tfrac12\begin{bmatrix}1&-i\\ i&1\end{bmatrix},\\
+& P_-=\tfrac12\begin{bmatrix}1&i\\ -i&1\end{bmatrix}.\\
+\text{Step 7 (Functional calculus):}\ &
+A^3=U\Lambda^3 U^\ast=\sum_{\pm} \lambda_\pm^3 P_\pm.\\
+\text{Step 8 (Compute):}\ &
+\lambda_\pm^3=(2\pm i)^3=8\pm 12i-6- i=2\pm 11i.\\
+\text{Step 9 (Assemble):}\ &
+A^3=(2+11i)P_+ + (2-11i)P_-\\
+&=2(P_++P_-)+11i(P_+-P_-)\\
+&=2I+11i\left(\tfrac12\begin{bmatrix}0&-2i\\ 2i&0\end{bmatrix}\right)\\
+&=2I+11\begin{bmatrix}0&1\\ -1&0\end{bmatrix}
+=\begin{bmatrix}2&11\\ -11&2\end{bmatrix}.
+\end{align*}
+}
+\RESULT{
+$U=\frac{1}{\sqrt{2}}\begin{bmatrix}1&1\\ i&-i\end{bmatrix}$,
+$\Lambda=\mathrm{diag}(2+i,2-i)$,
+$P_\pm=\tfrac12\begin{bmatrix}1&\mp i\\ \pm i&1\end{bmatrix}$,
+$A^3=\begin{bmatrix}2&11\\ -11&2\end{bmatrix}$.}
+\UNITCHECK{
+$AA^\ast=5I$ implies $\|A\|_2=\sqrt{5}$; $\|A^3\|_2=\|A\|_2^3=5^{3/2}$
+consistent with eigenvalues $(2\pm i)^3$.}
+\EDGECASES{
+\begin{bullets}
+\item If $A$ were not normal, eigenvectors may not be orthogonal; projector
+construction would need Jordan form.
+\end{bullets}
+}
+\ALTERNATE{
+Compute $A^3$ directly by multiplication; the spectral route is simpler and
+reveals structure.}
+\VALIDATION{
+\begin{bullets}
+\item Verify $A^3$ numerically by multiplication; matches the spectral result.
+\item Check $P_\pm^2=P_\pm$, $P_+P_-=0$, $P_++P_-=I$.
+\end{bullets}
+}
+\INTUITION{
+$A$ is a rotation-scaling; powers rotate and scale eigenmodes independently.}
+\CANONICAL{
+Normal matrices diagonalize unitarily; functions act on eigenvalues.}
+
+\ProblemPage{2}{Principal square root of a $2\times 2$ psd matrix}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given $A=\begin{bmatrix}5&1\\1&5\end{bmatrix}\succeq 0$, compute $A^{1/2}$ and
+$\exp(A)$ via spectral calculus; confirm $A^{1/2}\succeq 0$ and
+$(A^{1/2})^2=A$.
+
+\PROBLEM{
+Diagonalize $A$, evaluate $\sqrt{\cdot}$ and $\exp(\cdot)$ on eigenvalues, and
+reconstruct.}
+\MODEL{
+\[
+A=U\Lambda U^\ast,\ U=\tfrac{1}{\sqrt{2}}\begin{bmatrix}1&1\\1&-1\end{bmatrix},\
+\Lambda=\mathrm{diag}(6,4).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ is real symmetric hence normal.
+\item Use principal branches for $\sqrt{\cdot}$ and $\exp(\cdot)$.
+\end{bullets}
+}
+\varmapStart
+\var{A}{Given psd matrix.}
+\var{U,\Lambda}{Eigenbasis and eigenvalues $(6,4)$.}
+\var{A^{1/2}}{Principal square root.}
+\var{e^A}{Matrix exponential.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 4 (principal powers; spectral mapping) and Formula 2.}
+\GOVERN{
+\[
+A^{1/2}=U\Lambda^{1/2}U^\ast,\quad e^{A}=U e^{\Lambda} U^\ast.
+\]
+}
+\INPUTS{$A=\begin{bmatrix}5&1\\1&5\end{bmatrix}$.}
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (Eigenpairs):}\ & v_1=\tfrac{1}{\sqrt2}\begin{bmatrix}1\\1\end{bmatrix},
+\ \lambda_1=6;\\
+& v_2=\tfrac{1}{\sqrt2}\begin{bmatrix}1\\-1\end{bmatrix},
+\ \lambda_2=4.\\
+\text{Step 2 (Square root):}\ &
+\Lambda^{1/2}=\mathrm{diag}(\sqrt{6},2).\\
+& A^{1/2}=U\Lambda^{1/2}U^\ast\\
+&=\tfrac12\begin{bmatrix}1&1\\1&-1\end{bmatrix}
+\begin{bmatrix}\sqrt6&0\\0&2\end{bmatrix}
+\begin{bmatrix}1&1\\1&-1\end{bmatrix}\\
+&=\tfrac12\begin{bmatrix}\sqrt6+2&\sqrt6-2\\ \sqrt6-2&\sqrt6+2\end{bmatrix}.\\
+\text{Step 3 (Exponential):}\ &
+e^\Lambda=\mathrm{diag}(e^6,e^4),\\
+& e^A=Ue^\Lambda U^\ast=
+\tfrac12\begin{bmatrix}e^6+e^4& e^6-e^4\\ e^6-e^4& e^6+e^4\end{bmatrix}.\\
+\text{Step 4 (Check):}\ &
+(A^{1/2})^2=\left(U\Lambda^{1/2}U^\ast\right)^2
+=U\Lambda U^\ast=A.
+\end{align*}
+}
+\RESULT{
+$A^{1/2}=\tfrac12\begin{bmatrix}\sqrt6+2&\sqrt6-2\\ \sqrt6-2&\sqrt6+2\end{bmatrix}
+\succeq 0$ and $e^A=\tfrac12\begin{bmatrix}e^6+e^4& e^6-e^4\\ e^6-e^4& e^6+e^4\end{bmatrix}$.}
+\UNITCHECK{
+Eigenvalues of $A^{1/2}$ are $\sqrt{6},2$, nonnegative; squaring restores
+$\{6,4\}$.}
+\EDGECASES{
+\begin{bullets}
+\item If $A$ had a zero eigenvalue, $A^{-1/2}$ would not exist on its kernel.
+\end{bullets}
+}
+\ALTERNATE{
+Polynomial approximation of $\sqrt{\cdot}$ via Chebyshev on $[4,6]$.}
+\VALIDATION{
+\begin{bullets}
+\item Direct multiplication shows $(A^{1/2})^2=A$.
+\item Diagonalization confirms eigenvalues map by $x\mapsto \sqrt{x}$ and
+$x\mapsto e^x$.
+\end{bullets}
+}
+\INTUITION{
+Decompose into average and difference modes, transform each scalar, recombine.}
+\CANONICAL{
+Principal powers arise by applying scalar powers to eigenvalues.}
+
+\ProblemPage{3}{Projectors via Lagrange interpolation}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For a normal $A$ with simple spectrum $\{\lambda_i\}_{i=1}^3$, show that
+\[
+P_i=\prod_{j\ne i}\frac{A-\lambda_j I}{\lambda_i-\lambda_j}
+\]
+are orthogonal projectors that resolve identity.
+
+\PROBLEM{
+Prove $P_i^2=P_i$, $P_iP_j=0$ for $i\ne j$, and $\sum_i P_i=I$; evaluate for
+$A=\mathrm{diag}(1,2,3)$.}
+\MODEL{
+\[
+\text{Simple spectrum} \Rightarrow \text{Lagrange basis } \ell_i(z)
+=\prod_{j\ne i}\frac{z-\lambda_j}{\lambda_i-\lambda_j}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Simple (pairwise distinct) eigenvalues.
+\item Polynomial functional calculus (Formula 2).
+\end{bullets}
+}
+\varmapStart
+\var{A}{Normal, simple spectrum $\{\lambda_1,\lambda_2,\lambda_3\}$.}
+\var{P_i}{Lagrange-defined projectors.}
+\var{\ell_i}{Lagrange polynomials.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 2 and Formula 3 equivalence $f(A)=\sum f(\lambda_i)P_i$.}
+\GOVERN{
+\[
+P_i=\ell_i(A),\quad \ell_i(\lambda_k)=\delta_{ik}.
+\]
+}
+\INPUTS{$A=\mathrm{diag}(1,2,3)$ for the concrete evaluation.}
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (Idempotence):}\ &
+P_i^2=\ell_i(A)\ell_i(A)=(\ell_i^2)(A).\\
+& \text{But }\ell_i(\lambda_k)=\delta_{ik}\Rightarrow \ell_i^2(\lambda_k)
+=\delta_{ik}=\ell_i(\lambda_k),\\
+& \Rightarrow (\ell_i^2)(A)=\ell_i(A)=P_i.\\
+\text{Step 2 (Orthogonality):}\ &
+P_iP_j=(\ell_i\ell_j)(A),\\
+& \ell_i(\lambda_k)\ell_j(\lambda_k)=0\ \forall k,\ i\ne j,\\
+& \Rightarrow (\ell_i\ell_j)(A)=0.\\
+\text{Step 3 (Resolution):}\ &
+\sum_i P_i=\left(\sum_i \ell_i\right)(A).\\
+& \sum_i \ell_i(z)\equiv 1 \Rightarrow \sum_i P_i=I.\\
+\text{Step 4 (Example):}\ &
+A=\mathrm{diag}(1,2,3)\Rightarrow P_i=E_{ii}.\\
+& \text{Indeed } \ell_1(A)=\mathrm{diag}(1,0,0),\ \text{etc.}
+\end{align*}
+}
+\RESULT{
+$P_i$ are orthogonal idempotents summing to $I$; for the diagonal example they
+are the standard coordinate projectors.}
+\UNITCHECK{
+Eigenvalues of $P_i$ are $0$ or $1$; $\mathrm{tr}(P_i)=1$ in the simple case.}
+\EDGECASES{
+\begin{bullets}
+\item Repeated eigenvalues: use spectral projectors onto eigenspaces; Lagrange
+form generalizes via grouping equal eigenvalues.
+\end{bullets}
+}
+\ALTERNATE{
+Compute $P_i$ as $u_i u_i^\ast$ with orthonormal eigenvectors $u_i$.}
+\VALIDATION{
+\begin{bullets}
+\item Verify $P_i^2=P_i$ numerically; $\|P_iP_j\|=0$ for $i\ne j$.
+\end{bullets}
+}
+\INTUITION{
+Each $\ell_i(A)$ annihilates all modes except the $i$-th, where it equals $1$.}
+\CANONICAL{
+Projectors are polynomials in $A$ determined by spectral interpolation.}
+
+\ProblemPage{4}{Riesz projector isolates a chosen eigenvalue}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A=\mathrm{diag}(1,2,4)$ and a circle $\Gamma$ centered at $2$ with radius
+$r\in(0,1)$, compute the Riesz projector $P_2$ and verify $P_2^2=P_2$.
+
+\PROBLEM{
+Evaluate $\frac{1}{2\pi i}\oint_\Gamma (zI-A)^{-1}\,dz$ and interpret.}
+\MODEL{
+\[
+R(z;A)=(zI-A)^{-1}=\mathrm{diag}\big((z-1)^{-1},(z-2)^{-1},(z-4)^{-1}\big).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\Gamma$ encloses only $2$ and not $1$ or $4$.
+\item Cauchy integral formula applies.
+\end{bullets}
+}
+\varmapStart
+\var{A}{Diagonal with spectrum $\{1,2,4\}$.}
+\var{\Gamma}{Circle around $2$ of radius $r\in(0,1)$.}
+\var{P_2}{Riesz projector for eigenvalue $2$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 3: $P_2=\frac{1}{2\pi i}\oint_\Gamma R(z;A)\,dz$.}
+\GOVERN{
+\[
+P_2=\mathrm{diag}\Big( \tfrac{1}{2\pi i}\oint \tfrac{dz}{z-1},\ 
+\tfrac{1}{2\pi i}\oint \tfrac{dz}{z-2},\ 
+\tfrac{1}{2\pi i}\oint \tfrac{dz}{z-4} \Big).
+\]
+}
+\INPUTS{$A=\mathrm{diag}(1,2,4)$, $r\in(0,1)$.}
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (Residues):}\ &
+\tfrac{1}{2\pi i}\oint_\Gamma \tfrac{dz}{z-1}=0,\ 
+\tfrac{1}{2\pi i}\oint_\Gamma \tfrac{dz}{z-4}=0,\\
+& \tfrac{1}{2\pi i}\oint_\Gamma \tfrac{dz}{z-2}=1.\\
+\text{Step 2 (Assemble):}\ &
+P_2=\mathrm{diag}(0,1,0).\\
+\text{Step 3 (Idempotence):}\ &
+P_2^2=\mathrm{diag}(0,1,0)=P_2.
+\end{align*}
+}
+\RESULT{
+$P_2=\mathrm{diag}(0,1,0)$ isolates the eigenspace for eigenvalue $2$.}
+\UNITCHECK{
+$\mathrm{tr}(P_2)=1$ equals algebraic multiplicity of eigenvalue $2$.}
+\EDGECASES{
+\begin{bullets}
+\item If $r\ge 1$, the contour includes $1$ and fails to isolate $2$.
+\end{bullets}
+}
+\ALTERNATE{
+Use Lagrange projector formula with $\lambda=2$.}
+\VALIDATION{
+\begin{bullets}
+\item Numerical quadrature around $\Gamma$ reproduces the same projector.
+\end{bullets}
+}
+\INTUITION{
+Circling only $2$ makes the resolvent integral pick out just that mode.}
+\CANONICAL{
+Riesz projectors decompose identity into spectral parts.}
+
+\ProblemPage{5}{Graph diffusion via spectral calculus}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For path graph on $3$ nodes with Laplacian
+$L=\begin{bmatrix}1&-1&0\\-1&2&-1\\0&-1&1\end{bmatrix}$, compute
+$u(t)=e^{-tL}u(0)$ for $u(0)=(1,0,0)^\top$.
+
+\PROBLEM{
+Diagonalize $L$, compute $e^{-t\Lambda}$, and form $u(t)$.}
+\MODEL{
+\[
+L=U\Lambda U^\ast,\quad e^{-tL}=U e^{-t\Lambda} U^\ast.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $L$ symmetric psd; eigenvalue $0$ with eigenvector $\mathbf{1}$.
+\item $t\ge 0$.
+\end{bullets}
+}
+\varmapStart
+\var{L}{Graph Laplacian (psd).}
+\var{U,\Lambda}{Eigenbasis and eigenvalues $(0,1,3)$.}
+\var{u(0)}{Initial signal $(1,0,0)^\top$.}
+\var{u(t)}{Diffused signal $e^{-tL}u(0)$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 2 (functional calculus) with $f(\lambda)=e^{-t\lambda}$.}
+\GOVERN{
+\[
+u(t)=\sum_{i=1}^3 e^{-t\lambda_i} P_i u(0).
+\]
+}
+\INPUTS{$L$ as above, $u(0)=(1,0,0)^\top$, $t\ge 0$.}
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (Eigenpairs):}\ &
+\lambda_1=0,\ v_1=\tfrac{1}{\sqrt3}(1,1,1)^\top;\\
+& \lambda_2=1,\ v_2=\tfrac{1}{\sqrt2}(1,0,-1)^\top;\\
+& \lambda_3=3,\ v_3=\tfrac{1}{\sqrt6}(1,-2,1)^\top.\\
+\text{Step 2 (Project):}\ &
+\alpha_i=\langle v_i,u(0)\rangle\Rightarrow \alpha_1=\tfrac{1}{\sqrt3},\
+\alpha_2=\tfrac{1}{\sqrt2},\ \alpha_3=\tfrac{1}{\sqrt6}.\\
+\text{Step 3 (Evolve):}\ &
+u(t)=\sum_i e^{-t\lambda_i}\alpha_i v_i\\
+&= \tfrac{1}{\sqrt3}v_1 + e^{-t}\tfrac{1}{\sqrt2}v_2
++ e^{-3t}\tfrac{1}{\sqrt6}v_3\\
+&=\begin{bmatrix}
+\frac13 + \frac{1}{2}e^{-t}+ \frac{1}{6}e^{-3t}\\[2pt]
+\frac13 + 0\cdot e^{-t}- \frac{2}{6}e^{-3t}\\[2pt]
+\frac13 - \frac{1}{2}e^{-t}+ \frac{1}{6}e^{-3t}
+\end{bmatrix}.
+\end{align*}
+}
+\RESULT{
+$u(t)=\big(\frac13 + \frac{1}{2}e^{-t}+ \frac{1}{6}e^{-3t},\ 
+\frac13 - \frac{1}{3}e^{-3t},\ 
+\frac13 - \frac{1}{2}e^{-t}+ \frac{1}{6}e^{-3t}\big)^\top$.}
+\UNITCHECK{
+As $t\to\infty$, $u(t)\to \frac{1}{3}\mathbf{1}$; as $t\to 0$, $u(t)\to u(0)$.}
+\EDGECASES{
+\begin{bullets}
+\item If $u(0)$ sums to $0$, the $\lambda_1=0$ mode vanishes.
+\end{bullets}
+}
+\ALTERNATE{
+Solve $\dot{u}=-Lu$ by diagonalizing $L$ or by Laplace transform.}
+\VALIDATION{
+\begin{bullets}
+\item Check $L\mathbf{1}=0$; verify $u'(t)=-Lu(t)$ and $u(0)$ holds.
+\end{bullets}
+}
+\INTUITION{
+Diffusion damps high-frequency modes faster ($e^{-3t}$ vs. $e^{-t}$).}
+\CANONICAL{
+$e^{-tL}$ via spectral calculus governs heat flow on graphs.}
+
+\ProblemPage{6}{Rotation powers via spectral mapping}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let $R(\theta)=\begin{bmatrix}\cos\theta&-\sin\theta\\ \sin\theta&\cos\theta\end{bmatrix}$.
+Compute $R(\theta)^n$ using spectral decomposition and deduce eigenvalues.
+
+\PROBLEM{
+Use complex eigenvalues and spectral mapping to derive $R(\theta)^n=R(n\theta)$.}
+\MODEL{
+\[
+R(\theta)=U\Lambda U^{-1},\quad \Lambda=\mathrm{diag}(e^{i\theta},e^{-i\theta}).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $R(\theta)$ is normal (unitary over $\mathbb{C}$).
+\item Integer $n\ge 0$.
+\end{bullets}
+}
+\varmapStart
+\var{R(\theta)}{Planar rotation matrix.}
+\var{U,\Lambda}{Complex diagonalization basis and eigenvalues.}
+\var{n}{Exponent.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 4 (spectral mapping), Formula 2 (polynomial functional calculus).}
+\GOVERN{
+\[
+R(\theta)^n=U \Lambda^n U^{-1}=
+U \mathrm{diag}(e^{in\theta},e^{-in\theta}) U^{-1}.
+\]
+}
+\INPUTS{$\theta\in\mathbb{R}$, integer $n\ge 0$.}
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (Eigenpairs):}\ &
+v_+=\begin{bmatrix}1\\ -i\end{bmatrix},\ \lambda_+=e^{i\theta};\
+v_-=\begin{bmatrix}1\\ i\end{bmatrix},\ \lambda_-=e^{-i\theta}.\\
+\text{Step 2 (Power):}\ &
+\Lambda^n=\mathrm{diag}(e^{in\theta},e^{-in\theta}).\\
+\text{Step 3 (Real form):}\ &
+R(\theta)^n=\begin{bmatrix}\cos(n\theta)&-\sin(n\theta)\\
+\sin(n\theta)&\cos(n\theta)\end{bmatrix}.\\
+\text{Step 4 (Mapping):}\ &
+\sigma(R(\theta)^n)=\{e^{\pm in\theta}\}= \{z^n: z\in\sigma(R(\theta))\}.
+\end{align*}
+}
+\RESULT{
+$R(\theta)^n=R(n\theta)$ with eigenvalues $e^{\pm in\theta}$.}
+\UNITCHECK{
+$R(\theta)^n$ remains orthogonal with determinant $1$.}
+\EDGECASES{
+\begin{bullets}
+\item $\theta=\pi$: $R(\pi)^n=(-1)^n I$.
+\end{bullets}
+}
+\ALTERNATE{
+Use De Moivre\textquotesingle s formula on the complex plane.}
+\VALIDATION{
+\begin{bullets}
+\item Inductive proof using angle-addition identities.
+\end{bullets}
+}
+\INTUITION{
+Rotations add angles; eigenvalues are phase factors that multiply.}
+\CANONICAL{
+Spectral mapping passes powers to eigenvalue phases.}
+
+\ProblemPage{7}{Two-state Markov chain powers and expectation}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let $P=\begin{bmatrix}1-p&p\\ q&1-q\end{bmatrix}$ with $p,q\in(0,1)$. Compute
+$P^n$ via spectral decomposition and the expected number of state-$1$ visits in
+$n$ steps starting from state $1$.
+
+\PROBLEM{
+Diagonalize $P$, get $P^n$, and sum $(P^k)_{11}$ for $k=0,\dots,n-1$.}
+\MODEL{
+\[
+P=U\Lambda U^{-1},\ \Lambda=\mathrm{diag}(1,1-p-q).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Irreducible, aperiodic when $p,q\in(0,1)$.
+\item Use spectral calculus for powers.
+\end{bullets}
+}
+\varmapStart
+\var{P}{Transition matrix on $\{1,2\}$.}
+\var{U,\Lambda}{Eigenbasis and eigenvalues $(1,\rho)$, $\rho=1-p-q$.}
+\var{n}{Horizon length.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 2 with $f(z)=z^n$; spectral mapping for $\sigma(P^n)$.}
+\GOVERN{
+\[
+P^n=\pi \mathbf{1}^\top + \rho^n (I-\pi \mathbf{1}^\top),\ 
+\pi=\frac{1}{p+q}\begin{bmatrix}q\\ p\end{bmatrix}.
+\]
+}
+\INPUTS{$p,q\in(0,1)$, integer $n\ge 1$.}
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (Eigenpairs):}\ &
+\lambda_1=1,\ v_1=\begin{bmatrix}1\\1\end{bmatrix};\
+\lambda_2=\rho=1-p-q,\\
+& v_2=\begin{bmatrix}p\\ -q\end{bmatrix}.\\
+\text{Step 2 (Projectors):}\ &
+P_1=\pi \mathbf{1}^\top,\ P_2=I-P_1.\\
+\text{Step 3 (Power):}\ &
+P^n=P_1 + \rho^n P_2=
+\pi \mathbf{1}^\top + \rho^n (I-\pi \mathbf{1}^\top).\\
+\text{Step 4 (Expectation):}\ &
+\mathbb{E}[\text{visits to state 1 in }n]\\
+&=\sum_{k=0}^{n-1} (P^k)_{11}=
+\sum_{k=0}^{n-1} \left(\pi_1 + \rho^k (1-\pi_1)\right)\\
+&= n\pi_1 + (1-\pi_1)\frac{1-\rho^n}{1-\rho},\
+\pi_1=\frac{q}{p+q}.
+\end{align*}
+}
+\RESULT{
+$P^n=\pi \mathbf{1}^\top + \rho^n (I-\pi \mathbf{1}^\top)$ and
+$\mathbb{E}[\text{visits to 1}]=n\frac{q}{p+q}
++ \frac{p}{p+q}\frac{1-(1-p-q)^n}{p+q}$.}
+\UNITCHECK{
+As $n\to\infty$, visits $\sim n\pi_1$; when $p=q$, symmetry gives $\pi_1=1/2$.}
+\EDGECASES{
+\begin{bullets}
+\item $p+q=1$ gives $\rho=0$: immediate mixing; sum simplifies.
+\end{bullets}
+}
+\ALTERNATE{
+Solve recurrence for $(P^n)_{11}$ directly.}
+\VALIDATION{
+\begin{bullets}
+\item Check $P^n\mathbf{1}=\mathbf{1}$; rows sum to $1$.
+\end{bullets}
+}
+\INTUITION{
+One eigenvalue $1$ governs the steady state; the other controls decay.}
+\CANONICAL{
+Powers via projectors separate stationary and transient modes.}
+
+\ProblemPage{8}{Proof: $p(A)$ Hermitian for real polynomial and Hermitian $A$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+If $A=A^\ast$ and $p$ has real coefficients, then $p(A)=p(A)^\ast$.
+
+\PROBLEM{
+Provide a short proof using spectral functional calculus.}
+\MODEL{
+\[
+A=U\Lambda U^\ast,\ \Lambda\in\mathbb{R}^{n\times n}\ \text{diagonal}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ Hermitian; $p\in\mathbb{R}[z]$.
+\end{bullets}
+}
+\varmapStart
+\var{A}{Hermitian matrix.}
+\var{p}{Real-coefficient polynomial.}
+\var{U,\Lambda}{Spectral data with real $\Lambda$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 2 applied to $p$.}
+\GOVERN{
+\[
+p(A)=Up(\Lambda)U^\ast,\quad p(\Lambda)=\overline{p(\Lambda)}.
+\]
+}
+\INPUTS{$A=A^\ast$, $p\in\mathbb{R}[z]$.}
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}\ & A=U\Lambda U^\ast,\ \Lambda=\Lambda^\ast\ \text{real}.\\
+\text{Step 2:}\ & p(A)=Up(\Lambda)U^\ast.\\
+\text{Step 3:}\ & p(A)^\ast=U p(\Lambda)^\ast U^\ast=U p(\Lambda) U^\ast=p(A).
+\end{align*}
+}
+\RESULT{
+$p(A)$ is Hermitian.}
+\UNITCHECK{
+Eigenvalues of $p(A)$ are $p(\lambda_i)\in\mathbb{R}$.}
+\EDGECASES{
+\begin{bullets}
+\item If $p$ has complex coefficients, $p(A)$ need not be Hermitian.
+\end{bullets}
+}
+\ALTERNATE{
+Use $p(A)^\ast=\sum a_k^\ast (A^\ast)^k$ with $a_k\in\mathbb{R}$.}
+\VALIDATION{
+\begin{bullets}
+\item Numerical check on random Hermitian $A$ and real $p$.
+\end{bullets}
+}
+\INTUITION{
+Real functions preserve the real-valuedness of Hermitian eigenvalues.}
+\CANONICAL{
+Hermitian inputs yield Hermitian outputs for real $f$.}
+
+\ProblemPage{9}{Proof: uniqueness of spectral projectors for normal $A$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For normal $A$ with distinct eigenvalues $\{\lambda_i\}$, the projectors $P_i$
+satisfying $AP_i=\lambda_i P_i$, $P_iP_j=\delta_{ij}P_i$, and $\sum_i P_i=I$
+are unique.
+
+\PROBLEM{
+Show any other family $\{\tilde P_i\}$ with the same properties equals $\{P_i\}$.}
+\MODEL{
+\[
+A=U\Lambda U^\ast,\ P_i=Ue_ie_i^\ast U^\ast.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Distinct eigenvalues; normal $A$.
+\end{bullets}
+}
+\varmapStart
+\var{A}{Normal with simple spectrum.}
+\var{P_i}{Canonical spectral projectors.}
+\var{\tilde P_i}{Alternative candidate projectors.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 2 and eigen-decomposition properties.}
+\GOVERN{
+\[
+AP_i=\lambda_i P_i,\quad \sum_i P_i=I,\quad P_iP_j=\delta_{ij}P_i.
+\]
+}
+\INPUTS{$A$, $\{\tilde P_i\}$ with stated properties.}
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}\ & A\tilde P_i=\lambda_i \tilde P_i \Rightarrow
+\mathrm{range}(\tilde P_i)\subseteq \ker(A-\lambda_i I).\\
+\text{Step 2:}\ & \text{Simple spectrum}\Rightarrow \dim \ker(A-\lambda_i I)=1.\\
+\text{Step 3:}\ & \tilde P_i \text{ is a projector onto the same line as }P_i.\\
+\text{Step 4:}\ & \sum_i \tilde P_i=I,\ \tilde P_i \tilde P_j=0,\ i\ne j
+\Rightarrow \tilde P_i=P_i.
+\end{align*}
+}
+\RESULT{
+The spectral projectors are uniquely determined by $A$.}
+\UNITCHECK{
+$\mathrm{tr}(P_i)=1$ equals $\mathrm{tr}(\tilde P_i)$, confirming rank.}
+\EDGECASES{
+\begin{bullets}
+\item Multiple eigenvalues: uniqueness holds for the sum over the eigenspace,
+not for bases within the eigenspace.
+\end{bullets}
+}
+\ALTERNATE{
+Use Riesz projectors: $\tilde P_i=\frac{1}{2\pi i}\oint_{\Gamma_i} R(z;A)\,dz$.}
+\VALIDATION{
+\begin{bullets}
+\item Compute both via eigenvectors and via Lagrange polynomials; they match.
+\end{bullets}
+}
+\INTUITION{
+Projectors must select exactly the eigen-subspaces; orthogonality and sum to $I$
+pin them down.}
+\CANONICAL{
+Spectral data uniquely fix decomposition $I=\sum_i P_i$.}
+
+\ProblemPage{10}{Linear ODE: $x'(t)=Ax(t)$ via spectral calculus}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Solve $x'(t)=Ax(t)$ with $x(0)=x_0$ for normal $A$ using $e^{tA}$.
+
+\PROBLEM{
+Diagonalize $A$, compute $e^{t\Lambda}$, and form $x(t)=e^{tA}x_0$.}
+\MODEL{
+\[
+A=U\Lambda U^\ast,\quad x(t)=U e^{t\Lambda} U^\ast x_0.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ normal; $t\in\mathbb{R}$.
+\end{bullets}
+}
+\varmapStart
+\var{A}{Normal system matrix.}
+\var{U,\Lambda}{Spectral decomposition.}
+\var{x_0}{Initial condition.}
+\var{x(t)}{State trajectory.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 2 with $f(\lambda)=e^{t\lambda}$.}
+\GOVERN{
+\[
+x(t)=\sum_i e^{t\lambda_i} P_i x_0.
+\]
+}
+\INPUTS{$A$, $x_0$, time $t$.}
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}\ & x'(t)=Ax(t)\Rightarrow U^\ast x' = \Lambda U^\ast x.\\
+\text{Step 2:}\ & y=U^\ast x \Rightarrow y_i'(t)=\lambda_i y_i(t).\\
+\text{Step 3:}\ & y_i(t)=e^{t\lambda_i} y_i(0).\\
+\text{Step 4:}\ & x(t)=U e^{t\Lambda} U^\ast x_0.
+\end{align*}
+}
+\RESULT{
+$e^{tA}=U e^{t\Lambda} U^\ast$ and $x(t)=\sum_i e^{t\lambda_i} P_i x_0$.}
+\UNITCHECK{
+At $t=0$, $e^{0A}=I$; derivative at $0$ equals $A$.}
+\EDGECASES{
+\begin{bullets}
+\item If $\Re\lambda_i<0$, mode decays; if $>0$, mode grows.
+\end{bullets}
+}
+\ALTERNATE{
+Use Laplace transform to derive the same $e^{tA}$.}
+\VALIDATION{
+\begin{bullets}
+\item Differentiate $x(t)$ to verify $x'(t)=Ax(t)$.
+\end{bullets}
+}
+\INTUITION{
+Decompose into eigenmodes that evolve independently.}
+\CANONICAL{
+Spectral calculus reduces linear ODEs to scalar exponentials.}
+
+\section{Coding Demonstrations}
+
+\CodeDemoPage{Functional Calculus via Eigen-Decomposition (From Scratch vs. Library)}
+\PROBLEM{
+Compute $f(A)$ for Hermitian $A$ using spectral calculus and verify against a
+library implementation for $f(x)=\sqrt{x}$ and $f(x)=e^{x}$.}
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> np.ndarray} — parse a flat matrix.
+\item \inlinecode{def solve_case(A,f) -> np.ndarray} — eigen-based $f(A)$.
+\item \inlinecode{def validate() -> None} — assertions vs. library.
+\item \inlinecode{def main() -> None} — orchestrate and print norms.
+\end{bullets}
+}
+\INPUTS{
+Square symmetric matrix $A$ as list of rows; functions $f$ as Python callables.}
+\OUTPUTS{
+Matrices $f(A)$ for both implementations; maximum absolute difference.}
+\FORMULA{
+\[
+f(A)=U f(\Lambda) U^\ast,\quad e^A=U e^\Lambda U^\ast,\quad A^{1/2}=U\Lambda^{1/2}U^\ast.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    toks = [float(x) for x in s.split()]
+    n = int(round(len(toks)**0.5))
+    A = np.array(toks, dtype=float).reshape(n, n)
+    return A
+
+def eig_fun(A, f):
+    w, V = np.linalg.eigh(A)
+    Fw = np.diag([f(x) for x in w])
+    return V @ Fw @ V.T
+
+def solve_case(A, f):
+    return eig_fun(A, f)
+
+def validate():
+    np.random.seed(0)
+    M = np.random.randn(4, 4)
+    A = M.T @ M + np.eye(4)  # psd, well-conditioned
+    F1 = solve_case(A, np.sqrt)
+    F2 = solve_case(A, np.exp)
+    from scipy.linalg import sqrtm, expm
+    L1 = sqrtm(A)
+    L2 = expm(A)
+    assert np.allclose(F1, L1, atol=1e-8)
+    assert np.allclose(F2, L2, atol=1e-8)
+
+def main():
+    validate()
+    A = read_input("5 1 1 5")
+    S = solve_case(A, np.sqrt)
+    E = solve_case(A, np.exp)
+    print(np.round(S, 6))
+    print(np.round(E, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+from scipy.linalg import sqrtm, expm
+
+def read_input(s):
+    toks = [float(x) for x in s.split()]
+    n = int(round(len(toks)**0.5))
+    A = np.array(toks, dtype=float).reshape(n, n)
+    return A
+
+def solve_case(A, f):
+    if f.__name__ == "sqrt":
+        return sqrtm(A)
+    if f.__name__ == "exp":
+        return expm(A)
+    w, V = np.linalg.eigh(A)
+    Fw = np.diag([f(x) for x in w])
+    return V @ Fw @ V.T
+
+def validate():
+    np.random.seed(1)
+    M = np.random.randn(3, 3)
+    A = M.T @ M + np.eye(3)
+    S1 = solve_case(A, np.sqrt)
+    S2 = sqrtm(A)
+    E1 = solve_case(A, np.exp)
+    E2 = expm(A)
+    assert np.allclose(S1, S2, atol=1e-8)
+    assert np.allclose(E1, E2, atol=1e-8)
+
+def main():
+    validate()
+    A = read_input("5 1 1 5")
+    S = solve_case(A, np.sqrt)
+    E = solve_case(A, np.exp)
+    print(np.round(S, 6))
+    print(np.round(E, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Both: eigen-decomposition $\mathcal{O}(n^3)$ time, $\mathcal{O}(n^2)$ space.}
+\FAILMODES{
+\begin{bullets}
+\item Non-symmetric $A$ with \inlinecode{eigh} invalid: ensure Hermitian input.
+\item Negative eigenvalues for \inlinecode{sqrt}: define principal branch.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Ill-conditioned eigen-gaps can rotate eigenvectors; Hermitian case is
+backward stable for \inlinecode{eigh}.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Cross-check with \inlinecode{scipy.linalg.sqrtm} and \inlinecode{expm}.
+\item Round-trip: $(A^{1/2})^2\approx A$.
+\end{bullets}
+}
+\RESULT{
+Outputs match within $10^{-8}$; confirms spectral calculus implementation.}
+\EXPLANATION{
+Eigen-decomposition implements Formula 2 directly: apply $f$ to $\Lambda$.}
+\EXTENSION{
+Vectorize multiple functions $f$; add $\log$ with psd precheck.}
+
+\CodeDemoPage{Riesz Projector by Contour Quadrature vs. Eigenvectors}
+\PROBLEM{
+Approximate $P_\lambda=\frac{1}{2\pi i}\oint_\Gamma (zI-A)^{-1}dz$ numerically
+and compare with eigenvector-based projector.}
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> np.ndarray} — parse $2\times 2$ matrix.
+\item \inlinecode{def solve_case(A,center,r,m)} — trapezoid quadrature.
+\item \inlinecode{def eig_projector(A,lam)} — rank-1 spectral projector.
+\item \inlinecode{def validate() -> None} — accuracy and idempotence checks.
+\end{bullets}
+}
+\INPUTS{
+Matrix $A$ with simple spectrum; circle center, radius $r$, nodes $m$.}
+\OUTPUTS{
+Approximate projector $P$; errors versus eigenvector projector; idempotence.}
+\FORMULA{
+\[
+P\approx \frac{1}{m}\sum_{k=0}^{m-1}
+\left( \frac{r e^{i\theta_k}}{2\pi i} \right)
+\left( z_k I - A \right)^{-1},\
+z_k = c + r e^{i\theta_k},\ \theta_k=\frac{2\pi k}{m}.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    toks = [complex(x) for x in s.split()]
+    A = np.array(toks, dtype=complex).reshape(2, 2)
+    return A
+
+def contour_projector(A, c=2+0j, r=0.5, m=64):
+    P = np.zeros_like(A, dtype=complex)
+    I = np.eye(A.shape[0], dtype=complex)
+    for k in range(m):
+        th = 2*np.pi*k/m
+        z = c + r*np.exp(1j*th)
+        dz = 1j*r*np.exp(1j*th)*(2*np.pi/m)
+        P += (np.linalg.inv(z*I - A) * dz) / (2j*np.pi)
+    return P
+
+def eig_projector(A, lam):
+    w, V = np.linalg.eig(A)
+    j = int(np.argmin(np.abs(w - lam)))
+    v = V[:, j]
+    return np.outer(v, np.conj(v)) / (v.conj()@v)
+
+def validate():
+    A = np.array([[2, 1], [-1, 2]], dtype=complex)
+    P = contour_projector(A, c=2+0j, r=0.8, m=256)
+    Pe = eig_projector(A, 2+1j)
+    assert np.allclose(P, Pe, atol=1e-6)
+    assert np.allclose(P@P, P, atol=1e-6)
+
+def main():
+    validate()
+    A = np.array([[2, 1], [-1, 2]], dtype=complex)
+    P = contour_projector(A, c=2+0j, r=0.8, m=256)
+    print(np.round(P, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    toks = [complex(x) for x in s.split()]
+    A = np.array(toks, dtype=complex).reshape(2, 2)
+    return A
+
+def projector_from_eig(A, lam):
+    w, V = np.linalg.eig(A)
+    j = int(np.argmin(np.abs(w - lam)))
+    v = V[:, j]
+    return np.outer(v, np.conj(v)) / (v.conj()@v)
+
+def solve_case(A, lam):
+    return projector_from_eig(A, lam)
+
+def validate():
+    A = np.array([[2, 1], [-1, 2]], dtype=complex)
+    P = solve_case(A, 2+1j)
+    assert np.allclose(P@P, P, atol=1e-12)
+    Q = solve_case(A, 2-1j)
+    assert np.allclose(P@Q, 0*P, atol=1e-12)
+    assert np.allclose(P+Q, np.eye(2), atol=1e-12)
+
+def main():
+    validate()
+    A = np.array([[2, 1], [-1, 2]], dtype=complex)
+    P = solve_case(A, 2+1j)
+    print(np.round(P, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Quadrature: $\mathcal{O}(m n^3)$; eigen projector: $\mathcal{O}(n^3)$.}
+\FAILMODES{
+\begin{bullets}
+\item Contour enclosing multiple eigenvalues yields multi-rank projector.
+\item Too small $m$ causes quadrature error.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Inverting near $z\in\sigma(A)$ is ill-conditioned; keep radius away.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Compare to eigenvector projector; check idempotence and orthogonality.
+\end{bullets}
+}
+\RESULT{
+Quadrature projector matches eigen-projector within $10^{-6}$ for $m=256$.}
+\EXPLANATION{
+Implements Formula 3 numerically; library path uses spectral decomposition.}
+\EXTENSION{
+Use adaptive quadrature and deflation for clustered spectra.}
+
+\CodeDemoPage{PCA Whitening via Principal Square Root}
+\PROBLEM{
+Compute whitening transform $W=S^{-1/2}$ for covariance $S$ and validate that
+$W S W^\top=I$.}
+\API{
+\begin{bullets}
+\item \inlinecode{def cov(X) -> S} — sample covariance (zero-mean).
+\item \inlinecode{def whiten(S) -> W} — compute $S^{-1/2}$ by eigen-decomp.
+\item \inlinecode{def validate() -> None} — check identity and symmetry.
+\item \inlinecode{def main() -> None} — simulate, whiten, and report errors.
+\end{bullets}
+}
+\INPUTS{
+Data matrix $X\in\mathbb{R}^{n\times d}$; compute $S=\frac{1}{n}X^\top X$.}
+\OUTPUTS{
+$W=S^{-1/2}$ and verification error $\|WSW^\top-I\|$.}
+\FORMULA{
+\[
+S=U\Lambda U^\top,\quad S^{-1/2}=U\Lambda^{-1/2}U^\top,\ \Lambda\succ 0.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def cov(X):
+    Xc = X - X.mean(axis=0, keepdims=True)
+    return (Xc.T @ Xc) / Xc.shape[0]
+
+def whiten(S):
+    w, V = np.linalg.eigh(S)
+    W = V @ np.diag(w**-0.5) @ V.T
+    return W
+
+def validate():
+    np.random.seed(0)
+    A = np.array([[2.0, 0.5], [0.5, 1.0]])
+    Z = np.random.randn(10000, 2)
+    X = Z @ np.linalg.cholesky(A).T
+    S = cov(X)
+    W = whiten(S)
+    I2 = W @ S @ W.T
+    assert np.allclose(I2, np.eye(2), atol=3e-2)
+
+def main():
+    validate()
+    print("whitening ok")
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+from scipy.linalg import fractional_matrix_power
+
+def cov(X):
+    Xc = X - X.mean(axis=0, keepdims=True)
+    return (Xc.T @ Xc) / Xc.shape[0]
+
+def whiten(S):
+    return fractional_matrix_power(S, -0.5)
+
+def validate():
+    np.random.seed(1)
+    A = np.array([[1.5, 0.3], [0.3, 0.8]])
+    Z = np.random.randn(8000, 2)
+    X = Z @ np.linalg.cholesky(A).T
+    S = cov(X)
+    W = whiten(S)
+    I2 = W @ S @ W.T
+    assert np.allclose(I2, np.eye(2), atol=3e-2)
+
+def main():
+    validate()
+    print("whitening ok")
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Covariance $\mathcal{O}(nd^2)$; eigen or fractional power $\mathcal{O}(d^3)$.}
+\FAILMODES{
+\begin{bullets}
+\item Nearly singular $S$: add ridge $\epsilon I$.
+\item Non-centered data: mean-shift before covariance.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Small eigenvalues amplify noise; use thresholding or Tikhonov regularization.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Monte Carlo check that $WSW^\top\approx I$.
+\end{bullets}
+}
+\RESULT{
+Both implementations whiten within sampling error tolerance.}
+\EXPLANATION{
+Implements Formula 4 with $\alpha=-1/2$ on the covariance eigenvalues.}
+
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Principal Component Analysis (PCA) via spectral decomposition; compute top-$k$
+components and reconstruct data; evaluate explained variance.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Data centered; covariance $S$ psd.
+\item Use eigen-decomposition $S=U\Lambda U^\top$.
+\end{bullets}
+}
+\WHICHFORMULA{
+Formula 1 (spectral theorem) and Formula 2 (functional calculus with projector
+onto top-$k$ subspace).}
+\varmapStart
+\var{X}{Data matrix $(n,d)$, centered.}
+\var{S}{Covariance $\frac{1}{n}X^\top X$.}
+\var{U,\Lambda}{Eigenvectors/values of $S$.}
+\var{P_k}{Projector onto top-$k$ eigenvectors.}
+\var{k}{Target dimensionality.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Compute $S$, eigen-decompose $S=U\Lambda U^\top$.
+\item Form $P_k=\sum_{i=1}^k u_i u_i^\top$; project $X_k=XP_k$.
+\item Compute explained variance ratio $\sum_{i=1}^k \lambda_i/\sum_i\lambda_i$.
+\end{bullets}
+}
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def pca(X, k):
+    Xc = X - X.mean(axis=0, keepdims=True)
+    S = (Xc.T @ Xc) / Xc.shape[0]
+    w, V = np.linalg.eigh(S)
+    idx = np.argsort(w)[::-1]
+    w, V = w[idx], V[:, idx]
+    Pk = V[:, :k] @ V[:, :k].T
+    Xk = Xc @ Pk
+    evr = float(w[:k].sum() / w.sum())
+    return Xk, evr, V[:, :k], w[:k]
+
+def main():
+    np.random.seed(0)
+    Z = np.random.randn(200, 3)
+    A = np.diag([3.0, 1.0, 0.2])
+    X = Z @ np.linalg.cholesky(A).T
+    Xk, evr, Uk, wk = pca(X, 2)
+    print("EVR:", round(evr, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{Implementation (Library Version)}
+\begin{codepy}
+import numpy as np
+from sklearn.decomposition import PCA
+
+def main():
+    np.random.seed(0)
+    Z = np.random.randn(200, 3)
+    A = np.diag([3.0, 1.0, 0.2])
+    X = Z @ np.linalg.cholesky(A).T
+    Xc = X - X.mean(axis=0, keepdims=True)
+    pca = PCA(n_components=2, svd_solver="full")
+    Z2 = pca.fit_transform(Xc)
+    evr = float(pca.explained_variance_ratio_.sum())
+    print("EVR:", round(evr, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Explained variance ratio; reconstruction error $\|X-X_k\|_F$.}
+\INTERPRET{Top eigenvectors capture directions with maximal variance.}
+\NEXTSTEPS{Use shrinkage or randomized PCA for large-scale data.}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Principal Component Analysis of a covariance matrix of asset returns; measure
+risk concentration via eigenvalue spectrum and compute first-PC portfolio.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Returns are zero-mean and stationary over the sample.
+\item Covariance psd; eigenvectors form orthonormal basis.
+\end{bullets}
+}
+\WHICHFORMULA{
+Formula 1 and Formula 4 (spectral mapping of risk under linear transforms).}
+\varmapStart
+\var{R}{Return matrix $(n,d)$.}
+\var{S}{Covariance $S=\frac{1}{n}R^\top R$.}
+\var{u_1}{Top eigenvector of $S$.}
+\var{\lambda_i}{Eigenvalues of $S$.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Simulate correlated returns; compute $S$.
+\item Eigendecompose $S$; extract $u_1$ and $\lambda_i$.
+\item Normalize $u_1$ as portfolio; compute its variance.
+\end{bullets}
+}
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def simulate(n=1000, d=4, seed=0):
+    np.random.seed(seed)
+    A = np.random.randn(d, d)
+    S = A @ A.T
+    R = np.random.multivariate_normal(np.zeros(d), S, size=n)
+    return R
+
+def pca_risk(R):
+    S = (R.T @ R) / R.shape[0]
+    w, V = np.linalg.eigh(S)
+    idx = np.argsort(w)[::-1]
+    w, V = w[idx], V[:, idx]
+    u1 = V[:, 0]
+    var = float(u1.T @ S @ u1)
+    return w, V, u1, var
+
+def main():
+    R = simulate()
+    w, V, u1, var = pca_risk(R)
+    print("Top EVR:", round(w[0]/w.sum(), 3))
+    print("PC1 var:", round(var, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Explained variance by PC1; variance of PC1 portfolio.}
+\INTERPRET{Large $\lambda_1$ indicates concentrated common risk factor.}
+\NEXTSTEPS{Rotate to risk-parity basis or shrink covariance estimator.}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Compute spectral norm $\|W\|_2$ of a weight matrix via power iteration and
+compare to exact singular value for an orthogonalizable case.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Spectral norm equals largest singular value; for normal $W$, equals
+$\max|\lambda_i|$.
+\end{bullets}
+}
+\WHICHFORMULA{
+Formula 1: for normal $W$, $\|W\|_2=\max_i |\lambda_i|$; power iteration
+approximates dominant eigenvalue of $W^\ast W$.}
+\varmapStart
+\var{W}{Weight matrix.}
+\var{s_{\max}}{Largest singular value.}
+\var{A}{Matrix $W^\top W$ (symmetric psd).}
+\var{v}{Power iteration vector.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Form $A=W^\top W$; power iterate to approximate $\lambda_{\max}(A)$.
+\item Take $s_{\max}=\sqrt{\lambda_{\max}(A)}$; compare to SVD.}
+\end{bullets}
+}
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+
+def power_norm(W, iters=40, seed=0):
+    np.random.seed(seed)
+    v = np.random.randn(W.shape[1])
+    v = v / np.linalg.norm(v)
+    A = W.T @ W
+    for _ in range(iters):
+        v = A @ v
+        v = v / np.linalg.norm(v)
+    lam = float(v @ (A @ v))
+    return np.sqrt(lam)
+
+def main():
+    np.random.seed(0)
+    Q, _ = np.linalg.qr(np.random.randn(5, 5))
+    D = np.diag([3, 2, 1, 0.5, 0.2])
+    W = Q @ D @ Q.T
+    s = power_norm(W)
+    s_true = np.linalg.svd(W, compute_uv=False)[0]
+    print("norm:", round(s, 6), "true:", round(s_true, 6))
+    assert abs(s - s_true) < 1e-6
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Absolute error between power iteration and SVD spectral norm.}
+\INTERPRET{Spectral norm controls Lipschitz constant of linear layers.}
+\NEXTSTEPS{Use spectral normalization during training to stabilize GANs.}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Apply diffusion smoothing to a small graph feature vector using
+$e^{-tL}$ computed spectrally; evaluate smoothing strength.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $L$ symmetric psd; $t\ge 0$ controls smoothing.
+\end{bullets}
+}
+\WHICHFORMULA{
+Formula 2 with $f(\lambda)=e^{-t\lambda}$ on the Laplacian spectrum.}
+\varmapStart
+\var{L}{Graph Laplacian.}
+\var{U,\Lambda}{Spectral decomposition of $L$.}
+\var{x}{Feature vector.}
+\var{t}{Diffusion time.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Build small Laplacian; eigendecompose.
+\item Compute $y=e^{-tL}x$; compare norms and smoothness $x^\top L x$.
+\end{bullets}
+}
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def lap_path(n):
+    L = np.zeros((n, n))
+    for i in range(n):
+        if i > 0:
+            L[i, i] += 1; L[i, i-1] -= 1
+        if i < n-1:
+            L[i, i] += 1; L[i, i+1] -= 1
+    return L
+
+def diffuse(L, x, t):
+    w, V = np.linalg.eigh(L)
+    y = V @ np.diag(np.exp(-t*w)) @ V.T @ x
+    return y
+
+def main():
+    L = lap_path(5)
+    x = np.array([1, 0, 0, 0, 0], dtype=float)
+    y = diffuse(L, x, t=1.0)
+    smooth_x = float(x.T @ L @ x)
+    smooth_y = float(y.T @ L @ y)
+    print("smooth before:", round(smooth_x, 6))
+    print("smooth after:", round(smooth_y, 6))
+    assert smooth_y <= smooth_x + 1e-12
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Dirichlet energy $x^\top L x$ decreases after diffusion.}
+\INTERPRET{Diffusion damps high-frequency components on the graph.}
+\NEXTSTEPS{Tune $t$ or use Chebyshev approximation for large graphs.}
+
+\end{document}

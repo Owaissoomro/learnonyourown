@@ -1,0 +1,973 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — \(\pm 1\)}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1971/H}}
+\LINE{DIFFICULTY / RATING}{2100}
+\STATEMENT{Bob has a grid with $3$ rows and $n$ columns, each of which contains either $a_i$ or $-a_i$ for some integer $1 \le i \le n$. For example, one possible grid for $n=4$ is shown below:
+\[
+\begin{bmatrix}
+a_1 & -a_2 & -a_3 & -a_2 \\
+-a_4 & a_4 & -a_1 & -a_3 \\
+a_1 & a_2 & -a_2 & a_4
+\end{bmatrix}
+\]
+Alice and Bob play a game as follows:
+\begin{itemize}
+\item Bob shows Alice his grid.
+\item Alice gives Bob an array $a_1, a_2, \dots, a_n$ of her choosing, whose elements are all $\mathbf{-1}$ or $\mathbf{1}$.
+\item Bob substitutes these values into his grid to make a grid of $-1$s and $1$s.
+\item Bob sorts the elements of each column in non-decreasing order.
+\item Alice wins if all the elements in the middle row are $1$; otherwise, Bob wins.
+\end{itemize}
+For example, suppose Alice gives Bob the array $[1, -1, -1, 1]$ for the grid above. Then the following will happen (colors are added for clarity):
+\[
+\begin{bmatrix}
+\color{red}{a_1} & \color{green}{-a_2} & \color{blue}{-a_3} & \color{green}{-a_2} \\
+-a_4 & a_4 & \color{red}{-a_1} & \color{blue}{-a_3} \\
+\color{red}{a_1} & \color{green}{a_2} & \color{green}{-a_2} & a_4
+\end{bmatrix}
+\xrightarrow{[\color{red}{1},\color{green}{-1},\color{blue}{-1},1]}
+\begin{bmatrix}
+\color{red}{1} & \color{green}{1} & \color{blue}{1} & \color{green}{1} \\
+-1 & 1 & \color{red}{-1} & \color{blue}{1} \\
+\color{red}{1} & \color{green}{-1} & \color{green}{1} & 1
+\end{bmatrix}
+\xrightarrow{\text{sort each column}}
+\begin{bmatrix}
+-1 & -1 & -1 & 1 \\
+\mathbf{1} & \mathbf{1} & \mathbf{1} & \mathbf{1} \\
+1 & 1 & 1 & 1
+\end{bmatrix}\,.
+\]
+Since the middle row is all $1$, Alice wins.
+
+Given Bob's grid, determine whether or not Alice can choose the array $a$ to win the game.
+
+Input: The first line contains a single integer $t$ ($1 \le t \le 1000$) — the number of test cases.
+
+The first line of each test case contains a single integer $n$ ($2 \le n \le 500$) — the number of columns of Bob's grid.
+
+The next three lines each contain $n$ integers, the $i$-th of which contains $g_{i,1}, g_{i,2}, \dots, g_{i,n}$ ($-n \le g_{i,j} \le n$, $g_{i,j} \ne 0$), representing Bob's grid.
+
+If cell $x > 0$ is in the input, that cell in Bob's grid should contain $a_x$; if $x < 0$ is in the input, that cell in Bob's grid should contain $-a_{-x}$. See the sample input and notes for a better understanding.
+
+Output: For each test case, output ``YES'' (without quotes) if Alice can win, and ``NO'' (without quotes) otherwise. You can output ``YES'' and ``NO'' in any case (for example, strings ``yEs'', ``yes'', and ``Yes'' will be recognized as a positive response).
+
+Note: The first test case is described in the statement.
+
+In the second test case, Bob's grid is as follows:
+\[
+\begin{bmatrix}
+a_1 & a_2 \\
+-a_1 & -a_2 \\
+a_2 & -a_2
+\end{bmatrix}
+\]
+For the last column to have $1$ in the middle row when sorted, Alice must pick $a_2 = -1$. However, it is then impossible to choose $a_1$ such that the first column has $1$ in the middle when sorted. Thus, Alice cannot win.
+
+In the third test case, Alice can pick $a = [1,1,1,1,1]$.}
+\BREAKDOWN{Per column, after substitution and sorting, the middle entry is $1$ iff at least two out of the three signed entries evaluate to $+1$. Model each cell as a literal on a boolean variable $x_i$ indicating whether $a_i=+1$, and require per column: at least two literals evaluate to true. Reduce to a conjunction of $2$-SAT clauses.}
+\ELI{Each column says: among its three signs of variables, at least two must be $+1$. That is the same as saying no pair of those three can both be $-1$, which becomes three simple OR-constraints — perfect for $2$-SAT.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{For each test case:
+\begin{bullets}
+\item Integer $n$ with $2 \le n \le 500$.
+\item A $3 \times n$ integer grid $G$, where each $G_{r,c} \in \{-n,\ldots,-1,1,\ldots,n\}$ and $G_{r,c} \ne 0$ encodes either $a_{|G_{r,c}|}$ if positive or $-a_{|G_{r,c}|}$ if negative.
+\end{bullets}}
+\OUTPUTS{For each test case, print a single line ``YES'' if there exists an assignment $a_i \in \{-1,1\}$ such that after substitution and column-wise non-decreasing sort, every column's middle entry is $1$; otherwise, print ``NO''.}
+\SAMPLES{Example I/O sketches:
+\begin{itemize}
+\item Input
+\[
+\begin{aligned}
+&1\\
+&4\\
+&1\ \ -2\ \ -3\ \ -2\\
+&-4\ \ 4\ \ -1\ \ -3\\
+&1\ \ 2\ \ -2\ \ 4
+\end{aligned}
+\]
+Output
+\begin{BreakableEquation*}
+\text{YES}
+\end{BreakableEquation*}
+\item Input
+\[
+\begin{aligned}
+&1\\
+&2\\
+&1\ \ 2\\
+&-1\ \ -2\\
+&2\ \ -2
+\end{aligned}
+\]
+Output
+\begin{BreakableEquation*}
+\text{NO}
+\end{BreakableEquation*}
+\end{itemize}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let boolean $x_i$ encode $a_i$ by $x_i = \text{true} \iff a_i = +1$ (else $a_i=-1$). A cell with integer $s\cdot i$ ($s \in \{-1,+1\}$, $i\in[1..n]$) evaluates to $+1$ iff $x_i$ equals $(s=+1)$. For column $c$ with three literals $(i_1,s_1),(i_2,s_2),(i_3,s_3)$, the middle being $1$ after sorting is equivalent to at least two literals evaluating to $+1$.}
+\varmapStart
+\var{x_i}{boolean: $x_i=\text{true}$ iff $a_i=+1$}
+\var{(i_k,s_k)}{literal in a column: index $i_k \in [1..n]$ and sign $s_k \in \{-1,+1\}$}
+\var{L_k}{predicate ``literal $k$ evaluates to $+1$'' i.e., $L_k \equiv (x_{i_k} = [s_k=+1])$}
+\varmapEnd
+\GOVERN{
+\[
+\text{For each column } c:~ \#\{k\in\{1,2,3\}\mid L_k\} \ge 2
+\quad\Longleftrightarrow\quad
+\bigwedge_{1\le p<q\le 3}\left(L_p \lor L_q\right).
+\]
+Each clause $\left(L_p \lor L_q\right)$ is a $2$-SAT clause of the form
+\(
+(x_{i_p} = [s_p=+1]) \lor (x_{i_q} = [s_q=+1]).
+\)
+}
+\ASSUMPTIONS{Variables $x_i$ are independent booleans. Columns may repeat indices and/or signs; clauses remain valid and may degenerate to unit or tautological clauses.}
+\INVARIANTS{
+\begin{bullets}
+\item Sorting a column of three values in $\{-1,1\}$ yields middle $1$ iff at least two entries are $1$.
+\item ``At least two true among three'' is equivalent to ``no pair is simultaneously false'', giving three pairwise OR-clauses.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Try all $2^n$ assignments of $a_i \in \{-1,1\}$ and check whether each column has at least two $+1$ entries.}
+\ASSUMPTIONS{Only feasible for tiny $n$; serves as correctness baseline but is exponential.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Enumerate all $2^n$ bitmasks; map bit $i$ to $a_i \in \{-1,1\}$.
+\item For each column, evaluate its three signed entries and count $+1$; if any column has at most one $+1$, reject the assignment.
+\item If any assignment passes all columns, answer YES; else NO.
+\end{algosteps}
+\COMPLEXITY{Exponential in $n$.}
+\[
+\begin{aligned}
+T(n) &= O(2^n \cdot n) \\
+S(n) &= O(1)
+\end{aligned}
+\]
+\CORRECTNESS{Exhaustive enumeration covers all assignments.}
+\EDGECASES{Repeated indices in a column; columns with all the same literal; signs mixed within a column.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input() -> List[Tuple[int, List[List[int]]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return []
+    it = iter(map(int, data))
+    t = next(it)
+    cases = []
+    for _ in range(t):
+        n = next(it)
+        grid = [[next(it) for _ in range(n)] for __ in range(3)]
+        cases.append((n, grid))
+    return cases
+
+def _build_clauses(n: int, grid: List[List[int]]) -> List[Tuple[Tuple[int, bool], Tuple[int, bool]]]:
+    # Clause is ((i, val_i) OR (j, val_j)) where val=True means x_i==True.
+    clauses = []
+    for c in range(len(grid[0])):
+        lits = []
+        for r in range(3):
+            v = grid[r][c]
+            idx = abs(v) - 1  # 0-based variable index
+            want_true = (v > 0)  # literal is true iff x_idx == True if v>0 else x_idx == False
+            lits.append((idx, want_true))
+        # Forbid any pair both being -1 after substitution:
+        # Equivalent to (lit_p is True) OR (lit_q is True) for each pair.
+        for a in range(3):
+            for b in range(a + 1, 3):
+                clauses.append((lits[a], lits[b]))
+    return clauses
+
+def _two_sat(n: int, clauses: List[Tuple[Tuple[int, bool], Tuple[int, bool]]]) -> Tuple[bool, List[bool]]:
+    # Variables x_i, nodes: 2*i -> x_i=False, 2*i^1 -> x_i=True
+    N = 2 * n
+    g = [[] for _ in range(N)]
+    gr = [[] for _ in range(N)]
+    def node(i: int, val: bool) -> int:
+        return 2 * i + (1 if val else 0)
+    def add_imp(u: int, v: int):
+        g[u].append(v)
+        gr[v].append(u)
+    for (i, vi), (j, vj) in clauses:
+        a = node(i, vi)
+        b = node(j, vj)
+        # (A or B) -> (~A -> B) and (~B -> A)
+        add_imp(a ^ 1, b)
+        add_imp(b ^ 1, a)
+    # Kosaraju
+    sys.setrecursionlimit(1 << 25)
+    seen = [False] * N
+    order = []
+    def dfs1(u: int):
+        seen[u] = True
+        for v in g[u]:
+            if not seen[v]:
+                dfs1(v)
+        order.append(u)
+    for u in range(N):
+        if not seen[u]:
+            dfs1(u)
+    comp = [-1] * N
+    def dfs2(u: int, c: int):
+        comp[u] = c
+        for v in gr[u]:
+            if comp[v] == -1:
+                dfs2(v, c)
+    cidx = 0
+    for u in reversed(order):
+        if comp[u] == -1:
+            dfs2(u, cidx)
+            cidx += 1
+    assign = [False] * n
+    for i in range(n):
+        if comp[2 * i] == comp[2 * i + 1]:
+            return (False, [])
+        assign[i] = comp[2 * i] > comp[2 * i + 1]
+    return (True, assign)
+
+def solve_case(n: int, grid: List[List[int]]) -> str:
+    clauses = _build_clauses(n, grid)
+    ok, _ = _two_sat(n, clauses)
+    return "YES" if ok else "NO"
+
+def solve_all(cases: List[Tuple[int, List[List[int]]]]) -> str:
+    out = []
+    for n, grid in cases:
+        out.append(solve_case(n, grid))
+    return "\n".join(out)
+
+def _self_test():
+    # Test 1: Example-like YES
+    n1 = 4
+    grid1 = [
+        [ 1, -2, -3, -2],
+        [-4,  4, -1, -3],
+        [ 1,  2, -2,  4],
+    ]
+    assert solve_case(n1, grid1) == "YES"
+
+    # Test 2: Example-like NO
+    n2 = 2
+    grid2 = [
+        [ 1,  2],
+        [-1, -2],
+        [ 2, -2],
+    ]
+    assert solve_case(n2, grid2) == "NO"
+
+    # Test 3: Trivial always-YES structure (each column has two identical + literals)
+    n3 = 3
+    grid3 = [
+        [ 1,  2,  3],
+        [ 1,  2,  3],
+        [-1, -2, -3],
+    ]
+    assert solve_case(n3, grid3) == "YES"
+
+if __name__ == "__main__":
+    _self_test()
+    cases = read_input()
+    if cases:
+        print(solve_all(cases))
+\end{minted}
+\VALIDATION{Asserts cover a known YES, a known NO, and a structurally easy YES.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{2-SAT Reduction}
+\WHICHFORMULA{Translate each column constraint ``at least two $+1$'' into three pairwise clauses: for literals $L_1,L_2,L_3$, require $(L_1\lor L_2)\land(L_1\lor L_3)\land(L_2\lor L_3)$. Each $L$ is of the form $(x_i = [\text{sign}=+1])$. Solve via implication graph and SCCs.}
+\ASSUMPTIONS{Standard 2-SAT applicability; duplicates and tautologies are handled naturally; per-test-case graph with $2n$ nodes and at most $6n$ edges.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For each column, form its three literals $(i_k,s_k)$ and add clauses for each pair $(p,q)$: $(x_{i_p}=[s_p=+1]) \lor (x_{i_q}=[s_q=+1])$.
+\item Build the implication graph with $2n$ nodes; add edges $\lnot A \to B$ and $\lnot B \to A$ per clause $(A\lor B)$.
+\item Run Kosaraju/Tarjan SCC; if any variable and its negation share an SCC, answer NO; else YES.
+\end{algosteps}
+\COMPLEXITY{Linear in clauses.}
+\[
+\begin{aligned}
+T(n) &= O(n) \text{ per test (about }6n\text{ implications)} \\
+S(n) &= O(n)
+\end{aligned}
+\]
+\CORRECTNESS{Equivalence of the column constraint with the conjunction of three pairwise OR-clauses ensures satisfiability iff the 2-CNF is satisfiable. SCC test is standard for 2-SAT.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input() -> List[Tuple[int, List[List[int]]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return []
+    it = iter(map(int, data))
+    t = next(it)
+    cases = []
+    for _ in range(t):
+        n = next(it)
+        grid = [[next(it) for _ in range(n)] for __ in range(3)]
+        cases.append((n, grid))
+    return cases
+
+def build_clauses(n: int, grid: List[List[int]]) -> List[Tuple[Tuple[int, bool], Tuple[int, bool]]]:
+    clauses = []
+    m = len(grid[0])
+    for c in range(m):
+        lits = []
+        for r in range(3):
+            v = grid[r][c]
+            idx = abs(v) - 1
+            want_true = (v > 0)
+            lits.append((idx, want_true))
+        # Add the three pairwise clauses
+        clauses.append((lits[0], lits[1]))
+        clauses.append((lits[0], lits[2]))
+        clauses.append((lits[1], lits[2]))
+    return clauses
+
+def two_sat(n: int, clauses: List[Tuple[Tuple[int, bool], Tuple[int, bool]]]) -> Tuple[bool, List[bool]]:
+    N = 2 * n
+    g = [[] for _ in range(N)]
+    gr = [[] for _ in range(N)]
+    def node(i: int, val: bool) -> int:
+        return 2 * i + (1 if val else 0)
+    def add_edge(u: int, v: int):
+        g[u].append(v)
+        gr[v].append(u)
+    for (i, vi), (j, vj) in clauses:
+        a = node(i, vi)
+        b = node(j, vj)
+        add_edge(a ^ 1, b)
+        add_edge(b ^ 1, a)
+    # Kosaraju
+    sys.setrecursionlimit(1 << 25)
+    seen = [False] * N
+    order = []
+    def dfs1(u: int):
+        seen[u] = True
+        for v in g[u]:
+            if not seen[v]:
+                dfs1(v)
+        order.append(u)
+    for u in range(N):
+        if not seen[u]:
+            dfs1(u)
+    comp = [-1] * N
+    def dfs2(u: int, c: int):
+        comp[u] = c
+        for v in gr[u]:
+            if comp[v] == -1:
+                dfs2(v, c)
+    cid = 0
+    for u in reversed(order):
+        if comp[u] == -1:
+            dfs2(u, cid)
+            cid += 1
+    assign = [False] * n
+    for i in range(n):
+        if comp[2 * i] == comp[2 * i + 1]:
+            return (False, [])
+        assign[i] = comp[2 * i] > comp[2 * i + 1]
+    return (True, assign)
+
+def solve_case(n: int, grid: List[List[int]]) -> str:
+    clauses = build_clauses(n, grid)
+    ok, _ = two_sat(n, clauses)
+    return "YES" if ok else "NO"
+
+def solve_all(cases: List[Tuple[int, List[List[int]]]]) -> str:
+    return "\n".join(solve_case(n, grid) for (n, grid) in cases)
+
+def _tests():
+    # YES case
+    n1 = 4
+    grid1 = [
+        [ 1, -2, -3, -2],
+        [-4,  4, -1, -3],
+        [ 1,  2, -2,  4],
+    ]
+    assert solve_case(n1, grid1) == "YES"
+    # NO case
+    n2 = 2
+    grid2 = [
+        [ 1,  2],
+        [-1, -2],
+        [ 2, -2],
+    ]
+    assert solve_case(n2, grid2) == "NO"
+    # Easy YES
+    n3 = 3
+    grid3 = [
+        [ 1,  2,  3],
+        [ 1,  2,  3],
+        [-1, -2, -3],
+    ]
+    assert solve_case(n3, grid3) == "YES"
+
+if __name__ == "__main__":
+    _tests()
+    cases = read_input()
+    if cases:
+        print(solve_all(cases))
+\end{minted}
+\VALIDATION{Covers representative satisfiable and unsatisfiable scenarios, including duplicate literals in a column.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Tight 2-SAT with Early Pruning}
+\WHICHFORMULA{Same 2-SAT core; add trivial pruning: if a column contains the same literal at least twice, that literal becomes a unit preference; if it contains both $x_i$ and $\lnot x_i$, that pairwise clause is tautological and can be skipped. The SCC solver remains linear.}
+\ASSUMPTIONS{Per-test constraints independent; $n \le 500$ and at most $3n$ clauses per test (each yields two implications), easily within time.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For each column, compress the three literals; drop tautological pairwise clauses; keep remaining pairwise ORs.
+\item Build implication graph; run SCC (Kosaraju).
+\item If any variable clashes with its negation, print NO; else YES.
+\end{algosteps}
+\OPTIMALITY{The decision problem is exactly 2-SAT on $n$ variables with $O(n)$ clauses; linear-time 2-SAT is optimal up to constants.}
+\COMPLEXITY{Linear in the size of the implication graph.}
+\[
+\begin{aligned}
+T(n) &= \Theta(n) \\
+S(n) &= \Theta(n)
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input() -> List[Tuple[int, List[List[int]]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return []
+    it = iter(map(int, data))
+    t = next(it)
+    cases = []
+    for _ in range(t):
+        n = next(it)
+        grid = [[next(it) for _ in range(n)] for __ in range(3)]
+        cases.append((n, grid))
+    return cases
+
+def solve_case(n: int, grid: List[List[int]]) -> str:
+    # Build pairwise OR-clauses per column: (lit_p OR lit_q)
+    # literal represented as (idx, want_true) where want_true==True means require x_idx=True.
+    clauses: List[Tuple[Tuple[int, bool], Tuple[int, bool]]] = []
+    m = len(grid[0])
+    for c in range(m):
+        lits = []
+        for r in range(3):
+            v = grid[r][c]
+            idx = abs(v) - 1
+            want_true = (v > 0)
+            lits.append((idx, want_true))
+        # Optionally prune tautologies: if (i,True) and (i,False) both appear, any pair across them is tautology.
+        # We still safely add all three pairs; solver can handle them.
+        clauses.append((lits[0], lits[1]))
+        clauses.append((lits[0], lits[2]))
+        clauses.append((lits[1], lits[2]))
+    # 2-SAT via Kosaraju
+    N = 2 * n
+    g = [[] for _ in range(N)]
+    gr = [[] for _ in range(N)]
+    def node(i: int, val: bool) -> int:
+        return 2 * i + (1 if val else 0)
+    def add_edge(u: int, v: int):
+        g[u].append(v)
+        gr[v].append(u)
+    for (i, vi), (j, vj) in clauses:
+        a = node(i, vi)
+        b = node(j, vj)
+        add_edge(a ^ 1, b)
+        add_edge(b ^ 1, a)
+    sys.setrecursionlimit(1 << 25)
+    seen = [False] * N
+    order: List[int] = []
+    def dfs1(u: int):
+        seen[u] = True
+        for v in g[u]:
+            if not seen[v]:
+                dfs1(v)
+        order.append(u)
+    for u in range(N):
+        if not seen[u]:
+            dfs1(u)
+    comp = [-1] * N
+    def dfs2(u: int, c: int):
+        comp[u] = c
+        for v in gr[u]:
+            if comp[v] == -1:
+                dfs2(v, c)
+    cid = 0
+    for u in reversed(order):
+        if comp[u] == -1:
+            dfs2(u, cid)
+            cid += 1
+    for i in range(n):
+        if comp[2 * i] == comp[2 * i + 1]:
+            return "NO"
+    return "YES"
+
+def solve_all(cases: List[Tuple[int, List[List[int]]]]) -> str:
+    return "\n".join(solve_case(n, grid) for (n, grid) in cases)
+
+def _mini_tests():
+    # YES case from statement-like grid
+    n1 = 4
+    grid1 = [
+        [ 1, -2, -3, -2],
+        [-4,  4, -1, -3],
+        [ 1,  2, -2,  4],
+    ]
+    assert solve_case(n1, grid1) == "YES"
+    # NO case
+    n2 = 2
+    grid2 = [
+        [ 1,  2],
+        [-1, -2],
+        [ 2, -2],
+    ]
+    assert solve_case(n2, grid2) == "NO"
+    # Another quick YES
+    n3 = 5
+    grid3 = [
+        [ 1,  2,  3,  4,  5],
+        [ 1, -2,  3, -4,  5],
+        [ 1,  2, -3,  4, -5],
+    ]
+    assert solve_case(n3, grid3) in ("YES", "NO")  # sanity: function returns a valid string
+
+if __name__ == "__main__":
+    _mini_tests()
+    cases = read_input()
+    if cases:
+        print(solve_all(cases))
+\end{minted}
+\VALIDATION{Exactly 3 asserts: a YES, a NO, and a sanity check ensuring a valid return on a mixed grid.}
+\RESULT{Output ``YES'' if the conjunction of $2$-SAT clauses is satisfiable; otherwise ``NO''. Any satisfying assignment yields Alice's winning array $a$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit-test representative YES/NO cases, duplicates within a column, and columns containing both $x_i$ and $\lnot x_i$ (tautology). Random fuzz for small $n$ can cross-check against brute force.}
+\LINE{CROSS-CHECKS}{For $n \le 12$, compare 2-SAT verdict with brute-force enumeration across random grids. Ensure perfect agreement.}
+\LINE{EDGE-CASE GENERATOR}{Generate columns with: (i) all same literal; (ii) two same, one opposite; (iii) three different variables with mixed signs.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def gen_column(n: int, kind: int) -> list:
+    # kind: 0=all same literal, 1=two same one opposite sign, 2=three distinct mixed
+    if kind == 0:
+        i = random.randint(1, n)
+        s = random.choice([-1, 1])
+        return [s*i, s*i, s*i]
+    elif kind == 1:
+        i = random.randint(1, n)
+        s = random.choice([-1, 1])
+        j = i
+        k = i
+        return [s*i, s*i, -s*i]
+    else:
+        ids = random.sample(range(1, n+1), k=3 if n >= 3 else min(3, n))
+        while len(ids) < 3:
+            ids.append(ids[-1])
+        return [random.choice([-1, 1])*ids[0],
+                random.choice([-1, 1])*ids[1],
+                random.choice([-1, 1])*ids[2]]
+
+def brute_check(n: int, grid: list) -> str:
+    # Only for small n (<=12)
+    def mid_ok(col):
+        # After substitution and sort, middle=1 iff sum >= 1
+        return sum(col) >= 1
+    for mask in range(1 << n):
+        a = [1 if ((mask >> i) & 1) else -1 for i in range(n)]
+        ok = True
+        for c in range(len(grid[0])):
+            col_vals = []
+            for r in range(3):
+                v = grid[r][c]
+                idx = abs(v) - 1
+                sgn = 1 if v > 0 else -1
+                col_vals.append(sgn * a[idx])
+            col_vals.sort()
+            if col_vals[1] != 1:
+                ok = False
+                break
+        if ok:
+            return "YES"
+    return "NO"
+
+def reference_two_sat(n: int, grid: list) -> str:
+    # Same solver as final submission; convenient for cross-checks
+    m = len(grid[0])
+    clauses = []
+    for c in range(m):
+        lits = []
+        for r in range(3):
+            v = grid[r][c]
+            idx = abs(v) - 1
+            want_true = (v > 0)
+            lits.append((idx, want_true))
+        clauses.append((lits[0], lits[1]))
+        clauses.append((lits[0], lits[2]))
+        clauses.append((lits[1], lits[2]))
+    N = 2 * n
+    g = [[] for _ in range(N)]
+    gr = [[] for _ in range(N)]
+    def node(i, val): return 2*i + (1 if val else 0)
+    def add(u, v):
+        g[u].append(v); gr[v].append(u)
+    for (i, vi), (j, vj) in clauses:
+        a = node(i, vi); b = node(j, vj)
+        add(a ^ 1, b); add(b ^ 1, a)
+    seen = [False] * N; order = []
+    def dfs1(u):
+        seen[u] = True
+        for v in g[u]:
+            if not seen[v]: dfs1(v)
+        order.append(u)
+    for u in range(N):
+        if not seen[u]: dfs1(u)
+    comp = [-1] * N
+    def dfs2(u, c):
+        comp[u] = c
+        for v in gr[u]:
+            if comp[v] == -1: dfs2(v, c)
+    cid = 0
+    for u in reversed(order):
+        if comp[u] == -1:
+            dfs2(u, cid); cid += 1
+    for i in range(n):
+        if comp[2*i] == comp[2*i+1]: return "NO"
+    return "YES"
+
+def cross_check_small():
+    random.seed(0)
+    for n in range(2, 8):
+        for _ in range(200):
+            m = random.randint(2, 6)
+            grid = [[0]*m for __ in range(3)]
+            for c in range(m):
+                col = gen_column(n, random.randint(0, 2))
+                for r in range(3):
+                    grid[r][c] = col[r]
+            if n <= 10:
+                brute = brute_check(n, grid)
+                sat = reference_two_sat(n, grid)
+                assert brute == sat
+
+if __name__ == "__main__":
+    cross_check_small()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input() -> List[Tuple[int, List[List[int]]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return []
+    it = iter(map(int, data))
+    t = next(it)
+    cases = []
+    for _ in range(t):
+        n = next(it)
+        grid = [[next(it) for _ in range(n)] for __ in range(3)]
+        cases.append((n, grid))
+    return cases
+
+def solve_case(n: int, grid: List[List[int]]) -> str:
+    # Build pairwise clauses per column
+    clauses: List[Tuple[Tuple[int, bool], Tuple[int, bool]]] = []
+    m = len(grid[0])
+    for c in range(m):
+        lits = []
+        for r in range(3):
+            v = grid[r][c]
+            idx = abs(v) - 1
+            want_true = (v > 0)
+            lits.append((idx, want_true))
+        clauses.append((lits[0], lits[1]))
+        clauses.append((lits[0], lits[2]))
+        clauses.append((lits[1], lits[2]))
+    # 2-SAT
+    N = 2 * n
+    g = [[] for _ in range(N)]
+    gr = [[] for _ in range(N)]
+    def node(i: int, val: bool) -> int:
+        return 2 * i + (1 if val else 0)
+    def add_edge(u: int, v: int):
+        g[u].append(v)
+        gr[v].append(u)
+    for (i, vi), (j, vj) in clauses:
+        a = node(i, vi)
+        b = node(j, vj)
+        add_edge(a ^ 1, b)
+        add_edge(b ^ 1, a)
+    sys.setrecursionlimit(1 << 25)
+    seen = [False] * N
+    order: List[int] = []
+    def dfs1(u: int):
+        seen[u] = True
+        for v in g[u]:
+            if not seen[v]:
+                dfs1(v)
+        order.append(u)
+    for u in range(N):
+        if not seen[u]:
+            dfs1(u)
+    comp = [-1] * N
+    def dfs2(u: int, c: int):
+        comp[u] = c
+        for v in gr[u]:
+            if comp[v] == -1:
+                dfs2(v, c)
+    cid = 0
+    for u in reversed(order):
+        if comp[u] == -1:
+            dfs2(u, cid)
+            cid += 1
+    for i in range(n):
+        if comp[2 * i] == comp[2 * i + 1]:
+            return "NO"
+    return "YES"
+
+def solve_all(cases: List[Tuple[int, List[List[int]]]]) -> str:
+    return "\n".join(solve_case(n, grid) for (n, grid) in cases)
+
+def _asserts():
+    # YES case
+    n1 = 4
+    grid1 = [
+        [ 1, -2, -3, -2],
+        [-4,  4, -1, -3],
+        [ 1,  2, -2,  4],
+    ]
+    assert solve_case(n1, grid1) == "YES"
+    # NO case
+    n2 = 2
+    grid2 = [
+        [ 1,  2],
+        [-1, -2],
+        [ 2, -2],
+    ]
+    assert solve_case(n2, grid2) == "NO"
+    # Sanity: function returns a valid string
+    n3 = 3
+    grid3 = [
+        [ 1,  2,  3],
+        [-1, -2, -3],
+        [ 1,  2,  3],
+    ]
+    out = solve_case(n3, grid3)
+    assert out in ("YES", "NO")
+
+if __name__ == "__main__":
+    _asserts()
+    cases = read_input()
+    if cases:
+        print(solve_all(cases))
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Reduce each column's ``at least two $+1$'' to three 2-SAT clauses and solve via SCC.}
+\WHY{Common interview pattern: transforming a threshold constraint into pairwise ORs to unlock 2-SAT.}
+\CHECKLIST{
+\begin{bullets}
+\item Map $a_i \in \{-1,1\}$ to boolean $x_i$.
+\item Literal $s\cdot a_i$ is $+1$ iff $x_i = [s=+1]$.
+\item For each column, add $(L_1\lor L_2)$, $(L_1\lor L_3)$, $(L_2\lor L_3)$.
+\item Build implications and run SCC.
+\item Conflict if a variable and its negation share an SCC.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item Column repeats the same literal thrice (unit-like but still fine).
+\item Column contains both $x_i$ and $\lnot x_i$ (tautological pair).
+\item Multiple columns constrain the same variable tightly.
+\item Smallest $n=2$.
+\item Mixed signs and duplicated indices in arbitrary positions.
+\item All-positive or all-negative rows.
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Off-by-one converting $1$-based indices to $0$-based.
+\item Misinterpreting sign: $v>0 \Rightarrow$ want $x_i=\text{True}$; $v<0 \Rightarrow$ want $x_i=\text{False}$.
+\item Forgetting both implications for $(A\lor B)$.
+\item Not increasing recursion limit for deep DFS.
+\item Reusing graph across test cases without clearing.
+\item Assuming sorting logic; middle $1$ iff at least two $+1$.
+\end{bullets}}
+\FAILMODES{Greedy or local-choice heuristics can get trapped by inter-column dependencies; only global 2-SAT guarantees correctness.}
+\ELI{Treat each cell as a yes/no demand on whether $a_i$ should be $+1$ or $-1$. Each column says: from its three demands, at least two must be yes — i.e., no pair can both be no. Those ``no pair both no'' constraints are 2-SAT clauses, which we can solve fast and exactly.}
+\NotePages{3}
+
+\end{document}

@@ -1,0 +1,854 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Prison Break}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1427/H}}
+\LINE{DIFFICULTY / RATING}{3500}
+\STATEMENT{A prisoner wants to escape from a prison. The prison is represented by the interior of the convex polygon with vertices $P_1, P_2, P_3, \ldots, P_{n+1}, P_{n+2}, P_{n+3}$. It holds $P_1=(0,0)$, $P_{n+1}=(0, h)$, $P_{n+2}=(-10^{18}, h)$ and $P_{n+3}=(-10^{18}, 0)$.
+
+The prison walls $P_{n+1}P_{n+2}$, $P_{n+2}P_{n+3}$ and $P_{n+3}P_1$ are very high and the prisoner is not able to climb them. Hence his only chance is to reach a point on one of the walls $P_1P_2, P_2P_3,\dots, P_{n}P_{n+1}$ and escape from there. On the perimeter of the prison, there are two guards. The prisoner moves at speed $1$ while the guards move, remaining always on the perimeter of the prison, with speed $v$.
+
+If the prisoner reaches a point of the perimeter where there is a guard, the guard kills the prisoner. If the prisoner reaches a point of the part of the perimeter he is able to climb and there is no guard there, he escapes immediately. Initially the prisoner is at the point $(-10^{17}, h/2)$ and the guards are at $P_1$.
+
+Find the minimum speed $v$ such that the guards can guarantee that the prisoner will not escape (assuming that both the prisoner and the guards move optimally).
+
+Notes:
+\begin{itemize}
+\item At any moment, the guards and the prisoner can see each other.
+\item The ``climbing part'' of the escape takes no time.
+\item You may assume that both the prisoner and the guards can change direction and velocity instantly and that they both have perfect reflexes (so they can react instantly to whatever the other one is doing).
+\item The two guards can plan ahead how to react to the prisoner movements.
+\end{itemize}
+
+Input:
+The first line of the input contains $n$ ($1 \le n \le 50$).
+
+The following $n+1$ lines describe $P_1, P_2,\dots, P_{n+1}$. The $i$-th of such lines contain two integers $x_i$, $y_i$ ($0\le x_i, y_i\le 1{,}000$) — the coordinates of $P_i=(x_i, y_i)$.
+
+It is guaranteed that $P_1=(0,0)$ and $x_{n+1}=0$. The polygon with vertices $P_1,P_2,\dots, P_{n+1}, P_{n+2}, P_{n+3}$ (where $P_{n+2}, P_{n+3}$ shall be constructed as described in the statement) is guaranteed to be convex and such that there is no line containing three of its vertices.
+
+Output:
+Print a single real number, the minimum speed $v$ that allows the guards to guarantee that the prisoner will not escape. Your answer will be considered correct if its relative or absolute error does not exceed $10^{-6}$.}
+\BREAKDOWN{Prisoner starts at $Q=(-10^{17}, h/2)$ inside a convex polygon. He can escape only by reaching the polyline $C=P_1P_2\dots P_{n+1}$ on the ``right'' boundary. Both guards start at $P_1$ and may only move along the perimeter. Because the other direction from $P_1$ to $P_{n+1}$ goes around the extremely long left walls, both guards effectively can only advance along $C$ from $P_1$. The guards prevent escape at a point $X\in C$ iff some guard can arrive at $X$ no later than the prisoner can. The minimum $v$ making this true for all $X\in C$ is the maximum over $X$ of (guard path length from $P_1$ to $X$) divided by (Euclidean distance $QX$).}
+\ELI{The guards must beat the prisoner to every possible exit point along the climbable boundary; since they both start at the same spot, the earliest any guard can reach a point at arclength $s$ is $s/v$. So choose $v$ so that $s/v$ is always at most the prisoner's straight-line time to that point.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test case.\newline
+- Integer $n$ with $1 \le n \le 50$.\newline
+- Then $n+1$ lines: integers $x_i, y_i$ with $0 \le x_i, y_i \le 1{,}000$, giving $P_i=(x_i,y_i)$ for $i=1,\dots,n+1$.\newline
+- It is guaranteed $P_1=(0,0)$ and $x_{n+1}=0$.}
+\OUTPUTS{Print a single real number: the minimum $v$ ensuring the guards can always prevent escape. Absolute or relative error up to $10^{-6}$ is allowed.}
+\SAMPLES{Example (toy, not from platform):\newline
+Input:
+\begin{verbatim}
+1
+0 0
+0 1000
+\end{verbatim}
+Output:
+\begin{verbatim}
+1e-14
+\end{verbatim}
+Explanation: $C$ is the vertical segment from $(0,0)$ to $(0,1000)$. The best escape point is near the top, yielding $v \approx 1000/10^{17}=10^{-14}$. Another example:
+\newline
+Input:
+\begin{verbatim}
+2
+0 0
+500 600
+0 1000
+\end{verbatim}
+Output:
+\begin{verbatim}
+1.2e-14
+\end{verbatim}
+(illustrative only).}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let the climbable polyline be $C$ from $P_1$ to $P_{n+1}$, parametrized by arclength $s\in[0,L]$ where $L$ is its total Euclidean length. Let $X(s)$ be the point at arclength $s$. The prisoner is at $Q=(-10^{17}, h/2)$, where $h=y_{n+1}$. Prisoner time to $X(s)$ is $T_p(s)=\lVert QX(s)\rVert_2$. Earliest guard time is $T_g(s)=s/v$. We need $T_g(s)\le T_p(s)$ for all $s\in[0,L]$.}
+\varmapStart
+\var{Q}{prisoner start point $(-10^{17}, h/2)$}
+\var{C}{polyline $P_1P_2\dots P_{n+1}$ parametrized by arclength}
+\var{s}{arclength from $P_1$ to a point on $C$}
+\var{L}{total length of $C$}
+\var{X(s)}{point on $C$ at arclength $s$}
+\var{T_p(s)}{prisoner time $=\lVert QX(s)\rVert_2$}
+\var{T_g(s)}{guard time $=s/v$}
+\var{v^\ast}{minimal speed ensuring $T_g(s)\le T_p(s)$ for all $s$}
+\varmapEnd
+\GOVERN{
+\begin{BreakableEquation*}
+v^\ast \;=\; \max_{s\in[0,L]} \frac{s}{\lVert QX(s)\rVert_2}.
+\end{BreakableEquation*}
+}
+\ASSUMPTIONS{Convexity guarantees the segment from $Q$ to any $X\in C$ lies inside the prison, so $T_p(s)$ is the straight-line distance. Both guards start at $P_1$; the alternative path to $P_{n+1}$ around the left is vastly longer and thus dominated, so earliest arrival to $X(s)$ is $s/v$.}
+\INVARIANTS{Along each edge $P_iP_{i+1}$, $X(s)$ is an affine function of $s$, and $\lVert QX(s)\rVert_2$ is a convex function of the linear parameter; thus the maximizer on an edge occurs either at endpoints or at a unique stationary point from first-order optimality.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Compute $v^\ast=\max_{X\in C} \dfrac{\text{arclength}(P_1\to X)}{\lVert QX\rVert_2}$ by discretizing each segment uniformly and taking the maximum ratio.}
+\ASSUMPTIONS{Sufficiently fine discretization (e.g., 2000 samples per edge) approximates the maximum within tolerance since $C$ is short compared to the $x$-offset $10^{17}$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Read $P_1,\dots,P_{n+1}$ and compute $h=y_{n+1}$, $Q=(-10^{17}, h/2)$.
+\item Walk each edge, maintain cumulative arclength $s$. For $K$ samples per edge, evaluate points $X$ at equally spaced parameters, compute ratio $s/\lVert QX\rVert_2$, track maximum.
+\item Print the maximum ratio as $v$. 
+\end{algosteps}
+\COMPLEXITY{Let $m=n$ edges and $K$ samples per edge. Time $O(mK)$, space $O(1)$.}
+\[
+\begin{aligned}
+T(n) &= O(nK),\quad S(n)=O(1).
+\end{aligned}
+\]
+\CORRECTNESS{The continuous maximization is approximated by dense sampling. Since the denominator varies smoothly and the numerator is linear along edges, the discretization error shrinks as $K$ increases.}
+\EDGECASES{Single edge $n=1$; horizontal/vertical edges; degenerate tiny lengths; numeric precision for very small $v$.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+import math
+
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.read().strip().split()
+    else:
+        data = data.strip().split()
+    it = iter(data)
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    pts = []
+    for _ in range(n + 1):
+        x = float(next(it)); y = float(next(it))
+        pts.append((x, y))
+    return n, pts
+
+def compute_v_discrete(n, pts, samples_per_edge=2000):
+    # Q = (-1e17, h/2)
+    h = pts[-1][1]
+    qx, qy = -1e17, 0.5 * h
+    # cumulative arclength
+    vbest = 0.0
+    s_cum = 0.0
+    for i in range(n):
+        x1, y1 = pts[i]
+        x2, y2 = pts[i+1]
+        dx, dy = x2 - x1, y2 - y1
+        L = math.hypot(dx, dy)
+        if L == 0.0:
+            continue
+        for k in range(samples_per_edge + 1):
+            t = k / samples_per_edge
+            x = x1 + t * dx
+            y = y1 + t * dy
+            s_here = s_cum + t * L
+            d = math.hypot(x - qx, y - qy)
+            if d > 0:
+                vbest = max(vbest, s_here / d)
+        s_cum += L
+    return vbest
+
+def solve_case(n, pts):
+    v_est = compute_v_discrete(n, pts)
+    return v_est
+
+def solve_all():
+    parsed = read_input()
+    if parsed is None:
+        return
+    n, pts = parsed
+    ans = solve_case(n, pts)
+    # Print with enough precision
+    print("{:.12f}".format(ans))
+
+def _self_test():
+    # Vertical segment case: n=1, P1=(0,0), P2=(0,h)
+    n = 1
+    h = 1000.0
+    pts = [(0.0, 0.0), (0.0, h)]
+    v = solve_case(n, pts)
+    # Expected approximately h / 1e17
+    expected = h / 1e17
+    assert abs(v - expected) / expected < 5e-3, (v, expected)  # within 0.5%
+    # Slightly tilted mid point
+    n = 2
+    pts = [(0.0, 0.0), (500.0, 600.0), (0.0, 1000.0)]
+    v2 = solve_case(n, pts)
+    assert v2 > 0.0
+    # Monotonicity: longer path should not reduce max ratio below simple vertical baseline by huge factor
+    assert v2 > 0.3 * (1000.0 / 1e17)
+
+if __name__ == "__main__":
+    if sys.argv[-1] == "_test":
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Two asserts: the pure vertical case gives $v \approx h/10^{17}$. A small broken-line case yields a positive $v$ and not catastrophically smaller than the vertical baseline.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Stationary-Point per Segment (Closed-Form Critical Point)}
+\WHICHFORMULA{On an edge $P_iP_{i+1}$, parametrize by $t\in[0,1]$: $X(t)=P_i + t\,(P_{i+1}-P_i)$. Let $s(t)=S_i + t\,\ell_i$ where $S_i$ is cumulative arclength at $P_i$ and $\ell_i=\lVert P_{i+1}-P_i\rVert_2$. Maximize $f(t)=\dfrac{s(t)}{\lVert QX(t)\rVert_2}$. Setting $\tfrac{d}{dt} f(t)=0$ yields a linear equation in $t$, so the per-edge maximizer lies in $\{0,1,t^\ast\cap[0,1]\}$.}
+\ASSUMPTIONS{Convex polygon; $Q$ is inside, hence straight-line travel valid. Unique stationary point per segment from the linearity of $X(t)$ and quadratic norm in the denominator.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute cumulative arclength $S_i$ along $C$.
+\item For each edge $P_iP_{i+1}$, form $X(t)=(x_i+dx\,t, y_i+dy\,t)$ with $(dx,dy)=P_{i+1}-P_i$, length $\ell_i$.
+\item Write $\lVert QX(t)\rVert_2^2 = A t^2 + B t + C$, where $A=dx^2+dy^2$, $B=2(dx(x_i-q_x)+dy(y_i-q_y))$, $C=(x_i-q_x)^2+(y_i-q_y)^2$.
+\item Let $a=S_i$, $b=\ell_i$. The stationary point solves $(bB-2aA)\,t + (2bC-aB)=0$, i.e.,
+\begin{BreakableEquation*}
+t^\ast = \frac{aB-2bC}{bB-2aA}.
+\end{BreakableEquation*}
+Clamp $t^\ast$ to $[0,1]$ if needed, and evaluate $f(t)$ at $t\in\{0,1,t^\ast\}$, take the maximum.
+\end{algosteps}
+\COMPLEXITY{Linear in the number of edges; constant work per edge.}
+\[
+\begin{aligned}
+T(n) &= O(n),\quad S(n)=O(1).
+\end{aligned}
+\]
+\CORRECTNESS{For $f(t)=(a+bt)/\sqrt{At^2+Bt+C}$ with $A>0$, critical points satisfy a linear equation; thus at most one interior maximizer. The global per-edge maximum is attained among the endpoints and the interior critical point (if inside). Taking the max across edges yields $v^\ast$.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+import math
+
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.read().strip().split()
+    else:
+        data = data.strip().split()
+    it = iter(data)
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    pts = []
+    for _ in range(n + 1):
+        x = float(next(it)); y = float(next(it))
+        pts.append((x, y))
+    return n, pts
+
+def compute_v_analytic(n, pts):
+    h = pts[-1][1]
+    qx, qy = -1e17, 0.5 * h
+    # cumulative arclengths at vertices
+    S = [0.0] * (n + 1)
+    for i in range(1, n + 1):
+        x0, y0 = pts[i-1]
+        x1, y1 = pts[i]
+        S[i] = S[i-1] + math.hypot(x1 - x0, y1 - y0)
+    best = 0.0
+    for i in range(n):
+        x0, y0 = pts[i]
+        x1, y1 = pts[i+1]
+        dx, dy = x1 - x0, y1 - y0
+        L = math.hypot(dx, dy)
+        if L == 0.0:
+            continue
+        a = S[i]
+        b = L
+        A = dx*dx + dy*dy
+        B = 2.0 * (dx * (x0 - qx) + dy * (y0 - qy))
+        C = (x0 - qx)**2 + (y0 - qy)**2
+        cand = []
+        # endpoints
+        cand.extend([0.0, 1.0])
+        denom = (b * B - 2.0 * a * A)
+        num = (a * B - 2.0 * b * C)
+        if abs(denom) > 0.0:
+            t_star = num / denom
+            if 0.0 <= t_star <= 1.0:
+                cand.append(t_star)
+        for t in cand:
+            x = x0 + dx * t
+            y = y0 + dy * t
+            s_here = a + b * t
+            d = math.hypot(x - qx, y - qy)
+            if d > 0:
+                best = max(best, s_here / d)
+    return best
+
+def solve_case(n, pts):
+    return compute_v_analytic(n, pts)
+
+def solve_all():
+    parsed = read_input()
+    if parsed is None:
+        return
+    n, pts = parsed
+    ans = solve_case(n, pts)
+    print("{:.12f}".format(ans))
+
+def _self_test():
+    # Vertical segment case
+    n = 1
+    h = 1000.0
+    pts = [(0.0, 0.0), (0.0, h)]
+    v = solve_case(n, pts)
+    expected = h / 1e17
+    assert abs(v - expected) / expected < 1e-12 + 1e-9, (v, expected)
+    # Simple two-edge polyline
+    n = 2
+    pts = [(0.0, 0.0), (500.0, 600.0), (0.0, 1000.0)]
+    v2 = solve_case(n, pts)
+    # Should be at least as large as the endpoint ratios
+    # bottom endpoint ratio is 0; top endpoint ratio is L / dist(Q,(0,h))
+    L = math.hypot(500,600) + math.hypot(500,400)
+    top_d = math.hypot(0.0 - (-1e17), 1000.0 - 500.0)
+    assert v2 >= L / top_d - 1e-18
+
+if __name__ == "__main__":
+    if sys.argv[-1] == "_test":
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Checks: exact vertical case matches $h/10^{17}$ to machine precision; a polyline case satisfies a lower bound based on the top endpoint.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Global Maximum via Per-Segment Closed Form}
+\WHICHFORMULA{Use the per-segment stationary point formula and endpoint checks to compute $v^\ast=\max \dfrac{s}{\lVert QX\rVert_2}$ in $O(n)$ time.}
+\ASSUMPTIONS{Convexity ensures straight-line feasibility for the prisoner; both guards start at $P_1$ so the earliest arrival to $X(s)$ is $s/v$. The extremely long alternative route around the left side cannot improve earliest arrival.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute cumulative arclengths $S_i$ along the polyline $C$.
+\item For each edge, evaluate $f(t)$ at $t\in\{0,1,t^\ast\cap[0,1]\}$ with $t^\ast=(aB-2bC)/(bB-2aA)$ as derived; track the maximum ratio.
+\item Output the maximum as the minimal $v$. 
+\end{algosteps}
+\OPTIMALITY{For each segment, $f(t)$ has at most one interior stationary point; checking endpoints and this point yields the exact maximum. The global optimum over $C$ is the maximum over segments. This is tight by construction.}
+\COMPLEXITY{$O(n)$ time, $O(1)$ space.}
+\[
+\begin{aligned}
+T(n) &= O(n),\quad S(n)=O(1).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+import math
+
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.read().strip().split()
+    else:
+        data = data.strip().split()
+    it = iter(data)
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    pts = []
+    for _ in range(n + 1):
+        x = float(next(it)); y = float(next(it))
+        pts.append((x, y))
+    return n, pts
+
+def solve_case(n, pts):
+    # Prisoner start point
+    h = pts[-1][1]
+    qx, qy = -1e17, 0.5 * h
+    # cumulative arclengths
+    S = [0.0] * (n + 1)
+    for i in range(1, n + 1):
+        x0, y0 = pts[i-1]
+        x1, y1 = pts[i]
+        S[i] = S[i-1] + math.hypot(x1 - x0, y1 - y0)
+    best = 0.0
+    for i in range(n):
+        x0, y0 = pts[i]
+        x1, y1 = pts[i+1]
+        dx, dy = x1 - x0, y1 - y0
+        L = math.hypot(dx, dy)
+        if L == 0.0:
+            continue
+        a = S[i]
+        b = L
+        A = dx*dx + dy*dy
+        B = 2.0 * (dx * (x0 - qx) + dy * (y0 - qy))
+        C = (x0 - qx)**2 + (y0 - qy)**2
+        # candidates: endpoints and interior stationary point if exists
+        for t in (0.0, 1.0):
+            x = x0 + dx * t
+            y = y0 + dy * t
+            s_here = a + b * t
+            d = math.hypot(x - qx, y - qy)
+            if d > 0:
+                best = max(best, s_here / d)
+        denom = (b * B - 2.0 * a * A)
+        num = (a * B - 2.0 * b * C)
+        if abs(denom) > 0.0:
+            t_star = num / denom
+            if 0.0 <= t_star <= 1.0:
+                x = x0 + dx * t_star
+                y = y0 + dy * t_star
+                s_here = a + b * t_star
+                d = math.hypot(x - qx, y - qy)
+                if d > 0:
+                    best = max(best, s_here / d)
+    return best
+
+def solve_all():
+    parsed = read_input()
+    if parsed is None:
+        return
+    n, pts = parsed
+    ans = solve_case(n, pts)
+    print("{:.12f}".format(ans))
+
+def _self_test():
+    # 1) Vertical line n=1
+    n = 1
+    h = 1000.0
+    pts = [(0.0, 0.0), (0.0, h)]
+    v = solve_case(n, pts)
+    expected = h / 1e17
+    assert abs(v - expected) / expected < 1e-12 + 1e-9
+    # 2) Two edges, check against dense sampling
+    n2 = 2
+    pts2 = [(0.0, 0.0), (300.0, 400.0), (0.0, 1000.0)]
+    v_exact = solve_case(n2, pts2)
+    # brute compare
+    def brute(n, pts):
+        h = pts[-1][1]
+        qx, qy = -1e17, 0.5 * h
+        best = 0.0
+        s_cum = 0.0
+        for i in range(n):
+            x1, y1 = pts[i]
+            x2, y2 = pts[i+1]
+            dx, dy = x2 - x1, y2 - y1
+            L = math.hypot(dx, dy)
+            if L == 0:
+                continue
+            for k in range(5000 + 1):
+                t = k / 5000.0
+                x = x1 + dx * t
+                y = y1 + dy * t
+                s_here = s_cum + t * L
+                d = math.hypot(x - qx, y - qy)
+                if d > 0:
+                    best = max(best, s_here / d)
+            s_cum += L
+        return best
+    v_brute = brute(n2, pts2)
+    assert abs(v_exact - v_brute) <= max(1e-18, 1e-6 * v_brute)
+    # 3) Nontrivial zigzag
+    n3 = 3
+    pts3 = [(0.0, 0.0), (400.0, 100.0), (200.0, 700.0), (0.0, 1000.0)]
+    v3 = solve_case(n3, pts3)
+    assert v3 > 0.0
+
+if __name__ == "__main__":
+    if sys.argv[-1] == "_test":
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Exactly three checks: (1) vertical segment closed-form; (2) agreement with brute-force sampling on a two-edge case; (3) positivity on a zigzag polyline.}
+\RESULT{The printed value is the minimal guard speed $v^\ast$ making $s/v \le \lVert QX(s)\rVert_2$ for all $X(s)$ on $C$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests cover degenerate and structured geometries; cross-check analytic solution with brute-force sampling; ensure numeric stability given large $x$-offset $10^{17}$.}
+\LINE{CROSS-CHECKS}{Compare Approach A (sampling) vs Approach C (analytic) on small handcrafted cases; relative difference should be within sampling tolerance.}
+\LINE{EDGE-CASE GENERATOR}{Generate random small polylines from $(0,0)$ to $(0,h)$ with $h\in[1,1000]$, intermediate vertices $(x_i,y_i)$ in $[0,1000]$, monotone in $y$, to keep convexity with left walls implied.}
+\begin{minted}{python}
+import sys, math, random
+
+def gen_polyline(n, h):
+    ys = sorted(random.sample(range(1, int(h)), n - 1))
+    ys = [0] + ys + [int(h)]
+    pts = []
+    for y in ys:
+        x = random.randint(0, 1000)
+        if y == 0 or y == int(h):
+            x = 0
+        pts.append((float(x), float(y)))
+    return pts
+
+def test_cross(num=30):
+    from math import hypot
+    # Reuse functions from Approach C code
+    def compute_v_analytic(n, pts):
+        h = pts[-1][1]
+        qx, qy = -1e17, 0.5 * h
+        S = [0.0] * (n + 1)
+        for i in range(1, n + 1):
+            x0, y0 = pts[i-1]; x1, y1 = pts[i]
+            S[i] = S[i-1] + hypot(x1 - x0, y1 - y0)
+        best = 0.0
+        for i in range(n):
+            x0, y0 = pts[i]; x1, y1 = pts[i+1]
+            dx, dy = x1 - x0, y1 - y0
+            L = hypot(dx, dy)
+            if L == 0.0: continue
+            a, b = S[i], L
+            A = dx*dx + dy*dy
+            B = 2.0 * (dx * (x0 + 1e17) + dy * (y0 - 0.5 * pts[-1][1]))
+            # Note: x0 - qx = x0 - (-1e17) = x0 + 1e17
+            # qy = h/2
+            C = (x0 + 1e17)**2 + (y0 - 0.5 * pts[-1][1])**2
+            # adjust B sign since above used (x0 - qx) form; ensure consistent:
+            # In this function, B = 2*(dx*(x0 - qx) + dy*(y0 - qy)).
+            B = 2.0 * (dx * (x0 + 1e17) + dy * (y0 - 0.5 * pts[-1][1]))
+            for t in (0.0, 1.0):
+                x = x0 + dx * t; y = y0 + dy * t
+                s_here = a + b * t
+                d = hypot(x + 1e17, y - 0.5 * pts[-1][1])
+                if d > 0: best = max(best, s_here / d)
+            denom = (b * B - 2.0 * a * A)
+            num = (a * B - 2.0 * b * C)
+            if abs(denom) > 0.0:
+                t_star = num / denom
+                if 0.0 <= t_star <= 1.0:
+                    x = x0 + dx * t_star; y = y0 + dy * t_star
+                    s_here = a + b * t_star
+                    d = hypot(x + 1e17, y - 0.5 * pts[-1][1])
+                    if d > 0: best = max(best, s_here / d)
+        return best
+
+    def compute_v_bruteforce(n, pts):
+        h = pts[-1][1]
+        qx, qy = -1e17, 0.5 * h
+        best = 0.0
+        s_cum = 0.0
+        for i in range(n):
+            x1, y1 = pts[i]
+            x2, y2 = pts[i+1]
+            dx, dy = x2 - x1, y2 - y1
+            L = math.hypot(dx, dy)
+            if L == 0:
+                continue
+            for k in range(4000 + 1):
+                t = k / 4000.0
+                x = x1 + dx * t
+                y = y1 + dy * t
+                s_here = s_cum + t * L
+                d = math.hypot(x - qx, y - qy)
+                if d > 0:
+                    best = max(best, s_here / d)
+            s_cum += L
+        return best
+
+    for _ in range(num):
+        h = random.randint(1, 1000)
+        n = random.randint(1, 5)
+        pts = gen_polyline(n, h)
+        v1 = compute_v_analytic(n, pts)
+        v2 = compute_v_bruteforce(n, pts)
+        assert abs(v1 - v2) <= max(1e-18, 5e-5 * v2)
+
+if __name__ == "__main__":
+    test_cross()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+import math
+
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.read().strip().split()
+    else:
+        data = data.strip().split()
+    it = iter(data)
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    pts = []
+    for _ in range(n + 1):
+        x = float(next(it)); y = float(next(it))
+        pts.append((x, y))
+    return n, pts
+
+def solve_case(n, pts):
+    h = pts[-1][1]
+    qx, qy = -1e17, 0.5 * h
+    S = [0.0] * (n + 1)
+    for i in range(1, n + 1):
+        x0, y0 = pts[i-1]
+        x1, y1 = pts[i]
+        S[i] = S[i-1] + math.hypot(x1 - x0, y1 - y0)
+    best = 0.0
+    for i in range(n):
+        x0, y0 = pts[i]
+        x1, y1 = pts[i+1]
+        dx, dy = x1 - x0, y1 - y0
+        L = math.hypot(dx, dy)
+        if L == 0.0:
+            continue
+        a = S[i]
+        b = L
+        A = dx*dx + dy*dy
+        B = 2.0 * (dx * (x0 - qx) + dy * (y0 - qy))
+        C = (x0 - qx)**2 + (y0 - qy)**2
+        # endpoints
+        for t in (0.0, 1.0):
+            x = x0 + dx * t
+            y = y0 + dy * t
+            s_here = a + b * t
+            d = math.hypot(x - qx, y - qy)
+            if d > 0:
+                best = max(best, s_here / d)
+        # stationary point
+        denom = (b * B - 2.0 * a * A)
+        num = (a * B - 2.0 * b * C)
+        if abs(denom) > 0.0:
+            t_star = num / denom
+            if 0.0 <= t_star <= 1.0:
+                x = x0 + dx * t_star
+                y = y0 + dy * t_star
+                s_here = a + b * t_star
+                d = math.hypot(x - qx, y - qy)
+                if d > 0:
+                    best = max(best, s_here / d)
+    return best
+
+def solve_all():
+    parsed = read_input()
+    if parsed is None:
+        return
+    n, pts = parsed
+    ans = solve_case(n, pts)
+    print("{:.12f}".format(ans))
+
+def _self_test():
+    # Vertical baseline
+    n = 1
+    h = 1000.0
+    pts = [(0.0, 0.0), (0.0, h)]
+    v = solve_case(n, pts)
+    expected = h / 1e17
+    assert abs(v - expected) / expected < 1e-12 + 1e-9
+    # Compare with brute force
+    def brute(n, pts):
+        h = pts[-1][1]
+        qx, qy = -1e17, 0.5 * h
+        best = 0.0
+        s_cum = 0.0
+        for i in range(n):
+            x1, y1 = pts[i]
+            x2, y2 = pts[i+1]
+            dx, dy = x2 - x1, y2 - y1
+            L = math.hypot(dx, dy)
+            if L == 0:
+                continue
+            for k in range(3000 + 1):
+                t = k / 3000.0
+                x = x1 + dx * t
+                y = y1 + dy * t
+                s_here = s_cum + t * L
+                d = math.hypot(x - qx, y - qy)
+                if d > 0:
+                    best = max(best, s_here / d)
+            s_cum += L
+        return best
+    n2 = 2
+    pts2 = [(0.0, 0.0), (250.0, 600.0), (0.0, 1000.0)]
+    v_exact = solve_case(n2, pts2)
+    v_brute = brute(n2, pts2)
+    assert abs(v_exact - v_brute) <= max(1e-18, 1e-5 * v_brute)
+
+if __name__ == "__main__":
+    if sys.argv[-1] == "_test":
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Maximize along the climbable boundary the ratio of arclength from $P_1$ to straight-line distance from $Q$; that maximum is exactly the minimal guard speed.}
+\WHY{Separates pursuit along the boundary from straight-line motion in convex interior; a classic ratio-of-times barrier analysis.}
+\CHECKLIST{%
+\begin{bullets}
+\item Build arclength prefix $S_i$.
+\item For each edge, compute $(A,B,C)$ for squared distance to $Q$.
+\item Evaluate $f(t)$ at $t=0,1$ and at $t^\ast$ if inside.
+\item Take the global maximum and print with high precision.
+\end{bullets}
+}
+\EDGECASES{%
+\begin{bullets}
+\item $n=1$ single vertical segment.
+\item Very short edges ($\ell_i\approx 0$).
+\item Nearly horizontal edges near $y=h/2$.
+\item Large $h$ vs small $h$.
+\item Colinear but non-degenerate bends.
+\item Numeric underflow in $v\sim 10^{-14}$ scale outputs.
+\end{bullets}
+}
+\PITFALLS{%
+\begin{bullets}
+\item Forgetting both guards start at $P_1$; the other direction along the perimeter is prohibitively long.
+\item Using integer math for $10^{17}$ distances; always use floating-point.
+\item Dividing by zero when $d=\lVert QX\rVert_2$; avoid since $Q$ is far from $C$.
+\item Mishandling $t^\ast$ when denominator $bB-2aA=0$; then no interior critical point.
+\item Accumulating arclength incorrectly (mixing up indices).
+\item Printing with insufficient precision (failing tolerance).
+\end{bullets}
+}
+\FAILMODES{Sampling-only approaches may miss the true maximum if the stationary point lies between samples. The analytic per-edge solution avoids this by solving for $t^\ast$ exactly.}
+\ELI{The guards need to reach any exit point faster than the prisoner. Since they can only run along the edge and start at the bottom, the time they need is proportional to the distance along the edge, while the prisoner needs straight-line time. The slowest guard speed that still works is the worst-case ratio along the edge.}
+\NotePages{3}
+
+\end{document}

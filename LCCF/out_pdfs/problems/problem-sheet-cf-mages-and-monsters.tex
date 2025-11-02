@@ -1,0 +1,929 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Mages and Monsters}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/792/F}}
+\LINE{DIFFICULTY / RATING}{3100}
+\STATEMENT{Vova plays a computer game known as Mages and Monsters. Vova's character is a mage. Though as he has just started, his character knows no spells.
+
+Vova's character can learn new spells during the game. Every spell is characterized by two values $x_i$ and $y_i$ — damage per second and mana cost per second, respectively. Vova does not have to use a spell for an integer amount of seconds. More formally, if he uses a spell with damage $x$ and mana cost $y$ for $z$ seconds, then he will deal $x\cdot z$ damage and spend $y\cdot z$ mana (no rounding). If there is no mana left (mana amount is set in the start of the game and it remains the same at the beginning of every fight), then character will not be able to use any spells. It is prohibited to use multiple spells simultaneously.
+
+Also Vova can fight monsters. Every monster is characterized by two values $t_j$ and $h_j$ — monster kills Vova's character in $t_j$ seconds and has $h_j$ health points. Mana refills after every fight (or Vova's character revives with full mana reserve), so previous fights have no influence on further ones.
+
+Vova's character kills a monster, if he deals $h_j$ damage to it in no more than $t_j$ seconds using his spells (it is allowed to use more than one spell in a fight) and spending no more mana than he had at the beginning of the fight. If monster's health becomes zero exactly in $t_j$ seconds (it means that the monster and Vova's character kill each other at the same time), then Vova wins the fight.
+
+You have to write a program which can answer two types of queries:
+\begin{itemize}
+\item 1 x y — Vova's character learns new spell which deals $x$ damage per second and costs $y$ mana per second.
+\item 2 t h — Vova fights the monster which kills his character in $t$ seconds and has $h$ health points.
+\end{itemize}
+Note that queries are given in a different form. Also remember that Vova's character knows no spells at the beginning of the game.
+
+For every query of second type you have to determine if Vova is able to win the fight with corresponding monster.
+
+Input:
+The first line contains two integer numbers $q$ and $m$ ($2 \le q \le 10^5$, $1 \le m \le 10^{12}$) — the number of queries and the amount of mana at the beginning of every fight.
+
+$i$-th of each next $q$ lines contains three numbers $k_i$, $a_i$ and $b_i$ ($1 \le k_i \le 2$, $1 \le a_i, b_i \le 10^6$).
+
+Using them you can restore queries this way: let $j$ be the index of the last query of second type with positive answer ($j = 0$ if there were none of these).
+\begin{itemize}
+\item If $k_i = 1$, then character learns spell with $x = (a_i + j) \bmod 10^6 + 1$, $y = (b_i + j) \bmod 10^6 + 1$.
+\item If $k_i = 2$, then you have to determine if Vova is able to win the fight against monster with $t = (a_i + j) \bmod 10^6 + 1$, $h = (b_i + j) \bmod 10^6 + 1$.
+\end{itemize}
+Output:
+For every query of second type print YES if Vova is able to win the fight with corresponding monster and NO otherwise.
+
+Note:
+In first example Vova's character at first learns the spell with $5$ damage and $10$ mana cost per second. Next query is a fight with monster which can kill character in $20$ seconds and has $50$ health points. Vova kills it in $10$ seconds (spending $100$ mana). Next monster has $52$ health, so Vova cannot deal that much damage with only $100$ mana.}
+\BREAKDOWN{Reduce each fight to maximizing total damage under two linear resource constraints: time $\le t$ and mana $\le m$. Because usage is continuous and spells cannot overlap, the feasible average rates lie in the convex hull of points $(y,x)$. Query reduces to evaluating the upper convex envelope at $c = m/t$ and checking if $t\cdot X(c) \ge h$. Maintain this envelope dynamically under spell insertions.}
+\ELI{Keep the best trade-off curve between mana-per-second and damage-per-second; for each monster, read off how much damage per second you can sustain given average mana $m/t$. Multiply by $t$ and compare to its health.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Two integers $q$, $m$.
+Then $q$ lines: $k_i$, $a_i$, $b_i$. Decoded per statement using the last YES index $j$. All decoded values are in $[1,10^6]$.}
+\OUTPUTS{For each decoded type-2 query $(t,h)$, print YES if maximum achievable damage in $\le t$ seconds with mana $\le m$ is at least $h$, otherwise NO.}
+\SAMPLES{Example (constructed, minimal):
+\begin{itemize}
+\item Input:
+\begin{verbatim}
+3 100
+1 4 9
+2 19 49
+2 17 49
+\end{verbatim}
+Output:
+\begin{verbatim}
+YES
+NO
+\end{verbatim}
+Explanation: Adds spell $(x,y)=(5,10)$. Then $(t,h)=(20,50)$ is kill, $(20,52)$ is not.
+\item Input:
+\begin{verbatim}
+3 4
+1 3 1
+1 9 5
+2 0 6
+\end{verbatim}
+Output:
+\begin{verbatim}
+YES
+\end{verbatim}
+Explanation: Adds $(x,y)=(4,2)$ and $(10,6)$. For $t=1$, $m/t=4$. Interpolating between $(2,4)$ and $(6,10)$ gives $7$ damage.
+\end{itemize}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let spells be points $p_i=(y_i,x_i)$ with mana-per-second $y_i$ and damage-per-second $x_i$. In a fight with time $t$ and mana $m$, choose nonnegative time allocations $z_i$ to maximize $\sum_i x_i z_i$ subject to $\sum_i z_i \le t$ and $\sum_i y_i z_i \le m$.}
+\varmapStart
+\var{t}{time limit for a fight}
+\var{m}{mana budget per fight}
+\var{(x_i,y_i)}{DPS and MPS of spell $i$}
+\var{z_i}{seconds using spell $i$}
+\var{X(c)}{upper convex envelope value at $c$ over points $(y,x)$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+\max_{z_i \ge 0}\quad & \sum_i x_i z_i \\
+\text{s.t.}\quad & \sum_i z_i \le t,\quad \sum_i y_i z_i \le m.
+\end{aligned}
+\]
+Equivalently, with $c=\tfrac{m}{t}$, the optimal average DPS is
+\begin{BreakableEquation*}
+X(c)=\max\Bigl\{\sum_i \lambda_i x_i:\ \sum_i \lambda_i \le 1,\ \sum_i \lambda_i y_i \le c,\ \lambda_i \ge 0\Bigr\},
+\end{BreakableEquation*}
+and the optimal damage is $D(t,m)=t\cdot X(\tfrac{m}{t})$.
+}
+\ASSUMPTIONS{Idle time is allowed; mixing spells is allowed continuously; no simultaneous casting. Include the origin $(0,0)$ to capture idling.}
+\INVARIANTS{The upper envelope over $(y,x)$ is concave and piecewise-linear; along the maintained hull, $y$ and $x$ are strictly increasing and segment slopes are strictly decreasing.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Rebuild the upper convex envelope from scratch on each query using all learned spells plus the origin $(0,0)$. Evaluate $X(c)$ at $c=m/t$ by binary search on segments and compare $t\cdot X(c)$ to $h$.}
+\ASSUMPTIONS{Number of spells is small for testing; this is for clarity, not performance.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Decode queries online using the rolling index $j$.
+\item Maintain a list of all learned spells; on a type-2 query, deduplicate by $y$ keeping maximum $x$, sort by $y$, prune dominated points with nonincreasing slopes to build the upper hull.
+\item Locate where $c=m/t$ falls between consecutive $y$'s (including origin) and linearly interpolate $X(c)$; check if $t\cdot X(c)\ge h$ using integer arithmetic.
+\end{algosteps}
+\COMPLEXITY{Let $n$ be spells so far. Each query rebuild costs $O(n\log n)$ sort plus $O(n)$ hull; answering is $O(\log n)$.
+\[
+\begin{aligned}
+T(q) &\approx \sum O(n\log n)\quad (\text{worst-case } O(q^2\log q)),\\
+S(n) &= O(n).
+\end{aligned}
+\]}
+\CORRECTNESS{The convex combination model proves that the optimal average DPS at budget $c$ is the value of the upper convex envelope at $c$. Rebuilding the hull yields this envelope exactly.}
+\EDGECASES{No spells yet; $m=0$; $t$ very large or $c$ beyond the last point; duplicate $y$ values keep the largest $x$.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple, Dict
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    q = int(next(it)); m = int(next(it))
+    arr = []
+    for _ in range(q):
+        k = int(next(it)); a = int(next(it)); b = int(next(it))
+        arr.append((k, a, b))
+    return q, m, arr
+
+def build_upper_hull(points: List[Tuple[int,int]]) -> List[Tuple[int,int]]:
+    # points: list of (y, x), include (0,0) optionally
+    # Keep for each y the maximum x
+    best: Dict[int,int] = {}
+    for y, x in points:
+        if y in best:
+            if x > best[y]:
+                best[y] = x
+        else:
+            best[y] = x
+    items = sorted(best.items())  # by y asc
+    # Remove dominated by nonincreasing x
+    filtered = []
+    lastx = -1
+    for y, x in items:
+        if x > lastx:
+            filtered.append((y, x))
+            lastx = x
+    # Build upper convex (concave) hull: slopes strictly decreasing
+    hull: List[Tuple[int,int]] = []
+    for y, x in filtered:
+        while len(hull) >= 2:
+            y1, x1 = hull[-2]
+            y2, x2 = hull[-1]
+            # Remove middle if slope(y1->y2) <= slope(y2->y)
+            if (x2 - x1) * (y - y2) <= (x - x2) * (y2 - y1):
+                hull.pop()
+            else:
+                break
+        hull.append((y, x))
+    return hull
+
+def interpolate_damage(hull: List[Tuple[int,int]], t: int, m: int) -> int:
+    # Return maximum damage (integer exact) achievable with time t and mana m
+    if not hull:
+        return 0
+    # c = m/t; find largest y s.t. y*t <= m
+    # Binary search on hull by y with predicate y*t <= m
+    lo, hi = 0, len(hull) - 1
+    idx = 0
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        ymid, _ = hull[mid]
+        if ymid * t <= m:
+            idx = mid
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    # If to the right of last hull point, answer is t*max x on hull
+    maxx = max(x for _, x in hull)
+    if idx == len(hull) - 1:
+        return t * maxx
+    y1, x1 = hull[idx]
+    y2, x2 = hull[idx + 1]
+    # Damage = t*x1 + (x2-x1) * (m - t*y1) / (y2 - y1)
+    num = t * x1 * (y2 - y1) + (x2 - x1) * (m - t * y1)
+    den = (y2 - y1)
+    # Exact damage is num/den; return floor is not needed since we compare with h using cross-multiply outside.
+    # Here we can return floor safely if caller uses ">=" comparison conservatively.
+    return num // den
+
+def solve_all_baseline():
+    data = read_input()
+    if data is None:
+        return
+    q, m, arr = data
+    spells: List[Tuple[int,int]] = [(0, 0)]  # (y, x), include origin
+    j = 0
+    out = []
+    for i, (k, a, b) in enumerate(arr, start=1):
+        if k == 1:
+            x = (a + j) % 1000000 + 1
+            y = (b + j) % 1000000 + 1
+            spells.append((y, x))
+        else:
+            t = (a + j) % 1000000 + 1
+            h = (b + j) % 1000000 + 1
+            hull = build_upper_hull(spells)
+            # Use cross-multiply to avoid precision
+            # Find idx as in interpolate
+            lo, hi = 0, len(hull) - 1
+            idx = 0
+            while lo <= hi:
+                mid = (lo + hi) // 2
+                ymid, _ = hull[mid]
+                if ymid * t <= m:
+                    idx = mid
+                    lo = mid + 1
+                else:
+                    hi = mid - 1
+            maxx = max(x for _, x in hull)
+            ok = False
+            if idx == len(hull) - 1:
+                ok = (t * maxx) >= h
+            else:
+                y1, x1 = hull[idx]
+                y2, x2 = hull[idx + 1]
+                # Check: t*x1 + (x2-x1)*(m - t*y1)/(y2 - y1) >= h
+                lhs = t * x1 * (y2 - y1) + (x2 - x1) * (m - t * y1)
+                rhs = h * (y2 - y1)
+                ok = lhs >= rhs
+            out.append("YES" if ok else "NO")
+            if ok:
+                j = i
+    sys.stdout.write("\n".join(out))
+
+# Tiny sanity tests for baseline helper routines
+# Example from note:
+def _test_baseline_note():
+    q = 3; m = 100
+    arr = [(1,4,9),(2,19,49),(2,17,49)]
+    data = "3 100\n1 4 9\n2 19 49\n2 17 49\n"
+    sys.setrecursionlimit(10**6)
+    # Build hull after first add:
+    spells = [(0,0),(10,5)]  # (y,x)
+    hull = build_upper_hull(spells)
+    assert hull == [(0,0),(10,5)]
+    dmg = interpolate_damage(hull, t=20, m=100)  # 20*5
+    assert dmg == 100
+    # interpolation test
+    hull2 = build_upper_hull([(0,0),(2,4),(6,10)])
+    # t=1, m=4 => 7 damage
+    dmg2 = interpolate_damage(hull2, t=1, m=4)
+    assert dmg2 == 7
+
+_test_baseline_note()
+
+if __name__ == "__main__":
+    solve_all_baseline()
+\end{minted}
+\VALIDATION{Baseline asserts:
+\begin{itemize}
+\item Hull building preserves concavity and deduplication.
+\item Interpolation case: between $(2,4)$ and $(6,10)$ at $c=4$ gives $7$.
+\item Note example yields 100 damage for $(t,m)=(20,100)$ with spell $(5,10)$.
+\end{itemize}}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Maintain Pareto Frontier Incrementally}
+\WHICHFORMULA{Maintain the set of non-dominated points with strictly increasing $y$ and $x$, pruning dominated insertions. Rebuild local convexity around the insertion point. Queries evaluate the piecewise-linear envelope.}
+\ASSUMPTIONS{Use a sorted list with binary search; amortized efficient in practice but $O(n)$ insertion cost.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Keep a sorted list by $y$; for duplicate $y$, keep the larger $x$.
+\item On insertion $(y,x)$: if predecessor has $x \ge x_{\text{new}}$, discard. While successor has $x \le x_{\text{new}}$, delete it. Insert the point.
+\item Repair convexity locally by removing middle points that violate decreasing slopes on either side of the inserted point.
+\item On query, binary search predecessor/successor around $c=m/t$ and compare using cross-multiplication.
+\end{algosteps}
+\COMPLEXITY{Insertions are $O(n)$ due to list shifts; convexity fix is local. Queries are $O(\log n)$.
+\[
+\begin{aligned}
+T(q) &\approx O(q^2)\ \text{in worst case},\\
+S(n) &= O(n).
+\end{aligned}
+\]}
+\CORRECTNESS{Local dominance pruning and slope monotonicity guarantee the maintained list equals the upper convex envelope of all seen spells.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+import bisect
+from typing import List, Tuple
+
+class HullList:
+    def __init__(self):
+        self.y: List[int] = [0]  # includes origin
+        self.x: List[int] = [0]
+        self.xmax = 0
+
+    def slope_leq(self, i: int, j: int, k: int) -> bool:
+        # slope(i->j) <= slope(j->k)
+        x1, y1 = self.x[i], self.y[i]
+        x2, y2 = self.x[j], self.y[j]
+        x3, y3 = self.x[k], self.y[k]
+        return (x2 - x1) * (y3 - y2) <= (x3 - x2) * (y2 - y1)
+
+    def insert(self, y: int, x: int):
+        if x > self.xmax:
+            self.xmax = x
+        # find position
+        i = bisect.bisect_left(self.y, y)
+        if i < len(self.y) and self.y[i] == y:
+            if x <= self.x[i]:
+                return
+            self.x[i] = x
+        else:
+            # check predecessor dominance
+            if i > 0 and self.x[i-1] >= x:
+                return
+            # remove dominated successors
+            while i < len(self.y) and self.x[i] <= x:
+                del self.y[i]; del self.x[i]
+            # insert
+            self.y.insert(i, y); self.x.insert(i, x)
+        # fix left convexity
+        while i >= 2 and self.slope_leq(i-2, i-1, i):
+            del self.y[i-1]; del self.x[i-1]; i -= 1
+        # fix right convexity
+        while i + 2 <= len(self.y) - 1 and self.slope_leq(i, i+1, i+2):
+            del self.y[i+1]; del self.x[i+1]
+
+    def damage(self, t: int, m: int) -> int:
+        # return max damage
+        # find largest y with y*t <= m
+        # bisect_right on threshold m//t is not enough due to exact boundary; do manual
+        lo, hi = 0, len(self.y) - 1; idx = 0
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            if self.y[mid] * t <= m:
+                idx = mid; lo = mid + 1
+            else:
+                hi = mid - 1
+        if idx == len(self.y) - 1:
+            return t * self.xmax
+        y1, x1 = self.y[idx], self.x[idx]
+        y2, x2 = self.y[idx+1], self.x[idx+1]
+        num = t * x1 * (y2 - y1) + (x2 - x1) * (m - t * y1)
+        den = (y2 - y1)
+        return num // den
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    q = int(next(it)); m = int(next(it))
+    arr = []
+    for _ in range(q):
+        k = int(next(it)); a = int(next(it)); b = int(next(it))
+        arr.append((k, a, b))
+    return q, m, arr
+
+def solve_all_improved():
+    data = read_input()
+    if data is None:
+        return
+    q, m, arr = data
+    hull = HullList()
+    j = 0
+    out = []
+    for i, (k, a, b) in enumerate(arr, start=1):
+        if k == 1:
+            x = (a + j) % 1000000 + 1
+            y = (b + j) % 1000000 + 1
+            hull.insert(y, x)
+        else:
+            t = (a + j) % 1000000 + 1
+            h = (b + j) % 1000000 + 1
+            # Compare exactly using cross-multiplication
+            # Find segment as in damage():
+            lo, hi = 0, len(hull.y) - 1; idx = 0
+            while lo <= hi:
+                mid = (lo + hi) // 2
+                if hull.y[mid] * t <= m:
+                    idx = mid; lo = mid + 1
+                else:
+                    hi = mid - 1
+            ok = False
+            if idx == len(hull.y) - 1:
+                ok = (t * hull.xmax) >= h
+            else:
+                y1, x1 = hull.y[idx], hull.x[idx]
+                y2, x2 = hull.y[idx+1], hull.x[idx+1]
+                lhs = t * x1 * (y2 - y1) + (x2 - x1) * (m - t * y1)
+                rhs = h * (y2 - y1)
+                ok = lhs >= rhs
+            out.append("YES" if ok else "NO")
+            if ok:
+                j = i
+    sys.stdout.write("\n".join(out))
+
+# Sanity tests for improved
+def _test_improved():
+    hull = HullList()
+    hull.insert(2, 4); hull.insert(6, 10)
+    assert hull.damage(1, 4) == 7
+    # Dominance: inserting (y=5, x=3) should be ignored
+    hull.insert(5, 3)
+    assert hull.y == [0, 2, 6]
+    # Monotonic xmax
+    assert hull.xmax == 10
+
+_test_improved()
+
+if __name__ == "__main__":
+    solve_all_improved()
+\end{minted}
+\VALIDATION{Checks mixing interpolation, dominance pruning, and correctness on small crafted inputs.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Dynamic Upper Convex Hull with Treap}
+\WHICHFORMULA{Maintain the upper convex envelope of points $(y,x)$ under insertions using an order-statistics treap keyed by $y$. Enforce: (i) strictly increasing $x$ with $y$ (dominance pruning), (ii) strictly decreasing segment slopes (concavity). For a query with $(t,h)$, find predecessor by the predicate $y\cdot t \le m$ and the successor; evaluate $D = t\cdot x_1 + \dfrac{(x_2-x_1)(m - t y_1)}{y_2-y_1}$ and compare to $h$ via cross-multiplication.}
+\ASSUMPTIONS{Insertions only (no deletions from the universe); origin $(0,0)$ always present; $m$ is fixed globally.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Treap stores nodes $(y,x)$ with random priorities from a fixed deterministic generator; supports find, predecessor/successor by $y$, erase, and insert.
+\item On insertion $(y,x)$:
+  - If $y$ exists with $x' \ge x$, ignore; otherwise update to $x$.
+  - If predecessor has $x \ge x$, ignore (dominated).
+  - While successor has $x' \le x$, erase successor (dominated).
+  - Insert $(y,x)$. Then repeatedly remove middle neighbors that violate concavity: slope(prev2, prev) $\le$ slope(prev, cur) and slope(cur, next) $\le$ slope(next, next2).
+\item On query $(t,h)$:
+  - Find $p$ = max $y$ with $y\cdot t \le m$ (predecessor-by-capacity).
+  - If no successor, answer is $t \cdot X_{\max}$ where $X_{\max}$ is the maximum $x$ ever inserted.
+  - Else evaluate the exact inequality with integer arithmetic and output YES/NO; update the rolling index $j$ if YES.
+\end{algosteps}
+\OPTIMALITY{LP duality implies $D(t,m)=t\cdot X(m/t)$ where $X$ is the upper convex envelope. The dynamic hull supports exact evaluations in $O(\log n)$ expected per update/query, which is optimal up to logarithmic factors for comparison-based dynamic convex hulls.}
+\COMPLEXITY{Each insertion and query touches $O(\log n)$ nodes on average; removals are amortized $O(1)$ per insertion due to each node being deleted at most once.
+\[
+\begin{aligned}
+T(q) &= O(q\log q)\ \text{expected},\\
+S(n) &= O(n).
+\end{aligned}
+\]}
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from typing import Optional, Tuple
+
+# Deterministic pseudo-random generator for treap priorities
+class PRNG:
+    def __init__(self, seed: int = 123456789):
+        self.state = seed & 0xFFFFFFFFFFFFFFFF
+    def next(self) -> int:
+        # xorshift64*
+        x = self.state
+        x ^= (x >> 12) & 0xFFFFFFFFFFFFFFFF
+        x ^= (x << 25) & 0xFFFFFFFFFFFFFFFF
+        x ^= (x >> 27) & 0xFFFFFFFFFFFFFFFF
+        self.state = x & 0xFFFFFFFFFFFFFFFF
+        return ((x * 2685821657736338717) & 0xFFFFFFFFFFFFFFFF)
+
+_rng = PRNG(0xC0FFEE)
+
+class Node:
+    __slots__ = ("y", "x", "prio", "l", "r")
+    def __init__(self, y: int, x: int):
+        self.y = y; self.x = x
+        self.prio = _rng.next()
+        self.l: Optional["Node"] = None
+        self.r: Optional["Node"] = None
+
+def rotate_merge(a: Optional[Node], b: Optional[Node]) -> Optional[Node]:
+    if not a or not b: return a or b
+    if a.prio > b.prio:
+        a.r = rotate_merge(a.r, b)
+        return a
+    else:
+        b.l = rotate_merge(a, b.l)
+        return b
+
+def split(root: Optional[Node], key: int) -> Tuple[Optional[Node], Optional[Node]]:
+    # split by y <= key and y > key
+    if not root: return (None, None)
+    if root.y <= key:
+        L, R = split(root.r, key)
+        root.r = L
+        return (root, R)
+    else:
+        L, R = split(root.l, key)
+        root.l = R
+        return (L, root)
+
+def insert(root: Optional[Node], node: Node) -> Optional[Node]:
+    if not root: return node
+    if node.prio > root.prio:
+        L, R = split(root, node.y)
+        node.l = L; node.r = R
+        return node
+    if node.y <= root.y:
+        root.l = insert(root.l, node)
+    else:
+        root.r = insert(root.r, node)
+    return root
+
+def find(root: Optional[Node], y: int) -> Optional[Node]:
+    cur = root
+    while cur:
+        if y == cur.y:
+            return cur
+        elif y < cur.y:
+            cur = cur.l
+        else:
+            cur = cur.r
+    return None
+
+def erase(root: Optional[Node], y: int) -> Optional[Node]:
+    if not root: return None
+    if y == root.y:
+        return rotate_merge(root.l, root.r)
+    elif y < root.y:
+        root.l = erase(root.l, y)
+    else:
+        root.r = erase(root.r, y)
+    return root
+
+def predecessor_by_key(root: Optional[Node], y: int) -> Optional[Node]:
+    cur = root; res = None
+    while cur:
+        if y <= cur.y:
+            cur = cur.l
+        else:
+            res = cur
+            cur = cur.r
+    return res
+
+def successor_by_key(root: Optional[Node], y: int) -> Optional[Node]:
+    cur = root; res = None
+    while cur:
+        if y < cur.y:
+            res = cur
+            cur = cur.l
+        else:
+            cur = cur.r
+    return res
+
+def predecessor_by_cap(root: Optional[Node], t: int, m: int) -> Optional[Node]:
+    cur = root; res = None
+    while cur:
+        if cur.y * t <= m:
+            res = cur
+            cur = cur.r
+        else:
+            cur = cur.l
+    return res
+
+def slope_leq(a: Node, b: Node, c: Node) -> bool:
+    # (x_b - x_a)/(y_b - y_a) <= (x_c - x_b)/(y_c - y_b)
+    return (b.x - a.x) * (c.y - b.y) <= (c.x - b.x) * (b.y - a.y)
+
+class DynamicHull:
+    def __init__(self):
+        self.root: Optional[Node] = None
+        # insert origin (0,0)
+        self.root = insert(self.root, Node(0, 0))
+        self.xmax = 0
+
+    def _get_prev(self, y: int) -> Optional[Node]:
+        return predecessor_by_key(self.root, y)
+
+    def _get_next(self, y: int) -> Optional[Node]:
+        return successor_by_key(self.root, y)
+
+    def add(self, y: int, x: int):
+        if x > self.xmax:
+            self.xmax = x
+        nd = find(self.root, y)
+        if nd is not None:
+            if x <= nd.x:
+                return
+            nd.x = x
+            # remove dominated successors
+            nxt = self._get_next(y)
+            while nxt is not None and nxt.x <= x:
+                self.root = erase(self.root, nxt.y)
+                nxt = self._get_next(y)
+            # fix convexity around y
+            self._fix_left(y)
+            self._fix_right(y)
+            return
+        # check predecessor dominance
+        prv = self._get_prev(y)
+        if prv is not None and prv.x >= x:
+            return
+        # remove dominated successors
+        nxt = self._get_next(y)
+        while nxt is not None and nxt.x <= x:
+            self.root = erase(self.root, nxt.y)
+            nxt = self._get_next(y)
+        # insert new node
+        self.root = insert(self.root, Node(y, x))
+        # fix convexity
+        self._fix_left(y)
+        self._fix_right(y)
+
+    def _fix_left(self, y: int):
+        cur = find(self.root, y)
+        if cur is None:
+            return
+        prev = self._get_prev(y)
+        while prev is not None:
+            prev2 = self._get_prev(prev.y)
+            if prev2 is None:
+                break
+            if slope_leq(prev2, prev, cur):
+                self.root = erase(self.root, prev.y)
+                prev = self._get_prev(y)
+            else:
+                break
+
+    def _fix_right(self, y: int):
+        cur = find(self.root, y)
+        if cur is None:
+            return
+        nxt = self._get_next(y)
+        while nxt is not None:
+            nxt2 = self._get_next(nxt.y)
+            if nxt2 is None:
+                break
+            if slope_leq(cur, nxt, nxt2):
+                self.root = erase(self.root, nxt.y)
+                nxt = self._get_next(y)
+            else:
+                break
+
+    def can_kill(self, t: int, h: int, m: int) -> bool:
+        # find predecessor by capacity y*t <= m
+        pred = predecessor_by_cap(self.root, t, m)
+        if pred is None:
+            # Should not happen because origin exists
+            return False
+        succ = successor_by_key(self.root, pred.y)
+        if succ is None:
+            # To the right: constant at xmax
+            return (t * self.xmax) >= h
+        # Compare: t*pred.x + (succ.x - pred.x)*(m - t*pred.y)/(succ.y - pred.y) >= h
+        lhs = t * pred.x * (succ.y - pred.y) + (succ.x - pred.x) * (m - t * pred.y)
+        rhs = h * (succ.y - pred.y)
+        return lhs >= rhs
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    q = int(next(it)); m = int(next(it))
+    arr = []
+    for _ in range(q):
+        k = int(next(it)); a = int(next(it)); b = int(next(it))
+        arr.append((k, a, b))
+    return q, m, arr
+
+def solve_all():
+    data = read_input()
+    if data is None:
+        return
+    q, m, arr = data
+    hull = DynamicHull()
+    j = 0
+    out = []
+    for i, (k, a, b) in enumerate(arr, start=1):
+        if k == 1:
+            x = (a + j) % 1000000 + 1
+            y = (b + j) % 1000000 + 1
+            hull.add(y, x)
+        else:
+            t = (a + j) % 1000000 + 1
+            h = (b + j) % 1000000 + 1
+            ok = hull.can_kill(t, h, m)
+            out.append("YES" if ok else "NO")
+            if ok:
+                j = i
+    sys.stdout.write("\n".join(out))
+
+# Tests (exactly 3 asserts)
+def _tests():
+    # 1) Note-like scenario
+    dh = DynamicHull()
+    dh.add(10, 5)  # y=10, x=5
+    assert dh.can_kill(20, 50, 100) is True
+    assert dh.can_kill(20, 52, 100) is False
+    # 2) Interpolation scenario
+    dh2 = DynamicHull()
+    dh2.add(2, 4); dh2.add(6, 10)
+    assert dh2.can_kill(1, 7, 4) is True
+
+_tests()
+
+if __name__ == "__main__":
+    solve_all()
+\end{minted}
+\VALIDATION{Exactly three asserts:
+\begin{itemize}
+\item Single spell scenario reproduces the note.
+\item Slightly higher health fails as expected.
+\item Interpolated mixing succeeds at $7$ damage with $t=1$, $m=4$.
+\end{itemize}}
+\RESULT{For each type-2 query, print YES if the optimal total damage $D(t,m)=t\cdot X(m/t)$ is at least $h$, else NO. If YES, advance the rolling index $j$ to the current query index for subsequent decodings.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit-test hull operations (dominance, convexity), interpolation correctness, and decoding with rolling index. Property checks: monotone nondecreasing $X(c)$; damage saturates at $\max x$ for large $c$.}
+\LINE{CROSS-CHECKS}{Compare outputs between Baseline, Improved, and Optimal on small random sets: all must agree.}
+\LINE{EDGE-CASE GENERATOR}{Generate spells with duplicate $y$, strictly increasing/decreasing $x$, extreme $m$ and $t$ (e.g., $m=0$, $t=1$, very large $m$).}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+def gen_spells_chain(n: int):
+    # Increasing y, random x pattern
+    return [(i+1, (i*i) % 17 + 1) for i in range(n)]
+
+def gen_queries_chain(n: int, m: int):
+    # Alternate add/fight, small t/h
+    q = []
+    j = 0
+    for i in range(n):
+        q.append((1, i % 100, (i*7) % 100))  # adds
+        t = (i*3) % 10
+        h = (i*5) % 20
+        q.append((2, t, h))
+    return q, m
+
+# Reference Code (Ready to Submit) is the Optimal implementation above (solve_all()).
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# The final, ready-to-submit solution is provided in Approach C's code block.
+# It contains read_input(), solve_all(), a main guard, and exactly three asserts.
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Maintain the upper convex envelope of (mana/sec, damage/sec) points; answer queries by evaluating at average mana budget $m/t$.}
+\WHY{This reduces a continuous-time, two-resource optimization to dynamic convex hull evaluation, a frequent theme in advanced interviews and contests.}
+\CHECKLIST{
+- Decode with rolling index $j$.
+- Insert spell: prune dominated, repair concavity.
+- Query: find predecessor by $y\cdot t \le m$, interpolate with successor.
+- Compare via integer cross-multiplication; avoid floating point.
+- Update $j$ only on YES.}
+\EDGECASES{
+- No spells yet: only origin gives zero damage.
+- $m=0$: only idling, zero damage.
+- Duplicate $y$: keep maximum $x$.
+- Very large $m$: damage saturates at $\max x$.
+- $t=1$: $c=m$, direct envelope read.
+- Tight boundary $m=t\cdot y_k$: use exact point $k$.}
+\PITFALLS{
+- Forgetting origin $(0,0)$ causes incorrect small-$c$ answers.
+- Not pruning dominated successors leads to non-concave hull.
+- Slope comparison sign mistakes; use cross-multiplication with integers.
+- Using floating arithmetic can cause wrong YES/NO at boundaries.
+- Mishandling $j$ updates corrupts future decodings.
+- Failing to ensure strictly increasing $x$ with $y$ breaks convexity checks.}
+\FAILMODES{Naive recomputation TLE on large inputs; non-monotone hull corrupts queries; floating errors flip answers near equality. The treap-based hull preserves structure and answers in $O(\log n)$.}
+\ELI{Track the best trade-off curve between mana and damage as you learn spells. For a monster, see how much damage per second you can sustain given the average mana allowed. Multiply by the time limit and check if it meets the monster's health.}
+\NotePages{3}
+
+\end{document}

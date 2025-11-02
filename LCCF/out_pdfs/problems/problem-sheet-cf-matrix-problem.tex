@@ -1,0 +1,952 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Matrix Problem}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1913/E}}
+\LINE{DIFFICULTY / RATING}{2400}
+\STATEMENT{You are given a matrix $a$, consisting of $n$ rows by $m$ columns. Each element of the matrix is equal to $0$ or $1$.
+
+You can perform the following operation any number of times (possibly zero): choose an element of the matrix and replace it with either $0$ or $1$.
+
+You are also given two arrays $A$ and $B$ (of length $n$ and $m$ respectively). After you perform the operations, the matrix should satisfy the following conditions:
+\begin{bullets}
+\item the number of ones in the $i$-th row of the matrix should be exactly $A_i$ for every $i \in [1,n]$.
+\item the number of ones in the $j$-th column of the matrix should be exactly $B_j$ for every $j \in [1,m]$.
+\end{bullets}
+Calculate the minimum number of operations you have to perform.
+
+Input:
+The first line contains two integers $n$ and $m$ ($2 \le n, m \le 50$).
+
+Then $n$ lines follow. The $i$-th of them contains $m$ integers $a_{i,1}, a_{i,2}, \dots, a_{i,m}$ ($0 \le a_{i,j} \le 1$).
+
+The next line contains $n$ integers $A_1, A_2, \dots, A_n$ ($0 \le A_i \le m$).
+
+The next line contains $m$ integers $B_1, B_2, \dots, B_m$ ($0 \le B_j \le n$).
+
+Output:
+Print one integer — the minimum number of operations you have to perform, or $-1$ if it is impossible.}
+\BREAKDOWN{We must choose a new binary matrix $x$ with prescribed row and column sums, minimizing its Hamming distance to the original $a$. This reduces to maximizing the overlap between ones of $x$ and ones of $a$ under margin constraints, or equivalently to a min-cost flow on a bipartite graph.}
+\ELI{Pick where to place ones to match the required row/column totals while keeping as many of the original ones as possible.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Integers $n,m$ with $2 \le n,m \le 50$; matrix $a \in \{0,1\}^{n \times m}$; arrays $A \in [0,m]^n$, $B \in [0,n]^m$.}
+\OUTPUTS{A single integer: the minimum number of cell changes to make the matrix meet the row/column sums; print $-1$ if no such matrix exists.}
+\SAMPLES{Example 1:
+\begin{BreakableEquation*}
+n=2,\ m=2,\ a=\begin{bmatrix}1&0\\0&1\end{bmatrix},\ A=[1,1],\ B=[1,1] \Rightarrow 0
+\end{BreakableEquation*}
+Example 2:
+\begin{BreakableEquation*}
+n=2,\ m=2,\ a=\begin{bmatrix}0&0\\0&0\end{bmatrix},\ A=[1,1],\ B=[1,1] \Rightarrow 2
+\end{BreakableEquation*}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $x_{ij} \in \{0,1\}$ denote the target matrix entries. Minimize the number of positions where $x_{ij} \ne a_{ij}$.}
+\varmapStart
+\var{a_{ij}}{given binary matrix entries}
+\var{x_{ij}}{decision: target binary entries}
+\var{A_i}{required ones in row $i$}
+\var{B_j}{required ones in column $j$}
+\var{S_1}{total ones in $a$: $S_1=\sum_{i,j} a_{ij}$}
+\var{T}{total required ones: $T=\sum_i A_i=\sum_j B_j$}
+\var{k}{overlap ones on ones: $k=\sum_{i,j} a_{ij} x_{ij}$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\min \sum_{i=1}^{n}\sum_{j=1}^{m} |x_{ij}-a_{ij}| \\
+\text{s.t. } &\sum_{j=1}^{m} x_{ij} = A_i \quad(\forall i),\quad \sum_{i=1}^{n} x_{ij} = B_j \quad(\forall j),\quad x_{ij}\in\{0,1\}.
+\end{aligned}
+\]
+Using $|x-a| = x+a-2xa$ and $\sum x_{ij}=T$, objective equals $S_1+T-2k$, so minimizing changes is maximizing $k$ subject to the margins.}
+\ASSUMPTIONS{All inputs are integers; indices $i \in [1,n]$, $j \in [1,m]$. Feasibility requires that there exists a $0$-$1$ matrix with the given row/column sums (not guaranteed by sum equality alone).}
+\INVARIANTS{Total ones $T$ is fixed by $A$ and $B$. The best solution never places a $1$ where $a_{ij}=0$ if a feasible placement exists on a position where $a_{ij}=1$ with the same row/column usage.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Min-cost max-flow on the bipartite graph of all $n\times m$ cell choices, with cost $0$ if selecting a cell where $a_{ij}=1$ and cost $1$ otherwise. If we push $T$ units of flow, the min-cost equals the number of selected zeros; from it we get the edit count.}
+\ASSUMPTIONS{Complete bipartite connectivity (row to every column) with unit capacities on row--column edges; source$\to$row edges with capacities $A_i$; column$\to$sink edges with capacities $B_j$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build a flow network: source to each row $i$ capacity $A_i$, each row $i$ to each column $j$ capacity $1$ and cost $0$ if $a_{ij}=1$ else $1$, each column $j$ to sink capacity $B_j$.
+\item Run min-cost max-flow attempting to send $T=\sum_i A_i$ units. If not all $T$ units can be sent, print $-1$.
+\item Let $C$ be the minimum cost (number of selected zeros). The answer is $S_1 - T + 2C$, because overlap $k=T-C$ and changes $=S_1+T-2k=S_1-T+2C$.
+\end{algosteps}
+\COMPLEXITY{With $V=2+n+m$ and $E=nm+n+m\le 2500+100$, successive shortest augmenting paths with SPFA in this range runs comfortably.
+\[
+\begin{aligned}
+T(n,m) &\approx O\big(T\cdot E \cdot \text{SPFA}\big) \text{ with small constants for } n,m\le 50, \\
+S(n,m) &= O(E).
+\end{aligned}
+\]}
+\CORRECTNESS{Selecting $T$ unit edges forms a $0$-$1$ matrix with the required margins. The cost counts exactly the number of ones placed on zeros. The remaining edits are forced zeros among original ones, and the formula adjusts for them.}
+\EDGECASES{Sum mismatch $\sum A_i \ne \sum B_j$; rows/columns with $0$ or full capacity; all-zero or all-one matrices; impossible degree sequences despite sum equality.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from collections import deque
+from typing import List, Tuple
+
+INF = 10**18
+
+class MinCostMaxFlow:
+    class Edge:
+        __slots__ = ("to","rev","cap","cost")
+        def __init__(self, to: int, rev: int, cap: int, cost: int):
+            self.to = to
+            self.rev = rev
+            self.cap = cap
+            self.cost = cost
+
+    def __init__(self, n: int):
+        self.n = n
+        self.g = [[] for _ in range(n)]
+
+    def add_edge(self, u: int, v: int, cap: int, cost: int) -> None:
+        a = MinCostMaxFlow.Edge(v, len(self.g[v]), cap, cost)
+        b = MinCostMaxFlow.Edge(u, len(self.g[u]), 0, -cost)
+        self.g[u].append(a)
+        self.g[v].append(b)
+
+    def min_cost_flow(self, s: int, t: int, maxf: int) -> Tuple[int,int]:
+        n = self.n
+        flow = 0
+        cost = 0
+        while flow < maxf:
+            dist = [INF]*n
+            inq = [False]*n
+            pv  = [(-1,-1)]*n  # (prev_node, prev_edge_index)
+            dist[s] = 0
+            dq = deque([s])
+            inq[s] = True
+            while dq:
+                u = dq.popleft()
+                inq[u] = False
+                for ei, e in enumerate(self.g[u]):
+                    if e.cap <= 0: 
+                        continue
+                    v = e.to
+                    nd = dist[u] + e.cost
+                    if nd < dist[v]:
+                        dist[v] = nd
+                        pv[v] = (u, ei)
+                        if not inq[v]:
+                            dq.append(v)
+                            inq[v] = True
+            if dist[t] == INF:
+                break
+            # augment by 1 unit (unit capacities on middle edges suffice), but do general
+            addf = maxf - flow
+            v = t
+            while v != s:
+                u, ei = pv[v]
+                if u == -1:  # no path
+                    addf = 0
+                    break
+                addf = min(addf, self.g[u][ei].cap)
+                v = u
+            if addf == 0:
+                break
+            v = t
+            while v != s:
+                u, ei = pv[v]
+                e = self.g[u][ei]
+                e.cap -= addf
+                self.g[v][e.rev].cap += addf
+                v = u
+            flow += addf
+            cost += addf * dist[t]
+        return flow, cost
+
+def solve_matrix_min_ops_baseline(n: int, m: int, a: List[List[int]], A: List[int], B: List[int]) -> int:
+    T = sum(A)
+    if T != sum(B):
+        return -1
+    S1 = sum(sum(row) for row in a)
+    N = 2 + n + m
+    s = n + m
+    t = s + 1
+    mcmf = MinCostMaxFlow(N)
+    # source -> rows
+    for i in range(n):
+        mcmf.add_edge(s, i, A[i], 0)
+    # rows -> cols with cost 0 if a[i][j]==1 else 1
+    for i in range(n):
+        for j in range(m):
+            c = 0 if a[i][j] == 1 else 1
+            mcmf.add_edge(i, n + j, 1, c)
+    # cols -> sink
+    for j in range(m):
+        mcmf.add_edge(n + j, t, B[j], 0)
+    flow, cost = mcmf.min_cost_flow(s, t, T)
+    if flow != T:
+        return -1
+    # cost counts zeros chosen; edits = S1 - T + 2*cost
+    return S1 - T + 2 * cost
+
+def read_input() -> Tuple[int,int,List[List[int]],List[int],List[int]]:
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    a = [[int(next(it)) for _ in range(m)] for __ in range(n)]
+    A = [int(next(it)) for _ in range(n)]
+    B = [int(next(it)) for _ in range(m)]
+    return n, m, a, A, B
+
+def solve_case() -> None:
+    n, m, a, A, B = read_input()
+    ans = solve_matrix_min_ops_baseline(n, m, a, A, B)
+    print(ans)
+
+def main():
+    if sys.stdin.isatty():
+        return
+    # If input is piped, proceed.
+    solve_case()
+
+if __name__ == "__main__":
+    # Tiny unit checks
+    assert solve_matrix_min_ops_baseline(2,2,[[1,0],[0,1]],[1,1],[1,1]) == 0
+    assert solve_matrix_min_ops_baseline(2,2,[[0,0],[0,0]],[1,1],[1,1]) == 2
+    assert solve_matrix_min_ops_baseline(2,2,[[1,1],[1,1]],[1,1],[1,1]) == 2
+    assert solve_matrix_min_ops_baseline(2,2,[[1,1],[0,0]],[2,0],[1,1]) == 0
+    # Impossible
+    assert solve_matrix_min_ops_baseline(2,2,[[0,0],[0,0]],[2,0],[0,2]) == -1
+    main()
+\end{minted}
+\VALIDATION{Cross-check min-cost formula on hand cases; verify impossible instances; ensure symmetry under transposition of $a$ with swapped $A,B$.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Use two maximum flows (Dinic): (i) feasibility on the complete bipartite graph; (ii) maximize overlap $k$ on the subgraph induced by ones in $a$. This avoids costs and is simpler than min-cost flow.}
+\ASSUMPTIONS{Unit capacities row$\to$col; capacities $A_i$ and $B_j$ on source and sink arcs.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Check feasibility: build source$\to$rows (cap $A_i$), complete rows$\to$cols (cap $1$), cols$\to$sink (cap $B_j$); run max-flow; if flow $<T$, print $-1$.
+\item Compute maximum overlap: rebuild with rows$\to$cols edges only where $a_{ij}=1$ (cap $1$); push max flow $k$.
+\item Answer $= S_1 + T - 2k$.
+\end{algosteps}
+\COMPLEXITY{Each Dinic run is $O(E\sqrt{V})$ on bipartite unit networks in practice; with $V\le 102$, $E\le 2600$, it is instant.}
+\CORRECTNESS{Feasibility ensures margins realizable. The second flow maximizes the number of ones placed where $a_{ij}=1$. The edit count formula follows from inclusion-exclusion on overlaps.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from collections import deque
+from typing import List, Tuple
+
+class Dinic:
+    class Edge:
+        __slots__ = ("to","cap","rev")
+        def __init__(self, to: int, cap: int, rev: int):
+            self.to = to
+            self.cap = cap
+            self.rev = rev
+
+    def __init__(self, n: int):
+        self.n = n
+        self.g = [[] for _ in range(n)]
+        self.level = [0]*n
+        self.it = [0]*n
+
+    def add_edge(self, u: int, v: int, cap: int) -> None:
+        a = Dinic.Edge(v, cap, len(self.g[v]))
+        b = Dinic.Edge(u, 0,   len(self.g[u]))
+        self.g[u].append(a)
+        self.g[v].append(b)
+
+    def bfs(self, s: int, t: int) -> bool:
+        self.level = [-1]*self.n
+        q = deque([s])
+        self.level[s] = 0
+        while q:
+            u = q.popleft()
+            for e in self.g[u]:
+                if e.cap > 0 and self.level[e.to] < 0:
+                    self.level[e.to] = self.level[u] + 1
+                    q.append(e.to)
+        return self.level[t] >= 0
+
+    def dfs(self, u: int, t: int, f: int) -> int:
+        if u == t:
+            return f
+        for i in range(self.it[u], len(self.g[u])):
+            self.it[u] = i
+            e = self.g[u][i]
+            if e.cap > 0 and self.level[u] < self.level[e.to]:
+                ret = self.dfs(e.to, t, min(f, e.cap))
+                if ret > 0:
+                    e.cap -= ret
+                    self.g[e.to][e.rev].cap += ret
+                    return ret
+        return 0
+
+    def max_flow(self, s: int, t: int) -> int:
+        flow = 0
+        INF = 10**18
+        while self.bfs(s, t):
+            self.it = [0]*self.n
+            while True:
+                pushed = self.dfs(s, t, INF)
+                if pushed == 0:
+                    break
+                flow += pushed
+        return flow
+
+def build_and_flow(n: int, m: int, A: List[int], B: List[int], edges_matrix: List[List[int]]) -> int:
+    # edges_matrix[i][j] == 1 means allow row i -> col j edge
+    N = n + m + 2
+    s = n + m
+    t = s + 1
+    din = Dinic(N)
+    for i in range(n):
+        if A[i] > 0:
+            din.add_edge(s, i, A[i])
+    for j in range(m):
+        if B[j] > 0:
+            din.add_edge(n + j, t, B[j])
+    for i in range(n):
+        for j in range(m):
+            if edges_matrix[i][j]:
+                din.add_edge(i, n + j, 1)
+    return din.max_flow(s, t)
+
+def solve_matrix_min_ops_improved(n: int, m: int, a: List[List[int]], A: List[int], B: List[int]) -> int:
+    T = sum(A)
+    if T != sum(B):
+        return -1
+    S1 = sum(sum(row) for row in a)
+    # Feasibility on complete bipartite
+    full = [[1]*m for _ in range(n)]
+    feas_flow = build_and_flow(n, m, A, B, full)
+    if feas_flow != T:
+        return -1
+    # Maximize overlap where a[i][j] == 1
+    overlap = build_and_flow(n, m, A, B, a)
+    return S1 + T - 2*overlap
+
+def read_input() -> Tuple[int,int,List[List[int]],List[int],List[int]]:
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    a = [[int(next(it)) for _ in range(m)] for __ in range(n)]
+    A = [int(next(it)) for _ in range(n)]
+    B = [int(next(it)) for _ in range(m)]
+    return n, m, a, A, B
+
+def solve_case() -> None:
+    n, m, a, A, B = read_input()
+    ans = solve_matrix_min_ops_improved(n, m, a, A, B)
+    print(ans)
+
+def main():
+    if sys.stdin.isatty():
+        return
+    solve_case()
+
+if __name__ == "__main__":
+    # Sanity checks against baseline logic on small cases
+    assert solve_matrix_min_ops_improved(2,2,[[1,0],[0,1]],[1,1],[1,1]) == 0
+    assert solve_matrix_min_ops_improved(2,2,[[0,0],[0,0]],[1,1],[1,1]) == 2
+    assert solve_matrix_min_ops_improved(2,2,[[1,1],[1,1]],[1,1],[1,1]) == 2
+    assert solve_matrix_min_ops_improved(2,2,[[1,1],[0,0]],[2,0],[1,1]) == 0
+    assert solve_matrix_min_ops_improved(2,2,[[0,0],[0,0]],[2,0],[0,2]) == -1
+    main()
+\end{minted}
+\VALIDATION{Compare outputs to Approach A on random small instances; verify that feasibility failure is detected identically and that answers match.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Final method: two max-flows (feasibility on complete bipartite; maximum overlap on ones-subgraph), answer $=S_1+T-2k$.}
+\ASSUMPTIONS{Unit capacities; integers within bounds; uses Dinic.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item If $\sum_i A_i \ne \sum_j B_j$, return $-1$.
+\item Run max-flow on the complete bipartite graph to check feasibility.
+\item Run max-flow on the subgraph of ones to get $k$; return $S_1+T-2k$.
+\end{algosteps}
+\OPTIMALITY{Given any feasible solution with overlap $k$, the edit count is $S_1+T-2k$. The second flow computes the maximum possible $k$, hence minimizes edits. Feasibility is necessary and sufficient and is exactly checked by the first flow.}
+\COMPLEXITY{Two Dinic runs on graphs with $V\le 102$, $E\le 2600$:
+\begin{BreakableEquation*}
+T(n,m) = O(E\sqrt{V}) \text{ in practice}, \quad S(n,m)=O(E).
+\end{BreakableEquation*}}
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from collections import deque
+from typing import List, Tuple
+
+class Dinic:
+    class Edge:
+        __slots__ = ("to","cap","rev")
+        def __init__(self, to: int, cap: int, rev: int):
+            self.to = to
+            self.cap = cap
+            self.rev = rev
+
+    def __init__(self, n: int):
+        self.n = n
+        self.g = [[] for _ in range(n)]
+        self.level = [0]*n
+        self.it = [0]*n
+
+    def add_edge(self, u: int, v: int, cap: int) -> None:
+        a = Dinic.Edge(v, cap, len(self.g[v]))
+        b = Dinic.Edge(u, 0,   len(self.g[u]))
+        self.g[u].append(a)
+        self.g[v].append(b)
+
+    def bfs(self, s: int, t: int) -> bool:
+        self.level = [-1]*self.n
+        q = deque([s])
+        self.level[s] = 0
+        while q:
+            u = q.popleft()
+            for e in self.g[u]:
+                if e.cap > 0 and self.level[e.to] < 0:
+                    self.level[e.to] = self.level[u] + 1
+                    q.append(e.to)
+        return self.level[t] >= 0
+
+    def dfs(self, u: int, t: int, f: int) -> int:
+        if u == t:
+            return f
+        for i in range(self.it[u], len(self.g[u])):
+            self.it[u] = i
+            e = self.g[u][i]
+            if e.cap > 0 and self.level[u] < self.level[e.to]:
+                ret = self.dfs(e.to, t, min(f, e.cap))
+                if ret > 0:
+                    e.cap -= ret
+                    self.g[e.to][e.rev].cap += ret
+                    return ret
+        return 0
+
+    def max_flow(self, s: int, t: int) -> int:
+        flow = 0
+        INF = 10**18
+        while self.bfs(s, t):
+            self.it = [0]*self.n
+            while True:
+                pushed = self.dfs(s, t, INF)
+                if pushed == 0:
+                    break
+                flow += pushed
+        return flow
+
+def build_flow(n: int, m: int, A: List[int], B: List[int], allowed: List[List[int]]) -> int:
+    N = n + m + 2
+    s = n + m
+    t = s + 1
+    din = Dinic(N)
+    for i in range(n):
+        if A[i] > 0: din.add_edge(s, i, A[i])
+    for j in range(m):
+        if B[j] > 0: din.add_edge(n + j, t, B[j])
+    for i in range(n):
+        for j in range(m):
+            if allowed[i][j]:
+                din.add_edge(i, n + j, 1)
+    return din.max_flow(s, t)
+
+def solve_matrix_min_ops(n: int, m: int, a: List[List[int]], A: List[int], B: List[int]) -> int:
+    T = sum(A)
+    if T != sum(B):
+        return -1
+    S1 = sum(sum(row) for row in a)
+    # 1) Feasibility
+    full = [[1]*m for _ in range(n)]
+    if build_flow(n, m, A, B, full) != T:
+        return -1
+    # 2) Maximum overlap on ones
+    k = build_flow(n, m, A, B, a)
+    return S1 + T - 2*k
+
+def read_input() -> Tuple[int,int,List[List[int]],List[int],List[int]]:
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    a = [[int(next(it)) for _ in range(m)] for __ in range(n)]
+    A = [int(next(it)) for _ in range(n)]
+    B = [int(next(it)) for _ in range(m)]
+    return n, m, a, A, B
+
+def solve_case() -> None:
+    n, m, a, A, B = read_input()
+    print(solve_matrix_min_ops(n, m, a, A, B))
+
+def main():
+    if sys.stdin.isatty():
+        return
+    solve_case()
+
+if __name__ == "__main__":
+    # Exactly 3 asserts
+    assert solve_matrix_min_ops(2,2,[[1,0],[0,1]],[1,1],[1,1]) == 0
+    assert solve_matrix_min_ops(2,2,[[0,0],[0,0]],[1,1],[1,1]) == 2
+    assert solve_matrix_min_ops(2,2,[[0,0],[0,0]],[2,0],[0,2]) == -1
+    main()
+\end{minted}
+\VALIDATION{Asserts show a perfect match on representative cases: identity, all-zero with needed ones, and an impossible configuration.}
+\RESULT{Minimum number of cell edits (bit flips) required to realize the exact row and column sums; $-1$ if impossible.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on corner cases; random small-case fuzzer validating Agreement(A,B,C); adversarial patterns like all-ones/all-zeros; skewed row/column sums.}
+\LINE{CROSS-CHECKS}{Compare Approach A (min-cost) versus Approach C (two flows) on random instances; ensure identical outputs or both report $-1$.}
+\LINE{EDGE-CASE GENERATOR}{Generate small matrices with $n,m\in\{2,3,4\}$, random $a$, random $A,B$ with equal sums, and validate consistency.}
+\begin{minted}{python}
+import random
+from typing import List, Tuple
+
+# Reuse the solvers from approaches
+def solve_baseline(n,m,a,A,B):
+    # Inline baseline (min-cost)
+    from collections import deque
+    INF = 10**18
+    class MCMF:
+        class E:
+            __slots__=("to","rev","cap","cost")
+            def __init__(self,to,rev,cap,cost): self.to=to; self.rev=rev; self.cap=cap; self.cost=cost
+        def __init__(self,N): self.N=N; self.g=[[] for _ in range(N)]
+        def add(self,u,v,c,w):
+            a=MCMF.E(v,len(self.g[v]),c,w); b=MCMF.E(u,len(self.g[u]),0,-w)
+            self.g[u].append(a); self.g[v].append(b)
+        def run(self,s,t,need):
+            flow=0; cost=0
+            while flow<need:
+                dist=[INF]*self.N; inq=[False]*self.N; pv=[(-1,-1)]*self.N
+                dist[s]=0; dq=deque([s]); inq[s]=True
+                while dq:
+                    u=dq.popleft(); inq[u]=False
+                    for i,e in enumerate(self.g[u]):
+                        if e.cap<=0: continue
+                        v=e.to; nd=dist[u]+e.cost
+                        if nd<dist[v]:
+                            dist[v]=nd; pv[v]=(u,i)
+                            if not inq[v]:
+                                dq.append(v); inq[v]=True
+                if dist[t]==INF: break
+                add=need-flow; v=t
+                while v!=s:
+                    u,i=pv[v]
+                    if u==-1: add=0; break
+                    add=min(add,self.g[u][i].cap); v=u
+                if add==0: break
+                v=t
+                while v!=s:
+                    u,i=pv[v]; e=self.g[u][i]
+                    e.cap-=add; self.g[v][e.rev].cap+=add; v=u
+                flow+=add; cost+=add*dist[t]
+            return flow,cost
+    T=sum(A); 
+    if T!=sum(B): return -1
+    S1=sum(sum(row) for row in a)
+    N=2+n+m; s=n+m; t=s+1
+    G=MCMF(N)
+    for i in range(n): G.add(s,i,A[i],0)
+    for i in range(n):
+        for j in range(m):
+            G.add(i,n+j,1,0 if a[i][j]==1 else 1)
+    for j in range(m): G.add(n+j,t,B[j],0)
+    f,c = G.run(s,t,T)
+    if f!=T: return -1
+    return S1 - T + 2*c
+
+def solve_final(n,m,a,A,B):
+    # Inline final (two Dinic flows)
+    from collections import deque
+    class Din:
+        class E:
+            __slots__=("to","cap","rev")
+            def __init__(self,to,cap,rev): self.to=to; self.cap=cap; self.rev=rev
+        def __init__(self,N):
+            self.N=N; self.g=[[] for _ in range(N)]
+        def add(self,u,v,c):
+            a=Din.E(v,c,len(self.g[v])); b=Din.E(u,0,len(self.g[u]))
+            self.g[u].append(a); self.g[v].append(b)
+        def bfs(self,s,t):
+            self.level=[-1]*self.N; dq=deque([s]); self.level[s]=0
+            while dq:
+                u=dq.popleft()
+                for e in self.g[u]:
+                    if e.cap>0 and self.level[e.to]<0:
+                        self.level[e.to]=self.level[u]+1; dq.append(e.to)
+            return self.level[t]>=0
+        def dfs(self,u,t,f):
+            if u==t: return f
+            for i in range(self.it[u],len(self.g[u])):
+                self.it[u]=i; e=self.g[u][i]
+                if e.cap>0 and self.level[u]<self.level[e.to]:
+                    r=self.dfs(e.to,t,min(f,e.cap))
+                    if r>0:
+                        e.cap-=r; self.g[e.to][e.rev].cap+=r; return r
+            return 0
+        def flow(self,s,t):
+            F=0; INF=10**18
+            while self.bfs(s,t):
+                self.it=[0]*self.N
+                while True:
+                    p=self.dfs(s,t,INF)
+                    if p==0: break
+                    F+=p
+            return F
+    def run_allowed(allow):
+        N=2+n+m; s=n+m; t=s+1
+        D=Din(N)
+        for i in range(n):
+            if A[i]>0: D.add(s,i,A[i])
+        for j in range(m):
+            if B[j]>0: D.add(n+j,t,B[j])
+        for i in range(n):
+            for j in range(m):
+                if allow[i][j]: D.add(i,n+j,1)
+        return D.flow(s,t)
+    T=sum(A)
+    if T!=sum(B): return -1
+    S1=sum(sum(row) for row in a)
+    if run_allowed([[1]*m for _ in range(n)])!=T: return -1
+    k=run_allowed(a)
+    return S1 + T - 2*k
+
+def gen_case(n:int,m:int,seed:int=0)->Tuple[int,int,List[List[int]],List[int],List[int]]:
+    rnd = random.Random(seed)
+    a = [[rnd.randint(0,1) for _ in range(m)] for __ in range(n)]
+    # choose A randomly then B to match sum
+    A = [rnd.randint(0,m) for _ in range(n)]
+    T = sum(A)
+    B = [0]*m
+    # try to distribute T across m columns up to n
+    for j in range(m-1):
+        rem = T - sum(B)
+        B[j] = rnd.randint(0, min(n, rem))
+    B[m-1] = T - sum(B)
+    return n,m,a,A,B
+
+def fuzz():
+    for n in range(2,5):
+        for m in range(2,5):
+            for seed in range(200):
+                n_,m_,a,A,B = gen_case(n,m,seed)
+                x = solve_baseline(n_,m_,a,A,B)
+                y = solve_final(n_,m_,a,A,B)
+                assert x == y, (n_,m_,a,A,B,x,y)
+    return True
+
+if __name__ == "__main__":
+    assert fuzz()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+from collections import deque
+from typing import List, Tuple
+
+class Dinic:
+    class Edge:
+        __slots__ = ("to","cap","rev")
+        def __init__(self, to: int, cap: int, rev: int):
+            self.to = to
+            self.cap = cap
+            self.rev = rev
+
+    def __init__(self, n: int):
+        self.n = n
+        self.g = [[] for _ in range(n)]
+        self.level = [0]*n
+        self.it = [0]*n
+
+    def add_edge(self, u: int, v: int, cap: int) -> None:
+        a = Dinic.Edge(v, cap, len(self.g[v]))
+        b = Dinic.Edge(u, 0,   len(self.g[u]))
+        self.g[u].append(a)
+        self.g[v].append(b)
+
+    def bfs(self, s: int, t: int) -> bool:
+        self.level = [-1]*self.n
+        q = deque([s])
+        self.level[s] = 0
+        while q:
+            u = q.popleft()
+            for e in self.g[u]:
+                if e.cap > 0 and self.level[e.to] < 0:
+                    self.level[e.to] = self.level[u] + 1
+                    q.append(e.to)
+        return self.level[t] >= 0
+
+    def dfs(self, u: int, t: int, f: int) -> int:
+        if u == t:
+            return f
+        for i in range(self.it[u], len(self.g[u])):
+            self.it[u] = i
+            e = self.g[u][i]
+            if e.cap > 0 and self.level[u] < self.level[e.to]:
+                ret = self.dfs(e.to, t, min(f, e.cap))
+                if ret > 0:
+                    e.cap -= ret
+                    self.g[e.to][e.rev].cap += ret
+                    return ret
+        return 0
+
+    def max_flow(self, s: int, t: int) -> int:
+        flow = 0
+        INF = 10**18
+        while self.bfs(s, t):
+            self.it = [0]*self.n
+            while True:
+                pushed = self.dfs(s, t, INF)
+                if pushed == 0:
+                    break
+                flow += pushed
+        return flow
+
+def solve_matrix_min_ops(n: int, m: int, a: List[List[int]], A: List[int], B: List[int]) -> int:
+    def run(allowed: List[List[int]]) -> int:
+        N = n + m + 2
+        s = n + m
+        t = s + 1
+        din = Dinic(N)
+        for i in range(n):
+            if A[i] > 0:
+                din.add_edge(s, i, A[i])
+        for j in range(m):
+            if B[j] > 0:
+                din.add_edge(n + j, t, B[j])
+        for i in range(n):
+            for j in range(m):
+                if allowed[i][j]:
+                    din.add_edge(i, n + j, 1)
+        return din.max_flow(s, t)
+    T = sum(A)
+    if T != sum(B):
+        return -1
+    S1 = sum(sum(row) for row in a)
+    if run([[1]*m for _ in range(n)]) != T:
+        return -1
+    k = run(a)
+    return S1 + T - 2*k
+
+def read_input() -> Tuple[int,int,List[List[int]],List[int],List[int]]:
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    a = [[int(next(it)) for _ in range(m)] for __ in range(n)]
+    A = [int(next(it)) for _ in range(n)]
+    B = [int(next(it)) for _ in range(m)]
+    return n, m, a, A, B
+
+def solve_case() -> None:
+    n, m, a, A, B = read_input()
+    print(solve_matrix_min_ops(n, m, a, A, B))
+
+def main():
+    if sys.stdin.isatty():
+        return
+    solve_case()
+
+if __name__ == "__main__":
+    # Quick asserts
+    assert solve_matrix_min_ops(2,2,[[1,0],[0,1]],[1,1],[1,1]) == 0
+    assert solve_matrix_min_ops(2,2,[[0,0],[0,0]],[1,1],[1,1]) == 2
+    assert solve_matrix_min_ops(2,2,[[0,0],[0,0]],[2,0],[0,2]) == -1
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Minimize edits to reach given row/column sums by maximizing overlap with original ones via two max-flows.}
+\WHY{Classic interview theme: reduce discrete optimization under constraints to network flow; reason about objective transformations.}
+\CHECKLIST{%
+\begin{bullets}
+\item Check $\sum A_i = \sum B_j$ first.
+\item Feasibility flow on complete bipartite graph.
+\item Overlap flow on ones-subgraph.
+\item Compute $S_1$, $T$, and answer $S_1+T-2k$.
+\item Handle $-1$ when infeasible.
+\end{bullets}}
+\EDGECASES{%
+\begin{bullets}
+\item All rows or all columns zero.
+\item All ones matrix with small $A,B$.
+\item Rows/columns with capacities $0$ or full ($m$ or $n$).
+\item Highly unbalanced $A$ concentrated in few rows.
+\item Sums equal but degree sequence infeasible.
+\item Single feasible matrix (uniqueness) still handled.
+\item Symmetry under transposition of $a$ with swapped $A,B$.
+\item $n=m=2$ tiny enumerations.
+\item Random sparse vs. dense patterns.
+\item Border values $n=m=50$ performance.
+\end{bullets}}
+\PITFALLS{%
+\begin{bullets}
+\item Forgetting to check feasibility separately when not using min-cost flow.
+\item Miscomputing the final formula; it is $S_1+T-2k$, not just $T-k$.
+\item Off-by-one in indexing row/column node ids in the graph.
+\item Reusing a mutated graph between the two flows.
+\item Integer overflows not an issue in Python but be mindful in other languages.
+\item Skipping edges for $A_i=0$ or $B_j=0$ is fine but do not skip nodes.
+\item Reading input in wrong order ($A$ then $B$).
+\item Using $ in LaTeX or unescaped specials; avoid in writeups.
+\end{bullets}}
+\FAILMODES{Greedy placement of ones locally can get stuck due to column caps; only global flow enforces all constraints. Feasibility failures despite sum equality are exactly caught by the first flow.}
+\ELI{We need to place a fixed number of ones per row and column. To minimize flips, we try to keep as many existing ones as possible. A max-flow finds the best assignment of these ones while obeying all limits; the rest must be flipped.}
+\NotePages{3}
+
+\end{document}

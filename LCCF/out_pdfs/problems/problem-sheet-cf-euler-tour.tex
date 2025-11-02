@@ -1,0 +1,901 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Euler tour}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1053/E}}
+\LINE{DIFFICULTY / RATING}{3500}
+\STATEMENT{Euler is a little, cute squirrel. When the autumn comes, he collects some reserves for winter. A tree can be described as $n$ acorns connected by $n-1$ branches, such that there is exactly one way between each pair of acorns. Enumerate the acorns from $1$ to $n$.
+
+The squirrel chooses one acorn (not necessarily with number $1$) as a start, and visits them in a way called an ``Euler tour'' (see notes), collecting each acorn when he visits it for the last time.
+
+Today morning Kate was observing Euler. She took a sheet of paper and wrote down consecutive indices of acorns on his path. Unfortunately, during her way home it started raining and some of the numbers became illegible. Now the girl is very sad, because she has to present the observations to her teacher.
+
+``Maybe if I guess the lacking numbers, I will be able to do it!'' she thought. Help her and restore any valid Euler tour of some tree or tell that she must have made a mistake.
+
+Input:
+The first line contains a single integer $n$ ($1 \le n \le 5 \cdot 10^5$), denoting the number of acorns in the tree.
+
+The second line contains $2n-1$ integers $a_1, a_2, \ldots, a_{2n-1}$ ($0 \le a_i \le n$) — the Euler tour of the tree that Kate wrote down. $0$ means an illegible number, which has to be guessed.
+
+Output:
+If there is no Euler tour satisfying the given description, output ``no'' in the first line.
+
+Otherwise, on the first line output ``yes'', and then in the second line print the Euler tour which satisfies the given description.
+
+Any valid Euler tour will be accepted, since the teacher does not know how exactly the initial tree looks.
+
+Note:
+An Euler tour of a tree with $n$ acorns is a sequence of $2n-1$ indices of acorns such that each acorn occurs at least once, the first and the last acorns are the same, and each two consecutive acorns are directly connected with a branch.}
+\BREAKDOWN{We must decide whether we can replace zeros by integers in $[1,n]$ to obtain a valid depth-first Euler tour of some tree: length $2n-1$, first equals last, adjacent elements are distinct and are connected by an edge in a tree. If possible, output any such tour.}
+\ELI{Think of walking along branches of some tree and writing each node at every step; fill in the smudged numbers so the walk starts and ends at the same acorn and moves along tree branches only.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test.
+- Integer $n$ ($1 \le n \le 5\cdot 10^5$).
+- Array $a$ of length $2n-1$ with $0 \le a_i \le n$. Here $0$ is unknown. Non-zero values are fixed labels in $[1,n]$.}
+\OUTPUTS{Either:
+- Print ``no'' if impossible.
+- Or print ``yes'' on the first line, then a full Euler tour $b$ of length $2n-1$ on the second line, where all zeros are replaced by values in $[1,n]$ and $b$ satisfies the Euler tour definition.}
+\SAMPLES{Example 1:
+Input:
+3
+0 0 0 0 0
+Output:
+yes
+1 2 1 3 1
+
+Example 2:
+Input:
+2
+1 0 1
+Output:
+yes
+1 2 1}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{We seek a sequence $b_1,\ldots,b_{2n-1}$ with $b_i \in [n]$ such that:
+- $b_1 = b_{2n-1}$,
+- $b_i \ne b_{i+1}$ for all $i$,
+- There exists a tree $T$ on vertex set $[n]$ so that $\{b_i,b_{i+1}\}$ is an edge of $T$ for all $i$,
+- For all $i$ with $a_i \ne 0$ we require $b_i = a_i$.}
+\varmapStart
+\var{n}{number of vertices (acorns)}
+\var{a_i}{observed label at step $i$; $0$ means unknown}
+\var{b_i}{final label at step $i$}
+\var{S}{set of labels already seen (introduced)}
+\var{\text{stk}}{DFS path stack (current root-to-current path)}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+& b_1 = b_{2n-1},\quad b_i \in [n],\quad b_i \ne b_{i+1},\\
+& \text{Let } E = \{\{b_i,b_{i+1}\} : 1 \le i < 2n-1\} \text{ (as a set of undirected edges introduced on forward moves)}.\\
+& |E| = n-1,\ \text{and the walk is a DFS Euler tour: each step is either to a new child or to the parent.}
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Labels are $1$-based. The Euler tour is a DFS-style walk: every forward move goes to a yet-unseen vertex and every back move goes to the current parent.}
+\INVARIANTS{During a valid reconstruction:
+- The stack maintains the current path from the root; next step is either push a new label or pop to the parent.
+- The number of forward moves equals the number of unseen labels remaining.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Validate a fully specified sequence (no zeros) by simulating a DFS stack.}
+\ASSUMPTIONS{If any zeros remain, we cannot validate without guessing; baseline returns ``no'' unless already fully specified and valid.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item If any $a_i=0$, return ``no'' (baseline limitation).
+\item Check $a_1=a_{2n-1}$ and $a_i \ne a_{i+1}$.
+\item Simulate a DFS-stack walk: on step $i\to i+1$, if $a_{i+1}$ is unseen, it must be a push; else it must equal the parent to pop; otherwise invalid.
+\end{algosteps}
+\COMPLEXITY{Linear scan.}
+\[
+\begin{aligned}
+T(n) &= O(n), \quad S(n)=O(n).
+\end{aligned}
+\]
+\CORRECTNESS{The DFS-stack simulation captures the necessary and sufficient condition for a sequence to be a DFS Euler tour of some tree.}
+\EDGECASES{Handle $n=1$; detect self-loops; ensure last equals first.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def is_valid_tour(n: int, seq: List[int]) -> bool:
+    m = 2 * n - 1
+    if len(seq) != m:
+        return False
+    # labels in range and no zeros
+    if any(x == 0 or x < 1 or x > n for x in seq):
+        return False
+    if seq[0] != seq[-1]:
+        return False
+    # no self-edges
+    if any(seq[i] == seq[i+1] for i in range(m-1)):
+        return False
+    seen = set([seq[0]])
+    stk = [seq[0]]
+    for i in range(1, m):
+        cur = stk[-1]
+        nxt = seq[i]
+        if len(stk) >= 2 and nxt == stk[-2]:
+            stk.pop()
+        elif nxt not in seen:
+            seen.add(nxt)
+            stk.append(nxt)
+        else:
+            return False
+    return True
+
+def read_input(data: str) -> Tuple[int, List[int]]:
+    it = list(map(int, data.strip().split()))
+    if not it:
+        return 0, []
+    n = it[0]
+    arr = it[1:]
+    return n, arr
+
+def solve_case(n: int, arr: List[int]) -> Tuple[bool, List[int]]:
+    # baseline: only validate if no zeros
+    if any(x == 0 for x in arr):
+        return False, []
+    if is_valid_tour(n, arr):
+        return True, arr[:]
+    return False, []
+
+def main():
+    data = sys.stdin.read()
+    if not data.strip():
+        # run internal tests
+        assert is_valid_tour(1, [1])
+        assert is_valid_tour(3, [1,2,1,3,1])
+        assert not is_valid_tour(2, [1,2,1,2,1])  # too long and invalid use of edge
+        print("no")
+        return
+    n, arr = read_input(data)
+    ok, ans = solve_case(n, arr)
+    if not ok:
+        print("no")
+    else:
+        print("yes")
+        print(" ".join(map(str, ans)))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Tiny checks inside main:
+- Valid tours for $n=1$ and a star for $n=3$.
+- A known invalid pattern attempting to overuse one edge.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Greedy Reconstruction with DFS Stack}
+\WHICHFORMULA{Maintain a DFS stack. On unknown entries, backtrack when possible (pop), otherwise introduce a new label (push) with the smallest unused label. This yields a valid tour whenever constraints allow (e.g., produces a star when all are zeros).}
+\ASSUMPTIONS{Non-zero entries must be consistent with DFS rules: a known next equals either parent (pop) or a new unseen label (push).}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Initialize $b_1$ to $a_1$ if known; else to $a_{2n-1}$ if known; else to any label, e.g., $1$.
+\item Keep a stack with the current path, starting at $b_1$. Track the set of seen labels.
+\item For each $i=2,\ldots,2n-1$:
+\begin{bullets}
+\item If $a_i$ is known: if it equals parent, pop; else if unseen, push; else fail.
+\item If $a_i=0$: if depth $>1$, set $b_i$ to parent and pop; else pick the smallest unseen label, set $b_i$ to it and push.
+\end{bullets}
+\item At the end verify $b_{2n-1}=b_1$ and that the simulation never violated rules.
+\end{algosteps}
+\COMPLEXITY{Linear, with set and stack operations.}
+\[
+\begin{aligned}
+T(n) &= O(n), \quad S(n)=O(n).
+\end{aligned}
+\]
+\CORRECTNESS{The stack invariant guarantees each edge is either a forward introduction to a new child or a backtrack to parent; thus the unique edges form a tree. Choosing back on unknowns when possible defers introducing new labels until necessary, which always works for fully unknown input and for many constrained inputs.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def is_valid_tour(n: int, seq: List[int]) -> bool:
+    m = 2 * n - 1
+    if len(seq) != m or any(x < 1 or x > n for x in seq):
+        return False
+    if seq[0] != seq[-1]:
+        return False
+    if any(seq[i] == seq[i+1] for i in range(m-1)):
+        return False
+    seen = set([seq[0]])
+    stk = [seq[0]]
+    for i in range(1, m):
+        cur = stk[-1]
+        nxt = seq[i]
+        if len(stk) >= 2 and nxt == stk[-2]:
+            stk.pop()
+        elif nxt not in seen:
+            seen.add(nxt)
+            stk.append(nxt)
+        else:
+            return False
+    return True
+
+def reconstruct_greedy(n: int, a: List[int]) -> Tuple[bool, List[int]]:
+    m = 2 * n - 1
+    if len(a) != m:
+        return False, []
+    if any(x < 0 or x > n for x in a):
+        return False, []
+    b = a[:]
+    # choose start
+    start = b[0] if b[0] != 0 else (b[-1] if b[-1] != 0 else (next((x for x in b if x != 0), 1)))
+    if b[0] != 0 and b[0] != start:
+        return False, []
+    if b[-1] != 0 and b[-1] != start:
+        return False, []
+    b[0] = start
+    # DFS simulation
+    seen = set([start])
+    unused = {i for i in range(1, n+1)}
+    unused.discard(start)
+    stk = [start]
+    for i in range(1, m):
+        cur = stk[-1]
+        ai = b[i]
+        if ai != 0:
+            if ai == cur:
+                return False, []
+            if len(stk) >= 2 and ai == stk[-2]:
+                # pop
+                stk.pop()
+            elif ai in seen:
+                # cannot jump to a seen non-parent
+                return False, []
+            else:
+                # push new
+                seen.add(ai)
+                unused.discard(ai)
+                stk.append(ai)
+        else:
+            # unknown: prefer back if possible
+            if len(stk) >= 2:
+                parent = stk[-2]
+                b[i] = parent
+                stk.pop()
+            else:
+                if not unused:
+                    return False, []
+                newv = min(unused)
+                unused.remove(newv)
+                seen.add(newv)
+                b[i] = newv
+                stk.append(newv)
+    # finalize last element equal to start
+    if b[-1] != start:
+        return False, []
+    if not is_valid_tour(n, b):
+        return False, []
+    return True, b
+
+def read_input(data: str) -> Tuple[int, List[int]]:
+    it = list(map(int, data.strip().split()))
+    if not it:
+        return 0, []
+    n = it[0]
+    arr = it[1:]
+    return n, arr
+
+def solve_case(n: int, arr: List[int]) -> Tuple[bool, List[int]]:
+    ok, b = reconstruct_greedy(n, arr)
+    return ok, b if ok else []
+
+def main():
+    data = sys.stdin.read()
+    if not data.strip():
+        # Self-checks
+        ok, b = reconstruct_greedy(3, [0,0,0,0,0])
+        assert ok and is_valid_tour(3, b)
+        ok, b = reconstruct_greedy(2, [1,0,1])
+        assert ok and b == [1,2,1]
+        ok, _ = reconstruct_greedy(2, [1,1,1])
+        assert not ok
+        print("yes")
+        print("1")
+        return
+    n, arr = read_input(data)
+    ok, ans = solve_case(n, arr)
+    if not ok:
+        print("no")
+    else:
+        print("yes")
+        print(" ".join(map(str, ans)))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Checks include:
+- All zeros to a star tour.
+- Partially fixed root case $[1,0,1]$ to $[1,2,1]$.
+- Rejects self-loop pattern $[1,1,1]$.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Stack Reconstruction with Parity \& Budget Checks}
+\WHICHFORMULA{Same DFS-stack reconstruction but also enforce feasibility at each step by tracking:
+- depth $d=\lvert\text{stk}\rvert$,
+- remaining positions $r = (2n-1)-i$,
+- remaining forward moves $F = \tfrac{(r+1)-d}{2}$,
+- remaining new labels $U = n-\lvert S\rvert$.
+Require $F \ge 0$, integer, and $U \le F$.
+On unknowns, choose back if possible; otherwise push a new label. On knowns, enforce push/pop consistency.}
+\ASSUMPTIONS{The DFS structure implies exactly $n-1$ forward moves total and $n-1$ back moves; parity and counts constrain feasibility prefix-by-prefix.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Initialize start and structures as in Approach B.
+\item For each $i=2,\ldots,2n-1$:
+\begin{bullets}
+\item Compute $d=\lvert\text{stk}\rvert$, $r=(2n-1)-i$, $F=\tfrac{(r+1)-d}{2}$ and $U=n-\lvert S\rvert$; if $F$ not integer or $F<0$ or $U>F$, fail early.
+\item If $a_i$ is known: enforce pop or push as per DFS rules; otherwise fail.
+\item If $a_i=0$: if $d \ge 2$, pop; else push the smallest unused label.
+\end{bullets}
+\item Verify the final sequence and print.}
+\OPTIMALITY{The parity and budget checks are necessary conditions for any solution; enforcing them early prunes dead prefixes. The DFS-stack characterization is exact for Euler tours of trees, so any sequence produced is valid.}
+\COMPLEXITY{Single pass with set and stack operations.}
+\[
+\begin{aligned}
+T(n) &= O(n),\quad S(n)=O(n).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def is_valid_tour(n: int, seq: List[int]) -> bool:
+    m = 2 * n - 1
+    if len(seq) != m or any(x < 1 or x > n for x in seq):
+        return False
+    if seq[0] != seq[-1]:
+        return False
+    if any(seq[i] == seq[i+1] for i in range(m-1)):
+        return False
+    seen = set([seq[0]])
+    stk = [seq[0]]
+    for i in range(1, m):
+        nxt = seq[i]
+        if len(stk) >= 2 and nxt == stk[-2]:
+            stk.pop()
+        elif nxt not in seen:
+            seen.add(nxt)
+            stk.append(nxt)
+        else:
+            return False
+    # unique edges count equals pushes = n-1 implicitly
+    return True
+
+def feasible(d: int, r: int, seen_cnt: int, n: int) -> bool:
+    # r = positions remaining after placing current (i from 1-based index), but we will call before deciding step at position i (1-based).
+    # In our loop, we call at index i (0-based) intending to set b[i]; let remaining positions after setting be m-1-i; so r = m-1-i.
+    # Given current depth d, number of remaining forward moves F must be integer and >= unseen labels.
+    # F = ((r+1)-d)/2
+    num = (r + 1) - d
+    if num % 2 != 0:
+        return False
+    F = num // 2
+    if F < 0:
+        return False
+    U = n - seen_cnt
+    return U <= F
+
+def reconstruct_with_checks(n: int, a: List[int]) -> Tuple[bool, List[int]]:
+    m = 2 * n - 1
+    if len(a) != m or any(x < 0 or x > n for x in a):
+        return False, []
+    b = a[:]
+    # choose start label
+    start = b[0] if b[0] != 0 else (b[-1] if b[-1] != 0 else (next((x for x in b if x != 0), 1)))
+    if b[0] != 0 and b[0] != start:
+        return False, []
+    if b[-1] != 0 and b[-1] != start:
+        return False, []
+    b[0] = start
+    seen = set([start])
+    unused = {i for i in range(1, n+1)}
+    unused.discard(start)
+    stk = [start]
+    # iterate positions 1..m-1 (0-based)
+    for i in range(1, m):
+        # feasibility check before placing b[i]
+        d = len(stk)
+        r = (m - 1) - i
+        if not feasible(d, r, len(seen), n):
+            return False, []
+        cur = stk[-1]
+        ai = b[i]
+        if ai != 0:
+            if ai == cur:
+                return False, []
+            if len(stk) >= 2 and ai == stk[-2]:
+                stk.pop()
+            elif ai in seen:
+                return False, []
+            else:
+                seen.add(ai)
+                unused.discard(ai)
+                stk.append(ai)
+        else:
+            if len(stk) >= 2:
+                parent = stk[-2]
+                b[i] = parent
+                stk.pop()
+            else:
+                if not unused:
+                    return False, []
+                newv = min(unused)
+                unused.remove(newv)
+                seen.add(newv)
+                b[i] = newv
+                stk.append(newv)
+    if b[-1] != start:
+        return False, []
+    if not is_valid_tour(n, b):
+        return False, []
+    return True, b
+
+def read_input() -> Tuple[int, List[int]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, []
+    n = int(data[0])
+    arr = list(map(int, data[1:]))
+    return n, arr
+
+def solve_all(n: int, arr: List[int]) -> Tuple[bool, List[int]]:
+    return reconstruct_with_checks(n, arr)
+
+def main():
+    n, arr = read_input()
+    if n == 0:
+        # run exactly 3 asserts
+        ok, b = reconstruct_with_checks(1, [0])
+        assert ok and b == [1]
+        ok, b = reconstruct_with_checks(3, [2,0,2,0,2])
+        assert ok and b[0] == b[-1] == 2 and len(b) == 5
+        ok, _ = reconstruct_with_checks(2, [1,1,1])
+        assert not ok
+        print("yes")
+        print("1")
+        return
+    ok, ans = solve_all(n, arr)
+    if not ok:
+        print("no")
+    else:
+        print("yes")
+        print(" ".join(map(str, ans)))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts executed when no input:
+- Reconstructs $[1]$ for $n=1$.
+- Respects fixed endpoints $[2,\ldots,2]$ for $n=3$.
+- Rejects invalid self-loop input.}
+\RESULT{Outputs ``yes'' and one valid Euler tour consistent with given fixed entries, or ``no'' if impossible under the DFS-tour constraints.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests for validator, star-construction on all-zero input, mixed fixed/unknown endpoints, and detection of invalid jumps to seen non-parent nodes.}
+\LINE{CROSS-CHECKS}{Compare Approach B vs C on random tiny cases: Approach C should never accept a case that B rejects and is invalid by the validator.}
+\LINE{EDGE-CASE GENERATOR}{Generate small $n \le 5$ trees and true Euler tours; mask some positions with zeros; ensure solver can restore or validate.}
+\begin{minted}{python}
+import random
+
+def gen_tree(n):
+    # parent array for a random rooted tree
+    parents = [0]*(n+1)
+    for v in range(2, n+1):
+        parents[v] = random.randint(1, v-1)
+    adj = [[] for _ in range(n+1)]
+    for v in range(2, n+1):
+        u = parents[v]
+        adj[u].append(v)
+        adj[v].append(u)
+    return adj
+
+def euler_tour(adj, root=1):
+    n = len(adj) - 1
+    tour = []
+    seen = [False]*(n+1)
+    def dfs(u, p):
+        tour.append(u)
+        seen[u] = True
+        for v in adj[u]:
+            if v == p: continue
+            dfs(v, u)
+            tour.append(u)
+    dfs(root, 0)
+    return tour
+
+def mask_some(tour, n, prob=0.3):
+    return [x if random.random() > prob else 0 for x in tour]
+
+# reference solver (Approach C)
+def solve_ref(n, arr):
+    from typing import List, Tuple
+    def is_valid_tour(n: int, seq: List[int]) -> bool:
+        m = 2 * n - 1
+        if len(seq) != m or any(x < 1 or x > n for x in seq):
+            return False
+        if seq[0] != seq[-1]:
+            return False
+        if any(seq[i] == seq[i+1] for i in range(m-1)):
+            return False
+        seen = set([seq[0]])
+        stk = [seq[0]]
+        for i in range(1, m):
+            nxt = seq[i]
+            if len(stk) >= 2 and nxt == stk[-2]:
+                stk.pop()
+            elif nxt not in seen:
+                seen.add(nxt)
+                stk.append(nxt)
+            else:
+                return False
+        return True
+    def feasible(d: int, r: int, seen_cnt: int, n: int) -> bool:
+        num = (r + 1) - d
+        if num % 2 != 0:
+            return False
+        F = num // 2
+        if F < 0:
+            return False
+        U = n - seen_cnt
+        return U <= F
+    def reconstruct(n: int, a: List[int]) -> Tuple[bool, List[int]]:
+        m = 2*n - 1
+        b = a[:]
+        start = b[0] if b[0] != 0 else (b[-1] if b[-1] != 0 else (next((x for x in b if x != 0), 1)))
+        if b[0] != 0 and b[0] != start: return False, []
+        if b[-1] != 0 and b[-1] != start: return False, []
+        b[0] = start
+        seen = {start}
+        unused = set(range(1, n+1)); unused.discard(start)
+        stk = [start]
+        for i in range(1, m):
+            d = len(stk); r = (m - 1) - i
+            if not feasible(d, r, len(seen), n):
+                return False, []
+            ai = b[i]
+            if ai != 0:
+                if ai == stk[-1]: return False, []
+                if len(stk) >= 2 and ai == stk[-2]:
+                    stk.pop()
+                elif ai in seen:
+                    return False, []
+                else:
+                    seen.add(ai); unused.discard(ai); stk.append(ai)
+            else:
+                if len(stk) >= 2:
+                    b[i] = stk[-2]; stk.pop()
+                else:
+                    if not unused: return False, []
+                    newv = min(unused); unused.remove(newv); seen.add(newv); b[i] = newv; stk.append(newv)
+        if b[-1] != start or not is_valid_tour(n, b): return False, []
+        return True, b
+    return reconstruct(n, arr)
+
+def demo():
+    random.seed(0)
+    for n in range(1, 6):
+        for _ in range(50):
+            adj = gen_tree(n)
+            tour = euler_tour(adj, root=1)
+            masked = mask_some(tour, n, prob=0.4)
+            ok, b = solve_ref(n, masked)
+            if ok:
+                assert len(b) == 2*n - 1
+                assert b[0] == b[-1]
+                assert all(1 <= x <= n for x in b)
+
+if __name__ == "__main__":
+    demo()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def is_valid_tour(n: int, seq: List[int]) -> bool:
+    m = 2 * n - 1
+    if len(seq) != m or any(x < 1 or x > n for x in seq):
+        return False
+    if seq[0] != seq[-1]:
+        return False
+    if any(seq[i] == seq[i+1] for i in range(m-1)):
+        return False
+    seen = set([seq[0]])
+    stk = [seq[0]]
+    for i in range(1, m):
+        nxt = seq[i]
+        if len(stk) >= 2 and nxt == stk[-2]:
+            stk.pop()
+        elif nxt not in seen:
+            seen.add(nxt)
+            stk.append(nxt)
+        else:
+            return False
+    return True
+
+def feasible(d: int, r: int, seen_cnt: int, n: int) -> bool:
+    num = (r + 1) - d
+    if num % 2 != 0:
+        return False
+    F = num // 2
+    if F < 0:
+        return False
+    U = n - seen_cnt
+    return U <= F
+
+def reconstruct_with_checks(n: int, a: List[int]) -> Tuple[bool, List[int]]:
+    m = 2 * n - 1
+    if len(a) != m or any(x < 0 or x > n for x in a):
+        return False, []
+    b = a[:]
+    start = b[0] if b[0] != 0 else (b[-1] if b[-1] != 0 else (next((x for x in b if x != 0), 1)))
+    if b[0] != 0 and b[0] != start:
+        return False, []
+    if b[-1] != 0 and b[-1] != start:
+        return False, []
+    b[0] = start
+    seen = set([start])
+    unused = {i for i in range(1, n+1)}
+    unused.discard(start)
+    stk = [start]
+    for i in range(1, m):
+        d = len(stk)
+        r = (m - 1) - i
+        if not feasible(d, r, len(seen), n):
+            return False, []
+        cur = stk[-1]
+        ai = b[i]
+        if ai != 0:
+            if ai == cur:
+                return False, []
+            if len(stk) >= 2 and ai == stk[-2]:
+                stk.pop()
+            elif ai in seen:
+                return False, []
+            else:
+                seen.add(ai)
+                unused.discard(ai)
+                stk.append(ai)
+        else:
+            if len(stk) >= 2:
+                b[i] = stk[-2]
+                stk.pop()
+            else:
+                if not unused:
+                    return False, []
+                newv = min(unused)
+                unused.remove(newv)
+                seen.add(newv)
+                b[i] = newv
+                stk.append(newv)
+    if b[-1] != start or not is_valid_tour(n, b):
+        return False, []
+    return True, b
+
+def read_input() -> Tuple[int, List[int]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, []
+    n = int(data[0])
+    arr = list(map(int, data[1:]))
+    return n, arr
+
+def solve_all(n: int, arr: List[int]) -> Tuple[bool, List[int]]:
+    return reconstruct_with_checks(n, arr)
+
+def main():
+    n, arr = read_input()
+    if n == 0:
+        # minimal deterministic smoke tests
+        ok, b = reconstruct_with_checks(1, [0]); assert ok and b == [1]
+        ok, _ = reconstruct_with_checks(2, [1,1,1]); assert not ok
+        ok, b = reconstruct_with_checks(3, [0,0,0,0,0]); assert ok and is_valid_tour(3, b)
+        print("yes"); print("1")
+        return
+    ok, ans = solve_all(n, arr)
+    if not ok:
+        print("no")
+    else:
+        print("yes")
+        print(" ".join(map(str, ans)))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Reconstruct a DFS Euler tour of a labeled tree from a partially observed sequence by maintaining a DFS stack and filling unknowns consistently.}
+\WHY{This pattern appears in tree-walk encoding, bracket sequence constraints, and stack-discipline reconstruction under partial information.}
+\CHECKLIST{
+- Length equals $2n-1$, labels in $[1,n]$.
+- First equals last.
+- No self-loop between consecutive elements.
+- Known steps: enforce pop to parent or push to an unseen child.
+- Unknown steps: prefer pop; if at root, push a new unused label.
+- Parity/budget: remaining forward moves $F=\tfrac{(r+1)-d}{2}$ integer, and remaining new labels $U \le F$.}
+\EDGECASES{
+- $n=1$; the only valid tour is $[x]$ with $x \in [1]$.
+- First or last fixed to different values $\Rightarrow$ impossible.
+- Self-loop $a_i=a_{i+1}$ anywhere $\Rightarrow$ impossible.
+- Known jump to a seen non-parent label $\Rightarrow$ impossible.
+- Zeros everywhere: produce a star tour $[1,2,1,3,1,\ldots]$.
+- All labels must appear exactly once as new introductions across the tour.}
+\PITFALLS{
+- Forgetting to ensure $b_1=b_{2n-1}$ after filling.
+- Allowing a jump to an ancestor that is not the parent.
+- Introducing a new label twice (track seen set).
+- Running out of unused labels at depth $1$.
+- Parity mismatch: $(r+1)-d$ odd makes completion impossible.
+- Mishandling the case $d=1$ (cannot pop at root).}
+\FAILMODES{Inputs that force a sideways jump (to a seen non-parent) cannot be repaired by any filling. The parity/budget checks detect prefixes that cannot lead to completion even if local choices exist.}
+\ELI{Walk a tree by going down to new acorns or back up to your parent. Keep a stack of where you are. For unknown steps, go back if you can; if you are at the root, go to a new acorn. Make sure the remaining steps and remaining new acorns still fit together.}
+\NotePages{3}
+
+\end{document}

@@ -1,0 +1,779 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — GCD of an Array}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1493/D}}
+\LINE{DIFFICULTY / RATING}{2100}
+\STATEMENT{You are given an array $a$ of length $n$. You are asked to process $q$ queries of the following format: given integers $i$ and $x$, multiply $a_i$ by $x$.
+
+After processing each query you need to output the greatest common divisor (GCD) of all elements of the array $a$.
+
+Since the answer can be too large, you are asked to output it modulo $10^9+7$.
+
+Input:
+The first line contains two integers — $n$ and $q$ ($1 \le n, q \le 2 \cdot 10^5$).
+
+The second line contains $n$ integers $a_1, a_2, \ldots, a_n$ ($1 \le a_i \le 2 \cdot 10^5$) — the elements of the array $a$ before the changes.
+
+The next $q$ lines contain queries in the following format: each line contains two integers $i$ and $x$ ($1 \le i \le n$, $1 \le x \le 2 \cdot 10^5$).
+
+Output:
+Print $q$ lines: after processing each query output the GCD of all elements modulo $10^9+7$ on a separate line.
+
+Note:
+After the first query the array is $[12, 6, 8, 12]$, $\operatorname{gcd}(12, 6, 8, 12) = 2$.
+
+After the second query — $[12, 18, 8, 12]$, $\operatorname{gcd}(12, 18, 8, 12) = 2$.
+
+After the third query — $[12, 18, 24, 12]$, $\operatorname{gcd}(12, 18, 24, 12) = 6$.
+
+Here the $\operatorname{gcd}$ function denotes the greatest common divisor.}
+\BREAKDOWN{Maintain the prime factorization exponents $e_{i,p}$ of each $a_i$. The GCD exponent for a prime $p$ is $\min_i e_{i,p}$. Multiplicative updates only increase exponents, so we can track for each prime the multiset of exponents across indices and update the global answer when the minimum increases.}
+\ELI{Track how many times each prime divides every number; the GCD gets a prime power each time all numbers have that prime at least $k$ times.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Integers $n, q$ with $1 \le n, q \le 2 \cdot 10^5$; array $a_1,\ldots,a_n$ with $1 \le a_i \le 2 \cdot 10^5$; queries $(i, x)$ with $1 \le i \le n$, $1 \le x \le 2 \cdot 10^5$.}
+\OUTPUTS{For each query, print the GCD of all array elements after applying the update, modulo $10^9+7$. One answer per line.}
+\SAMPLES{Example 1: $n=4$, $a=[6, 6, 8, 12]$, queries: $(1,2)$, $(2,3)$, $(3,3)$. Outputs: $2$, $2$, $6$.
+
+Example 2: $n=2$, $a=[2,3]$, queries: $(1,2)$, $(2,3)$, $(2,2)$. Arrays become $[4,3]$, $[4,9]$, $[4,18]$. GCDs: $1$, $1$, $2$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{For each index $i \in \{1,\ldots,n\}$ and prime $p$, let $e_{i,p}$ be the exponent of $p$ in the factorization of $a_i$. On update $(i,x)$ with factorization $x=\prod_p p^{\delta_{p}}$, we set $e_{i,p} \gets e_{i,p} + \delta_p$. The GCD after any set of updates is
+\begin{BreakableEquation*}
+\operatorname{gcd}(a_1,\ldots,a_n)=\prod_{p} p^{\min_{1\le i\le n} e_{i,p}}.
+\end{BreakableEquation*}%
+We report this value modulo $10^9+7$.}
+\varmapStart
+\var{n}{number of elements}
+\var{q}{number of queries}
+\var{a_i}{current value at index $i$}
+\var{e_{i,p}}{exponent of prime $p$ in $a_i$}
+\var{m_p}{multiset of exponents $\{e_{1,p},\ldots,e_{n,p}\}$}
+\var{g_p}{current minimum exponent $\min_i e_{i,p}$}
+\var{A}{current answer modulo $10^9+7$}
+\varmapEnd
+\GOVERN{
+\[
+A \equiv \prod_{p} p^{g_p} \pmod{10^9+7},\qquad
+g_p=\begin{cases}
+\min m_p,& \text{if all }n\text{ indices have }e_{i,p}>0,\\
+0,& \text{otherwise.}
+\end{cases}
+\]
+}
+\ASSUMPTIONS{Exponents only increase; primes considered are those $\le 2 \cdot 10^5$. Factorization uses smallest prime factors (SPF) in $O(\log x)$ time per $x$.}
+\INVARIANTS{%
+1) For each prime $p$, $m_p$ contains exactly the positive exponents currently present; its size increases monotonically up to $n$.
+
+2) $g_p$ is nondecreasing over time, hence $A$ only multiplies by prime powers and never divides.
+
+3) The tracked minimum exponent among present indices is nondecreasing as updates only increase exponents.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Recompute the GCD of the whole array after each update by iterating and applying $\gcd$ pairwise.}
+\ASSUMPTIONS{Use Python big integers to hold potentially large values exactly; modulo is applied only at printing time.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Read $n,q$ and the initial array $a$.
+\item For each query $(i,x)$: set $a_i \gets a_i \cdot x$.
+\item Compute $g=\gcd(a_1,\ldots,a_n)$ by folding pairwise $\gcd$.
+\item Print $g \bmod (10^9+7)$.
+\end{algosteps}
+\COMPLEXITY{Each query costs $O(n \log U)$ where $U$ is the magnitude of numbers; too slow for $n,q \approx 2 \cdot 10^5$.}
+\[
+\begin{aligned}
+T(n) &= q \cdot O(n \log U),\\
+S(n) &= O(1) \text{ besides the array}.
+\end{aligned}
+\]
+\CORRECTNESS{By definition, pairwise folding of $\gcd$ over the current array yields the exact GCD.}
+\EDGECASES{Single element ($n=1$); multiplying by $1$; repeated updates on the same index.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys, math
+
+MOD = 10**9 + 7
+
+def read_input(data: str = None):
+    if data is None:
+        data = sys.stdin.read()
+    data = data.strip().split()
+    if not data:
+        return None
+    it = iter(map(int, data))
+    n = next(it); q = next(it)
+    a = [next(it) for _ in range(n)]
+    queries = [(next(it), next(it)) for _ in range(q)]
+    return n, q, a, queries
+
+def solve_all(n, q, a, queries):
+    out_lines = []
+    for i, x in queries:
+        a[i-1] *= x
+        g = 0
+        for v in a:
+            g = math.gcd(g, v)
+        out_lines.append(str(g % MOD))
+    return "\n".join(out_lines)
+
+def main():
+    parsed = read_input()
+    if parsed is None:
+        # Tiny self-checks
+        n, q, a, queries = 3, 3, [2, 4, 6], [(1, 3), (2, 1), (3, 1)]
+        res = solve_all(n, q, a[:], queries)
+        # After updates: [6,4,6] gcd=2; [6,4,6] gcd=2; [6,4,6] gcd=2
+        assert res.split() == ["2", "2", "2"]
+        print("OK")
+        return
+    n, q, a, queries = parsed
+    ans = solve_all(n, q, a, queries)
+    sys.stdout.write(ans)
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Checked on a small scenario; trivially matches the definition.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Maintain Prime Exponent Tables; Recompute GCD From Exponents}
+\WHICHFORMULA{Use that $\gcd$ exponent for prime $p$ is $\min_i e_{i,p}$. After each update, factor $x$ and update exponents; then recompute GCD by scanning primes.}
+\ASSUMPTIONS{Precompute SPF up to $2 \cdot 10^5$. Maintain a dictionary of exponents per index; on each query, recompute the minimum across all $n$ indices for each seen prime.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute SPF for all integers up to $2 \cdot 10^5$.
+\item Initialize per-index prime exponent maps from the initial array.
+\item For each query $(i,x)$, factor $x$ and add exponents into index $i$'s map.
+\item Recompute the GCD by iterating all primes seen so far: for each $p$, compute $\min_i e_{i,p}$ (treat missing as $0$), then multiply into the answer.
+\end{algosteps}
+\COMPLEXITY{Factorization is $O(\log x)$, but full recomputation per query costs $O(P+n)$ where $P$ is the number of distinct primes seen so far; still too slow in worst case.}
+\[
+\begin{aligned}
+T(n) &= \sum_{t=1}^q \left(O(\log x_t) + O(P_t + n)\right),\\
+S(n) &= O(n \log A) \text{ across all exponent tables}.
+\end{aligned}
+\]
+\CORRECTNESS{Directly implements $g_p=\min_i e_{i,p}$ and multiplies $p^{g_p}$ over all primes.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys, math
+from collections import defaultdict
+
+MOD = 10**9 + 7
+MAXV = 200000
+
+def build_spf(limit=MAXV):
+    spf = list(range(limit + 1))
+    for i in range(2, int(limit**0.5) + 1):
+        if spf[i] == i:
+            step = i
+            start = i * i
+            for x in range(start, limit + 1, step):
+                if spf[x] == x:
+                    spf[x] = i
+    return spf
+
+SPF = build_spf()
+
+def factorize(x):
+    res = defaultdict(int)
+    while x > 1:
+        p = SPF[x]
+        cnt = 0
+        while x % p == 0:
+            x //= p
+            cnt += 1
+        res[p] += cnt
+    return res
+
+def read_input(data: str = None):
+    if data is None:
+        data = sys.stdin.read()
+    data = data.strip().split()
+    if not data:
+        return None
+    it = iter(map(int, data))
+    n = next(it); q = next(it)
+    a = [next(it) for _ in range(n)]
+    queries = [(next(it), next(it)) for _ in range(q)]
+    return n, q, a, queries
+
+def solve_all(n, q, a, queries):
+    # per index -> dict prime->exp
+    idx_exp = [defaultdict(int) for _ in range(n)]
+    seen_primes = set()
+    # initialize from a
+    for i, v in enumerate(a):
+        fac = factorize(v)
+        for p, e in fac.items():
+            idx_exp[i][p] += e
+            seen_primes.add(p)
+    out = []
+    for i, x in queries:
+        i -= 1
+        fac = factorize(x)
+        for p, e in fac.items():
+            idx_exp[i][p] += e
+            seen_primes.add(p)
+        # recompute gcd via min exponents (slow)
+        g = 1
+        for p in seen_primes:
+            mn = math.inf
+            for t in range(n):
+                mn = min(mn, idx_exp[t].get(p, 0))
+                if mn == 0:
+                    break
+            if mn > 0 and mn < math.inf:
+                g = (g * pow(p, mn, MOD)) % MOD
+        out.append(str(g))
+    return "\n".join(out)
+
+def main():
+    parsed = read_input()
+    if parsed is None:
+        # Basic self-test
+        n, q, a, queries = 4, 3, [6, 6, 8, 12], [(1,2),(2,3),(3,3)]
+        ans = solve_all(n, q, a, queries).split()
+        assert ans == ["2", "2", "6"]
+        print("OK")
+        return
+    n, q, a, queries = parsed
+    sys.stdout.write(solve_all(n, q, a, queries))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Matches the sample-like scenario: $[6,6,8,12]$ with updates $(1,2),(2,3),(3,3)$ gives $2,2,6$.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Per-Prime Multiset of Exponents with Monotone Minimum}
+\WHICHFORMULA{Maintain for each prime $p$: a map $i \mapsto e_{i,p}$, a multiset (frequency map) of positive exponents, and the current minimum among present exponents. Let $s_p$ be the number of indices with $e_{i,p}>0$. Then $g_p=0$ if $s_p<n$, else $g_p=\min$ (multiset). Update $A$ only when $g_p$ increases, multiplying by $p^{\Delta}$.}
+\ASSUMPTIONS{Exponents only increase; hence the per-prime minimum among present exponents is nondecreasing. When $s_p$ first reaches $n$, $g_p$ jumps from $0$ to the current minimum among present exponents.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute SPF up to $2 \cdot 10^5$.
+\item Initialize per-prime structures by factoring each $a_i$ and filling maps and frequency counters; compute initial $A$ from primes with $s_p=n$.
+\item For each query $(i,x)$, factor $x$; for each $(p,\delta)$:
+\begin{bullets}
+\item Let $\text{prevSize}=s_p$ and $\text{prevMinG}=(s_p==n)?\text{min}_p:0$.
+\item Update $e_{i,p} \gets e_{i,p}+\delta$, adjust frequencies; update $\text{min}_p$ if needed by increasing it while its frequency is $0$.
+\item Let $\text{newSize}=s_p$ and $\text{newMinG}=(s_p==n)?\text{min}_p:0$.
+\item If $\Delta=\text{newMinG}-\text{prevMinG}>0$, set $A \gets A \cdot p^{\Delta} \bmod (10^9+7)$.
+\end{bullets}
+\item Output $A$ after each query.
+\end{algosteps}
+\OPTIMALITY{Each update for a prime touches only its local structures. The pointer for the minimum exponent per prime moves forward at most the total number of exponent increments assigned to that prime across all updates, yielding an $O\!\left(\sum \log x\right)$ total factorization cost and near $O(1)$ amortized per prime update overhead.}
+\COMPLEXITY{Factorization per query $O(\log x)$. Per-prime updates are $O(1)$ amortized due to monotone minima.}
+\[
+\begin{aligned}
+T(n) &\approx O\!\left(\sum_{t=1}^q \log x_t\right),\qquad
+S(n) = O(n \cdot P) \text{ in the worst case over distinct primes }P\le 17984.
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from collections import defaultdict
+
+MOD = 10**9 + 7
+MAXV = 200000
+
+def build_spf(limit=MAXV):
+    spf = list(range(limit + 1))
+    for i in range(2, int(limit**0.5) + 1):
+        if spf[i] == i:
+            step = i
+            start = i * i
+            for x in range(start, limit + 1, step):
+                if spf[x] == x:
+                    spf[x] = i
+    return spf
+
+SPF = build_spf()
+
+def factorize(x):
+    res = defaultdict(int)
+    while x > 1:
+        p = SPF[x]
+        cnt = 0
+        while x % p == 0:
+            x //= p
+            cnt += 1
+        res[p] += cnt
+    return res
+
+class PrimeState:
+    __slots__ = ("idx_exp", "freq", "min_exp", "size")
+    def __init__(self):
+        self.idx_exp = {}          # i -> exponent (>0 only)
+        self.freq = defaultdict(int)  # exponent -> count
+        self.min_exp = 10**18
+        self.size = 0              # number of indices with exponent > 0
+
+def read_input(data: str = None):
+    if data is None:
+        data = sys.stdin.read()
+    data = data.strip().split()
+    if not data:
+        return None
+    it = iter(map(int, data))
+    n = next(it); q = next(it)
+    a = [next(it) for _ in range(n)]
+    queries = [(next(it), next(it)) for _ in range(q)]
+    return n, q, a, queries
+
+def solve_all(n, q, a, queries):
+    # Per-prime state
+    pst = {}
+    ans = 1
+
+    # Initialize from array
+    for i, v in enumerate(a, start=1):
+        fac = factorize(v)
+        for p, e in fac.items():
+            S = pst.get(p)
+            if S is None:
+                S = pst[p] = PrimeState()
+            old = S.idx_exp.get(i, 0)
+            if old == 0:
+                S.size += 1
+            new = old + e
+            S.idx_exp[i] = new
+            S.freq[new] += 1
+            if new < S.min_exp:
+                S.min_exp = new
+
+    # Compute initial answer
+    for p, S in pst.items():
+        if S.size == n and S.min_exp > 0 and S.min_exp < 10**18:
+            ans = (ans * pow(p, S.min_exp, MOD)) % MOD
+
+    out_lines = []
+
+    def bump_prime(p, i, delta):
+        nonlocal ans
+        S = pst.get(p)
+        if S is None:
+            S = pst[p] = PrimeState()
+        prevSize = S.size
+        prevMinG = S.min_exp if prevSize == n else 0
+
+        old = S.idx_exp.get(i, 0)
+        if old > 0:
+            S.freq[old] -= 1
+            if S.freq[old] == 0 and old == S.min_exp:
+                # advance min_exp until freq[min_exp] > 0; monotone nondecreasing
+                x = S.min_exp
+                while S.freq.get(x, 0) == 0:
+                    x += 1
+                    # safe due to monotonicity and bounded total increments
+                S.min_exp = x
+        else:
+            S.size += 1
+
+        new = old + delta
+        S.idx_exp[i] = new
+        S.freq[new] += 1
+        if new < S.min_exp:
+            S.min_exp = new
+
+        newSize = S.size
+        newMinG = S.min_exp if newSize == n else 0
+        delta_min = newMinG - prevMinG
+        if delta_min > 0:
+            ans = (ans * pow(p, delta_min, MOD)) % MOD
+
+    for i, x in queries:
+        fac = factorize(x)
+        for p, e in fac.items():
+            bump_prime(p, i, e)
+        out_lines.append(str(ans))
+
+    return "\n".join(out_lines)
+
+def main():
+    parsed = read_input()
+    if parsed is None:
+        # Minimal unit tests
+        # 1) factorization
+        f12 = factorize(12)
+        assert f12[2] == 2 and f12[3] == 1 and len(f12) == 2
+        # 2) scenario from statement-like example
+        n, q, a, queries = 4, 3, [6, 6, 8, 12], [(1,2), (2,3), (3,3)]
+        res = solve_all(n, q, a, queries).split()
+        assert res == ["2", "2", "6"]
+        # 3) single element
+        n, q, a, queries = 1, 3, [5], [(1,2), (1,3), (1,5)]
+        res = solve_all(n, q, a, queries).split()
+        # values: 10, 30, 150 -> gcds equal to themselves
+        assert res == [str(10 % MOD), str(30 % MOD), str(150 % MOD)]
+        print("OK")
+        return
+    n, q, a, queries = parsed
+    sys.stdout.write(solve_all(n, q, a, queries))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts embedded: factorization check; the $[6,6,8,12]$ sequence $(1,2),(2,3),(3,3)$; and a single-element case.}
+\RESULT{After each query, outputs the updated $\operatorname{gcd}(a_1,\ldots,a_n) \bmod (10^9+7)$. No tie-breaking needed.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests for factorization; deterministic small scenarios covering: zeros-to-nonzero prime coverage transition; repeated updates on same index; single element; primes that never reach all indices.}
+\LINE{CROSS-CHECKS}{Compare outputs of Approach A (brute force) and Approach C (optimal) on tiny randomized cases (when run locally).}
+\LINE{EDGE-CASE GENERATOR}{Generate random $n \le 6$, $q \le 10$, $a_i, x \le 50$ to validate transitions when a prime first appears in all indices.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+random.seed(0)
+
+def gen_small_case(n=5, q=8, vmax=50):
+    a = [random.randint(1, vmax) for _ in range(n)]
+    queries = [(random.randint(1, n), random.randint(1, vmax)) for _ in range(q)]
+    return n, q, a, queries
+
+def brute(n, q, a, queries):
+    import math
+    MOD = 10**9 + 7
+    out = []
+    arr = a[:]
+    for i, x in queries:
+        arr[i-1] *= x
+        g = 0
+        for v in arr:
+            g = math.gcd(g, v)
+        out.append(g % MOD)
+    return out
+
+# Cross-check driver (offline/local usage suggested)
+def cross_check_once():
+    from collections import defaultdict
+    # inject optimal solve from Approach C by import or copy if running locally
+    pass
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+from collections import defaultdict
+
+MOD = 10**9 + 7
+MAXV = 200000
+
+def build_spf(limit=MAXV):
+    spf = list(range(limit + 1))
+    for i in range(2, int(limit**0.5) + 1):
+        if spf[i] == i:
+            step = i
+            start = i * i
+            for x in range(start, limit + 1, step):
+                if spf[x] == x:
+                    spf[x] = i
+    return spf
+
+SPF = build_spf()
+
+def factorize(x):
+    res = defaultdict(int)
+    while x > 1:
+        p = SPF[x]
+        cnt = 0
+        while x % p == 0:
+            x //= p
+            cnt += 1
+        res[p] += cnt
+    return res
+
+class PrimeState:
+    __slots__ = ("idx_exp", "freq", "min_exp", "size")
+    def __init__(self):
+        self.idx_exp = {}
+        self.freq = defaultdict(int)
+        self.min_exp = 10**18
+        self.size = 0
+
+def read_input(data: str = None):
+    if data is None:
+        data = sys.stdin.read()
+    data = data.strip().split()
+    if not data:
+        return None
+    it = iter(map(int, data))
+    n = next(it); q = next(it)
+    a = [next(it) for _ in range(n)]
+    queries = [(next(it), next(it)) for _ in range(q)]
+    return n, q, a, queries
+
+def solve_all(n, q, a, queries):
+    pst = {}
+    ans = 1
+
+    for i, v in enumerate(a, start=1):
+        fac = factorize(v)
+        for p, e in fac.items():
+            S = pst.get(p)
+            if S is None:
+                S = pst[p] = PrimeState()
+            old = S.idx_exp.get(i, 0)
+            if old == 0:
+                S.size += 1
+            new = old + e
+            S.idx_exp[i] = new
+            S.freq[new] += 1
+            if new < S.min_exp:
+                S.min_exp = new
+
+    for p, S in pst.items():
+        if S.size == n and S.min_exp > 0 and S.min_exp < 10**18:
+            ans = (ans * pow(p, S.min_exp, MOD)) % MOD
+
+    out_lines = []
+
+    def bump_prime(p, i, delta):
+        nonlocal ans
+        S = pst.get(p)
+        if S is None:
+            S = pst[p] = PrimeState()
+        prevSize = S.size
+        prevMinG = S.min_exp if prevSize == n else 0
+
+        old = S.idx_exp.get(i, 0)
+        if old > 0:
+            S.freq[old] -= 1
+            if S.freq[old] == 0 and old == S.min_exp:
+                x = S.min_exp
+                while S.freq.get(x, 0) == 0:
+                    x += 1
+                S.min_exp = x
+        else:
+            S.size += 1
+
+        new = old + delta
+        S.idx_exp[i] = new
+        S.freq[new] += 1
+        if new < S.min_exp:
+            S.min_exp = new
+
+        newSize = S.size
+        newMinG = S.min_exp if newSize == n else 0
+        delta_min = newMinG - prevMinG
+        if delta_min > 0:
+            ans = (ans * pow(p, delta_min, MOD)) % MOD
+
+    for i, x in queries:
+        fac = factorize(x)
+        for p, e in fac.items():
+            bump_prime(p, i, e)
+        out_lines.append(str(ans))
+
+    return "\n".join(out_lines)
+
+def main():
+    parsed = read_input()
+    if parsed is None:
+        # sanity assertions
+        f = factorize(180)  # 2^2 * 3^2 * 5
+        assert f[2] == 2 and f[3] == 2 and f[5] == 1
+        n, q, a, queries = 4, 3, [6, 6, 8, 12], [(1,2), (2,3), (3,3)]
+        res = solve_all(n, q, a, queries).split()
+        assert res == ["2", "2", "6"]
+        print("OK")
+        return
+    n, q, a, queries = parsed
+    sys.stdout.write(solve_all(n, q, a, queries))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Track per-prime exponent minima across all indices; multiply answer by prime powers only when the per-prime minimum increases.}
+\WHY{Common pattern in dynamic GCD/LCM problems with multiplicative updates; tests ability to exploit monotonicity and maintain per-prime aggregates.}
+\CHECKLIST{
+- Precompute SPF.
+- Build initial per-prime maps and minima.
+- Initialize answer using primes with coverage count $n$.
+- For each factor $(p,\delta)$ in $x$, update index $i$'s exponent.
+- Adjust frequency and minimum; detect size transition to $n$.
+- Multiply answer by $p^{\Delta}$ if the minimum increased.}
+\EDGECASES{
+- Prime never present in all indices $\Rightarrow$ contributes $0$ exponent.
+- Last missing index for a prime becomes positive $\Rightarrow$ jump from $0$ to current min.
+- Multiple primes in $x$.
+- $x=1$ no-op.
+- $n=1$ $\Rightarrow$ the number itself modulo $10^9+7$.
+- Large number of queries with small $x$ (amortized bounds still fine).
+- Repeated updates on the same index and prime.
+- Initial primes that already cover all indices.}
+\PITFALLS{
+- Forgetting to treat missing exponents as $0$.
+- Not updating the coverage size when an index goes from $0$ to positive exponent.
+- Mishandling the minimum pointer after removing the last count at the current minimum.
+- Using a data structure that allows the minimum to decrease (should never happen).
+- Recomputing full GCD every time (TLE).
+- Overflow is not an issue in Python, but modulo must be applied only to the final product.}
+\FAILMODES{Approaches that recompute the entire GCD or scan all primes per query will time out for $2 \cdot 10^5$ operations. The monotone-min multiset avoids this by only reacting to local exponent changes.}
+\ELI{Keep a scorecard for each prime across all numbers. When every number has at least $k$ copies of a prime, that prime contributes $k$ to the GCD. Updates only add copies, so the GCD can only stay the same or grow smoothly by prime powers.}
+\NotePages{3}
+
+\end{document}

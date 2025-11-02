@@ -1,0 +1,876 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Catowice City}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1239/D}}
+\LINE{DIFFICULTY / RATING}{2400}
+\STATEMENT{In the Catowice city next weekend the cat contest will be held. However, the jury members and the contestants haven't been selected yet. There are $n$ residents and $n$ cats in the Catowice, and each resident has exactly one cat living in his house. The residents and cats are numbered with integers from $1$ to $n$, where the $i$-th cat is living in the house of $i$-th resident.
+
+Each Catowice resident is in friendship with several cats, including the one living in his house. In order to conduct a contest, at least one jury member is needed and at least one cat contestant is needed. Of course, every jury member should know none of the contestants. For the contest to be successful, it's also needed that the number of jury members plus the number of contestants is equal to $n$.
+
+Please help Catowice residents to select the jury and the contestants for the upcoming competition, or determine that it's impossible to do.
+
+Input:
+The first line contains an integer $t$ ($1 \le t \le 100{,}000$), the number of test cases. Then description of $t$ test cases follow, where each description is as follows:
+
+The first line contains integers $n$ and $m$ ($1 \le n \le m \le 10^6$), the number of Catowice residents and the number of friendship pairs between residents and cats.
+
+Each of the next $m$ lines contains integers $a_i$ and $b_i$ ($1 \le a_i, b_i \le n$), denoting that $a_i$-th resident is acquaintances with $b_i$-th cat. It's guaranteed that each pair of some resident and some cat is listed at most once.
+
+It's guaranteed, that for every $i$ there exists a pair between $i$-th resident and $i$-th cat.
+
+Different test cases are separated with an empty line.
+
+It's guaranteed, that the sum of $n$ over all test cases is at most $10^6$ and that the sum of $m$ over all test cases is at most $10^6$.
+
+Output:
+For every test case print:
+
+- ``No'', if it's impossible to select the jury and contestants.
+- Otherwise print ``Yes''. In the second line print two integers $j$ and $p$ ($1 \le j$, $1 \le p$, $j + p = n$) — the number of jury members and the number of contest participants. In the third line print $j$ distinct integers from $1$ to $n$, the indices of the residents forming a jury. In the fourth line print $p$ distinct integers from $1$ to $n$, the indices of the cats, which will participate in the contest. In case there are several correct answers, print any of them.
+
+Note:
+In the first test case, we can select the first and the third resident as a jury. Both of them are not acquaintances with a second cat, so we can select it as a contestant.
+
+In the second test case, we can select the second resident as a jury. He is not an acquaintances with a first and a third cat, so they can be selected as contestants.
+
+In the third test case, the only resident is acquaintances with the only cat, so they can't be in the contest together. So it's not possible to make a contest with at least one jury and at least one cat.
+
+In the fourth test case, each resident is acquaintances with every cat, so it's again not possible to make a contest with at least one jury and at least one cat.}
+\BREAKDOWN{We must choose exactly one item for each index $i$: either resident $i$ in the jury or cat $i$ in the contestants. For every acquaintance pair $(a,b)$, we must not choose resident $a$ and cat $b$ simultaneously. Decide feasibility; if feasible, construct such sets.}
+\ELI{Treat each index $i$ as a switch: pick either the resident or the cat, and ensure the choice never makes a known resident face a known cat.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Multiple test cases. For each test: integers $n$, $m$; then $m$ pairs $(a_i,b_i)$ with $1 \le a_i,b_i \le n$. Each pair appears at most once; each $(i,i)$ is present. Bounds: $1 \le n \le m \le 10^6$, $\sum n \le 10^6$, $\sum m \le 10^6$.}
+\OUTPUTS{For each test case: print either ``No'' or
+\begin{bullets}
+\item ``Yes''
+\item line with $j$ and $p$ with $1 \le j,p$ and $j+p=n$
+\item line with $j$ distinct residents (jury),
+\item line with $p$ distinct cats (participants).
+\end{bullets}}
+\SAMPLES{Example mini-cases:
+\begin{bullets}
+\item $n=1, m=1$, edge $(1,1)$ $\to$ No.
+\item $n=3, m=5$, edges $(1,1),(2,2),(3,3),(1,2),(3,2)$ $\to$ Yes; e.g., jury $\{2,3\}$, cats $\{1\}$.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let there be a directed graph on vertices $V=\{1,\ldots,n\}$, with an arc $a\to b$ for each acquaintance pair $(a,b)$. Choose a Boolean assignment $x_i\in\{0,1\}$ for each $i$, where $x_i=1$ means resident $i$ is in the jury, and $x_i=0$ means cat $i$ is in the contestants.}
+\varmapStart
+\var{x_i}{selection for index $i$: $1$=resident $i$ in jury, $0$=cat $i$ in contestants}
+\var{G}{directed graph with arc $a\to b$ for each acquaintance $(a,b)$}
+\var{J}{set of residents $\{i:x_i=1\}$}
+\var{P}{set of cats $\{i:x_i=0\}$}
+\varmapEnd
+\GOVERN{
+\begin{BreakableEquation*}
+\text{For all }(a,b)\in E(G):\ \neg(x_a=1 \wedge x_b=0)\quad\Longleftrightarrow\quad x_a \le x_b.
+\end{BreakableEquation*}
+}
+\ASSUMPTIONS{Since $j+p=n$, exactly one of the pair (resident $i$, cat $i$) must be chosen for each index $i$. Self-pairs $(i,i)$ add no extra restriction beyond consistency.}
+\INVARIANTS{
+\begin{bullets}
+\item Along any path $u\leadsto v$ in $G$, $x_u \le x_v$; hence all vertices in a strongly connected component (SCC) share the same $x$-value.
+\item After SCC condensation to a DAG $D$, the feasible assignments are exactly the $0/1$ labelings that are nondecreasing along arcs, i.e., indicator of a lower (downward-closed) set.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Try all $2^n$ assignments $x\in\{0,1\}^n$ with both values present and check $x_a\le x_b$ for all edges $(a,b)$.}
+\ASSUMPTIONS{Only feasible for tiny $n$; used for validation and intuition.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Iterate all bitmasks $0..(1\ll n)-1$.
+\item Skip masks that are all $0$ or all $1$.
+\item Check every edge $(a,b)$: if bit $a$ is $1$ and bit $b$ is $0$, reject; otherwise accept.
+\end{algosteps}
+\COMPLEXITY{Exponential in $n$; linear in $m$ per mask.}
+\[
+\begin{aligned}
+T(n) &= \Theta(2^n \cdot m),\quad S(n)=\Theta(1).
+\end{aligned}
+\]
+\CORRECTNESS{Exhaustively checks all possible selections; the edge test enforces the constraint that no jury member knows any contestant.}
+\EDGECASES{All-zeros or all-ones masks are disallowed since both sides must be nonempty.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+from typing import List, Tuple
+
+def read_input(data: bytes):
+    s = data.decode()
+    if not s.strip():
+        return []
+    it = iter(map(int, s.split()))
+    t = next(it)
+    tests = []
+    for _ in range(t):
+        n = next(it); m = next(it)
+        edges = []
+        for _ in range(m):
+            a = next(it); b = next(it)
+            edges.append((a-1, b-1))
+        tests.append((n, edges))
+    return tests
+
+def brute_force_case(n: int, edges: List[Tuple[int,int]]):
+    if n <= 1:
+        return "No"
+    ALL = 1 << n
+    for mask in range(ALL):
+        if mask == 0 or mask == ALL - 1:
+            continue
+        ok = True
+        for a, b in edges:
+            if ((mask >> a) & 1) == 1 and ((mask >> b) & 1) == 0:
+                ok = False
+                break
+        if ok:
+            J = [i+1 for i in range(n) if ((mask >> i) & 1) == 1]
+            P = [i+1 for i in range(n) if ((mask >> i) & 1) == 0]
+            out = []
+            out.append("Yes")
+            out.append(f"{len(J)} {len(P)}")
+            out.append(" ".join(map(str, J)))
+            out.append(" ".join(map(str, P)))
+            return "\n".join(out)
+    return "No"
+
+def solve_all(data: bytes) -> str:
+    tests = read_input(data)
+    out_lines = []
+    for n, edges in tests:
+        out_lines.append(brute_force_case(n, edges))
+    return "\n".join(out_lines)
+
+def main():
+    import sys
+    data = sys.stdin.buffer.read()
+    if not data.strip():
+        # Tiny asserts for baseline path
+        n = 3
+        edges = [(0,0),(1,1),(2,2),(0,1),(2,1)]
+        r = brute_force_case(n, edges)
+        assert r.split()[0] == "Yes"
+        n = 1
+        edges = [(0,0)]
+        r = brute_force_case(n, edges)
+        assert r.strip() == "No"
+        print("OK")
+    else:
+        sys.stdout.write(solve_all(data))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Checked on two tiny cases: a feasible 3-node instance and an infeasible $n=1$ instance.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{SCC Condensation + Pick a Lower Set (Union of Sources)}
+\WHICHFORMULA{All vertices in an SCC must share the same $x$. Condense to a DAG $D$ of SCCs; any downward-closed set $S$ labeled $0$ and its complement labeled $1$ yields a feasible assignment.}
+\ASSUMPTIONS{We can compute SCCs and in-degrees of the condensation DAG.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build graph $G$ with arcs $a\to b$ for each acquaintance $(a,b)$.
+\item Compute SCCs and condensation DAG $D$; compute in-degrees of components.
+\item If $D$ has only one component, print ``No''. Otherwise, let $S$ be a nonempty proper subset of sources (e.g., pick all vertices of one source component) and assign $x=0$ to $S$, $x=1$ to the rest.
+\end{algosteps}
+\COMPLEXITY{Linear time in the input size.}
+\[
+\begin{aligned}
+T(n) &= \Theta(n+m),\quad S(n)=\Theta(n+m).
+\end{aligned}
+\]
+\CORRECTNESS{No edge goes from label $1$ to label $0$ since $S$ is downward-closed (sources have no predecessors). Nontriviality holds because there are at least two components; choosing a proper nonempty subset of sources ensures both labels appear.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+from typing import List, Tuple
+
+def read_input(data: bytes):
+    s = data.decode()
+    if not s.strip():
+        return []
+    it = iter(map(int, s.split()))
+    t = next(it)
+    tests = []
+    for _ in range(t):
+        n = next(it); m = next(it)
+        edges = []
+        for _ in range(m):
+            a = next(it); b = next(it)
+            edges.append((a-1, b-1))
+        tests.append((n, edges))
+    return tests
+
+def kosaraju_scc(n: int, edges: List[Tuple[int,int]]):
+    g = [[] for _ in range(n)]
+    gr = [[] for _ in range(n)]
+    for u, v in edges:
+        g[u].append(v)
+        gr[v].append(u)
+    visited = [0]*n
+    order = []
+    it_idx = [0]*n
+    for s in range(n):
+        if visited[s]:
+            continue
+        stack = [s]
+        visited[s] = 1
+        while stack:
+            v = stack[-1]
+            if it_idx[v] < len(g[v]):
+                to = g[v][it_idx[v]]; it_idx[v] += 1
+                if not visited[to]:
+                    visited[to] = 1
+                    stack.append(to)
+            else:
+                stack.pop()
+                order.append(v)
+    comp = [-1]*n
+    cid = 0
+    for v in reversed(order):
+        if comp[v] != -1:
+            continue
+        comp[v] = cid
+        stack = [v]
+        while stack:
+            x = stack.pop()
+            for to in gr[x]:
+                if comp[to] == -1:
+                    comp[to] = cid
+                    stack.append(to)
+        cid += 1
+    return comp, cid, g
+
+def solve_case(n: int, edges: List[Tuple[int,int]]) -> str:
+    comp, cid, g = kosaraju_scc(n, edges)
+    if cid == 1:
+        return "No"
+    size = [0]*cid
+    for i in range(n):
+        size[comp[i]] += 1
+    indeg = [0]*cid
+    for u, v in edges:
+        cu, cv = comp[u], comp[v]
+        if cu != cv:
+            indeg[cv] += 1
+    # pick a source component with size < n
+    pick = -1
+    for c in range(cid):
+        if indeg[c] == 0 and size[c] < n:
+            pick = c
+            break
+    if pick == -1:
+        return "No"
+    P = [i+1 for i in range(n) if comp[i] == pick]
+    J = [i+1 for i in range(n) if comp[i] != pick]
+    if len(P) == 0 or len(J) == 0:
+        return "No"
+    out = []
+    out.append("Yes")
+    out.append(f"{len(J)} {len(P)}")
+    out.append(" ".join(map(str, J)))
+    out.append(" ".join(map(str, P)))
+    return "\n".join(out)
+
+def solve_all(data: bytes) -> str:
+    tests = read_input(data)
+    out_lines = []
+    for n, edges in tests:
+        out_lines.append(solve_case(n, edges))
+    return "\n".join(out_lines)
+
+def verify_solution(n: int, edges: List[Tuple[int,int]], text: str) -> bool:
+    toks = text.split()
+    if not toks:
+        return False
+    if toks[0] == "No":
+        # brute feasibility check (tiny)
+        if n == 1:
+            return True
+        # Try see if any valid exists (quick brute for tiny n<=10)
+        if n <= 10:
+            ALL = 1 << n
+            for mask in range(1, ALL-1):
+                ok = True
+                for a,b in edges:
+                    if ((mask>>a)&1)==1 and ((mask>>b)&1)==0:
+                        ok = False; break
+                if ok:
+                    return False
+        return True
+    if toks[0] != "Yes":
+        return False
+    it = iter(toks[1:])
+    j = int(next(it)); p = int(next(it))
+    J = [int(next(it)) for _ in range(j)]
+    P = [int(next(it)) for _ in range(p)]
+    if j + p != n or j < 1 or p < 1:
+        return False
+    if len(set(J)) != j or len(set(P)) != p:
+        return False
+    if not all(1 <= x <= n for x in J+P):
+        return False
+    Jset = set(J); Pset = set(P)
+    # check constraint for all edges (a,b)
+    for a,b in edges:
+        if (a+1) in Jset and (b+1) in Pset:
+            return False
+    return True
+
+def main():
+    import sys
+    data = sys.stdin.buffer.read()
+    if not data.strip():
+        # Unit tests (no output pollution)
+        # 1) simple feasible
+        n = 3
+        edges = [(0,0),(1,1),(2,2),(0,1),(2,1)]
+        out = solve_case(n, edges)
+        assert verify_solution(n, edges, out)
+        # 2) single node infeasible
+        n = 1
+        edges = [(0,0)]
+        out = solve_case(n, edges)
+        assert out.strip() == "No"
+        # 3) mutual edges form single SCC -> infeasible
+        n = 2
+        edges = [(0,0),(1,1),(0,1),(1,0)]
+        out = solve_case(n, edges)
+        assert out.strip() == "No"
+        # 4) no cross edges beyond self loops -> feasible
+        n = 3
+        edges = [(0,0),(1,1),(2,2)]
+        out = solve_case(n, edges)
+        assert verify_solution(n, edges, out)
+    else:
+        sys.stdout.write(solve_all(data))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Four asserts: feasible 3-node, infeasible $n=1$, infeasible single-SCC with 2-cycle, feasible with only self-loops.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{SCC Condensation + Pick One Source Component as the Cat Set}
+\WHICHFORMULA{Compute SCCs in $G$ (Kosaraju/Tarjan). If more than one SCC exists, pick any SCC with in-degree $0$ in the condensation DAG $D$ as the cat-component; assign all its indices to contestants ($x=0$) and all remaining indices to jury ($x=1$).}
+\ASSUMPTIONS{Condensation DAG $D$ exists and is acyclic; at least one source exists. If there is exactly one SCC in $D$, then only all-$0$ or all-$1$ assignments are possible, hence infeasible.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build $G$ with arcs $a\to b$.
+\item Compute SCC labels $\text{comp}[i]$ and component count $k$.
+\item If $k=1$, print ``No''.
+\item Compute in-degrees of components; choose any component $c$ with in-degree $0$.
+\item Output cats $P=\{i:\text{comp}[i]=c\}$ and jury $J=\{i:\text{comp}[i]\neq c\}$.
+\end{algosteps}
+\OPTIMALITY{Linear-time in $n+m$. Any valid solution corresponds to a downward-closed set in the condensation DAG; selecting a single source component is a minimal such set, producing both sides nonempty when $k>1$.}
+\COMPLEXITY{Dominated by SCC:}
+\[
+\begin{aligned}
+T(n) &= \Theta(n+m),\quad S(n)=\Theta(n+m).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+from typing import List, Tuple
+
+def read_input(data: bytes):
+    s = data.decode()
+    if not s.strip():
+        return []
+    it = iter(map(int, s.split()))
+    t = next(it)
+    tests = []
+    for _ in range(t):
+        n = next(it); m = next(it)
+        edges = []
+        for _ in range(m):
+            a = next(it); b = next(it)
+            edges.append((a-1, b-1))
+        tests.append((n, edges))
+    return tests
+
+def kosaraju_scc(n: int, edges: List[Tuple[int,int]]):
+    g = [[] for _ in range(n)]
+    gr = [[] for _ in range(n)]
+    for u, v in edges:
+        g[u].append(v)
+        gr[v].append(u)
+    visited = [0]*n
+    order = []
+    it_idx = [0]*n
+    for s in range(n):
+        if visited[s]:
+            continue
+        stack = [s]
+        visited[s] = 1
+        while stack:
+            v = stack[-1]
+            if it_idx[v] < len(g[v]):
+                to = g[v][it_idx[v]]; it_idx[v] += 1
+                if not visited[to]:
+                    visited[to] = 1
+                    stack.append(to)
+            else:
+                stack.pop()
+                order.append(v)
+    comp = [-1]*n
+    cid = 0
+    for v in reversed(order):
+        if comp[v] != -1:
+            continue
+        comp[v] = cid
+        stack = [v]
+        while stack:
+            x = stack.pop()
+            for to in gr[x]:
+                if comp[to] == -1:
+                    comp[to] = cid
+                    stack.append(to)
+        cid += 1
+    return comp, cid, g
+
+def solve_case(n: int, edges: List[Tuple[int,int]]) -> str:
+    comp, cid, _ = kosaraju_scc(n, edges)
+    if cid == 1:
+        return "No"
+    size = [0]*cid
+    for i in range(n):
+        size[comp[i]] += 1
+    indeg = [0]*cid
+    # compute indegrees in condensation
+    for u, v in edges:
+        cu, cv = comp[u], comp[v]
+        if cu != cv:
+            indeg[cv] += 1
+    pick = -1
+    for c in range(cid):
+        if indeg[c] == 0 and size[c] < n:
+            pick = c
+            break
+    if pick == -1:
+        return "No"
+    P = [i+1 for i in range(n) if comp[i] == pick]
+    J = [i+1 for i in range(n) if comp[i] != pick]
+    if len(P) == 0 or len(J) == 0:
+        return "No"
+    out = []
+    out.append("Yes")
+    out.append(f"{len(J)} {len(P)}")
+    out.append(" ".join(map(str, J)))
+    out.append(" ".join(map(str, P)))
+    return "\n".join(out)
+
+def solve_all(data: bytes) -> str:
+    tests = read_input(data)
+    out_lines = []
+    for n, edges in tests:
+        out_lines.append(solve_case(n, edges))
+    return "\n".join(out_lines)
+
+def verify_solution(n: int, edges: List[Tuple[int,int]], text: str) -> bool:
+    toks = text.split()
+    if not toks:
+        return False
+    if toks[0] == "No":
+        # Infeasibility quick check using brute only for very small n
+        if n <= 10:
+            ALL = 1 << n
+            for mask in range(1, ALL-1):
+                ok = True
+                for a,b in edges:
+                    if ((mask>>a)&1)==1 and ((mask>>b)&1)==0:
+                        ok = False; break
+                if ok:
+                    return False
+        return True
+    if toks[0] != "Yes":
+        return False
+    it = iter(toks[1:])
+    try:
+        j = int(next(it)); p = int(next(it))
+        J = [int(next(it)) for _ in range(j)]
+        P = [int(next(it)) for _ in range(p)]
+    except StopIteration:
+        return False
+    if j + p != n or j < 1 or p < 1:
+        return False
+    if len(set(J)) != j or len(set(P)) != p:
+        return False
+    if not all(1 <= x <= n for x in J+P):
+        return False
+    Jset = set(J); Pset = set(P)
+    for a,b in edges:
+        if (a+1) in Jset and (b+1) in Pset:
+            return False
+    return True
+
+def main():
+    import sys
+    data = sys.stdin.buffer.read()
+    if not data.strip():
+        # Exactly 3 asserts
+        # A) Feasible sample-like case
+        n = 3
+        edges = [(0,0),(1,1),(2,2),(0,1),(2,1)]
+        out = solve_case(n, edges)
+        assert verify_solution(n, edges, out)
+        # B) Single SCC (2-cycle) -> No
+        n = 2
+        edges = [(0,0),(1,1),(0,1),(1,0)]
+        out = solve_case(n, edges)
+        assert out.strip() == "No"
+        # C) Only self-loops (pick any one source SCC)
+        n = 4
+        edges = [(0,0),(1,1),(2,2),(3,3)]
+        out = solve_case(n, edges)
+        assert verify_solution(n, edges, out)
+    else:
+        sys.stdout.write(solve_all(data))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Three asserts: feasible 3-node graph, infeasible 2-cycle SCC, feasible with only self-loops (any partition choosing one source component works).}
+\RESULT{If feasible, prints a partition into jury residents $J$ and contestant cats $P$ with $J\cap P=\varnothing$, $|J|+|P|=n$, and no acquaintance edge from any $J$-resident to any $P$-cat.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Combine unit asserts on hand-crafted tiny instances, property checks via a verifier for small $n$, and I/O multi-case scenarios.}
+\LINE{CROSS-CHECKS}{Compare brute force (Approach A) and SCC solution (Approach C) on small random graphs ($n\le 10$) to ensure consistent feasibility decisions.}
+\LINE{EDGE-CASE GENERATOR}{Generate graphs with only self-loops; chains; stars; mutual pairs forming single SCC; dense graphs.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+from typing import List, Tuple
+import random
+
+def gen_only_self(n: int) -> List[Tuple[int,int]]:
+    return [(i, i) for i in range(n)]
+
+def gen_chain(n: int) -> List[Tuple[int,int]]:
+    e = [(i, i) for i in range(n)]
+    for i in range(n-1):
+        e.append((i, i+1))
+    return e
+
+def gen_bidirectional_pair(n: int) -> List[Tuple[int,int]]:
+    e = [(i, i) for i in range(n)]
+    if n >= 2:
+        e += [(0,1),(1,0)]
+    return e
+
+def gen_dense(n: int, seed: int = 0) -> List[Tuple[int,int]]:
+    random.seed(seed)
+    e = set((i,i) for i in range(n))
+    for i in range(n):
+        for j in range(n):
+            if random.random() < 0.5:
+                e.add((i,j))
+    return list(e)
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Final SCC-based solution for CF 1239D "Catowice City".
+from typing import List, Tuple
+
+def read_input(data: bytes):
+    s = data.decode()
+    if not s.strip():
+        return []
+    it = iter(map(int, s.split()))
+    t = next(it)
+    tests = []
+    for _ in range(t):
+        n = next(it); m = next(it)
+        edges = []
+        for _ in range(m):
+            a = next(it); b = next(it)
+            edges.append((a-1, b-1))
+        tests.append((n, edges))
+    return tests
+
+def kosaraju_scc(n: int, edges: List[Tuple[int,int]]):
+    g = [[] for _ in range(n)]
+    gr = [[] for _ in range(n)]
+    for u, v in edges:
+        g[u].append(v)
+        gr[v].append(u)
+    visited = [0]*n
+    order = []
+    it_idx = [0]*n
+    for s in range(n):
+        if visited[s]:
+            continue
+        stack = [s]
+        visited[s] = 1
+        while stack:
+            v = stack[-1]
+            if it_idx[v] < len(g[v]):
+                to = g[v][it_idx[v]]; it_idx[v] += 1
+                if not visited[to]:
+                    visited[to] = 1
+                    stack.append(to)
+            else:
+                stack.pop()
+                order.append(v)
+    comp = [-1]*n
+    cid = 0
+    for v in reversed(order):
+        if comp[v] != -1:
+            continue
+        comp[v] = cid
+        stack = [v]
+        while stack:
+            x = stack.pop()
+            for to in gr[x]:
+                if comp[to] == -1:
+                    comp[to] = cid
+                    stack.append(to)
+        cid += 1
+    return comp, cid
+
+def solve_case(n: int, edges: List[Tuple[int,int]]) -> str:
+    comp, cid = kosaraju_scc(n, edges)
+    if cid == 1:
+        return "No"
+    size = [0]*cid
+    for i in range(n):
+        size[comp[i]] += 1
+    indeg = [0]*cid
+    for u, v in edges:
+        cu, cv = comp[u], comp[v]
+        if cu != cv:
+            indeg[cv] += 1
+    pick = -1
+    for c in range(cid):
+        if indeg[c] == 0 and size[c] < n:
+            pick = c
+            break
+    if pick == -1:
+        return "No"
+    P = [i+1 for i in range(n) if comp[i] == pick]
+    J = [i+1 for i in range(n) if comp[i] != pick]
+    if not P or not J:
+        return "No"
+    out = []
+    out.append("Yes")
+    out.append(f"{len(J)} {len(P)}")
+    out.append(" ".join(map(str, J)))
+    out.append(" ".join(map(str, P)))
+    return "\n".join(out)
+
+def solve_all(data: bytes) -> str:
+    tests = read_input(data)
+    return "\n".join(solve_case(n, edges) for n, edges in tests)
+
+def main():
+    import sys
+    data = sys.stdin.buffer.read()
+    if not data.strip():
+        # Sanity asserts
+        n = 3; edges = [(0,0),(1,1),(2,2),(0,1),(2,1)]
+        assert solve_case(n, edges).split()[0] == "Yes"
+        n = 1; edges = [(0,0)]
+        assert solve_case(n, edges).strip() == "No"
+        n = 2; edges = [(0,0),(1,1),(0,1),(1,0)]
+        assert solve_case(n, edges).strip() == "No"
+        print("OK")
+    else:
+        sys.stdout.write(solve_all(data))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Reduce to labeling vertices of a directed graph so labels are nondecreasing along arcs; solve via SCC condensation and picking a source component as cats.}
+\WHY{This pattern (choose one of two per index with incompatibility pairs) recurs in scheduling, bipartite complements, and 2-SAT style implications.}
+\CHECKLIST{
+\begin{bullets}
+\item Build arcs $(a\to b)$ from acquaintance pairs.
+\item Compute SCCs; if only one, answer is ``No''.
+\item Compute condensation in-degrees.
+\item Pick a source SCC; cats = its vertices; jury = the rest.
+\item Output sizes and indices (1-based).
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item $n=1$ (always ``No'').
+\item Single SCC due to cycles like $a\to b$, $b\to a$.
+\item Only self-loops present.
+\item Multiple source SCCs; any nonempty proper subset works.
+\item Disconnected DAG components (still fine).
+\item Very large $m$ (ensure linear-time SCC).
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Off-by-one indices (convert to/from $1$-based carefully).
+\item Forgetting that $j+p=n$ forces exactly one choice per index.
+\item Picking all sources at once when there are no inter-component edges leads to $j=0$ (must pick a proper subset).
+\item Building transpose graph incorrectly for SCC.
+\item Using recursion that may overflow on large graphs; prefer iterative DFS.
+\item Memory blow-up by duplicating edges or building unnecessary structures.
+\end{bullets}}
+\FAILMODES{Brute force explodes exponentially. Greedy without SCC awareness can violate constraints due to cycles. The SCC method survives all these by collapsing equalities and using the DAG structure.}
+\ELI{Think of each index as a light switch: left is cat, right is resident. Every wire $(a\to b)$ says you cannot have $a$ on the right while $b$ is on the left. Compress tightly wired groups (SCCs) into single blocks, then choose one source block to be left; everything else goes right.}
+\NotePages{3}
+
+\end{document}

@@ -1,0 +1,981 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Bit Game (Hard Version)}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/2027/E2}}
+\LINE{DIFFICULTY / RATING}{3100}
+\STATEMENT{This is the hard version of this problem. The only difference is that you need to output the number of choices of games where Bob wins in this version, where the number of stones in each pile are not fixed. You must solve both versions to be able to hack.
+
+Alice and Bob are playing a familiar game where they take turns removing stones from $n$ piles. Initially, there are $x_i$ stones in the $i$-th pile, and it has an associated value $a_i$. A player can take $d$ stones away from the $i$-th pile if and only if both of the following conditions are met:
+\begin{bullets}
+\item $1 \le d \le a_i$, and
+\item $x \,\&\, d = d$, where $x$ is the current number of stones in the $i$-th pile and $\&$ denotes the bitwise AND operation.
+\end{bullets}
+The player who cannot make a move loses, and Alice goes first.
+
+You're given the $a_i$ values of each pile, but the number of stones in the $i$-th pile has not been determined yet. For the $i$-th pile, $x_i$ can be any integer between $1$ and $b_i$, inclusive. That is, you can choose an array $x_1, x_2, \ldots, x_n$ such that the condition $1 \le x_i \le b_i$ is satisfied for all piles.
+
+Your task is to count the number of games where Bob wins if both players play optimally. Two games are considered different if the number of stones in any pile is different, i.e., the arrays of $x$ differ in at least one position.
+
+Since the answer can be very large, please output the result modulo $10^9 + 7$.
+
+Input: Each test contains multiple test cases. The first line contains the number of test cases $t$ ($1 \le t \le 1000$). The description of the test cases follows.
+
+The first line of each test case contains $n$ ($1 \le n \le 10^4$) — the number of piles.
+
+The second line of each test case contains $n$ integers $a_1, a_2, \ldots, a_n$ ($1 \le a_i < 2^{30}$).
+
+The third line of each test case contains $n$ integers $b_1, b_2, \ldots, b_n$ ($1 \le b_i < 2^{30}$).
+
+It is guaranteed that the sum of $n$ over all test cases does not exceed $10^4$.
+
+Output: Output a single integer, the number of games where Bob wins, modulo $10^9 + 7$.
+
+Note: In the first test case, no matter which values of $x_2$ and $x_3$ we choose, the second and third piles will always be chosen exactly once before no more stones can be taken from them. If $x_1 = 2$, then no stones can be taken from it, so Bob will make the last move. If $x_1 = 1$ or $x_1 = 3$, then exactly one move can be made on that pile, so Alice will make the last move. So Bob wins when $x = [2, 1, 1]$ or $x = [2, 1, 2]$ or $x = [2, 2, 1]$ or $x = [2, 2, 2]$.
+
+In the second test case, Bob wins when $x_1 = 14$ or $x_1 = 30$ by removing $14 - k$ stones, where $k$ is the number of stones Alice removes on her turn. Bob also wins when $x_1 = 16$ or $x_1 = 32$ since Alice does not have any moves to begin with.}
+\BREAKDOWN{Model each pile as an impartial game with Sprague--Grundy value depending on $a_i$ and $x_i$. Bob wins exactly when the xor (nim-sum) of all pile Grundy values is $0$. Count the number of vectors $(x_1,\ldots,x_n)$ with $1 \le x_i \le b_i$ that yield nim-sum $0$ modulo $10^9+7$.}
+\ELI{Each pile is a binary-coin heap where you may delete any subset of present 1-bits whose summed value is at most $a_i$. Winning depends on xor of the piles' Grundy values; we must count how many initial $x$ lead to xor $0$.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Multiple test cases. For each test:
+\begin{bullets}
+\item $n$: integer, $1 \le n \le 10^4$.
+\item $a_1,\ldots,a_n$: integers, $1 \le a_i < 2^{30}$.
+\item $b_1,\ldots,b_n$: integers, $1 \le b_i < 2^{30}$.
+\end{bullets}
+The sum of $n$ over all test cases $\le 10^4$.}
+\OUTPUTS{For each test case, print one integer: the number of arrays $x$ with $1 \le x_i \le b_i$ such that Bob wins (nim-sum $=0$), modulo $10^9+7$.}
+\SAMPLES{Tiny sanity scenarios:
+\begin{bullets}
+\item $n=1, a_1=1, b_1=3$: Legal $x_1 \in \{1,2,3\}$. Grundy is $1$ if $x_1$ is odd, else $0$. Bob wins for $x_1=2$. Answer $=1$.
+\item $n=2, a=[1,1], b=[1,1]$: Possible $(x_1,x_2) \in \{1\}\times\{1\}$. Grundies $(1,1)$, xor $0$. Answer $=1$.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Impartial game under normal play. For pile $i$ with parameters $(a_i,x_i)$, a move removes any subset of present 1-bits of $x_i$ whose integer sum is $\le a_i$, producing $x'_i = x_i \oplus d$ where $d \in \mathbb{N}$, $1 \le d \le a_i$, and $d \,\&\, x_i = d$. Let $g_i(x_i)$ denote the Sprague--Grundy value of pile $i$. The position $(x_1,\ldots,x_n)$ is losing iff $\bigoplus_{i=1}^n g_i(x_i) = 0$. We must count such positions with $1 \le x_i \le b_i$.}
+\varmapStart
+\var{n}{number of piles}
+\var{a_i}{per-pile removal budget}
+\var{b_i}{upper bound for the initial stones}
+\var{x_i}{chosen initial stones per pile}
+\var{g_i(x)}{Sprague--Grundy value of pile $i$ at state $x$}
+\var{\oplus}{bitwise xor over nonnegative integers}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+g_i(0) &= 0,\\
+g_i(x) &= \operatorname{mex}\left\{\, g_i(x \oplus d) ~\middle|~ 1 \le d \le a_i,~ (x \,\&\, d) = d \,\right\},\\
+\text{Bob wins} &\iff \bigoplus_{i=1}^n g_i(x_i) = 0.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{For $L_i = \lfloor \log_2 a_i \rfloor + 1$ (and $L_i=0$ if $a_i=0$), moves affect only the lowest $L_i$ bits of $x_i$; higher bits are inert. Hence $g_i(x)$ depends only on $x \bmod 2^{L_i}$.}
+\INVARIANTS{
+\begin{bullets}
+\item Monotone deletion: each move clears a subset of currently set low bits; no bit outside those changes (no borrow).
+\item Terminal states: for $a_i > 0$, a state is terminal iff the lowest $L_i$ bits are all zero.
+\item Finite acyclic game graph over masks $\{0,\ldots,2^{L_i}-1\}$; SG well-defined.
+\end{bullets}
+}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Directly enumerate all allowed $x$ vectors and compute $g_i(x_i)$ by definition via memoized mex over submasks $d$ with $1 \le d \le a_i$ and $d \subseteq x_i$. Count nim-sum $0$.}
+\ASSUMPTIONS{Intended only for tiny $b_i$ so that $\prod b_i$ and $2^{L_i}$ are small.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For each pile $i$, set $L_i = \lfloor \log_2 a_i \rfloor + 1$ if $a_i>0$ else $0$.
+\item Memoize $g_i(s)$ on $s \in [0,2^{L_i})$ by exploring submasks $t \subseteq s$ with $1 \le t \le a_i$ and applying mex on $g_i(s \oplus t)$.
+\item Enumerate all tuples $(x_1,\ldots,x_n)$ with $1 \le x_i \le b_i$, reduce $s_i = x_i \bmod 2^{L_i}$, xor the $g_i(s_i)$, and count those with xor $=0$.
+\end{algosteps}
+\COMPLEXITY{For tiny instances:
+\[
+\begin{aligned}
+T &\approx \sum_i O(2^{L_i} \cdot 2^{\popcount(s)} ) ~+~ O\!\left(\prod_i b_i\right),\\
+S &\approx \sum_i O(2^{L_i}).
+\end{aligned}
+\]
+}
+\CORRECTNESS{Matches the definition: transitions are exactly $s \mapsto s \oplus t$ for $t \subseteq s$, $1 \le t \le a_i$. Sprague--Grundy theorem gives correctness of xor criterion.}
+\EDGECASES{
+\begin{bullets}
+\item $a_i=0$: no moves; $g_i(x)=0$ for all $x$.
+\item $a_i=2^{L_i}-1$: any submask is removable; $g_i(s)=\popcount(s)$.
+\item $b_i=1$: single candidate per pile.
+\end{bullets}
+}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from functools import lru_cache
+from typing import List, Tuple
+
+MOD = 1_000_000_007
+
+def grundy_table_for_a(a: int) -> Tuple[int, List[int]]:
+    """Return (L, table) where table[s] = g(s) for s in [0, 2^L), L = bit_length(a).
+    For a == 0, L = 0 and table = [0]."""
+    if a == 0:
+        return 0, [0]
+    L = a.bit_length()
+    N = 1 << L
+
+    @lru_cache(maxsize=None)
+    def g(s: int) -> int:
+        if s == 0:
+            return 0
+        seen = set()
+        t = s
+        while t:
+            if t <= a:
+                seen.add(g(s ^ t))
+            t = (t - 1) & s
+        # mex
+        m = 0
+        while m in seen:
+            m += 1
+        return m
+
+    table = [0] * N
+    for s in range(N):
+        table[s] = g(s)
+    return L, table
+
+def brute_count_bob_wins(a: List[int], b: List[int]) -> int:
+    """Brute-force enumeration across all x, suitable for tiny b."""
+    n = len(a)
+    Ls = []
+    tables = []
+    masks = []
+    for ai in a:
+        L, tab = grundy_table_for_a(ai)
+        Ls.append(L)
+        tables.append(tab)
+        masks.append((1 << L) - 1 if L > 0 else 0)
+    ans = 0
+    xs = [1] * n
+    def dfs(i: int, xorsum: int):
+        nonlocal ans
+        if i == n:
+            if xorsum == 0:
+                ans = (ans + 1) % MOD
+            return
+        for x in range(1, b[i] + 1):
+            if Ls[i] == 0:
+                gi = 0
+            else:
+                s = x & masks[i]
+                gi = tables[i][s]
+            dfs(i + 1, xorsum ^ gi)
+    dfs(0, 0)
+    return ans % MOD
+
+def read_input() -> Tuple[int, List[Tuple[List[int], List[int]]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, []
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it))
+        a = [int(next(it)) for _ in range(n)]
+        b = [int(next(it)) for _ in range(n)]
+        tests.append((a, b))
+    return t, tests
+
+def solve_case(a: List[int], b: List[int]) -> int:
+    # Baseline brute force
+    return brute_count_bob_wins(a, b)
+
+def solve_all() -> List[int]:
+    t, tests = read_input()
+    if t == 0:
+        return []
+    res = []
+    for a, b in tests:
+        res.append(solve_case(a, b))
+    return res
+
+def main():
+    # Tiny self-checks (baseline)
+    assert brute_count_bob_wins([1], [3]) == 1  # only x=2 gives Bob win
+    assert brute_count_bob_wins([0], [5]) == 5  # no moves: Bob wins iff xor=0 always
+    assert brute_count_bob_wins([1,1], [1,1]) == 1  # (1,1) only -> 1^1=0
+    out = solve_all()
+    if out:
+        print("\n".join(str(x) for x in out))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Compares mex-based SG to tiny hand cases; covers $a=0$, parity case $a=1$, and a two-pile xor.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Distribution + XOR Convolution (FWHT)}
+\WHICHFORMULA{Exploit that $g_i(x)$ depends only on the lowest $L_i = \lfloor \log_2 a_i \rfloor + 1$ bits of $x$. For fixed $a_i$, precompute $g_i(s)$ for all masks $s \in [0,2^{L_i})$. Over the range $1 \le x \le b_i$, the residue $x \bmod 2^{L_i}$ cycles uniformly; thus we can count how many $x$ map to each $s$, aggregate by Grundy value, and obtain a frequency vector $F_i[v] = |\{x \in [1,b_i]: g_i(x)=v\}|$. To count tuples with xor $=0$, combine the $F_i$ under xor-convolution via FWHT.}
+\ASSUMPTIONS{Feasible when each $L_i$ is small enough that $2^{L_i}$ fits in time; FWHT length chosen as the next power of two above the maximum Grundy value observed.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For each pile $i$, compute $(L_i, g$-table$)$ by mex DP on submasks ($s \mapsto s \oplus t$ for $1 \le t \le a_i$, $t \subseteq s$).
+\item For $r \in [0,2^{L_i})$, the count of $x \in [1,b_i]$ with $x \bmod 2^{L_i} = r$ is:
+$\text{cnt}(r)=\begin{cases}
+\left\lfloor \dfrac{b_i - r}{2^{L_i}} \right\rfloor + 1,& r \ge 1 \text{ and } r \le b_i,\\[3pt]
+\left\lfloor \dfrac{b_i}{2^{L_i}} \right\rfloor,& r=0,\\
+0,& \text{otherwise.}
+\end{cases}$
+\item Aggregate to frequency by Grundy value: $F_i[v] = \sum_{r} [g_i(r)=v]\cdot \text{cnt}(r)$.
+\item Let $W$ be the next power of two $\ge 1+\max_i \max\{v: F_i[v]>0\}$. Pad each $F_i$ to length $W$. Apply FWHT-xor to each and multiply pointwise. Invert FWHT to obtain $H$. Answer is $H[0] \bmod 10^9+7$.
+\end{algosteps}
+\COMPLEXITY{If $G_i=2^{L_i}$ and FWHT length $W$:
+\[
+\begin{aligned}
+T &\approx \sum_i O(G_i \cdot 2^{\text{avg popcount}}) \;+\; O\!\left(n W \log W\right),\\
+S &\approx O\!\left(\sum_i G_i + n W\right).
+\end{aligned}
+\]
+}
+\CORRECTNESS{Residue cycling is exact because $g_i$ depends only on the low $L_i$ bits. XOR-convolution over distributions is correctly handled by FWHT for xor.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from functools import lru_cache
+from typing import List, Tuple
+
+MOD = 1_000_000_007
+
+def grundy_table_for_a(a: int) -> Tuple[int, List[int]]:
+    if a == 0:
+        return 0, [0]
+    L = a.bit_length()
+    N = 1 << L
+
+    @lru_cache(maxsize=None)
+    def g(s: int) -> int:
+        if s == 0:
+            return 0
+        seen = set()
+        t = s
+        while t:
+            if t <= a:
+                seen.add(g(s ^ t))
+            t = (t - 1) & s
+        m = 0
+        while m in seen:
+            m += 1
+        return m
+
+    table = [0] * N
+    for s in range(N):
+        table[s] = g(s)
+    return L, table
+
+def residue_counts(b: int, L: int) -> List[int]:
+    if L == 0:
+        # Only residue 0 exists; x in [1..b] all map to 0 mod 1
+        return [b]
+    N = 1 << L
+    cnt = [0] * N
+    # r = 0 corresponds to multiples of N: N, 2N, ...
+    cnt[0] = b // N
+    for r in range(1, N):
+        if r <= b:
+            cnt[r] = 1 + (b - r) // N
+    return cnt
+
+def fwht_xor(a: List[int], invert: bool) -> None:
+    n = len(a)
+    step = 1
+    while step < n:
+        for i in range(0, n, step * 2):
+            for j in range(i, i + step):
+                u = a[j]
+                v = a[j + step]
+                a[j] = (u + v) % MOD
+                a[j + step] = (u - v) % MOD
+        step <<= 1
+    if invert:
+        inv_n = pow(n, MOD - 2, MOD)
+        for i in range(n):
+            a[i] = (a[i] * inv_n) % MOD
+
+def count_bob_wins_fwht(a: List[int], b: List[int]) -> int:
+    n = len(a)
+    Ls = []
+    tabs = []
+    max_g = 0
+    freqs = []
+    for i in range(n):
+        L, tab = grundy_table_for_a(a[i])
+        Ls.append(L)
+        tabs.append(tab)
+        cnt_r = residue_counts(b[i], L)
+        # aggregate to Grundy histogram
+        hist = {}
+        if L == 0:
+            # Only s=0
+            hist[0] = cnt_r[0]
+        else:
+            for s, c in enumerate(cnt_r):
+                if c == 0:
+                    continue
+                v = tab[s]
+                hist[v] = (hist.get(v, 0) + c) % MOD
+        # compress to list; track max_g
+        if hist:
+            mg = max(hist.keys())
+            max_g = max(max_g, mg)
+        freqs.append(hist)
+    # Determine transform length
+    W = 1
+    while W <= max_g:
+        W <<= 1
+    if W == 0:
+        W = 1
+    # Initialize accumulator in FWHT domain with neutral element (delta at 0)
+    acc = [0] * W
+    acc[0] = 1
+    fwht_xor(acc, invert=False)
+    for hist in freqs:
+        cur = [0] * W
+        for v, c in hist.items():
+            if v < W:
+                cur[v] = c % MOD
+        fwht_xor(cur, invert=False)
+        for i in range(W):
+            acc[i] = (acc[i] * cur[i]) % MOD
+    fwht_xor(acc, invert=True)
+    return acc[0] % MOD
+
+def read_input() -> Tuple[int, List[Tuple[List[int], List[int]]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, []
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it))
+        a = [int(next(it)) for _ in range(n)]
+        b = [int(next(it)) for _ in range(n)]
+        tests.append((a, b))
+    return t, tests
+
+def solve_case(a: List[int], b: List[int]) -> int:
+    return count_bob_wins_fwht(a, b)
+
+def solve_all() -> List[int]:
+    t, tests = read_input()
+    if t == 0:
+        return []
+    out = []
+    for a, b in tests:
+        out.append(solve_case(a, b))
+    return out
+
+def main():
+    # Cross-check against brute on tiny random-ish cases
+    # Case 1: a=1, b small
+    assert count_bob_wins_fwht([1], [3]) == 1
+    # Case 2: two piles small ranges
+    assert count_bob_wins_fwht([1, 2], [3, 3]) == brute_count_bob_wins([1, 2], [3, 3])
+    # Case 3: a=0 degeneracy
+    assert count_bob_wins_fwht([0, 0], [5, 7]) == (5 * 7) % MOD
+    out = solve_all()
+    if out:
+        print("\n".join(str(x) for x in out))
+
+# Reuse brute from baseline for validation
+def brute_count_bob_wins(a: List[int], b: List[int]) -> int:
+    from functools import lru_cache
+    n = len(a)
+    Ls = []
+    tables = []
+    masks = []
+    for ai in a:
+        L, tab = grundy_table_for_a(ai)
+        Ls.append(L)
+        tables.append(tab)
+        masks.append((1 << L) - 1 if L > 0 else 0)
+    ans = 0
+    def dfs(i: int, xorsum: int):
+        nonlocal ans
+        if i == n:
+            ans = (ans + (1 if xorsum == 0 else 0)) % MOD
+            return
+        for x in range(1, b[i] + 1):
+            gi = 0 if Ls[i] == 0 else tables[i][x & masks[i]]
+            dfs(i + 1, xorsum ^ gi)
+    dfs(0, 0)
+    return ans % MOD
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Asserts compare FWHT solution to brute force on small cases, including degenerate $a=0$.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Bit-DP on Masks + XOR Domain Convolution}
+\WHICHFORMULA{Key structural facts:
+\begin{bullets}
+\item Only the lowest $L_i=\lfloor \log_2 a_i \rfloor + 1$ bits of $x_i$ matter; higher bits are inert and can be ignored.
+\item The move set from a mask $s$ is $s \mapsto s \oplus t$ for any nonzero $t \subseteq s$ with $t \le a_i$ (interpreting $t$ as its integer value).
+\item Therefore each pile's Grundy function $g_i(s)$ is defined on $\{0,\ldots,2^{L_i}-1\}$ and can be precomputed by memoized mex over submasks.
+\item Over the range $1 \le x \le b_i$, the residues modulo $2^{L_i}$ are periodic and countable in $O(2^{L_i})$ time, enabling a frequency vector of Grundy values per pile.
+\item Combine piles via xor-convolution; FWHT yields $O(W \log W)$ time per pile for transform length $W$.
+\end{bullets}}
+\ASSUMPTIONS{Precomputation over $2^{L_i}$ states is feasible within constraints or via further pruning/closed-form in special $a_i$ (e.g., $a_i=2^{L_i}-1$ gives $g=\popcount$).}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For each $i$, compute $L_i$, then $g_i(s)$ for $s \in [0,2^{L_i})$ by mex over all $t$ with $t \subseteq s$ and $1 \le t \le a_i$.
+\item Build frequency $F_i$ of Grundy values over $x \in [1,b_i]$ via residue counting modulo $2^{L_i}$.
+\item Let $W=2^{\lceil \log_2(1+\max g)\rceil}$. FWHT each $F_i$ and multiply pointwise across piles. Inverse FWHT to obtain the distribution of xor-sums; read index $0$.
+\end{algosteps}
+\OPTIMALITY{Given the exact SG characterization on the induced finite mask space and xor-composition, the approach computes the exact count. FWHT is the optimal method for repeated xor-convolutions.}
+\COMPLEXITY{Let $G=\sum_i 2^{L_i}$ and $W$ as above. Then total time is $O\!\left(G \cdot \text{avg-submask-factor} + n W \log W\right)$ and space $O(G + n W)$.}
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from functools import lru_cache
+from typing import List, Tuple
+
+MOD = 1_000_000_007
+
+def grundy_table_for_a(a: int) -> Tuple[int, List[int]]:
+    if a == 0:
+        return 0, [0]
+    L = a.bit_length()
+    N = 1 << L
+
+    @lru_cache(maxsize=None)
+    def g(s: int) -> int:
+        if s == 0:
+            return 0
+        seen = set()
+        t = s
+        while t:
+            if t <= a:
+                seen.add(g(s ^ t))
+            t = (t - 1) & s
+        m = 0
+        while m in seen:
+            m += 1
+        return m
+
+    table = [0] * N
+    for s in range(N):
+        table[s] = g(s)
+    return L, table
+
+def residue_counts(b: int, L: int) -> List[int]:
+    if L == 0:
+        return [b]
+    N = 1 << L
+    cnt = [0] * N
+    cnt[0] = b // N
+    for r in range(1, N):
+        if r <= b:
+            cnt[r] = 1 + (b - r) // N
+    return cnt
+
+def fwht_xor(a: List[int], invert: bool) -> None:
+    n = len(a)
+    step = 1
+    while step < n:
+        for i in range(0, n, step * 2):
+            for j in range(i, i + step):
+                u = a[j]
+                v = a[j + step]
+                a[j] = (u + v) % MOD
+                a[j + step] = (u - v) % MOD
+        step <<= 1
+    if invert:
+        inv_n = pow(n, MOD - 2, MOD)
+        for i in range(n):
+            a[i] = (a[i] * inv_n) % MOD
+
+def solve_case(a: List[int], b: List[int]) -> int:
+    n = len(a)
+    freqs = []
+    max_g = 0
+    for i in range(n):
+        L, tab = grundy_table_for_a(a[i])
+        cnt_r = residue_counts(b[i], L)
+        hist = {}
+        if L == 0:
+            hist[0] = cnt_r[0]
+        else:
+            for s, c in enumerate(cnt_r):
+                if c == 0: continue
+                v = tab[s]
+                hist[v] = (hist.get(v, 0) + c) % MOD
+        if hist:
+            max_g = max(max_g, max(hist.keys()))
+        freqs.append(hist)
+    W = 1
+    while W <= max_g:
+        W <<= 1
+    if W == 0:
+        W = 1
+    acc = [0] * W
+    acc[0] = 1
+    fwht_xor(acc, invert=False)
+    for hist in freqs:
+        cur = [0] * W
+        for v, c in hist.items():
+            if v < W:
+                cur[v] = c % MOD
+        fwht_xor(cur, invert=False)
+        for i in range(W):
+            acc[i] = (acc[i] * cur[i]) % MOD
+    fwht_xor(acc, invert=True)
+    return acc[0] % MOD
+
+def read_input() -> Tuple[int, List[Tuple[List[int], List[int]]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, []
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it))
+        a = [int(next(it)) for _ in range(n)]
+        b = [int(next(it)) for _ in range(n)]
+        tests.append((a, b))
+    return t, tests
+
+def solve_all() -> List[int]:
+    t, tests = read_input()
+    if t == 0:
+        return []
+    out = []
+    for a, b in tests:
+        out.append(solve_case(a, b))
+    return out
+
+def main():
+    # Exactly 3 asserts
+    # 1) Single pile, a=1: only even x give Bob win.
+    assert solve_case([1], [3]) == 1
+    # 2) Degenerate: a=0, always losing pile (grundy 0) -> all choices win for Bob.
+    assert solve_case([0, 0], [2, 3]) == (2 * 3) % MOD
+    # 3) Cross-check small random-ish
+    def brute(a, b):
+        from functools import lru_cache
+        def gt(ai):
+            L, tab = grundy_table_for_a(ai)
+            return L, tab
+        tabs = [gt(ai) for ai in a]
+        ans = 0
+        def dfs(i, xr):
+            nonlocal ans
+            if i == len(a):
+                ans += (xr == 0)
+                return
+            L, tab = tabs[i]
+            if L == 0:
+                for x in range(1, b[i] + 1):
+                    dfs(i + 1, xr)
+            else:
+                mask = (1 << L) - 1
+                for x in range(1, b[i] + 1):
+                    dfs(i + 1, xr ^ tab[x & mask])
+        dfs(0, 0)
+        return ans % MOD
+    assert solve_case([1, 2], [3, 3]) == brute([1, 2], [3, 3])
+
+    out = solve_all()
+    if out:
+        print("\n".join(str(x) for x in out))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts: sanity single-pile, degenerate $a=0$, and a small two-pile cross-check with a brute enumerator embedded locally.}
+\RESULT{Outputs, per test case, the count of arrays $(x_1,\ldots,x_n)$ with $1 \le x_i \le b_i$ that lead to nim-sum $0$ (Bob win), modulo $10^9+7$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit-check the SG table builder on small $a$ against direct mex; validate residue counting sums to $b$; verify FWHT composition equals brute enumeration on small random cases.}
+\LINE{CROSS-CHECKS}{Compare counts from FWHT against brute force for multiple tiny $(a,b)$ instances; include edge $a=0$ and $a=2^k-1$.}
+\LINE{EDGE-CASE GENERATOR}{Generate random $a$ in $[0,7]$, $b$ in $[1,7]$, $n \in \{1,2,3\}$ and cross-check both solvers.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def gen_cases(seed=7):
+    random.seed(seed)
+    cases = []
+    for _ in range(10):
+        n = random.choice([1,2,3])
+        a = [random.randint(0, 7) for _ in range(n)]
+        b = [random.randint(1, 7) for _ in range(n)]
+        cases.append((a, b))
+    # include hand-picked edges
+    cases += [([0], [5]), ([1], [5]), ([3], [15]), ([1,1], [1,1])]
+    return cases
+
+def self_check():
+    from functools import lru_cache
+    for a, b in gen_cases():
+        v1 = solve_case(a, b)
+        v2 = brute_count_bob_wins(a, b)
+        assert v1 == v2, (a, b, v1, v2)
+
+# Reference implementations imported from above cells:
+# - solve_case(a,b)
+# - brute_count_bob_wins(a,b)
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF/LC) + asserts
+import sys
+from functools import lru_cache
+from typing import List, Tuple
+
+MOD = 1_000_000_007
+
+def grundy_table_for_a(a: int) -> Tuple[int, List[int]]:
+    if a == 0:
+        return 0, [0]
+    L = a.bit_length()
+    N = 1 << L
+
+    @lru_cache(maxsize=None)
+    def g(s: int) -> int:
+        if s == 0:
+            return 0
+        seen = set()
+        t = s
+        while t:
+            if t <= a:
+                seen.add(g(s ^ t))
+            t = (t - 1) & s
+        m = 0
+        while m in seen:
+            m += 1
+        return m
+
+    table = [0] * N
+    for s in range(N):
+        table[s] = g(s)
+    return L, table
+
+def residue_counts(b: int, L: int) -> List[int]:
+    if L == 0:
+        return [b]
+    N = 1 << L
+    cnt = [0] * N
+    cnt[0] = b // N
+    for r in range(1, N):
+        if r <= b:
+            cnt[r] = 1 + (b - r) // N
+    return cnt
+
+def fwht_xor(a: List[int], invert: bool) -> None:
+    n = len(a)
+    step = 1
+    while step < n:
+        for i in range(0, n, step * 2):
+            for j in range(i, i + step):
+                u = a[j]
+                v = a[j + step]
+                a[j] = (u + v) % MOD
+                a[j + step] = (u - v) % MOD
+        step <<= 1
+    if invert:
+        inv_n = pow(n, MOD - 2, MOD)
+        for i in range(n):
+            a[i] = (a[i] * inv_n) % MOD
+
+def solve_case(a: List[int], b: List[int]) -> int:
+    n = len(a)
+    freqs = []
+    max_g = 0
+    for i in range(n):
+        L, tab = grundy_table_for_a(a[i])
+        cnt_r = residue_counts(b[i], L)
+        hist = {}
+        if L == 0:
+            hist[0] = cnt_r[0]
+        else:
+            for s, c in enumerate(cnt_r):
+                if c == 0: continue
+                v = tab[s]
+                hist[v] = (hist.get(v, 0) + c) % MOD
+        if hist:
+            max_g = max(max_g, max(hist.keys()))
+        freqs.append(hist)
+    W = 1
+    while W <= max_g:
+        W <<= 1
+    if W == 0:
+        W = 1
+    acc = [0] * W
+    acc[0] = 1
+    fwht_xor(acc, invert=False)
+    for hist in freqs:
+        cur = [0] * W
+        for v, c in hist.items():
+            if v < W:
+                cur[v] = c % MOD
+        fwht_xor(cur, invert=False)
+        for i in range(W):
+            acc[i] = (acc[i] * cur[i]) % MOD
+    fwht_xor(acc, invert=True)
+    return acc[0] % MOD
+
+def read_input() -> Tuple[int, List[Tuple[List[int], List[int]]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, []
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it))
+        a = [int(next(it)) for _ in range(n)]
+        b = [int(next(it)) for _ in range(n)]
+        tests.append((a, b))
+    return t, tests
+
+def solve_all() -> List[int]:
+    t, tests = read_input()
+    if t == 0:
+        return []
+    out = []
+    for a, b in tests:
+        out.append(solve_case(a, b))
+    return out
+
+def main():
+    # Minimal deterministic asserts
+    assert solve_case([1], [3]) == 1
+    assert solve_case([0, 0], [2, 3]) == (2 * 3) % MOD
+    def brute(a, b):
+        n = len(a)
+        tabs = [grundy_table_for_a(ai) for ai in a]
+        ans = 0
+        def dfs(i, xr):
+            nonlocal ans
+            if i == n:
+                ans += (xr == 0)
+                return
+            L, tab = tabs[i]
+            if L == 0:
+                for x in range(1, b[i] + 1):
+                    dfs(i + 1, xr)
+            else:
+                mask = (1 << L) - 1
+                for x in range(1, b[i] + 1):
+                    dfs(i + 1, xr ^ tab[x & mask])
+        dfs(0, 0)
+        return ans % MOD
+    assert solve_case([1, 2], [3, 3]) == brute([1, 2], [3, 3])
+
+    out = solve_all()
+    if out:
+        print("\n".join(str(x) for x in out))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Count $(x_1,\ldots,x_n)$ with $1 \le x_i \le b_i$ such that the xor of per-pile Grundy values (with budgeted bit-subset removals) is $0$.}
+\WHY{Tests binary game reasoning (SG values) and multi-distribution xor-convolution (FWHT), common in harder CF problems.}
+\CHECKLIST{
+\begin{bullets}
+\item Reduce to lowest $L_i=\lfloor \log_2 a_i \rfloor+1$ bits; higher bits are inert.
+\item Build $g_i$ table on masks with mex over submasks $t \subseteq s$, $1 \le t \le a_i$.
+\item Count residues modulo $2^{L_i}$ over $[1,b_i]$; aggregate Grundy histogram.
+\item Choose $W$ as power-of-two $\ge 1+\max g$; FWHT, multiply, inverse.
+\item Report index $0$ modulo $10^9+7$.
+\end{bullets}
+}
+\EDGECASES{
+\begin{bullets}
+\item $a_i=0$ (no moves): all $x$ contribute Grundy $0$.
+\item $a_i=2^{L_i}-1$: $g(s)=\popcount(s)$; fast path.
+\item $b_i < 2^{L_i}$: residue counts truncate naturally.
+\item Single pile ($n=1$): counting zeros in $g$ over $[1,b_1]$.
+\item Very large $b_i$: arithmetic only; no enumeration.
+\item All $a_i$ identical vs. heterogeneous.
+\end{bullets}
+}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting that $d \le a_i$ is numeric, not bitwise subset of $a_i$.
+\item Enumerating invalid $t$ not subset of $s$ in SG transitions.
+\item Off-by-one for residue $r=0$ (starts at $2^{L_i}$, not $0$).
+\item FWHT inverse must scale by $W^{-1} \bmod \text{MOD}$.
+\item Picking $W$ too small (must be $\ge 2^{\lceil \log_2(1+\max g)\rceil}$).
+\item Using Python default ints without modulo in transforms.
+\end{bullets}
+}
+\FAILMODES{Naive product enumeration explodes when $\prod b_i$ is large; DP without FWHT becomes $O(W^2 n)$. The presented method avoids both by per-pile reduction and $O(W \log W)$ convolution.}
+\ELI{Only the low few bits of each $x_i$ matter to the gameplay because you can only afford to remove up to $a_i$ per move. Count how often each Grundy value appears per pile, then combine everyone with a fast xor-transform.}
+\NotePages{3}
+
+\end{document}

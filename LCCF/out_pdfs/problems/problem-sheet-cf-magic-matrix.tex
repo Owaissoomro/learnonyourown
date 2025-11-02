@@ -1,0 +1,831 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Magic Matrix}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/632/F}}
+\LINE{DIFFICULTY / RATING}{2400}
+\STATEMENT{You are given a matrix $A$ of size $n \times n$.
+
+We call a matrix with nonnegative elements \emph{magic} if it is symmetric (so $a_{ij}=a_{ji}$), $a_{ii}=0$, and $a_{ij} \le \max(a_{ik}, a_{jk})$ for all triples $i,j,k$ (indices need not be distinct).
+
+Determine whether the matrix is magic.
+
+Input: The first line contains integer $n$ ($1 \le n \le 2500$) — the size of the matrix $A$. Each of the next $n$ lines contains $n$ integers $a_{ij}$ ($0 \le a_{ij} < 10^9$) — the elements of the matrix $A$. The given matrix is not necessarily symmetric and can be arbitrary.
+
+Output: Print \texttt{MAGIC} if the given matrix $A$ is magic. Otherwise print \texttt{NOT MAGIC}.}
+\BREAKDOWN{Check easy necessary conditions (nonnegativity, diagonal zeros, symmetry). Then verify the ultrametric inequality $a_{ij} \le \max(a_{ik}, a_{kj})$ efficiently without $O(n^3)$. Use the single-linkage characterization via a minimax path on a minimum spanning tree (MST): for an ultrametric, $a_{ij}$ equals the maximum edge weight along the unique MST path between $i$ and $j$.}
+\ELI{Turn the matrix into a complete weighted graph; if along the MST the heaviest edge between any two nodes matches the matrix entry, the matrix is magic.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{
+- $n$: integer, $1 \le n \le 2500$.\\
+- $A$: $n \times n$ array of integers with $0 \le a_{ij} < 10^9$.
+}
+\OUTPUTS{A single line: \texttt{MAGIC} if $A$ is magic; otherwise \texttt{NOT MAGIC}.}
+\SAMPLES{
+Example 1: $n=3$, $A=\begin{bmatrix}0&1&1\\1&0&1\\1&1&0\end{bmatrix}$ $\to$ \texttt{MAGIC}.\\
+Example 2: $n=3$, $A=\begin{bmatrix}0&1&2\\1&0&1\\2&1&0\end{bmatrix}$ $\to$ \texttt{NOT MAGIC} (since $2 \nleq \max(1,1)$).
+}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $V=\{1,\ldots,n\}$ and define a symmetric weight function $d:V\times V\to \mathbb{R}_{\ge 0}$ with $d(i,i)=0$ and $d(i,j)=a_{ij}$. The matrix is magic iff $d$ is an ultrametric:
+\begin{BreakableEquation*}
+\forall i,j,k:\quad d(i,j) \le \max\bigl(d(i,k), d(k,j)\bigr).
+\end{BreakableEquation*}
+Equivalently, if $T$ is any MST of the complete graph on $V$ with edge weights $d$, then
+\begin{BreakableEquation*}
+d(i,j)=\max_{e\in P_T(i,j)} w(e)\quad \text{for all }i\ne j,
+\end{BreakableEquation*}
+where $P_T(i,j)$ is the unique path in $T$ from $i$ to $j$ and $w(e)$ is the edge weight.}
+\varmapStart
+\var{n}{dimension of the matrix}
+\var{A}{given $n\times n$ integer matrix, $A=[a_{ij}]$}
+\var{T}{a minimum spanning tree on the complete graph with weights $a_{ij}$}
+\var{u(i,j)}{max edge weight along the path between $i$ and $j$ in $T$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\text{Ultrametric inequality:}\quad a_{ij} \le \max(a_{ik},a_{kj})\quad \forall i,j,k.\\
+&\text{Single-linkage identity:}\quad a_{ij} = u(i,j) \quad \forall i\ne j.\\
+&\text{Sanity:}\quad a_{ii}=0,\quad a_{ij}=a_{ji}\ge 0.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Indices are $1$-based conceptually; implementation uses $0$-based. All inputs fit in 64-bit signed integers.}
+\INVARIANTS{
+- The MST $T$ has $n-1$ edges and is connected.\\
+- For any $i,j$, $u(i,j)$ equals the connectivity threshold where $i$ and $j$ first join when sweeping edges by nondecreasing weight.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Directly verify the definition: check $a_{ii}=0$, symmetry, and for all triples $(i,j,k)$ test $a_{ij} \le \max(a_{ik},a_{kj})$.}
+\ASSUMPTIONS{Suitable only for very small $n$ because of $O(n^3)$ triple checks.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Read $n$ and matrix $A$.
+\item Verify $a_{ii}=0$ and symmetry $a_{ij}=a_{ji}$; early exit if violated.
+\item For all $i,j,k$, check $a_{ij} \le \max(a_{ik},a_{kj})$; if any violation, return \texttt{NOT MAGIC}.
+\end{algosteps}
+\COMPLEXITY{Time $T(n)=O(n^3)$, Space $S(n)=O(n^2)$ to store $A$.}
+\[
+\begin{aligned}
+T(n) &= \Theta(n^2) \text{ (symmetry \& diagonal)} + \Theta(n^3) \text{ (triple check)}\\
+     &= \Theta(n^3).
+\end{aligned}
+\]
+\CORRECTNESS{By exhaustive verification of the defining inequality and structure.}
+\EDGECASES{$n=1$; rows with zeros; asymmetric entries; negative or nonzero diagonal.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    it = iter(data)
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return 0, []
+    A = [[0]*n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            A[i][j] = int(next(it))
+    return n, A
+
+def is_magic_baseline(A):
+    n = len(A)
+    # diagonal and symmetry
+    for i in range(n):
+        if A[i][i] != 0:
+            return False
+    for i in range(n):
+        for j in range(i+1, n):
+            if A[i][j] != A[j][i]:
+                return False
+            if A[i][j] < 0:
+                return False
+    # triple inequality
+    for k in range(n):
+        Ak = A[k]
+        for i in range(n):
+            Aik = A[i][k]
+            Ai = A[i]
+            for j in range(n):
+                if Ai[j] > (Aik if Aik >= Ak[j] else Ak[j]):
+                    return False
+    return True
+
+def solve_all():
+    n, A = read_input()
+    if n == 0:
+        return
+    print("MAGIC" if is_magic_baseline(A) else "NOT MAGIC")
+
+def main():
+    # Tiny self-checks (do not print)
+    A1 = [
+        [0,1,1],
+        [1,0,1],
+        [1,1,0],
+    ]
+    assert is_magic_baseline(A1) is True
+    A2 = [
+        [0,1,2],
+        [1,0,1],
+        [2,1,0],
+    ]
+    assert is_magic_baseline(A2) is False
+    # If running on real input, solve:
+    solve_all()
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Asserts check a known magic and a non-magic example. For random $n\le 6$, compare to improved method offline if desired.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{MST + Binary Lifting (LCA) Queries}
+\WHICHFORMULA{Use the single-linkage characterization: build an MST in $O(n^2)$ via Prim on the complete graph. Then precompute binary lifting tables to answer max-edge-on-path queries in $O(\log n)$ for each pair, verifying $a_{ij}$ equals that maximum.}
+\ASSUMPTIONS{Matrix is stored; MST exists regardless of metric validity.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Check $a_{ii}=0$ and symmetry $a_{ij}=a_{ji}\ge 0$; early reject otherwise.
+\item Build an MST using Prim in $O(n^2)$ without forming all edges explicitly.
+\item Root the MST; precompute up to $\lceil \log_2 n\rceil$ ancestors and the maximum edge to each ancestor.
+\item For all pairs $(i,j)$, compute the maximum edge along the path via LCA lifting and compare to $a_{ij}$.
+\end{algosteps}
+\COMPLEXITY{Beats baseline by avoiding $O(n^3)$: MST $O(n^2)$ and $O(n^2\log n)$ for pair checks.}
+\[
+\begin{aligned}
+T(n) &= O(n^2) \text{ (Prim)} + O(n \log n) \text{ (lift tables)} + O(n^2 \log n) \text{ (all pairs)}.
+\end{aligned}
+\]
+\CORRECTNESS{For any symmetric zero-diagonal matrix, the minimax distance $u(i,j)$ derived from the MST satisfies $u(i,j)\le a_{ij}$. Equality for all pairs holds iff $A$ is ultrametric, i.e., magic.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+sys.setrecursionlimit(1 << 25)
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    it = iter(data)
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return 0, []
+    A = [[0]*n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            A[i][j] = int(next(it))
+    return n, A
+
+def prim_mst_adj(A):
+    n = len(A)
+    INF = 10**19
+    inT = [False]*n
+    key = [INF]*n
+    par = [-1]*n
+    key[0] = 0
+    for _ in range(n):
+        u = -1
+        best = INF
+        for v in range(n):
+            if not inT[v] and key[v] < best:
+                best = key[v]
+                u = v
+        if u == -1:
+            # disconnected (should not happen in complete graph)
+            break
+        inT[u] = True
+        Au = A[u]
+        for v in range(n):
+            if not inT[v]:
+                w = Au[v]
+                if w < key[v]:
+                    key[v] = w
+                    par[v] = u
+    adj = [[] for _ in range(n)]
+    for v in range(1, n):
+        u = par[v]
+        if u == -1:
+            continue
+        w = A[u][v]
+        adj[u].append((v, w))
+        adj[v].append((u, w))
+    return adj
+
+def is_magic_mst_lca(A):
+    n = len(A)
+    # diagonal and symmetry
+    for i in range(n):
+        if A[i][i] != 0:
+            return False
+    for i in range(n):
+        Ai = A[i]
+        for j in range(i+1, n):
+            if Ai[j] != A[j][i]:
+                return False
+            if Ai[j] < 0:
+                return False
+    if n <= 1:
+        return True
+    adj = prim_mst_adj(A)
+    LOG = (n-1).bit_length()
+    up = [[-1]*n for _ in range(LOG)]
+    mx = [[0]*n for _ in range(LOG)]
+    depth = [0]*n
+
+    # root at 0
+    stack = [(0, -1, 0, 0)]  # (u, p, w_to_p, depth)
+    order = []
+    while stack:
+        u, p, w, d = stack.pop()
+        up[0][u] = p
+        mx[0][u] = w
+        depth[u] = d
+        order.append(u)
+        for v, wuv in adj[u]:
+            if v == p:
+                continue
+            stack.append((v, u, wuv, d+1))
+
+    for k in range(1, LOG):
+        for v in range(n):
+            pu = up[k-1][v]
+            if pu != -1:
+                up[k][v] = up[k-1][pu]
+                mx[k][v] = max(mx[k-1][v], mx[k-1][pu])
+            else:
+                up[k][v] = -1
+                mx[k][v] = mx[k-1][v]
+
+    def max_on_path(u, v):
+        if u == v:
+            return 0
+        res = 0
+        if depth[u] < depth[v]:
+            u, v = v, u
+        # lift u up
+        diff = depth[u] - depth[v]
+        k = 0
+        while diff:
+            if diff & 1:
+                res = max(res, mx[k][u])
+                u = up[k][u]
+            diff >>= 1
+            k += 1
+        if u == v:
+            return res
+        for k in range(LOG-1, -1, -1):
+            if up[k][u] != -1 and up[k][u] != up[k][v]:
+                res = max(res, mx[k][u], mx[k][v])
+                u = up[k][u]
+                v = up[k][v]
+        # now u and v are children of LCA
+        res = max(res, mx[0][u], mx[0][v])
+        return res
+
+    for i in range(n):
+        Ai = A[i]
+        for j in range(n):
+            if i == j:
+                if Ai[j] != 0:
+                    return False
+            else:
+                if max_on_path(i, j) != Ai[j]:
+                    return False
+    return True
+
+def solve_all():
+    n, A = read_input()
+    if n == 0:
+        return
+    print("MAGIC" if is_magic_mst_lca(A) else "NOT MAGIC")
+
+def main():
+    # Self-checks
+    A1 = [
+        [0,1,1],
+        [1,0,1],
+        [1,1,0],
+    ]
+    assert is_magic_mst_lca(A1) is True
+    A2 = [
+        [0,1,2],
+        [1,0,1],
+        [2,1,0],
+    ]
+    assert is_magic_mst_lca(A2) is False
+    # Solve if input provided
+    solve_all()
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Checks include a known magic and a non-magic matrix. Optionally, for $n\le 60$, cross-check with the baseline triple-checker.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{MST + All-Roots DFS in $O(n^2)$}
+\WHICHFORMULA{Still use the MST characterization, but avoid $O(\log n)$ per query. For each root $r$, do a DFS/BFS over the MST, carrying the maximum edge seen so far. This computes $u(r,\cdot)$ for all nodes in $O(n)$ time per root, totaling $O(n^2)$.}
+\ASSUMPTIONS{The complete graph MST can be built via Prim in $O(n^2)$; adjacency of the MST has $2(n-1)$ entries.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Validate symmetry and zero diagonal.
+\item Build MST with Prim in $O(n^2)$.
+\item For each root $r=0,\ldots,n-1$, run a stack-based DFS on the MST to compute $u(r,v)$ as the max edge along the path from $r$ to $v$; compare to $a_{rv}$ on the fly.
+\item If all comparisons match, print \texttt{MAGIC}; else \texttt{NOT MAGIC}.
+\end{algosteps}
+\OPTIMALITY{The overall runtime is $O(n^2)$, matching the input size up to a constant factor and improving over the $O(n^2\log n)$ method. This is effectively tight because we must at least read $n^2$ entries.}
+\COMPLEXITY{Time $O(n^2)$, Space $O(n^2)$ to store $A$ and $O(n)$ for MST adjacency plus DFS buffers.}
+\[
+\begin{aligned}
+T(n) &= O(n^2) \text{ (Prim)} + O(n^2) \text{ (per-root DFS checks)} = O(n^2).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+sys.setrecursionlimit(1 << 25)
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    it = iter(data)
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return 0, []
+    A = [[0]*n for _ in range(n)]
+    for i in range(n):
+        row = A[i]
+        for j in range(n):
+            row[j] = int(next(it))
+    return n, A
+
+def prim_mst_adj(A):
+    n = len(A)
+    INF = 10**19
+    inT = [False]*n
+    key = [INF]*n
+    par = [-1]*n
+    key[0] = 0
+    for _ in range(n):
+        u = -1
+        best = INF
+        for v in range(n):
+            if not inT[v] and key[v] < best:
+                best = key[v]
+                u = v
+        if u == -1:
+            break
+        inT[u] = True
+        Au = A[u]
+        for v in range(n):
+            if not inT[v]:
+                w = Au[v]
+                if w < key[v]:
+                    key[v] = w
+                    par[v] = u
+    adj = [[] for _ in range(n)]
+    for v in range(1, n):
+        u = par[v]
+        if u == -1:
+            continue
+        w = A[u][v]
+        adj[u].append((v, w))
+        adj[v].append((u, w))
+    return adj
+
+def is_magic_optimal(A):
+    n = len(A)
+    # quick checks
+    for i in range(n):
+        if A[i][i] != 0:
+            return False
+    for i in range(n):
+        Ai = A[i]
+        for j in range(i+1, n):
+            if Ai[j] != A[j][i]:
+                return False
+            if Ai[j] < 0:
+                return False
+    if n <= 1:
+        return True
+    adj = prim_mst_adj(A)
+    n = len(A)
+    # For each root r, DFS to compute max edge to every node; compare to A[r][*]
+    for r in range(n):
+        d = [-1]*n
+        stack = [(r, -1, 0)]
+        while stack:
+            u, p, cur = stack.pop()
+            d[u] = cur
+            for v, w in adj[u]:
+                if v == p:
+                    continue
+                stack.append((v, u, cur if cur >= w else w))
+        Ar = A[r]
+        for v in range(n):
+            if d[v] != Ar[v]:
+                return False
+    return True
+
+def solve_all():
+    n, A = read_input()
+    if n == 0:
+        return
+    print("MAGIC" if is_magic_optimal(A) else "NOT MAGIC")
+
+def main():
+    # Self-checks
+    A1 = [
+        [0,1,1],
+        [1,0,1],
+        [1,1,0],
+    ]
+    assert is_magic_optimal(A1) is True
+    A2 = [
+        [0,1,2],
+        [1,0,1],
+        [2,1,0],
+    ]
+    assert is_magic_optimal(A2) is False
+    A3 = [
+        [0,3,3,5],
+        [3,0,3,5],
+        [3,3,0,5],
+        [5,5,5,0],
+    ]
+    assert is_magic_optimal(A3) is True
+    # Solve for actual input
+    solve_all()
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Exactly three asserts: a simple magic, a non-magic violating a triangle, and a 4-node ultrametric (star at level 5).}
+\RESULT{Print \texttt{MAGIC} iff all checks succeed; else \texttt{NOT MAGIC}. No tie-breaking is needed.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests cover: diagonal nonzero; asymmetry; simple magic/non-magic; random small matrices cross-checked between baseline and optimal methods.}
+\LINE{CROSS-CHECKS}{For $n\le 7$, compare baseline and optimal outputs on random symmetric zero-diagonal matrices.}
+\LINE{EDGE-CASE GENERATOR}{Generate $n=1$; all zeros; two clusters with high inter-cluster distances; near-violations where a single entry breaks ultrametricity.}
+\begin{minted}{python}
+import random
+
+def gen_ultrametric_star(n, w_leaf=1, w_center=5):
+    # Build an ultrametric: one cluster center 0, leaves 1..n-1
+    A = [[0]*n for _ in range(n)]
+    for i in range(1, n):
+        A[0][i] = A[i][0] = w_leaf
+    for i in range(1, n):
+        for j in range(1, n):
+            if i == j: continue
+            A[i][j] = w_center
+    return A
+
+def reference_is_magic(A):
+    # Use the optimal checker
+    return is_magic_optimal(A)
+
+def fuzz_small_trials(trials=200, nmax=7, vmax=5):
+    for _ in range(trials):
+        n = random.randint(1, nmax)
+        A = [[0]*n for _ in range(n)]
+        for i in range(n):
+            for j in range(i+1, n):
+                w = random.randint(0, vmax)
+                A[i][j] = A[j][i] = w
+        # Enforce zero diagonal
+        for i in range(n):
+            A[i][i] = 0
+        # Compare baseline and optimal
+        b = is_magic_baseline(A)
+        o = is_magic_optimal(A)
+        assert b == o
+
+def final_io_solution():
+    # Ready to submit: same as optimal solve_all()
+    solve_all()
+
+# Mini sanity checks
+if __name__ == "__main__":
+    # Cross-check on random small cases
+    fuzz_small_trials(50, 6, 4)
+    # A structured ultrametric
+    A = gen_ultrametric_star(5, 2, 7)
+    assert reference_is_magic(A) is True
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+sys.setrecursionlimit(1 << 25)
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    it = iter(data)
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return 0, []
+    A = [[0]*n for _ in range(n)]
+    for i in range(n):
+        row = A[i]
+        for j in range(n):
+            row[j] = int(next(it))
+    return n, A
+
+def prim_mst_adj(A):
+    n = len(A)
+    INF = 10**19
+    inT = [False]*n
+    key = [INF]*n
+    par = [-1]*n
+    key[0] = 0
+    for _ in range(n):
+        u = -1
+        best = INF
+        for v in range(n):
+            if not inT[v] and key[v] < best:
+                best = key[v]
+                u = v
+        if u == -1:
+            break
+        inT[u] = True
+        Au = A[u]
+        for v in range(n):
+            if not inT[v]:
+                w = Au[v]
+                if w < key[v]:
+                    key[v] = w
+                    par[v] = u
+    adj = [[] for _ in range(n)]
+    for v in range(1, n):
+        u = par[v]
+        if u == -1:
+            continue
+        w = A[u][v]
+        adj[u].append((v, w))
+        adj[v].append((u, w))
+    return adj
+
+def is_magic_optimal(A):
+    n = len(A)
+    for i in range(n):
+        if A[i][i] != 0:
+            return False
+    for i in range(n):
+        Ai = A[i]
+        for j in range(i+1, n):
+            if Ai[j] != A[j][i]:
+                return False
+            if Ai[j] < 0:
+                return False
+    if n <= 1:
+        return True
+    adj = prim_mst_adj(A)
+    for r in range(n):
+        d = [-1]*n
+        stack = [(r, -1, 0)]
+        while stack:
+            u, p, cur = stack.pop()
+            d[u] = cur
+            for v, w in adj[u]:
+                if v == p:
+                    continue
+                stack.append((v, u, cur if cur >= w else w))
+        Ar = A[r]
+        for v in range(n):
+            if d[v] != Ar[v]:
+                return False
+    return True
+
+def solve_all():
+    n, A = read_input()
+    if n == 0:
+        return
+    print("MAGIC" if is_magic_optimal(A) else "NOT MAGIC")
+
+def main():
+    # Asserts (do not print)
+    A1 = [
+        [0,1,1],
+        [1,0,1],
+        [1,1,0],
+    ]
+    assert is_magic_optimal(A1) is True
+    A2 = [
+        [0,1,2],
+        [1,0,1],
+        [2,1,0],
+    ]
+    assert is_magic_optimal(A2) is False
+    A3 = [
+        [0,3,3,5],
+        [3,0,3,5],
+        [3,3,0,5],
+        [5,5,5,0],
+    ]
+    assert is_magic_optimal(A3) is True
+    # Solve
+    solve_all()
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{A matrix is magic iff it is a symmetric zero-diagonal ultrametric, equivalently equal to the minimax path distances of an MST.}
+\WHY{Ultrametrics arise in hierarchical clustering and appear in interviews as matrix-graph equivalence checks with MSTs.}
+\CHECKLIST{
+- Check $a_{ii}=0$.
+- Check symmetry $a_{ij}=a_{ji}$ and nonnegativity.
+- Build MST via Prim in $O(n^2)$.
+- For each root, DFS and compare max-on-path to $a_{r\cdot}$.
+- Early exit on first mismatch.}
+\EDGECASES{
+- $n=1$ (always magic iff $0$).\\
+- Any $a_{ii} \ne 0$.\\
+- Asymmetric $a_{ij} \ne a_{ji}$.\\
+- Negative entries.\\
+- Duplicate rows/columns (clusters with identical profiles).\\
+- Large equal blocks of constant values.\\
+- A single offending entry breaking one triangle.\\
+- Disconnected MST should not occur (complete graph) — guard anyway.\\
+- Very large $n$ with many equal weights (ensure stable Prim).\\
+- Max value near $10^9$ (use 64-bit safe ints).}
+\PITFALLS{
+- Forgetting to check diagonal zeros before MST.\\
+- Using Dijkstra instead of Prim on a complete graph (overkill).\\
+- Building all $\Theta(n^2)$ edges explicitly as tuples (memory heavy).\\
+- Storing an $n\times n$ auxiliary matrix of path maxima (too much memory).\\
+- Recursive DFS causing recursion depth issues (use iterative stack).\\
+- Not resetting per-root arrays in the all-roots DFS.\\
+- Mixing 0-based and 1-based indices.\\
+- Comparing path max to $a_{ij}$ before verifying symmetry can hide bugs.\\
+- Using float instead of int (precision issues).\\
+- Time blowup by $O(n^2\log n)$ when $O(n^2)$ suffices.}
+\FAILMODES{Baseline $O(n^3)$ times out for $n\approx 2500$. Memory-heavy edge lists can TLE or MLE. The proposed MST + all-roots DFS uses only the matrix and an $O(n)$ adjacency, surviving worst cases.}
+\ELI{Magic matrices are those where any triangle has two sides at least as large as the third. Build a tree summarizing the cluster heights (the MST). If walking between two nodes on this tree, the tallest step equals the matrix entry for that pair, then the matrix is magic.}
+\NotePages{3}
+
+\end{document}

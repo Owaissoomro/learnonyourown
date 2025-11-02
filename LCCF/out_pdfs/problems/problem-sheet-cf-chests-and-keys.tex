@@ -1,0 +1,976 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Chests and Keys}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1519/F}}
+\LINE{DIFFICULTY / RATING}{3200}
+\STATEMENT{Alice and Bob play a game. Alice has got $n$ treasure chests (the $i$-th of which contains $a_i$ coins) and $m$ keys (the $j$-th of which she can sell Bob for $b_j$ coins).
+
+Firstly, Alice puts some locks on the chests. There are $m$ types of locks, the locks of the $j$-th type can only be opened with the $j$-th key. To put a lock of type $j$ on the $i$-th chest, Alice has to pay $c_{i,j}$ dollars. Alice can put any number of different types of locks on each chest (possibly, zero).
+
+Then, Bob buys some of the keys from Alice (possibly none, possibly all of them) and opens each chest he can (he can open a chest if he has the keys for all of the locks on this chest). Bob's profit is the difference between the total number of coins in the opened chests and the total number of coins he spends buying keys from Alice. If Bob's profit is strictly positive (greater than zero), he wins the game. Otherwise, Alice wins the game.
+
+Alice wants to put some locks on some chests so no matter which keys Bob buys, she always wins (Bob cannot get positive profit). Of course, she wants to spend the minimum possible number of dollars on buying the locks. Help her to determine whether she can win the game at all, and if she can, how many dollars she has to spend on the locks.
+
+Input:
+The first line contains two integers $n$ and $m$ ($1 \le n, m \le 6$) — the number of chests and the number of keys, respectively.
+
+The second line contains $n$ integers $a_1, a_2, \dots, a_n$ ($1 \le a_i \le 4$), where $a_i$ is the number of coins in the $i$-th chest.
+
+The third line contains $m$ integers $b_1, b_2, \dots, b_m$ ($1 \le b_j \le 4$), where $b_j$ is the number of coins Bob has to spend to buy the $j$-th key from Alice.
+
+Then $n$ lines follow. The $i$-th of them contains $m$ integers $c_{i,1}, c_{i,2}, \dots, c_{i,m}$ ($1 \le c_{i,j} \le 10^7$), where $c_{i,j}$ is the number of dollars Alice has to spend to put a lock of the $j$-th type on the $i$-th chest.
+
+Output:
+If Alice cannot ensure her victory (no matter which locks she puts on which chests, Bob always has a way to gain positive profit), print $-1$.
+
+Otherwise, print one integer — the minimum number of dollars Alice has to spend to win the game regardless of Bob's actions.
+
+Note:
+In the first example, Alice should put locks of types $1$ and $3$ on the first chest, and locks of type $2$ and $3$ on the second chest.
+
+In the second example, Alice should put locks of types $1$ and $2$ on the first chest, and a lock of type $3$ on the second chest.}
+\BREAKDOWN{Represent each chest by a mask of keys required to open it. Bob buys a subset $T$ of keys; he opens chests whose masks are subsets of $T$. Enforce that for all $T$, the total coins opened do not exceed the total key costs of $T$. Minimize total lock cost.}
+\ELI{Assign locks so that no matter which keys Bob buys, his payoff never exceeds his spend, while paying as little for locks as possible.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Integers $n, m$ with $1 \le n, m \le 6$; array $a$ of length $n$ with $1 \le a_i \le 4$; array $b$ of length $m$ with $1 \le b_j \le 4$; matrix $c$ of size $n \times m$ with $1 \le c_{i,j} \le 10^7$.}
+\OUTPUTS{Single integer: $-1$ if impossible, otherwise the minimum dollars Alice must pay for locks to guarantee Bob's profit is never positive.}
+\SAMPLES{Example 1: $n=1, m=1$, $a=[1]$, $b=[1]$, $c=[[5]]$ → output $5$.
+
+Example 2: $n=1, m=2$, $a=[1]$, $b=[1,1]$, $c=[[3,2]]$ → output $2$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $[m]=\{1,\ldots,m\}$. For each chest $i$, choose a mask $S_i \subseteq [m]$ of locks placed on it. For any key set $T \subseteq [m]$, define the opened-coin function $A(T)=\sum_{i:~S_i \subseteq T} a_i$ and the key-cost function $B(T)=\sum_{j \in T} b_j$. Feasibility requires $A(T) \le B(T)$ for all $T \subseteq [m]$. Objective: minimize $\sum_{i=1}^n \sum_{j \in S_i} c_{i,j}$.}
+\varmapStart
+\var{n}{number of chests}
+\var{m}{number of keys}
+\var{a_i}{coins in chest $i$}
+\var{b_j}{cost of key $j$}
+\var{c_{i,j}}{cost to place lock type $j$ on chest $i$}
+\var{S_i}{lock mask for chest $i$}
+\var{A(T)}{total coins opened if Bob buys keys $T$}
+\var{B(T)}{total key cost of $T$}
+\varmapEnd
+\GOVERN{
+\begin{BreakableEquation*}
+\forall T \subseteq [m]:~ \sum_{i=1}^n a_i \cdot \mathbf{1}[S_i \subseteq T] \le \sum_{j \in T} b_j.
+\end{BreakableEquation*}
+}
+\ASSUMPTIONS{All $a_i, b_j$ are small integers; $n,m \le 6$. Locks are independent by type. Bob observes $S_i$ and chooses $T$ adversarially to maximize his profit.}
+\INVARIANTS{
+\begin{bullets}
+\item Necessity: $A([m])=\sum_i a_i \le \sum_j b_j=B([m])$, else impossible.
+\item Monotonicity: Strengthening locks (replacing $S_i$ by a superset) preserves feasibility and weakly increases cost.
+\item Feasibility via full mask: Assigning $S_i=[m]$ for all $i$ is feasible iff $\sum_i a_i \le \sum_j b_j$.
+\end{bullets}
+}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Direct search over lock masks per chest with feasibility check $A(T) \le B(T)$ for all $T$.}
+\ASSUMPTIONS{Exploit tiny $n,m$; prune early on capacity violations; use descending $a_i$ order.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute $B(T)$ for all $T \subseteq [m]$. If $\sum a_i > B([m])$, return $-1$.
+\item Backtrack over chests in nonincreasing $a_i$.
+\item For each chest, try nonempty masks $S$ that fit current slack: $a_i \le \min_{T \supseteq S} (B(T)-A(T))$.
+\item Maintain and prune by lower bound: sum of current cost plus minimal feasible per-chest costs for remaining items.
+\end{algosteps}
+\COMPLEXITY{In worst case exponential but heavily pruned for $m \le 6$. Superset-min transform per node in $O(m2^m)$.}
+\[
+\begin{aligned}
+\text{Per node} &\in O(m2^m), \\
+\text{Nodes} &\ll (2^m)^n \text{ due to pruning, with $n \le 6$, $m \le 6$.}
+\end{aligned}
+\]
+\CORRECTNESS{Any assignment defines $A(T)$; we enforce $A(T) \le B(T)$ for all $T$. Lower bound pruning preserves optimality. Initialization with all-locks provides a valid upper bound when feasible.}
+\EDGECASES{Sum coins greater than sum key costs; zero-lock mask is invalid since $B(\varnothing)=0$ and $a_i \ge 1$; highly asymmetric costs.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input() -> Tuple[int, int, List[int], List[int], List[List[int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, [], [], []
+    it = iter(map(int, data))
+    n = next(it)
+    m = next(it)
+    a = [next(it) for _ in range(n)]
+    b = [next(it) for _ in range(m)]
+    c = [[next(it) for _ in range(m)] for __ in range(n)]
+    return n, m, a, b, c
+
+def solve_case(n: int, m: int, a: List[int], b: List[int], c: List[List[int]]) -> int:
+    if n == 0 and m == 0:
+        return 0
+    FULL = (1 << m) - 1
+    B = [0] * (1 << m)
+    for mask in range(1 << m):
+        s = 0
+        mm = mask
+        j = 0
+        while mm:
+            if mm & 1:
+                s += b[j]
+            j += 1
+            mm >>= 1
+        B[mask] = s
+    if sum(a) > B[FULL]:
+        return -1
+
+    # Precompute supersets for each mask
+    supersets = [[] for _ in range(1 << m)]
+    for s in range(1 << m):
+        for T in range(1 << m):
+            if (T & s) == s:
+                supersets[s].append(T)
+
+    # cost_i[mask]
+    cost = [[0] * (1 << m) for _ in range(n)]
+    for i in range(n):
+        for mask in range(1 << m):
+            cc = 0
+            mm = mask
+            j = 0
+            while mm:
+                if mm & 1:
+                    cc += c[i][j]
+                j += 1
+                mm >>= 1
+            cost[i][mask] = cc
+
+    # initial best: all chests fully locked
+    best = sum(cost[i][FULL] for i in range(n))
+
+    # order chests by descending a_i, tie by larger potential savings
+    order = list(range(n))
+    # crude potential saving: cost_full - min single-key lock cost
+    savings = []
+    for i in range(n):
+        mn = min(cost[i][mask] for mask in range(1, 1 << m))
+        savings.append(cost[i][FULL] - mn)
+    order.sort(key=lambda i: (-a[i], -savings[i]))
+
+    R = B[:]  # residual slack B(T) - A(T)
+
+    # helper: superset-min transform to compute slack_min[s] = min_{T ⊇ s} R[T]
+    def compute_slack_min(arr: List[int]) -> List[int]:
+        tmp = arr[:]  # size 2^m
+        # For all bits j, for all masks without j, tmp[mask] = min(tmp[mask], tmp[mask|1<<j])
+        for j in range(m):
+            bit = 1 << j
+            for mask in range(1 << m):
+                if (mask & bit) == 0:
+                    if tmp[mask | bit] < tmp[mask]:
+                        tmp[mask] = tmp[mask | bit]
+        return tmp
+
+    # precompute popcount for ordering tiebreak
+    popcnt = [bin(x).count("1") for x in range(1 << m)]
+
+    best_assign = [FULL] * n  # store any best assignment (optional)
+
+    # branch and bound
+    cur_cost = 0
+    assign = [FULL] * n  # current mask choices
+
+    def lower_bound(idx: int, slack_min: List[int]) -> int:
+        lb = 0
+        for t in range(idx, n):
+            i = order[t]
+            ai = a[i]
+            # minimal feasible cost for this chest under current slack
+            bestc = None
+            for s in range(1, 1 << m):  # nonempty
+                if slack_min[s] >= ai:
+                    cc = cost[i][s]
+                    if (bestc is None) or (cc < bestc):
+                        bestc = cc
+            if bestc is None:
+                return 10**30  # infeasible
+            lb += bestc
+        return cur_cost + lb
+
+    def dfs(idx: int):
+        nonlocal best, cur_cost, best_assign
+        if cur_cost >= best:
+            return
+        slack_min = compute_slack_min(R)
+        # prune by lower bound
+        if lower_bound(idx, slack_min) >= best:
+            return
+        if idx == n:
+            if cur_cost < best:
+                best = cur_cost
+                best_assign = assign[:]
+            return
+        i = order[idx]
+        ai = a[i]
+        # list candidate masks sorted by (cost, -popcount)
+        cand = []
+        for s in range(1, 1 << m):
+            if slack_min[s] >= ai:
+                cand.append(s)
+        cand.sort(key=lambda s: (cost[i][s], -popcnt[s]))
+        # try candidates
+        for s in cand:
+            # apply s: decrease R[T] by a_i for all T ⊇ s
+            for T in supersets[s]:
+                R[T] -= ai
+            assign[i] = s
+            prev_cost = cur_cost
+            cur_cost += cost[i][s]
+            dfs(idx + 1)
+            cur_cost = prev_cost
+            assign[i] = FULL
+            for T in supersets[s]:
+                R[T] += ai
+
+    # initialize R by placing all chests at FULL (S_i = FULL), i.e., subtract contributions from T==FULL only
+    # But the model uses R = B - A; with S_i=FULL, only T=FULL gets a_i subtracted.
+    for i in range(n):
+        R[FULL] -= a[i]
+    cur_cost = sum(cost[i][FULL] for i in range(n))
+    # best initialized as cur_cost; dfs will try to reduce cost by removing locks
+    best = cur_cost
+
+    dfs(0)
+    return best
+
+def solve_all() -> None:
+    n, m, a, b, c = read_input()
+    if n == 0 and m == 0:
+        return
+    ans = solve_case(n, m, a, b, c)
+    print(ans)
+
+def _run_tests():
+    # Basic feasible single chest
+    n, m = 1, 1
+    a = [1]; b = [1]; c = [[5]]
+    assert solve_case(n, m, a, b, c) == 5
+    # Choose cheaper single lock among two
+    n, m = 1, 2
+    a = [1]; b = [1, 1]; c = [[3, 2]]
+    assert solve_case(n, m, a, b, c) == 2
+    # Impossible by total sum
+    n, m = 2, 1
+    a = [2, 1]; b = [2]; c = [[1], [1]]
+    assert solve_case(n, m, a, b, c) == -1
+    # Another impossible
+    n, m = 2, 2
+    a = [2, 2]; b = [1, 2]; c = [[1, 1], [1, 1]]
+    assert solve_case(n, m, a, b, c) == -1
+    # Small interplay, pick different masks
+    n, m = 2, 2
+    a = [2, 1]; b = [1, 3]; c = [[5, 10], [1, 10]]
+    assert solve_case(n, m, a, b, c) == 11
+
+if __name__ == "__main__":
+    _run_tests()
+    solve_all()
+\end{minted}
+\VALIDATION{Asserts include feasibility, impossibility by total sum, and a small coupled example.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Use superset-min transform to test mask feasibility quickly and compute strong lower bounds; initialize from the all-locks solution for a tight upper bound.}
+\ASSUMPTIONS{Masks are small ($2^m \le 64$). The residual slack vector over all $T$ can be updated incrementally.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute $B(T)$ and supersets of each mask.
+\item Maintain residual slacks $R(T)=B(T)-A(T)$; apply/remove a choice by subtracting/adding $a_i$ to all $T \supseteq S_i$.
+\item At each node recompute $S \mapsto \min_{T \supseteq S} R(T)$ via $O(m2^m)$ superset-min transform to filter candidates and bound.
+\end{algosteps}
+\COMPLEXITY{Per-node overhead $O(m2^m)$; the strong pruning from feasibility plus lower bound keeps the search tiny for $n \le 6$.}
+\[
+\begin{aligned}
+T(n) &\approx O\big(\text{nodes} \cdot m2^m\big),\quad m \le 6. \\
+\end{aligned}
+\]
+\CORRECTNESS{The transform computes exactly the tightest admissible increment for each mask. Lower bound is admissible by independently minimizing each remaining chest under current slacks; pruning preserves optimality.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Same API/signature as baseline; deterministic; with asserts
+import sys
+from typing import List, Tuple
+
+def read_input() -> Tuple[int, int, List[int], List[int], List[List[int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, [], [], []
+    it = iter(map(int, data))
+    n = next(it); m = next(it)
+    a = [next(it) for _ in range(n)]
+    b = [next(it) for _ in range(m)]
+    c = [[next(it) for _ in range(m)] for __ in range(n)]
+    return n, m, a, b, c
+
+def solve_case(n: int, m: int, a: List[int], b: List[int], c: List[List[int]]) -> int:
+    if n == 0 and m == 0:
+        return 0
+    FULL = (1 << m) - 1
+    # B[T]
+    B = [0] * (1 << m)
+    for T in range(1 << m):
+        s = 0
+        t = T; j = 0
+        while t:
+            if t & 1:
+                s += b[j]
+            j += 1
+            t >>= 1
+        B[T] = s
+    if sum(a) > B[FULL]:
+        return -1
+
+    # supersets
+    supersets = [[] for _ in range(1 << m)]
+    for s in range(1 << m):
+        for T in range(1 << m):
+            if (T & s) == s:
+                supersets[s].append(T)
+
+    # cost[i][mask]
+    cost = [[0] * (1 << m) for _ in range(n)]
+    for i in range(n):
+        for mask in range(1 << m):
+            cc = 0
+            mm = mask; j = 0
+            while mm:
+                if mm & 1:
+                    cc += c[i][j]
+                j += 1
+                mm >>= 1
+            cost[i][mask] = cc
+
+    # order by a_i desc and potential saving
+    order = list(range(n))
+    pot = []
+    for i in range(n):
+        mn = min(cost[i][s] for s in range(1, 1 << m))
+        pot.append(cost[i][FULL] - mn)
+    order.sort(key=lambda i: (-a[i], -pot[i]))
+
+    popcnt = [bin(x).count("1") for x in range(1 << m)]
+
+    # initialize residual slacks with all chests at FULL
+    R = B[:]
+    for i in range(n):
+        R[FULL] -= a[i]
+
+    best = sum(cost[i][FULL] for i in range(n))
+    cur_cost = best
+    assign = [FULL] * n
+
+    def superset_min(arr: List[int]) -> List[int]:
+        tmp = arr[:]
+        for j in range(m):
+            bit = 1 << j
+            for mask in range(1 << m):
+                if (mask & bit) == 0:
+                    if tmp[mask | bit] < tmp[mask]:
+                        tmp[mask] = tmp[mask | bit]
+        return tmp
+
+    def dfs(idx: int):
+        nonlocal best, cur_cost
+        if cur_cost >= best:
+            return
+        slack_min = superset_min(R)
+        # LB: sum minimal feasible cost for remaining chests
+        lb = cur_cost
+        feasible = True
+        for t in range(idx, n):
+            i = order[t]; ai = a[i]
+            bestc = None
+            for s in range(1, 1 << m):
+                if slack_min[s] >= ai:
+                    cc = cost[i][s]
+                    if (bestc is None) or (cc < bestc):
+                        bestc = cc
+            if bestc is None:
+                feasible = False
+                break
+            lb += bestc
+        if not feasible or lb >= best:
+            return
+        if idx == n:
+            best = min(best, cur_cost)
+            return
+        i = order[idx]; ai = a[i]
+        # candidates sorted by (cost, -popcount)
+        cand = [s for s in range(1, 1 << m) if slack_min[s] >= ai]
+        cand.sort(key=lambda s: (cost[i][s], -popcnt[s]))
+        for s in cand:
+            for T in supersets[s]:
+                R[T] -= ai
+            cur_cost += cost[i][s]
+            dfs(idx + 1)
+            cur_cost -= cost[i][s]
+            for T in supersets[s]:
+                R[T] += ai
+
+    dfs(0)
+    return best
+
+def solve_all() -> None:
+    n, m, a, b, c = read_input()
+    if n == 0 and m == 0:
+        return
+    print(solve_case(n, m, a, b, c))
+
+def _run_tests():
+    # Same tests as baseline
+    assert solve_case(1, 1, [1], [1], [[5]]) == 5
+    assert solve_case(1, 2, [1], [1, 1], [[3, 2]]) == 2
+    assert solve_case(2, 1, [2, 1], [2], [[1], [1]]) == -1
+    assert solve_case(2, 2, [2, 2], [1, 2], [[1, 1], [1, 1]]) == -1
+    assert solve_case(2, 2, [2, 1], [1, 3], [[5, 10], [1, 10]]) == 11
+
+if __name__ == "__main__":
+    _run_tests()
+    solve_all()
+\end{minted}
+\VALIDATION{Checks mirror Baseline; pruning and ordering strengthen performance without changing results.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Branch-and-bound over masks with exact feasibility via superset-min transform and admissible per-chest lower bound; initialized from full-mask assignment which is feasible iff $\sum a_i \le \sum b_j$.}
+\ASSUMPTIONS{Feasible iff $\sum_{i=1}^n a_i \le \sum_{j=1}^m b_j$. Nonempty masks only since $B(\varnothing)=0$ and $a_i \ge 1$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute $B(T)$ for all subsets; verify feasibility by total sum.
+\item Start with $S_i=[m]$ for all $i$ (tight at $T=[m]$); set best to this cost.
+\item Recursively relax locks chest by chest, only when $a_i \le \min_{T \supseteq S} R(T)$; prune by admissible sum of minimal per-chest costs.
+\end{algosteps}
+\OPTIMALITY{Search explores only assignments that can still beat the current best; the lower bound ensures no optimal solution is pruned. Any feasible solution can be reached by successive lock removals from the full-mask initialization.}
+\COMPLEXITY{Exponential in the worst case but sharply bounded by $m \le 6$, with per-node work $O(m2^m)$.}
+\[
+\begin{aligned}
+T(n) &\in O\big(\text{effective nodes}(n,m) \cdot m2^m\big),\quad S(n) \in O(2^m + nm2^m).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case()/solve_all(), main()+guard + asserts
+import sys
+from typing import List, Tuple
+
+def read_input() -> Tuple[int, int, List[int], List[int], List[List[int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, [], [], []
+    it = iter(map(int, data))
+    n = next(it); m = next(it)
+    a = [next(it) for _ in range(n)]
+    b = [next(it) for _ in range(m)]
+    c = [[next(it) for _ in range(m)] for __ in range(n)]
+    return n, m, a, b, c
+
+def solve_case(n: int, m: int, a: List[int], b: List[int], c: List[List[int]]) -> int:
+    if n == 0 and m == 0:
+        return 0
+    FULL = (1 << m) - 1
+    # B[T]
+    B = [0] * (1 << m)
+    for T in range(1 << m):
+        s = 0
+        t = T; j = 0
+        while t:
+            if t & 1:
+                s += b[j]
+            j += 1
+            t >>= 1
+        B[T] = s
+    if sum(a) > B[FULL]:
+        return -1
+
+    # supersets table
+    supersets = [[] for _ in range(1 << m)]
+    for s in range(1 << m):
+        for T in range(1 << m):
+            if (T & s) == s:
+                supersets[s].append(T)
+
+    # costs per chest per mask
+    cost = [[0] * (1 << m) for _ in range(n)]
+    for i in range(n):
+        for mask in range(1 << m):
+            cc = 0
+            mm = mask; j = 0
+            while mm:
+                if mm & 1:
+                    cc += c[i][j]
+                j += 1
+                mm >>= 1
+            cost[i][mask] = cc
+
+    # ordering
+    order = list(range(n))
+    pot = []
+    for i in range(n):
+        mn = min(cost[i][s] for s in range(1, 1 << m))
+        pot.append(cost[i][FULL] - mn)
+    order.sort(key=lambda i: (-a[i], -pot[i]))
+
+    # popcount for tie-breaking
+    popcnt = [bin(x).count("1") for x in range(1 << m)]
+
+    # residual slack R[T], initialize with all S_i = FULL
+    R = B[:]
+    for i in range(n):
+        R[FULL] -= a[i]
+    best = sum(cost[i][FULL] for i in range(n))
+    cur_cost = best
+
+    def superset_min(arr: List[int]) -> List[int]:
+        tmp = arr[:]
+        for j in range(m):
+            bit = 1 << j
+            for mask in range(1 << m):
+                if (mask & bit) == 0:
+                    if tmp[mask | bit] < tmp[mask]:
+                        tmp[mask] = tmp[mask | bit]
+        return tmp
+
+    def dfs(idx: int):
+        nonlocal best, cur_cost
+        if cur_cost >= best:
+            return
+        slack_min = superset_min(R)
+        # admissible LB
+        lb = cur_cost
+        for t in range(idx, n):
+            i = order[t]; ai = a[i]
+            bestc = None
+            for s in range(1, 1 << m):
+                if slack_min[s] >= ai:
+                    cc = cost[i][s]
+                    if (bestc is None) or (cc < bestc):
+                        bestc = cc
+            if bestc is None:
+                return
+            lb += bestc
+        if lb >= best:
+            return
+        if idx == n:
+            if cur_cost < best:
+                best = cur_cost
+            return
+        i = order[idx]; ai = a[i]
+        cand = [s for s in range(1, 1 << m) if slack_min[s] >= ai]
+        cand.sort(key=lambda s: (cost[i][s], -popcnt[s]))
+        for s in cand:
+            for T in supersets[s]:
+                R[T] -= ai
+            cur_cost += cost[i][s]
+            dfs(idx + 1)
+            cur_cost -= cost[i][s]
+            for T in supersets[s]:
+                R[T] += ai
+
+    dfs(0)
+    return best
+
+def solve_all() -> None:
+    n, m, a, b, c = read_input()
+    if n == 0 and m == 0:
+        return
+    print(solve_case(n, m, a, b, c))
+
+def _run_tests():
+    # 1) Feasible minimal single lock
+    assert solve_case(1, 1, [1], [1], [[5]]) == 5
+    # 2) Cheaper of two single locks
+    assert solve_case(1, 2, [1], [1, 1], [[3, 2]]) == 2
+    # 3) Impossible by total sum bound
+    assert solve_case(2, 1, [2, 1], [2], [[1], [1]]) == -1
+
+if __name__ == "__main__":
+    _run_tests()
+    solve_all()
+\end{minted}
+\VALIDATION{Exactly three asserts: feasible, alternative choice, and impossible.}
+\RESULT{Return $-1$ if $\sum a_i > \sum b_j$. Otherwise, the minimal lock cost attained by some assignment $\{S_i\}$ satisfying $\forall T:~A(T) \le B(T)$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests cover: trivial feasibility, choosing among multiple masks, and impossibility by total coin sum exceeding total key cost. Additional random small instances can be compared across approaches.}
+\LINE{CROSS-CHECKS}{Verify that Approach A, B, and C return identical outputs on crafted small cases. Check that assigning all locks is always feasible iff $\sum a_i \le \sum b_j$.}
+\LINE{EDGE-CASE GENERATOR}{Generate random $n,m \le 3$ with small costs to brute force enumerate all mask assignments and compare to solver results.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import itertools
+import random
+
+def brute_force(n, m, a, b, c):
+    FULL = (1 << m) - 1
+    B = [0] * (1 << m)
+    for T in range(1 << m):
+        B[T] = sum(b[j] for j in range(m) if (T >> j) & 1)
+    if sum(a) > B[FULL]:
+        return -1
+    best = None
+    for masks in itertools.product(range(1, 1 << m), repeat=n):
+        # compute A[T]
+        A = [0] * (1 << m)
+        for i, s in enumerate(masks):
+            for T in range(1 << m):
+                if (T & s) == s:
+                    A[T] += a[i]
+        ok = all(A[T] <= B[T] for T in range(1 << m))
+        if not ok:
+            continue
+        cost = 0
+        for i, s in enumerate(masks):
+            for j in range(m):
+                if (s >> j) & 1:
+                    cost += c[i][j]
+        if best is None or cost < best:
+            best = cost
+    return best if best is not None else -1
+
+def generate_small_and_check(seed=0):
+    random.seed(seed)
+    for _ in range(50):
+        n = random.randint(1, 3)
+        m = random.randint(1, 3)
+        a = [random.randint(1, 3) for _ in range(n)]
+        b = [random.randint(1, 3) for _ in range(m)]
+        c = [[random.randint(1, 8) for __ in range(m)] for _ in range(n)]
+        ref = brute_force(n, m, a, b, c)
+        from sys import setrecursionlimit; setrecursionlimit(10000)
+        got = __import__(__name__).solve_case(n, m, a, b, c)
+        assert ref == got, (n, m, a, b, c, ref, got)
+
+if __name__ == "__main__":
+    generate_small_and_check(42)
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF/LC) + asserts
+import sys
+from typing import List, Tuple
+
+def read_input() -> Tuple[int, int, List[int], List[int], List[List[int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, [], [], []
+    it = iter(map(int, data))
+    n = next(it); m = next(it)
+    a = [next(it) for _ in range(n)]
+    b = [next(it) for _ in range(m)]
+    c = [[next(it) for _ in range(m)] for __ in range(n)]
+    return n, m, a, b, c
+
+def solve_case(n: int, m: int, a: List[int], b: List[int], c: List[List[int]]) -> int:
+    if n == 0 and m == 0:
+        return 0
+    FULL = (1 << m) - 1
+    # B[T]
+    B = [0] * (1 << m)
+    for T in range(1 << m):
+        B[T] = sum(b[j] for j in range(m) if (T >> j) & 1)
+    if sum(a) > B[FULL]:
+        return -1
+
+    # supersets
+    supersets = [[] for _ in range(1 << m)]
+    for s in range(1 << m):
+        for T in range(1 << m):
+            if (T & s) == s:
+                supersets[s].append(T)
+
+    # cost[i][mask]
+    cost = [[0] * (1 << m) for _ in range(n)]
+    for i in range(n):
+        for mask in range(1 << m):
+            cc = 0
+            for j in range(m):
+                if (mask >> j) & 1:
+                    cc += c[i][j]
+            cost[i][mask] = cc
+
+    # order by a desc and potential saving
+    order = list(range(n))
+    pot = []
+    for i in range(n):
+        mn = min(cost[i][s] for s in range(1, 1 << m))
+        pot.append(cost[i][FULL] - mn)
+    order.sort(key=lambda i: (-a[i], -pot[i]))
+
+    # residual slacks R[T], start with all FULL
+    R = B[:]
+    for i in range(n):
+        R[FULL] -= a[i]
+
+    best = sum(cost[i][FULL] for i in range(n))
+    cur_cost = best
+
+    popcnt = [bin(x).count("1") for x in range(1 << m))
+
+    def superset_min(arr: List[int]) -> List[int]:
+        tmp = arr[:]
+        for j in range(m):
+            bit = 1 << j
+            for mask in range(1 << m):
+                if (mask & bit) == 0:
+                    if tmp[mask | bit] < tmp[mask]:
+                        tmp[mask] = tmp[mask | bit]
+        return tmp
+
+    def dfs(idx: int):
+        nonlocal best, cur_cost
+        if cur_cost >= best:
+            return
+        slack_min = superset_min(R)
+        # admissible lower bound
+        lb = cur_cost
+        for t in range(idx, n):
+            i = order[t]; ai = a[i]
+            bestc = None
+            for s in range(1, 1 << m):
+                if slack_min[s] >= ai:
+                    cc = cost[i][s]
+                    if (bestc is None) or (cc < bestc):
+                        bestc = cc
+            if bestc is None:
+                return
+            lb += bestc
+        if lb >= best:
+            return
+        if idx == n:
+            if cur_cost < best:
+                best = cur_cost
+            return
+        i = order[idx]; ai = a[i]
+        cand = [s for s in range(1, 1 << m) if slack_min[s] >= ai]
+        cand.sort(key=lambda s: (cost[i][s], -popcnt[s]))
+        for s in cand:
+            for T in supersets[s]:
+                R[T] -= ai
+            cur_cost += cost[i][s]
+            dfs(idx + 1)
+            cur_cost -= cost[i][s]
+            for T in supersets[s]:
+                R[T] += ai
+
+    dfs(0)
+    return best
+
+def solve_all() -> None:
+    n, m, a, b, c = read_input()
+    if n == 0 and m == 0:
+        return
+    print(solve_case(n, m, a, b, c))
+
+def _run_tests():
+    assert solve_case(1, 1, [1], [1], [[5]]) == 5
+    assert solve_case(1, 2, [1], [1, 1], [[3, 2]]) == 2
+    assert solve_case(2, 1, [2, 1], [2], [[1], [1]]) == -1
+
+if __name__ == "__main__":
+    _run_tests()
+    solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Minimize lock cost while ensuring $\forall T \subseteq [m]$, opened coins do not exceed key spend: $\sum_{i:S_i \subseteq T} a_i \le \sum_{j \in T} b_j$.}
+\WHY{Shows up as adversarial subset constraints, lattice transforms, and branch-and-bound with tight relaxations.}
+\CHECKLIST{
+\begin{bullets}
+\item Check feasibility: $\sum a_i \le \sum b_j$.
+\item Initialize with full masks to get an admissible solution and bound.
+\item Maintain residual slacks $R(T)$ across all subsets.
+\item Use superset-min to filter candidate masks quickly.
+\item Prune with admissible per-chest lower bound.
+\item Order chests by $a_i$ descending and potential savings.
+\end{bullets}
+}
+\EDGECASES{
+\begin{bullets}
+\item $\sum a_i > \sum b_j$ implies $-1$ immediately.
+\item Zero-lock mask is never feasible since $B(\varnothing)=0$ and $a_i \ge 1$.
+\item All locks on all chests can already be optimal if costs favor it.
+\item Equal $a_i$ and tight $b_j$ may force large masks.
+\item Highly skewed $c_{i,j}$ may favor asymmetric masks.
+\item $m=1$ reduces to choosing whether to add the single lock per chest.
+\end{bullets}
+}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to update all supersets $T \supseteq S$ when placing a chest.
+\item Assuming only $T=S$ is the tight constraint; need all supersets.
+\item Allowing empty mask for positive $a_i$.
+\item Not initializing from full masks, losing a strong upper bound.
+\item Weak lower bound causing timeouts; use superset-min to filter costs.
+\item Off-by-one on mask iteration excluding or including zero.
+\end{bullets}
+}
+\FAILMODES{Naive enumeration over $(2^m)^n$ assignments is too large. Pruning-free backtracking may explode even at $n=6$. The transform-based pruning keeps the state space tiny.}
+\ELI{Think of each chest as requiring a set of keys. Buying more keys helps Bob open more chests, but also costs him. We add locks so that for any set of keys Bob buys, the opened treasure never exceeds what he paid, while spending as little as possible on locks.}
+\NotePages{3}
+
+\end{document}

@@ -1,0 +1,2027 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]            % allow multi-line displays to break
+\setlength{\jot}{7pt}             % extra space between aligned lines
+\setlength{\emergencystretch}{8em}% give paragraphs room to wrap
+\sloppy                           % last-resort line breaking to avoid overfull boxes
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Moore-Penrose Pseudoinverse}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+Given $A\in\mathbb{R}^{m\times n}$, the Moore\textendash Penrose pseudoinverse
+$A^{+}\in\mathbb{R}^{n\times m}$ is the unique matrix satisfying the four
+Penrose equations:
+$AA^{+}A=A$, $A^{+}AA^{+}=A^{+}$, $(AA^{+})^{\top}=AA^{+}$,
+$(A^{+}A)^{\top}=A^{+}A$. It acts as a generalized inverse on the range of $A$.
+The domain is all real (or complex) matrices; the codomain is the set of matrices
+with compatible shape $n\times m$.
+}
+\WHY{
+$A^{+}$ provides canonical solutions to inconsistent or under/overdetermined
+linear systems. It yields the least\textendash squares solution with minimum
+Euclidean norm, constructs orthogonal projectors onto $\mathcal{R}(A)$ and
+$\mathcal{R}(A^{\top})$, and is fundamental in numerical linear algebra,
+statistics (OLS), control (least\textendash norm controls), and signal
+processing (reconstruction from projections).
+}
+\HOW{
+1. Assume $A$ admits a singular value decomposition (SVD) $A=U\Sigma V^{\top}$. 
+2. Define $\Sigma^{+}$ by inverting nonzero singular values and transposing the
+shape. 
+3. Set $A^{+}=V\Sigma^{+}U^{\top}$. 
+4. Verify the Penrose equations; deduce projection properties and the least
+squares/minimum\textendash norm characterization $x^{\star}=A^{+}b$.
+}
+\ELI{
+Think of $A$ as a machine that squashes, stretches, and rotates space. Where it
+squashes to zero you cannot invert. The pseudoinverse reverses all the
+stretch/rotate parts and does the best possible thing on the squashed parts:
+it picks the smallest\textendash length answer consistent with $Ax\approx b$.
+}
+\SCOPE{
+Valid for all $A\in\mathbb{R}^{m\times n}$ (or $\mathbb{C}^{m\times n}$).
+If $A$ is full column rank, $A^{+}=(A^{\top}A)^{-1}A^{\top}$. If full row rank,
+$A^{+}=A^{\top}(AA^{\top})^{-1}$. Degenerate cases with zero singular values are
+well\textendash handled via SVD. Sensitivity increases when singular values are
+near zero.
+}
+\CONFUSIONS{
+Inverse vs. pseudoinverse: $A^{-1}$ exists only for square nonsingular $A$,
+while $A^{+}$ always exists. Least\textendash squares solution vs. any solution:
+$x=A^{+}b$ is the minimum\textendash norm solution among all least\textendash
+squares minimizers. Normal equations $(A^{\top}A)x=A^{\top}b$ can be singular;
+$A^{+}$ still resolves the solution canonically.
+}
+\APPLICATIONS{
+\begin{bullets}
+\item Mathematical foundations: orthogonal projections, decompositions via SVD.
+\item Computational modeling: stable least\textendash squares and regularization.
+\item Engineering: control allocation and kinematics with redundancy.
+\item Statistics: ordinary least squares and hat matrix $H=AA^{+}$.
+\end{bullets}
+}
+\textbf{ANALYTIC STRUCTURE.}
+$A^{+}$ is defined by orthogonal invariance: $(Q_1AQ_2)^{+}=Q_2^{\top}A^{+}Q_1^{\top}$
+for orthogonal $Q_1,Q_2$. It is linear in neither $A$ nor $A^{\top}$, but is
+continuous in $A$ and analytic in entries away from rank changes. It encodes
+orthogonal projectors $P_{\mathcal{R}(A)}=AA^{+}$ and
+$P_{\mathcal{R}(A^{\top})}=A^{+}A$ which are symmetric idempotents.
+
+\textbf{CANONICAL LINKS.}
+SVD provides the constructive formula; projections give geometric insight; the
+least\textendash squares characterizations tie to normal equations and OLS; Tikhonov
+regularization limits recover $A^{+}$.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Underdetermined or overdetermined linear systems with Euclidean loss.
+\item Requests for minimum\textendash norm solutions or orthogonal projections of $b$.
+\item Expressions like $(A^{\top}A)^{-1}A^{\top}$ or $A^{\top}(AA^{\top})^{-1}$.
+\item Sensitivity to small singular values or regularization limits.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate to $Ax\approx b$ or projection onto $\mathcal{R}(A)$.
+\item Identify rank and choose SVD or full\textendash rank closed form.
+\item Compute $A^{+}$ and apply $x^{\star}=A^{+}b$ and projectors.
+\item Interpret residual as orthogonal component and solution norm minimality.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Orthogonal invariance of singular values; projector idempotence and symmetry;
+rank equals $\operatorname{tr}(AA^{+})=\operatorname{tr}(A^{+}A)$.
+
+\textbf{EDGE INTUITION.}
+As singular values $\sigma_i\to 0$, entries of $A^{+}$ along those directions
+blow up, revealing ill\textendash conditioning. With Tikhonov parameter
+$\lambda\downarrow 0$, regularized inverses converge to $A^{+}$.
+
+\section{Glossary}
+\glossx{Moore\textendash Penrose pseudoinverse}
+{The unique matrix $A^{+}$ satisfying the four Penrose equations.}
+{Canonical solution for least\textendash squares and minimum\textendash norm
+inverse problems; defines orthogonal projectors onto ranges.}
+{Compute by SVD: $A=U\Sigma V^{\top}$, invert nonzero singular values in
+$\Sigma$ to get $\Sigma^{+}$, then $A^{+}=V\Sigma^{+}U^{\top}$.}
+{Like reversing a machine where possible and taking the smallest effort where
+perfect reversal is impossible.}
+{Pitfall: using normal equations when $A^{\top}A$ is singular; $A^{+}$ is still
+well defined and should be used.}
+
+\glossx{Orthogonal projector}
+{A symmetric idempotent matrix $P$ with $P^2=P=P^{\top}$.}
+{Encodes orthogonal decomposition of a vector into a subspace and its orthogonal
+complement; central in least\textendash squares.}
+{For $A$, $P_{\mathcal{R}(A)}=AA^{+}$ and $P_{\mathcal{R}(A^{\top})}=A^{+}A$.}
+{Projecting is like casting a shadow onto a flat wall.}
+{Example: the OLS hat matrix $H=X(X^{+})$ maps $y$ to fitted values $Hy$.}
+
+\glossx{Singular value decomposition (SVD)}
+{Factorization $A=U\Sigma V^{\top}$ with $U,V$ orthogonal and $\Sigma$ diagonal
+nonnegative.}
+{Reveals intrinsic geometry; enables stable computation of $A^{+}$.}
+{Compute $U,V$ via eigen\textendash decompositions of $AA^{\top},A^{\top}A$.}
+{Stretch\textendash rotate\textendash squash view: $\Sigma$ scales along axes.}
+{Pitfall: forgetting to transpose shape when forming $\Sigma^{+}$.}
+
+\glossx{Minimum\textendash norm solution}
+{Among all $x$ minimizing $\lVert Ax-b\rVert_2$, pick the one with smallest
+$\lVert x\rVert_2$.}
+{Selects a unique and stable solution in underdetermined problems.}
+{Given by $x^{\star}=A^{+}b$.}
+{Choose the shortest path among all equally close points.}
+{Example: for $Ax=b$ with infinite solutions, $A^{+}b$ has least Euclidean norm.}
+
+\section{Symbol Ledger}
+\varmapStart
+\var{A\in\mathbb{R}^{m\times n}}{data or system matrix.}
+\var{A^{+}\in\mathbb{R}^{n\times m}}{Moore\textendash Penrose pseudoinverse.}
+\var{U\in\mathbb{R}^{m\times m},V\in\mathbb{R}^{n\times n}}{orthogonal factors.}
+\var{\Sigma\in\mathbb{R}^{m\times n}}{diagonal with singular values $\sigma_i$.}
+\var{\Sigma^{+}\in\mathbb{R}^{n\times m}}{pseudoinverse diagonal.}
+\var{r}{rank of $A$, number of positive singular values.}
+\var{\mathcal{R}(A)}{column space of $A$.}
+\var{\mathcal{N}(A)}{null space of $A$.}
+\var{P_{\mathcal{R}(A)}}{projector onto $\mathcal{R}(A)$.}
+\var{b\in\mathbb{R}^{m}}{right\textendash hand side vector.}
+\var{x\in\mathbb{R}^{n}}{unknown vector.}
+\var{\lambda}{regularization parameter, $\lambda>0$.}
+\var{\|\cdot\|_2,\|\cdot\|_F}{Euclidean and Frobenius norms.}
+\varmapEnd
+
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{Penrose Equations and Uniqueness}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For any $A\in\mathbb{R}^{m\times n}$ there exists a unique $A^{+}\in
+\mathbb{R}^{n\times m}$ such that
+\[
+AA^{+}A=A,\quad A^{+}AA^{+}=A^{+},\quad (AA^{+})^{\top}=AA^{+},\quad
+(A^{+}A)^{\top}=A^{+}A.
+\]
+\WHAT{
+Defines $A^{+}$ as the unique matrix satisfying the four Penrose equations,
+generalizing inversion to arbitrary rectangular or singular matrices.
+}
+\WHY{
+These equations encode generalized left/right inverse on the range and enforce
+orthogonal projection structure, ensuring existence and uniqueness for all $A$.
+}
+\FORMULA{
+\[
+\text{Find }X\in\mathbb{R}^{n\times m}\text{ such that }
+AXA=A,\ XAX=X,\ (AX)^{\top}=AX,\ (XA)^{\top}=XA.
+\]
+Then $X=A^{+}$ and it is unique.
+}
+\CANONICAL{
+Matrices over $\mathbb{R}$ or $\mathbb{C}$. Shapes $m\times n$ and $n\times m$.
+No rank assumption needed. Orthogonal invariance holds.
+}
+\PRECONDS{
+\begin{bullets}
+\item No preconditions on $A$. The SVD exists for all $A$.
+\item The four equations define at most one solution.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $X$ and $Y$ both satisfy the four Penrose equations for $A$, then $X=Y$.
+\end{lemma}
+\begin{proof}
+Using $XAX=X$ and $YAY=Y$,
+\[
+X= XAX = XAY = (XA)Y.
+\]
+Also $Y= YAX = (YA)X$. Symmetry of $XA$ and $YA$ gives
+\[
+\|X-Y\|_F^2 = \langle X-Y, X-Y\rangle = \langle (XA)Y-X,(XA)Y-Y\rangle=0,
+\]
+since $(XA)$ is a projector onto $\mathcal{R}(A^{\top})$ and $Y$ coincides on
+that subspace. A standard direct route is
+\[
+X=(XA)X=(XA)Y=Y, 
+\]
+where $(XA)X=X$ and $(XA)Y=Y$ follow from $XAX=X$ and $YAY=Y$.
+Thus $X=Y$.\qedhere
+\]
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (SVD existence):}\ &A=U\Sigma V^{\top},\ U,V\ \text{orthogonal}.\\
+\text{Step 2 (Construct candidate):}\ &X:=V\Sigma^{+}U^{\top}.\\
+\text{Step 3 (Check equations):}\ &AXA=U\Sigma V^{\top}V\Sigma^{+}U^{\top}
+U\Sigma V^{\top}=U\Sigma\Sigma^{+}\Sigma V^{\top}=U\Sigma V^{\top}=A.\\
+&XAX=V\Sigma^{+}\Sigma\Sigma^{+}U^{\top}=V\Sigma^{+}U^{\top}=X.\\
+&(AX)^{\top}=(U\Sigma\Sigma^{+}U^{\top})^{\top}=U\Sigma\Sigma^{+}U^{\top}=AX.\\
+&(XA)^{\top}=(V\Sigma^{+}\Sigma V^{\top})^{\top}=V\Sigma^{+}\Sigma V^{\top}=XA.\\
+\text{Step 4 (Conclude):}\ &X\ \text{satisfies Penrose equations. By uniqueness,
+}\ X=A^{+}.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute or reason about SVD of $A$.
+\item Form $A^{+}$ and projectors $AA^{+},A^{+}A$.
+\item Apply to least\textendash squares or generalized inverse needs.
+\item Validate via Penrose equations.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item $AA^{+}$ is the orthogonal projector onto $\mathcal{R}(A)$.
+\item $A^{+}A$ is the orthogonal projector onto $\mathcal{R}(A^{\top})$.
+\item If $A$ is invertible: $A^{+}=A^{-1}$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $\sigma_{\min}\to 0$, $A^{+}$ entries along that singular vector blow up.
+\item If rank is full, formulas reduce to classical left/right inverses.
+\end{bullets}
+}
+\INPUTS{$A\in\mathbb{R}^{m\times n}$.}
+\RESULT{
+$A^{+}$ exists uniquely and equals $V\Sigma^{+}U^{\top}$ for any SVD
+$A=U\Sigma V^{\top}$. Projections: $AA^{+},A^{+}A$ are symmetric idempotents.
+}
+\PITFALLS{
+\begin{bullets}
+\item Confusing $A^{+}$ with any generalized inverse; Penrose imposes symmetry.
+\item Ignoring orthogonal invariance when simplifying.
+\end{bullets}
+}
+\ELI{
+$A^{+}$ is the only device that perfectly undoes what is undoable and makes the
+fairest choice for what cannot be undone.
+}
+
+\FormulaPage{2}{SVD Construction of $A^{+}$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+If $A=U\Sigma V^{\top}$ with $\Sigma=\operatorname{diag}(\sigma_1,\dots,
+\sigma_r,0,\dots)$, then
+\[
+A^{+}=V\Sigma^{+}U^{\top},\quad
+\Sigma^{+}=\operatorname{diag}(\sigma_1^{-1},\dots,\sigma_r^{-1},0,\dots).
+\]
+\WHAT{
+Explicit construction of $A^{+}$ from SVD by inverting nonzero singular values
+and swapping dimensions.
+}
+\WHY{
+Provides a numerically stable and orthogonally invariant way to compute
+$A^{+}$, revealing geometry and conditioning.
+}
+\FORMULA{
+\[
+A^{+}=V\Sigma^{+}U^{\top},\quad
+\Sigma^{+}_{ii}=
+\begin{cases}
+\sigma_i^{-1},& \sigma_i>0,\\
+0,& \sigma_i=0.
+\end{cases}
+\]
+}
+\CANONICAL{
+$U,V$ orthogonal; $\Sigma$ rectangular diagonal. Rank $r$ equals number of
+positive $\sigma_i$. Sorting $\sigma_i$ nonincreasing is standard.
+}
+\PRECONDS{
+\begin{bullets}
+\item An SVD exists for any real matrix.
+\item Numerical stability relies on accurate singular values.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For diagonal $\Sigma$, the matrix $\Sigma^{+}$ defined above satisfies the
+Penrose equations with $\Sigma$.
+\end{lemma}
+\begin{proof}
+Compute directly: $\Sigma\Sigma^{+}\Sigma=\Sigma$ and
+$\Sigma^{+}\Sigma\Sigma^{+}=\Sigma^{+}$ by diagonal multiplication with entries
+$\sigma_i(\sigma_i^{-1})\sigma_i=\sigma_i$ if $\sigma_i>0$ and $0$ otherwise.
+Symmetry follows since $\Sigma\Sigma^{+}$ and $\Sigma^{+}\Sigma$ are diagonal.
+Thus all four equations hold.\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}\ &A=U\Sigma V^{\top}.\\
+\text{Step 2:}\ &\text{Define }\Sigma^{+}\ \text{by inverting nonzero }\sigma_i.\\
+\text{Step 3:}\ &\text{Set }A^{+}=V\Sigma^{+}U^{\top}.\\
+\text{Step 4:}\ &AA^{+}A=U\Sigma V^{\top}V\Sigma^{+}U^{\top}U\Sigma V^{\top}
+=U\Sigma\Sigma^{+}\Sigma V^{\top}=A.\\
+&\text{Similarly for other Penrose equations, using the lemma.}
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute SVD numerically.
+\item Threshold tiny $\sigma_i$ if needed; set reciprocal for nonzero ones.
+\item Assemble $A^{+}$ and compute projections or solutions.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item If full column rank: $A^{+}=(A^{\top}A)^{-1}A^{\top}$.
+\item If full row rank: $A^{+}=A^{\top}(AA^{\top})^{-1}$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item As a $\sigma_i\downarrow 0$, the corresponding entry of $\Sigma^{+}$ grows.
+\item With rounding, use a tolerance to decide zero vs. nonzero singular values.
+\end{bullets}
+}
+\INPUTS{$U,\Sigma,V$ from SVD of $A$.}
+\RESULT{
+$A^{+}$ computed as $V\Sigma^{+}U^{\top}$ satisfies the Penrose equations and
+minimizes $\|Ax-b\|_2$ with minimum $\|x\|_2$.
+}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting the transpose order: $A^{+}=V\Sigma^{+}U^{\top}$, not
+$U\Sigma^{+}V^{\top}$.
+\item Not handling zero singular values correctly.
+\end{bullets}
+}
+\ELI{
+Invert the nonzero stretches and keep zero along crushed directions. Then
+rotate back to the original coordinates.
+}
+
+\FormulaPage{3}{Least Squares and Minimum-Norm Solution}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $b\in\mathbb{R}^m$, the vector $x^{\star}=A^{+}b$ solves
+\[
+\min_{x\in\mathbb{R}^{n}}\ \|Ax-b\|_2,
+\]
+and among all minimizers, it has minimal $\|x\|_2$. Moreover,
+$AA^{+}b$ is the orthogonal projection of $b$ onto $\mathcal{R}(A)$.
+\WHAT{
+Characterizes $A^{+}b$ as the unique least\textendash squares minimizer with
+smallest Euclidean norm and identifies fitted values as a projection.
+}
+\WHY{
+Provides a canonical and stable solution to inconsistent systems and quantifies
+the geometry of residuals and fits.
+}
+\FORMULA{
+\[
+x^{\star}=A^{+}b,\quad \hat{b}=AA^{+}b,\quad r=b-\hat{b}\perp \mathcal{R}(A).
+\]
+}
+\CANONICAL{
+Works for all $A$. If full column rank, solution matches normal equations
+$(A^{\top}A)x=A^{\top}b$. Otherwise the normal matrix is singular but $A^{+}$
+still defines $x^{\star}$.
+}
+\PRECONDS{
+\begin{bullets}
+\item None beyond $A,b$ given. Euclidean norm setting.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+$AA^{+}$ is the orthogonal projector onto $\mathcal{R}(A)$.
+\end{lemma}
+\begin{proof}
+$P:=AA^{+}$ is symmetric by a Penrose equation. Also $P^2=AA^{+}AA^{+}=AA^{+}$
+by $A^{+}AA^{+}=A^{+}$. Range$(P)\subseteq\mathcal{R}(A)$ and for any
+$y\in\mathcal{R}(A)$, $y=Ax$ for some $x$, then $Py=AA^{+}Ax=Ax=y$. Thus $P$
+projects orthogonally onto $\mathcal{R}(A)$.\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}\ &\hat{b}:=AA^{+}b\in\mathcal{R}(A),\ r:=b-\hat{b}\perp
+\mathcal{R}(A).\\
+\text{Step 2:}\ &\forall x,\ Ax-b=(Ax-\hat{b})+r,\ \text{with }
+Ax-\hat{b}\in\mathcal{R}(A).\\
+\text{Step 3:}\ &\|Ax-b\|_2^2=\|Ax-\hat{b}\|_2^2+\|r\|_2^2\ge \|r\|_2^2.\\
+\text{Step 4:}\ &\text{Equality at }x^{\star}=A^{+}b\ \text{since }AA^{+}b=\hat{b}.\\
+\text{Step 5:}\ &\text{If }x\ \text{is another minimizer, }
+Ax=\hat{b}. \text{Write }x=x^{\star}+z,\ Az=0.\\
+&\|x\|_2^2=\|x^{\star}\|_2^2+\|z\|_2^2\ge \|x^{\star}\|_2^2,\ \text{so minimum at }
+x^{\star}.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute $A^{+}$ or apply solver consistent with SVD.
+\item Form $\hat{b}=AA^{+}b$ and $r=b-\hat{b}$.
+\item Report $x^{\star}=A^{+}b$ and norms.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item If full column rank: $x^{\star}=(A^{\top}A)^{-1}A^{\top}b$.
+\item If full row rank: $x^{\star}=A^{\top}(AA^{\top})^{-1}b$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $b\in\mathcal{R}(A)$, residual $r=0$ and solutions coincide with exact
+solutions; pick minimal norm via $A^{+}b$.
+\item If $A=0$, then $x^{\star}=0$ and $\hat{b}=0$.
+\end{bullets}
+}
+\INPUTS{$A\in\mathbb{R}^{m\times n},\ b\in\mathbb{R}^{m}$.}
+\RESULT{
+$x^{\star}=A^{+}b$ uniquely minimizes $\|x\|_2$ among least\textendash squares
+minimizers. Fitted vector is $\hat{b}=AA^{+}b$.
+}
+\PITFALLS{
+\begin{bullets}
+\item Using arbitrary generalized inverses may break orthogonal projection and
+minimum\textendash norm properties.
+\item Confusing $A^{+}b$ with any solution of $Ax=b$ when inconsistent.
+\end{bullets}
+}
+\ELI{
+Fit the closest point on the reachable wall, then choose the shortest arm
+position that touches that point.
+}
+
+\FormulaPage{4}{Tikhonov Regularization Limits to $A^{+}$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For any $A\in\mathbb{R}^{m\times n}$,
+\[
+A^{+}=\lim_{\lambda\downarrow 0}(A^{\top}A+\lambda I)^{-1}A^{\top}
+=\lim_{\lambda\downarrow 0}A^{\top}(AA^{\top}+\lambda I)^{-1}.
+\]
+\WHAT{
+Represents $A^{+}$ as the limit of ridge\textendash regularized inverses of the
+normal or Gram matrices.
+}
+\WHY{
+Explains numerical stabilization and connects $A^{+}$ to Tikhonov
+regularization. Enables computation without explicit SVD in some contexts.
+}
+\FORMULA{
+\[
+A^{+}=\lim_{\lambda\downarrow 0}(A^{\top}A+\lambda I)^{-1}A^{\top}
+=\lim_{\lambda\downarrow 0}A^{\top}(AA^{\top}+\lambda I)^{-1}.
+\]
+}
+\CANONICAL{
+Either expression is valid for all shapes; the first is convenient when $n$ is
+small, the second when $m$ is small.
+}
+\PRECONDS{
+\begin{bullets}
+\item $\lambda>0$ so that the regularized matrices are invertible.
+\item Limits taken in operator or Frobenius norm.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Let $A=U\Sigma V^{\top}$. Then
+$(A^{\top}A+\lambda I)^{-1}A^{\top}
+=V(\Sigma^{\top}\Sigma+\lambda I)^{-1}\Sigma^{\top}U^{\top}$ and the limit as
+$\lambda\downarrow 0$ equals $V\Sigma^{+}U^{\top}$.
+\end{lemma}
+\begin{proof}
+$A^{\top}A=V\Sigma^{\top}\Sigma V^{\top}$ and $A^{\top}=V\Sigma^{\top}U^{\top}$,
+so
+\[
+(A^{\top}A+\lambda I)^{-1}A^{\top}
+=V(\Sigma^{\top}\Sigma+\lambda I)^{-1}\Sigma^{\top}U^{\top}.
+\]
+Since $\Sigma^{\top}\Sigma=\operatorname{diag}(\sigma_i^2,0,\dots)$, the block
+diagonal inverse multiplies $\Sigma^{\top}$ giving diagonal entries
+$\sigma_i/(\sigma_i^2+\lambda)$. As $\lambda\downarrow 0$, this tends to
+$1/\sigma_i$ for $\sigma_i>0$ and $0$ when $\sigma_i=0$, which is precisely
+$\Sigma^{+}$. Hence the limit is $V\Sigma^{+}U^{\top}=A^{+}$.\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}\ &A=U\Sigma V^{\top}.\\
+\text{Step 2:}\ &(A^{\top}A+\lambda I)^{-1}A^{\top}
+=V(\Sigma^{\top}\Sigma+\lambda I)^{-1}\Sigma^{\top}U^{\top}.\\
+\text{Step 3:}\ &\text{Diagonal action: }\frac{\sigma_i}{\sigma_i^2+\lambda}
+\to \begin{cases}\sigma_i^{-1},&\sigma_i>0,\\0,&\sigma_i=0.\end{cases}\\
+\text{Step 4:}\ &\text{Assemble limit }V\Sigma^{+}U^{\top}=A^{+}.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Choose side: $(A^{\top}A+\lambda I)^{-1}A^{\top}$ or its dual.
+\item Evaluate for small $\lambda$ to stabilize, then consider $\lambda\to 0$.
+\item Compare to SVD\textendash based $A^{+}$ as a check.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item For full column rank: equality holds for any $\lambda=0$ already.
+\item Dual identity with $A^{\top}(AA^{\top}+\lambda I)^{-1}$ is symmetric.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item Finite $\lambda$ yields ridge solutions $x_{\lambda}=(A^{\top}A+\lambda I)^{-1}
+A^{\top}b$ converging to $A^{+}b$.
+\item If $A=0$, both limits give $0$.
+\end{bullets}
+}
+\INPUTS{$A,\ \lambda>0$.}
+\RESULT{
+$A^{+}$ is recovered as $\lambda\downarrow 0$ from either regularized form.
+}
+\PITFALLS{
+\begin{bullets}
+\item Taking $\lambda\to 0$ numerically without controlling rounding can be
+unstable; prefer SVD or robust solvers.
+\item Confusing which side to regularize for tall vs. wide matrices.
+\end{bullets}
+}
+\ELI{
+Add a tiny cushion to make inversion safe, then gently remove the cushion to
+reveal the true pseudoinverse.
+}
+
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{Rank-1 $2\times 2$ pseudoinverse and projection}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Compute $A^{+}$ for $A=\begin{bmatrix}1&1\\1&1\end{bmatrix}$ and find the
+least\textendash squares solution to $Ax=b$ with $b=\begin{bmatrix}2\\1\end{bmatrix}$.
+\PROBLEM{
+Exploit SVD or rank\textendash 1 structure; verify $AA^{+}$ projector and compute
+$x^{\star}=A^{+}b$ explicitly.
+}
+\MODEL{
+\[
+A=\begin{bmatrix}1&1\\1&1\end{bmatrix}=uu^{\top},\ u=\tfrac{1}{\sqrt{2}}
+\begin{bmatrix}1\\1\end{bmatrix}\cdot 2.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Real arithmetic; Euclidean norm.
+\end{bullets}
+}
+\varmapStart
+\var{A}{system matrix}
+\var{A^{+}}{pseudoinverse}
+\var{b}{right\textendash hand side}
+\var{x^{\star}}{min\textendash norm least\textendash squares solution}
+\varmapEnd
+\WHICHFORMULA{
+SVD construction and projection property: $x^{\star}=A^{+}b$, $\hat{b}=AA^{+}b$.
+}
+\GOVERN{
+\[
+A^{+}=V\Sigma^{+}U^{\top},\quad \hat{b}=AA^{+}b.
+\]
+}
+\INPUTS{$A=\begin{bmatrix}1&1\\1&1\end{bmatrix},\ b=\begin{bmatrix}2\\1\end{bmatrix}$.}
+\DERIVATION{
+\begin{align*}
+\text{Step 1: SVD of }A&:\ A\ \text{has }r=1,\ \sigma_1=2,\ u_1=\tfrac{1}{\sqrt2}
+\begin{bmatrix}1\\1\end{bmatrix},\ v_1=u_1.\\
+U&=[u_1,u_2],\ V=[v_1,v_2],\ \Sigma=\operatorname{diag}(2,0).\\
+\text{Step 2: }A^{+}&=V\Sigma^{+}U^{\top}=v_1u_1^{\top}\cdot \tfrac{1}{2}\cdot 2
+= u_1u_1^{\top}=\tfrac{1}{2}\begin{bmatrix}1&1\\1&1\end{bmatrix}.\\
+\text{Step 3: }x^{\star}&=A^{+}b=\tfrac{1}{2}\begin{bmatrix}1&1\\1&1\end{bmatrix}
+\begin{bmatrix}2\\1\end{bmatrix}=\tfrac{1}{2}\begin{bmatrix}3\\3\end{bmatrix}
+=\begin{bmatrix}1.5\\1.5\end{bmatrix}.\\
+\text{Step 4: }\hat{b}&=AA^{+}b=A x^{\star}=
+\begin{bmatrix}1&1\\1&1\end{bmatrix}\begin{bmatrix}1.5\\1.5\end{bmatrix}
+=\begin{bmatrix}3\\3\end{bmatrix}.\\
+\text{Step 5: Residual }r&=b-\hat{b}=\begin{bmatrix}-1\\-2\end{bmatrix}.
+\text{ Check }r\perp \mathcal{R}(A)=\operatorname{span}\{(1,1)^{\top}\}.\\
+&(-1,-2)\cdot(1,1)=-3\ne 0\ \text{contradiction?}\\
+\text{Fix:}\ &\text{We computed }\hat{b}=Ax^{\star}=\begin{bmatrix}3\\3\end{bmatrix},
+\text{ so }r=b-\hat{b}=\begin{bmatrix}-1\\-2\end{bmatrix}.\\
+&\text{But }\mathcal{R}(A)=\operatorname{span}\{(1,1)^{\top}\}.\
+(-1,-2)\cdot(1,1)=-3\ne 0.\\
+\text{Step 6:}\ &\text{Identify mistake: }A^{+}=\tfrac{1}{2}A
+\Rightarrow AA^{+}=\tfrac{1}{2}AA=\tfrac{1}{2}\begin{bmatrix}2&2\\2&2\end{bmatrix}
+=\begin{bmatrix}1&1\\1&1\end{bmatrix},\\
+&\text{which is not a projector.}\\
+\text{Correct Step 2: }&A=2u_1u_1^{\top}\ \Rightarrow A^{+}=\tfrac{1}{2}u_1u_1^{\top}
+=\tfrac{1}{4}\begin{bmatrix}1&1\\1&1\end{bmatrix}.\\
+\text{Step 3: }x^{\star}&=A^{+}b=\tfrac{1}{4}\begin{bmatrix}3\\3\end{bmatrix}
+=\begin{bmatrix}0.75\\0.75\end{bmatrix}.\\
+\text{Step 4: }\hat{b}&=A x^{\star}=2u_1u_1^{\top}\cdot 0.75\cdot
+\begin{bmatrix}1\\1\end{bmatrix}/\sqrt2\\
+&=2u_1(u_1^{\top}x^{\star})=2u_1\cdot ( \sqrt2\cdot 0.75/\sqrt2)=
+1.5\,u_1=\begin{bmatrix}1.5\\1.5\end{bmatrix}.\\
+\text{Step 5: }r&=b-\hat{b}=\begin{bmatrix}0.5\\-0.5\end{bmatrix},\
+r\cdot(1,1)=0,\ \text{ok}.
+\end{align*}
+}
+\RESULT{
+$A^{+}=\tfrac{1}{4}\begin{bmatrix}1&1\\1&1\end{bmatrix}$,
+$x^{\star}=\begin{bmatrix}0.75\\0.75\end{bmatrix}$,
+$\hat{b}=\begin{bmatrix}1.5\\1.5\end{bmatrix}$.
+}
+\UNITCHECK{
+$A$ is $2\times 2$, $A^{+}$ also $2\times 2$. Projector is symmetric idempotent.}
+\EDGECASES{
+\begin{bullets}
+\item If $b\parallel (1,1)$, residual is zero.
+\item If $b\perp (1,1)$, fitted value is zero.
+\end{bullets}
+}
+\ALTERNATE{
+Direct formula for rank\textendash 1: if $A=uv^{\top}$ with $u,v\ne 0$, then
+$A^{+}=\frac{1}{\|u\|_2^2\|v\|_2^2}vu^{\top}$.
+}
+\VALIDATION{
+\begin{bullets}
+\item Check $AA^{+}A=A$ and symmetry numerically.
+\item Verify $r\perp \mathcal{R}(A)$ by dot product.
+\end{bullets}
+}
+\INTUITION{
+All action lies along $(1,1)$; projection puts $b$ onto that line, and the
+solution picks equal coordinates with minimal length.
+}
+\CANONICAL{
+\begin{bullets}
+\item $A^{+}=\frac{1}{\sigma_1}u_1v_1^{\top}$ for rank\textendash 1 SVD.
+\item $AA^{+}$ is the projector onto $\operatorname{span}\{u_1\}$.
+\end{bullets}
+}
+
+\ProblemPage{2}{Tall full column rank: verify closed form}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A=\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix}$, show that
+$A^{+}=(A^{\top}A)^{-1}A^{\top}$ and compute $A^{+}$.
+\PROBLEM{
+Demonstrate the full column rank identity and compute numerically.
+}
+\MODEL{
+\[
+A\in\mathbb{R}^{3\times 2},\ \operatorname{rank}(A)=2.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Full column rank so $(A^{\top}A)$ invertible.
+\end{bullets}
+}
+\varmapStart
+\var{A}{tall, full column rank}
+\var{A^{+}}{pseudoinverse}
+\varmapEnd
+\WHICHFORMULA{
+Full column rank equivalence: $A^{+}=(A^{\top}A)^{-1}A^{\top}$.
+}
+\GOVERN{
+\[
+A^{+}=(A^{\top}A)^{-1}A^{\top}.
+\]
+}
+\INPUTS{$A$ as given.}
+\DERIVATION{
+\begin{align*}
+A^{\top}A&=\begin{bmatrix}1&0&1\\0&1&1\end{bmatrix}
+\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix}
+=\begin{bmatrix}2&1\\1&2\end{bmatrix}.\\
+(A^{\top}A)^{-1}&=\frac{1}{3}\begin{bmatrix}2&-1\\-1&2\end{bmatrix}.\\
+A^{\top}&=\begin{bmatrix}1&0&1\\0&1&1\end{bmatrix}.\\
+A^{+}&=\frac{1}{3}\begin{bmatrix}2&-1\\-1&2\end{bmatrix}
+\begin{bmatrix}1&0&1\\0&1&1\end{bmatrix}
+=\frac{1}{3}\begin{bmatrix}2&-1&1\\-1&2&1\end{bmatrix}.
+\end{align*}
+}
+\RESULT{
+$A^{+}=\frac{1}{3}\begin{bmatrix}2&-1&1\\-1&2&1\end{bmatrix}$.
+}
+\UNITCHECK{
+$A^{+}$ is $2\times 3$, matching shape $n\times m$.
+}
+\EDGECASES{
+\begin{bullets}
+\item If rows became dependent, formula would fail; use SVD instead.
+\end{bullets}
+}
+\ALTERNATE{
+Compute SVD numerically and form $V\Sigma^{+}U^{\top}$ to confirm equality.
+}
+\VALIDATION{
+\begin{bullets}
+\item Verify $AA^{+}A=A$ via multiplication.
+\end{bullets}
+}
+\INTUITION{
+Full column rank makes normal equations well posed; the left inverse exists.
+}
+\CANONICAL{
+\begin{bullets}
+\item $A^{+}$ equals left inverse on $\mathcal{R}(A)$ for full column rank.
+\end{bullets}
+}
+
+\ProblemPage{3}{Wide full row rank: verify closed form}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A=\begin{bmatrix}1&0&1\\0&1&1\end{bmatrix}$, show that
+$A^{+}=A^{\top}(AA^{\top})^{-1}$ and compute $A^{+}$.
+\PROBLEM{
+Demonstrate the full row rank identity and compute numerically.
+}
+\MODEL{
+\[
+A\in\mathbb{R}^{2\times 3},\ \operatorname{rank}(A)=2.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Full row rank so $(AA^{\top})$ invertible.
+\end{bullets}
+}
+\varmapStart
+\var{A}{wide, full row rank}
+\var{A^{+}}{pseudoinverse}
+\varmapEnd
+\WHICHFORMULA{
+Full row rank equivalence: $A^{+}=A^{\top}(AA^{\top})^{-1}$.
+}
+\GOVERN{
+\[
+A^{+}=A^{\top}(AA^{\top})^{-1}.
+\]
+}
+\INPUTS{$A$ as given.}
+\DERIVATION{
+\begin{align*}
+AA^{\top}&=\begin{bmatrix}1&0&1\\0&1&1\end{bmatrix}
+\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix}
+=\begin{bmatrix}2&1\\1&2\end{bmatrix}.\\
+(AA^{\top})^{-1}&=\frac{1}{3}\begin{bmatrix}2&-1\\-1&2\end{bmatrix}.\\
+A^{\top}&=\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix}.\\
+A^{+}&=\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix}
+\frac{1}{3}\begin{bmatrix}2&-1\\-1&2\end{bmatrix}
+=\frac{1}{3}\begin{bmatrix}2&-1\\-1&2\\1&1\end{bmatrix}.
+\end{align*}
+}
+\RESULT{
+$A^{+}=\frac{1}{3}\begin{bmatrix}2&-1\\-1&2\\1&1\end{bmatrix}$.
+}
+\UNITCHECK{
+$A^{+}$ is $3\times 2$, matching $n\times m$.
+}
+\EDGECASES{
+\begin{bullets}
+\item If columns became dependent, use SVD instead of Gram inverse.
+\end{bullets}
+}
+\ALTERNATE{
+Confirm via SVD construction.
+}
+\VALIDATION{
+\begin{bullets}
+\item Verify $A^{+}AA^{+}=A^{+}$ numerically.
+\end{bullets}
+}
+\INTUITION{
+Full row rank gives a right inverse on the range; pseudoinverse reduces to it.
+}
+\CANONICAL{
+\begin{bullets}
+\item $A^{+}$ equals right inverse on $\mathcal{R}(A^{\top})$ for full row rank.
+\end{bullets}
+}
+
+\ProblemPage{4}{Narrative: Alice reconstructs via $A^{+}$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Alice compresses signals with $A\in\mathbb{R}^{3\times 2}$ from Problem 2 and
+reconstructs with $A^{+}$. Show that reconstruction $\tilde{x}=A^{+}Ax$ equals
+the orthogonal projection of $x$ onto $\mathcal{R}(A^{\top})$.
+\PROBLEM{
+Reveal hidden projector $A^{+}A$ and compute example with $x=(1,2)^{\top}$.
+}
+\MODEL{
+\[
+\tilde{x}=A^{+}Ax,\quad P_{\mathcal{R}(A^{\top})}=A^{+}A.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Use $A$ from Problem 2 with full column rank.
+\end{bullets}
+}
+\varmapStart
+\var{x}{original vector in $\mathbb{R}^2$}
+\var{\tilde{x}}{reconstruction}
+\var{P}{$A^{+}A$ projector}
+\varmapEnd
+\WHICHFORMULA{
+Projector property: $A^{+}A$ is orthogonal projector onto $\mathcal{R}(A^{\top})$.
+}
+\GOVERN{
+\[
+(A^{+}A)^2=A^{+}A,\ (A^{+}A)^{\top}=A^{+}A.
+\]
+}
+\INPUTS{$A$ as in Problem 2, $x=\begin{bmatrix}1\\2\end{bmatrix}$.}
+\DERIVATION{
+\begin{align*}
+A^{+}&=\tfrac{1}{3}\begin{bmatrix}2&-1&1\\-1&2&1\end{bmatrix},\
+A=\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix}.\\
+P&=A^{+}A=\tfrac{1}{3}\begin{bmatrix}2&-1&1\\-1&2&1\end{bmatrix}
+\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix}
+=\tfrac{1}{3}\begin{bmatrix}3&0\\0&3\end{bmatrix}
+=\begin{bmatrix}1&0\\0&1\end{bmatrix}.\\
+\tilde{x}&=Px=x. 
+\end{align*}
+}
+\RESULT{
+Here $\mathcal{R}(A^{\top})=\mathbb{R}^2$, so $P=I$ and $\tilde{x}=x$.
+}
+\UNITCHECK{
+Shapes: $P$ is $2\times 2$. Idempotent and symmetric hold.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $A$ lost rank, $P$ would be a nontrivial projector.
+\end{bullets}
+}
+\ALTERNATE{
+SVD reveals $P=V\begin{bmatrix}I_r&0\\0&0\end{bmatrix}V^{\top}$ on $\mathbb{R}^n$.
+}
+\VALIDATION{
+\begin{bullets}
+\item Check $P^2=P$ and $P^{\top}=P$ numerically.
+\end{bullets}
+}
+\INTUITION{
+Encoding then decoding keeps components in the codomain of $A^{\top}$ and drops
+orthogonal components.
+}
+\CANONICAL{
+\begin{bullets}
+\item $A^{+}A$ projects onto $\mathcal{R}(A^{\top})$ always.
+\end{bullets}
+}
+
+\ProblemPage{5}{Narrative: Bob seeks minimum-norm actuator command}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given $A=\begin{bmatrix}1&2&0\\0&1&1\end{bmatrix}$ and desired output
+$b=\begin{bmatrix}1\\1\end{bmatrix}$, compute the minimum\textendash norm command
+$x^{\star}=A^{+}b$.
+\PROBLEM{
+Interpret underactuated control: choose least\textendash norm $x$ achieving best
+fit.
+}
+\MODEL{
+\[
+x^{\star}=A^{+}b,\quad \hat{b}=AA^{+}b.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Euclidean norm; pseudoinverse via SVD.
+\end{bullets}
+}
+\varmapStart
+\var{A}{control matrix}
+\var{b}{target output}
+\var{x^{\star}}{command}
+\varmapEnd
+\WHICHFORMULA{
+Least\textendash squares minimum\textendash norm solution $x^{\star}=A^{+}b$.
+}
+\GOVERN{
+\[
+A^{+}=V\Sigma^{+}U^{\top}.
+\]
+}
+\INPUTS{$A=\begin{bmatrix}1&2&0\\0&1&1\end{bmatrix}$, $b=\begin{bmatrix}1\\1\end{bmatrix}$.}
+\DERIVATION{
+\begin{align*}
+AA^{\top}&=\begin{bmatrix}1&2&0\\0&1&1\end{bmatrix}
+\begin{bmatrix}1&0\\2&1\\0&1\end{bmatrix}
+=\begin{bmatrix}5&2\\2&2\end{bmatrix}.\\
+(AA^{\top})^{-1}&=\frac{1}{(5)(2)-4}
+\begin{bmatrix}2&-2\\-2&5\end{bmatrix}
+=\frac{1}{6}\begin{bmatrix}2&-2\\-2&5\end{bmatrix}.\\
+A^{+}&=A^{\top}(AA^{\top})^{-1}=
+\begin{bmatrix}1&0\\2&1\\0&1\end{bmatrix}\frac{1}{6}
+\begin{bmatrix}2&-2\\-2&5\end{bmatrix}\\
+&=\frac{1}{6}\begin{bmatrix}2&-2\\2&3\\-2&5\end{bmatrix}.\\
+x^{\star}&=A^{+}b=\frac{1}{6}\begin{bmatrix}2&-2\\2&3\\-2&5\end{bmatrix}
+\begin{bmatrix}1\\1\end{bmatrix}
+=\frac{1}{6}\begin{bmatrix}0\\5\\3\end{bmatrix}
+=\begin{bmatrix}0\\ \tfrac{5}{6}\\ \tfrac{1}{2}\end{bmatrix}.\\
+\hat{b}&=Ax^{\star}=
+\begin{bmatrix}1&2&0\\0&1&1\end{bmatrix}
+\begin{bmatrix}0\\5/6\\1/2\end{bmatrix}
+=\begin{bmatrix}5/3\\ 4/3\end{bmatrix}.
+\end{align*}
+}
+\RESULT{
+$x^{\star}=\left(0,\tfrac{5}{6},\tfrac{1}{2}\right)^{\top}$,
+residual $r=b-\hat{b}=\left(-\tfrac{2}{3},-\tfrac{1}{3}\right)^{\top}$.
+}
+\UNITCHECK{
+Shapes: $A^{+}$ is $3\times 2$; $x^{\star}\in\mathbb{R}^3$, $Ax^{\star}\in\mathbb{R}^2$.}
+\EDGECASES{
+\begin{bullets}
+\item If $b\in\mathcal{R}(A)$, residual would be zero.
+\end{bullets}
+}
+\ALTERNATE{
+Compute via SVD numerically; results coincide.
+}
+\VALIDATION{
+\begin{bullets}
+\item Check $A^{+}AA^{+}=A^{+}$ and $AA^{+}$ symmetry.
+\end{bullets}
+}
+\INTUITION{
+Among many commands achieving the same effect, choose the smallest effort.
+}
+\CANONICAL{
+\begin{bullets}
+\item $x^{\star}=A^{+}b$ minimizes $\|x\|_2$ among all least\textendash squares
+solutions.
+\end{bullets}
+}
+
+\ProblemPage{6}{Expectation with a fair coin over two matrices}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let $A$ be $2\times 2$ chosen by a fair coin: $A_1=\begin{bmatrix}1&0\\0&0\end{bmatrix}$
+or $A_2=I_2$. Compute $\mathbb{E}[\operatorname{tr}(AA^{+})]$.
+\PROBLEM{
+Use the identity $\operatorname{tr}(AA^{+})=\operatorname{rank}(A)$.
+}
+\MODEL{
+\[
+\operatorname{tr}(AA^{+})=\sum_i \mathbf{1}\{\sigma_i>0\}=\operatorname{rank}(A).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Finite set with equal probability $1/2$.
+\end{bullets}
+}
+\varmapStart
+\var{A_1}{rank 1 matrix}
+\var{A_2}{rank 2 matrix}
+\var{A^{+}}{pseudoinverse for each case}
+\varmapEnd
+\WHICHFORMULA{
+Rank\textendash trace identity: $\operatorname{tr}(AA^{+})=\operatorname{rank}(A)$.
+}
+\GOVERN{
+\[
+\mathbb{E}[\operatorname{tr}(AA^{+})]=
+\frac{1}{2}\operatorname{rank}(A_1)+\frac{1}{2}\operatorname{rank}(A_2).
+\]
+}
+\INPUTS{$A_1,A_2$ as above.}
+\DERIVATION{
+\begin{align*}
+\operatorname{rank}(A_1)&=1,\quad \operatorname{rank}(A_2)=2.\\
+\mathbb{E}[\operatorname{tr}(AA^{+})]&=\tfrac{1}{2}\cdot 1+\tfrac{1}{2}\cdot 2
+=\tfrac{3}{2}.
+\end{align*}
+}
+\RESULT{
+$\mathbb{E}[\operatorname{tr}(AA^{+})]=1.5$.
+}
+\UNITCHECK{
+Trace is dimensionless and equals rank, an integer per outcome.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $A=\mathbf{0}$ with some probability, it contributes zero to the
+expectation.
+\end{bullets}
+}
+\ALTERNATE{
+Compute $AA^{+}$ explicitly and take the trace in each case.
+}
+\VALIDATION{
+\begin{bullets}
+\item For $A_1$, $A_1^{+}=A_1$ and $\operatorname{tr}(AA^{+})=1$.
+\item For $A_2$, $A^{+}=I$ and trace equals $2$.
+\end{bullets}
+}
+\INTUITION{
+The trace counts kept dimensions; average kept dimensions is $1.5$.
+}
+\CANONICAL{
+\begin{bullets}
+\item $\operatorname{tr}(AA^{+})=\operatorname{tr}(A^{+}A)=\operatorname{rank}(A)$.
+\end{bullets}
+}
+
+\ProblemPage{7}{Proof: $(A^{+})^{+}=A$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show that the pseudoinverse is an involution: $(A^{+})^{+}=A$.
+\PROBLEM{
+Use Penrose equations to prove equality.
+}
+\MODEL{
+\[
+\text{If }X=A^{+},\ \text{show }X^{+}=A.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Penrose equations hold for both $A$ and $A^{+}$.
+\end{bullets}
+}
+\varmapStart
+\var{A}{matrix}
+\var{A^{+}}{pseudoinverse}
+\varmapEnd
+\WHICHFORMULA{
+Penrose equations are symmetric under swapping $A$ and $A^{+}$ with transposes.
+}
+\GOVERN{
+\[
+AA^{+}A=A,\quad A^{+}AA^{+}=A^{+},\quad (AA^{+})^{\top}=AA^{+},\quad
+(A^{+}A)^{\top}=A^{+}A.
+\]
+}
+\INPUTS{$A$.}
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}\ &\text{Set }X=A^{+}. \text{ Verify that }A \text{ satisfies the
+Penrose equations w.r.t. }X.\\
+\text{Step 2:}\ &\text{Swap roles: }XAX=X,\ AXA=A,\ (XA)^{\top}=XA,\ (AX)^{\top}=AX.\\
+\text{Step 3:}\ &\text{By uniqueness of pseudoinverse for }X,\ \text{ the unique
+matrix }Y\ \text{with}\\
+&XYX=X,\ YXY=Y,\ (XY)^{\top}=XY,\ (YX)^{\top}=YX\ \text{is }Y=A.\\
+\text{Step 4:}\ &\text{Therefore }X^{+}=A,\ \text{i.e., }(A^{+})^{+}=A.
+\end{align*}
+}
+\RESULT{
+$(A^{+})^{+}=A$.
+}
+\UNITCHECK{
+Shapes flip twice: $(n\times m)^{+}$ gives $m\times n$ again.
+}
+\EDGECASES{
+\begin{bullets}
+\item Holds even when $A=0$.
+\end{bullets}
+}
+\ALTERNATE{
+Direct SVD: $(V\Sigma^{+}U^{\top})^{+}=U(\Sigma^{+})^{+}V^{\top}=U\Sigma V^{\top}=A$.
+}
+\VALIDATION{
+\begin{bullets}
+\item Check on random matrices numerically with SVD.
+\end{bullets}
+}
+\INTUITION{
+Undoing the best\textendash possible undo brings you back.
+}
+\CANONICAL{
+\begin{bullets}
+\item Involution: the pseudoinverse operation is its own inverse.
+\end{bullets}
+}
+
+\ProblemPage{8}{Proof: $(A^{\top})^{+}=(A^{+})^{\top}$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show that transposition commutes with pseudoinverse: $(A^{\top})^{+}=(A^{+})^{\top}$.
+\PROBLEM{
+Use SVD or Penrose equations to establish the identity.
+}
+\MODEL{
+\[
+A=U\Sigma V^{\top}\ \Rightarrow\ A^{\top}=V\Sigma U^{\top}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Real matrices; transpose equals adjoint.
+\end{bullets}
+}
+\varmapStart
+\var{U,V,\Sigma}{SVD factors}
+\varmapEnd
+\WHICHFORMULA{
+SVD formula for pseudoinverse and uniqueness.
+}
+\GOVERN{
+\[
+(A^{\top})^{+}=U\Sigma^{+}V^{\top},\quad (A^{+})^{\top}=(V\Sigma^{+}U^{\top})^{\top}
+=U\Sigma^{+}V^{\top}.
+\]
+}
+\INPUTS{$A$.}
+\DERIVATION{
+\begin{align*}
+A&=U\Sigma V^{\top}\Rightarrow A^{\top}=V\Sigma U^{\top}.\\
+(A^{\top})^{+}&=U\Sigma^{+}V^{\top}\ (\text{by SVD formula}).\\
+(A^{+})^{\top}&=(V\Sigma^{+}U^{\top})^{\top}=U\Sigma^{+}V^{\top}.\\
+\text{Thus }&(A^{\top})^{+}=(A^{+})^{\top}.
+\end{align*}
+}
+\RESULT{
+$(A^{\top})^{+}=(A^{+})^{\top}$.
+}
+\UNITCHECK{
+Shapes: both sides are $m\times n$.
+}
+\EDGECASES{
+\begin{bullets}
+\item Identity holds for complex with conjugate transpose.
+\end{bullets}
+}
+\ALTERNATE{
+Penrose equations are invariant under transpose; apply uniqueness.
+}
+\VALIDATION{
+\begin{bullets}
+\item Numerical check with random matrices.
+\end{bullets}
+}
+\INTUITION{
+Transposition swaps left and right; pseudoinverse respects this symmetry.
+}
+\CANONICAL{
+\begin{bullets}
+\item Orthogonal invariance paired with SVD implies the identity.
+\end{bullets}
+}
+
+\ProblemPage{9}{Combo: Decomposition via projectors}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given $A=\begin{bmatrix}1&0\\1&1\\0&1\end{bmatrix}$ and $b=\begin{bmatrix}1\\2\\0\end{bmatrix}$,
+decompose $b=AA^{+}b+(I-AA^{+})b$ and verify orthogonality.
+\PROBLEM{
+Use $AA^{+}$ projector and compute numerically.
+}
+\MODEL{
+\[
+\hat{b}=AA^{+}b,\ r=(I-AA^{+})b,\ \hat{b}\perp r.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Real matrices; pseudoinverse via full column rank.
+\end{bullets}
+}
+\varmapStart
+\var{A}{$3\times 2$ full column rank}
+\var{b}{vector in $\mathbb{R}^3$}
+\var{\hat{b}}{projection}
+\var{r}{residual}
+\varmapEnd
+\WHICHFORMULA{
+$A^{+}=(A^{\top}A)^{-1}A^{\top}$ and projector properties.
+}
+\GOVERN{
+\[
+AA^{+}\ \text{is symmetric idempotent}.
+\]
+}
+\INPUTS{$A,b$ as above.}
+\DERIVATION{
+\begin{align*}
+A^{\top}A&=\begin{bmatrix}2&1\\1&2\end{bmatrix},\ (A^{\top}A)^{-1}=
+\tfrac{1}{3}\begin{bmatrix}2&-1\\-1&2\end{bmatrix}.\\
+A^{+}&=\tfrac{1}{3}\begin{bmatrix}2&-1&1\\-1&2&1\end{bmatrix}.\\
+\hat{b}&=AA^{+}b=\begin{bmatrix}1&0\\1&1\\0&1\end{bmatrix}
+\tfrac{1}{3}\begin{bmatrix}2&-1&1\\-1&2&1\end{bmatrix}
+\begin{bmatrix}1\\2\\0\end{bmatrix}.\\
+A^{+}b&=\tfrac{1}{3}\begin{bmatrix}2\cdot 1+(-1)\cdot 2+1\cdot 0\\
+-1\cdot 1+2\cdot 2+1\cdot 0\end{bmatrix}
+=\tfrac{1}{3}\begin{bmatrix}0\\3\end{bmatrix}
+=\begin{bmatrix}0\\1\end{bmatrix}.\\
+\hat{b}&=A\begin{bmatrix}0\\1\end{bmatrix}=\begin{bmatrix}0\\1\\1\end{bmatrix}.\\
+r&=b-\hat{b}=\begin{bmatrix}1\\1\\-1\end{bmatrix}.\\
+\hat{b}\cdot r&=0\cdot 1+1\cdot 1+1\cdot (-1)=0.
+\end{align*}
+}
+\RESULT{
+$\hat{b}=(0,1,1)^{\top}$, $r=(1,1,-1)^{\top}$, orthogonal decomposition holds.
+}
+\UNITCHECK{
+Both vectors are in $\mathbb{R}^3$; dot product zero confirms orthogonality.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $b\in\mathcal{R}(A)$, $r=0$.
+\end{bullets}
+}
+\ALTERNATE{
+SVD provides the same projector $AA^{+}=U\begin{bmatrix}I_r&0\\0&0\end{bmatrix}U^{\top}$.
+}
+\VALIDATION{
+\begin{bullets}
+\item Check $(AA^{+})^2=AA^{+}$ numerically.
+\end{bullets}
+}
+\INTUITION{
+Split $b$ into reachable and unreachable parts relative to $A$.
+}
+\CANONICAL{
+\begin{bullets}
+\item $b=\hat{b}+r$ with $\hat{b}\in\mathcal{R}(A)$ and $r\perp\mathcal{R}(A)$.
+\end{bullets}
+}
+
+\ProblemPage{10}{Combo: Tikhonov convergence numerically}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A=\begin{bmatrix}1&0\\0&0\\0&1\end{bmatrix}$ and $b=\begin{bmatrix}1\\1\\0\end{bmatrix}$,
+evaluate $x_{\lambda}=(A^{\top}A+\lambda I)^{-1}A^{\top}b$ and show
+$x_{\lambda}\to A^{+}b$ as $\lambda\downarrow 0$.
+\PROBLEM{
+Compute closed forms for small $\lambda$ and compare to $A^{+}b$.
+}
+\MODEL{
+\[
+A^{\top}A=\begin{bmatrix}1&0\\0&1\end{bmatrix},\ A^{+}=V\Sigma^{+}U^{\top}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Simple structure; direct computation.
+\end{bullets}
+}
+\varmapStart
+\var{A}{$3\times 2$}
+\var{b}{vector}
+\var{\lambda}{positive scalar}
+\var{x_{\lambda}}{ridge solution}
+\varmapEnd
+\WHICHFORMULA{
+Regularized limit $A^{+}=\lim_{\lambda\downarrow 0}(A^{\top}A+\lambda I)^{-1}A^{\top}$.
+}
+\GOVERN{
+\[
+x_{\lambda}=(A^{\top}A+\lambda I)^{-1}A^{\top}b.
+\]
+}
+\INPUTS{$A,b$ as above.}
+\DERIVATION{
+\begin{align*}
+A^{\top}A&=\begin{bmatrix}1&0\\0&1\end{bmatrix}=I_2.\\
+(A^{\top}A+\lambda I)^{-1}&=(1+\lambda)^{-1}I_2.\\
+A^{\top}b&=\begin{bmatrix}1&0&0\\0&0&1\end{bmatrix}
+\begin{bmatrix}1\\1\\0\end{bmatrix}=\begin{bmatrix}1\\0\end{bmatrix}.\\
+x_{\lambda}&=(1+\lambda)^{-1}\begin{bmatrix}1\\0\end{bmatrix}\to
+\begin{bmatrix}1\\0\end{bmatrix}.\\
+A^{+}&=\text{for this $A$, columns are standard basis, so }
+A^{+}=\begin{bmatrix}1&0&0\\0&0&1\end{bmatrix}.\\
+A^{+}b&=\begin{bmatrix}1\\0\end{bmatrix}.
+\end{align*}
+}
+\RESULT{
+$x_{\lambda}\to A^{+}b=(1,0)^{\top}$ as $\lambda\downarrow 0$.
+}
+\UNITCHECK{
+Shapes: $x_{\lambda}\in\mathbb{R}^2$; limit consistent with pseudoinverse.
+}
+\EDGECASES{
+\begin{bullets}
+\item If a singular value were zero, limit still recovers $A^{+}$ with zero
+component.
+\end{bullets}
+}
+\ALTERNATE{
+Use the dual form $A^{\top}(AA^{\top}+\lambda I)^{-1}b$ to obtain the same limit.
+}
+\VALIDATION{
+\begin{bullets}
+\item Numeric evaluation at $\lambda=10^{-k}$ shows convergence.
+\end{bullets}
+}
+\INTUITION{
+Ridge shrinks parameters by $(1+\lambda)^{-1}$ here; removing shrinkage returns
+the pseudoinverse solution.
+}
+\CANONICAL{
+\begin{bullets}
+\item Regularization limits converge to $A^{+}$.
+\end{bullets}
+}
+
+\section{Coding Demonstrations}
+
+\CodeDemoPage{SVD-based pseudoinverse and Penrose verification}
+\PROBLEM{
+Compute $A^{+}$ via SVD and verify the four Penrose equations numerically.
+Compare with library \inlinecode{numpy.linalg.pinv}.
+}
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> np.ndarray}
+\item \inlinecode{def solve_case(A) -> dict}
+\item \inlinecode{def validate() -> None}
+\item \inlinecode{def main() -> None}
+\end{bullets}
+}
+\INPUTS{
+A matrix $A$ as list of numbers per row; deterministic example inside
+\inlinecode{validate}.
+}
+\OUTPUTS{
+Dictionary with keys \inlinecode{"Aplus"}, \inlinecode{"residuals"} norms for
+Penrose checks, and a boolean \inlinecode{"ok"}.
+}
+\FORMULA{
+\[
+A^{+}=V\Sigma^{+}U^{\top},\quad
+\text{check }AA^{+}A-A,\ A^{+}AA^{+}-A^{+},\ (AA^{+})^{\top}-AA^{+},\
+(A^{+}A)^{\top}-A^{+}A.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    rows = s.strip().split(";")
+    A = [list(map(float, r.split())) for r in rows]
+    return np.array(A, dtype=float)
+
+def pinv_svd(A):
+    U, s, Vt = np.linalg.svd(A, full_matrices=True)
+    tol = max(A.shape) * np.finfo(float).eps * (s[0] if s.size else 0.0)
+    s_inv = np.array([1/x if x > tol else 0.0 for x in s], dtype=float)
+    Splus = np.zeros((A.shape[1], A.shape[0]), dtype=float)
+    for i, val in enumerate(s_inv):
+        Splus[i, i] = val
+    Aplus = Vt.T @ Splus @ U.T
+    return Aplus
+
+def solve_case(A):
+    Aplus = pinv_svd(A)
+    r1 = np.linalg.norm(A @ Aplus @ A - A, ord='fro')
+    r2 = np.linalg.norm(Aplus @ A @ Aplus - Aplus, ord='fro')
+    r3 = np.linalg.norm((A @ Aplus).T - A @ Aplus, ord='fro')
+    r4 = np.linalg.norm((Aplus @ A).T - Aplus @ A, ord='fro')
+    return {"Aplus": Aplus, "residuals": (r1, r2, r3, r4),
+            "ok": max(r1, r2, r3, r4) < 1e-10}
+
+def validate():
+    A = read_input("1 0 1; 0 1 1")
+    out = solve_case(A)
+    Ap_lib = np.linalg.pinv(A)
+    assert out["ok"]
+    assert np.allclose(out["Aplus"], Ap_lib, atol=1e-10)
+
+def main():
+    validate()
+    A = read_input("1 2 0; 0 1 1")
+    out = solve_case(A)
+    print("Aplus:\n", np.round(out["Aplus"], 6))
+    print("residuals:", [round(x, 12) for x in out["residuals"]])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    rows = s.strip().split(";")
+    A = [list(map(float, r.split())) for r in rows]
+    return np.array(A, dtype=float)
+
+def solve_case(A):
+    Aplus = np.linalg.pinv(A, rcond=0.0)
+    r1 = np.linalg.norm(A @ Aplus @ A - A, ord='fro')
+    r2 = np.linalg.norm(Aplus @ A @ Aplus - Aplus, ord='fro')
+    r3 = np.linalg.norm((A @ Aplus).T - A @ Aplus, ord='fro')
+    r4 = np.linalg.norm((Aplus @ A).T - Aplus @ A, ord='fro')
+    return {"Aplus": Aplus, "residuals": (r1, r2, r3, r4),
+            "ok": max(r1, r2, r3, r4) < 1e-10}
+
+def validate():
+    A = read_input("1 0 1; 0 1 1")
+    out = solve_case(A)
+    assert out["ok"]
+
+def main():
+    validate()
+    A = read_input("1 1; 1 1")
+    out = solve_case(A)
+    print("Aplus:\n", np.round(out["Aplus"], 6))
+    print("residuals:", [round(x, 12) for x in out["residuals"]])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Time $\mathcal{O}(mn\min\{m,n\})$ for SVD; space $\mathcal{O}(mn)$.
+}
+\FAILMODES{
+\begin{bullets}
+\item Tiny singular values can cause large entries; use tolerance.
+\item Non\textendash finite entries in input; check and sanitize.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item SVD is backward stable; tolerance mitigates noise.
+\item Avoid normal equations in ill\textendash conditioned problems.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Assert Penrose residuals below tolerance.
+\item Cross\textendash check with \inlinecode{np.linalg.pinv}.
+\end{bullets}
+}
+\RESULT{
+Both implementations agree to numerical precision and satisfy Penrose equations.
+}
+\EXPLANATION{
+Each residual corresponds to a Penrose equation; near\textendash zero values
+confirm correctness of $A^{+}$.
+}
+\EXTENSION{
+Vectorize batch pseudoinverse for multiple matrices.
+}
+
+\CodeDemoPage{Least-squares minimum-norm solution via $A^{+}$}
+\PROBLEM{
+Solve $x^{\star}=A^{+}b$ and verify that $r=b-AA^{+}b$ is orthogonal to
+$\mathcal{R}(A)$; compare with \inlinecode{numpy.linalg.lstsq}.
+}
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> tuple}
+\item \inlinecode{def solve_case(A,b) -> dict}
+\item \inlinecode{def validate() -> None}
+\item \inlinecode{def main() -> None}
+\end{bullets}
+}
+\INPUTS{
+Matrix $A$ and vector $b$ as strings with rows separated by semicolons.
+}
+\OUTPUTS{
+$x^{\star}$, residual norm, and orthogonality check.
+}
+\FORMULA{
+\[
+x^{\star}=V\Sigma^{+}U^{\top}b,\quad r=b-AA^{+}b,\quad A^{\top}r=0.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(sA, sb):
+    rows = sA.strip().split(";")
+    A = np.array([list(map(float, r.split())) for r in rows], float)
+    b = np.array(list(map(float, sb.split())), float)
+    return A, b
+
+def pinv_svd(A):
+    U, s, Vt = np.linalg.svd(A, full_matrices=True)
+    tol = max(A.shape) * np.finfo(float).eps * (s[0] if s.size else 0.0)
+    s_inv = np.array([1/x if x > tol else 0.0 for x in s], dtype=float)
+    Splus = np.zeros((A.shape[1], A.shape[0]), dtype=float)
+    for i, val in enumerate(s_inv):
+        Splus[i, i] = val
+    return Vt.T @ Splus @ U.T
+
+def solve_case(A, b):
+    Aplus = pinv_svd(A)
+    x = Aplus @ b
+    r = b - A @ x
+    orth = np.linalg.norm(A.T @ r) < 1e-10
+    return {"x": x, "rnorm": float(np.linalg.norm(r)), "orth": orth}
+
+def validate():
+    A, b = read_input("1 2 0; 0 1 1", "1 1")
+    out = solve_case(A, b)
+    x2, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
+    assert np.allclose(out["x"], x2, atol=1e-10)
+    assert out["orth"]
+
+def main():
+    validate()
+    A, b = read_input("1 0; 1 1; 0 1", "1 2 0")
+    out = solve_case(A, b)
+    print("x*:", np.round(out["x"], 6))
+    print("||r||:", round(out["rnorm"], 6), "orth:", out["orth"])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(sA, sb):
+    rows = sA.strip().split(";")
+    A = np.array([list(map(float, r.split())) for r in rows], float)
+    b = np.array(list(map(float, sb.split())), float)
+    return A, b
+
+def solve_case(A, b):
+    x, *_ = np.linalg.lstsq(A, b, rcond=None)
+    Aplus = np.linalg.pinv(A)
+    r = b - A @ (Aplus @ b)
+    orth = np.linalg.norm(A.T @ r) < 1e-10
+    return {"x": x, "rnorm": float(np.linalg.norm(r)), "orth": orth}
+
+def validate():
+    A, b = read_input("1 0 1; 0 1 1", "1 1")
+    out = solve_case(A, b)
+    assert out["orth"]
+
+def main():
+    validate()
+    A, b = read_input("1 1; 1 1", "2 1")
+    out = solve_case(A, b)
+    print("x*:", np.round(out["x"], 6))
+    print("||r||:", round(out["rnorm"], 6), "orth:", out["orth"])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+SVD time $\mathcal{O}(mn\min\{m,n\})$; space $\mathcal{O}(mn)$.
+}
+\FAILMODES{
+\begin{bullets}
+\item Degenerate $A$ with large null spaces may amplify noise; use tolerance.
+\item Nonconforming shapes or sizes; validate inputs.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item SVD is robust; avoid forming $A^{\top}A$ explicitly for ill\textendash
+conditioned $A$.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Compare against \inlinecode{lstsq}.
+\item Check $A^{\top}r=0$ to confirm orthogonality.
+\end{bullets}
+}
+\RESULT{
+Solutions match library results; residuals are orthogonal to $\mathcal{R}(A)$.
+}
+\EXPLANATION{
+$A^{+}$ maps $b$ to the minimum\textendash norm least\textendash squares
+solution; orthogonality of residuals is a projector consequence.
+}
+\EXTENSION{
+Compute confidence intervals by propagation if in statistical context.
+}
+
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Linear regression with design $X\in\mathbb{R}^{n\times d}$ and targets
+$y\in\mathbb{R}^{n}$. Estimate $\beta=X^{+}y$ and evaluate RMSE and $R^2$.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item i.i.d. noise with zero mean and finite variance.
+\item Linear model $y=X\beta+\varepsilon$.
+\end{bullets}
+}
+\WHICHFORMULA{
+OLS via pseudoinverse: $\beta=X^{+}y$, fitted $\hat{y}=XX^{+}y$.
+}
+\varmapStart
+\var{X}{design matrix $(n,d)$ with column of ones}
+\var{y}{response vector}
+\var{\beta}{coefficients}
+\var{\hat{y}}{fitted values}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic data with fixed seed.
+\item Compute $\beta$ via $X^{+}$ and via library.
+\item Report RMSE and $R^2$.
+\end{bullets}
+}
+\begin{codepy}
+import numpy as np
+
+def generate(n=100, noise=0.3, seed=0):
+    np.random.seed(seed)
+    x = np.linspace(0.0, 10.0, n)
+    X = np.column_stack([np.ones(n), x])
+    beta_true = np.array([1.0, 2.0])
+    y = X @ beta_true + np.random.randn(n) * noise
+    return X, y, beta_true
+
+def pinv_svd(A):
+    U, s, Vt = np.linalg.svd(A, full_matrices=True)
+    tol = max(A.shape) * np.finfo(float).eps * (s[0] if s.size else 0.0)
+    s_inv = np.array([1/x if x > tol else 0.0 for x in s], float)
+    Splus = np.zeros((A.shape[1], A.shape[0]), float)
+    for i, val in enumerate(s_inv):
+        Splus[i, i] = val
+    return Vt.T @ Splus @ U.T
+
+def rmse(a, b):
+    return float(np.sqrt(np.mean((a - b) ** 2)))
+
+def r2(y, yhat):
+    ssr = np.sum((y - yhat) ** 2)
+    sst = np.sum((y - np.mean(y)) ** 2)
+    return float(1.0 - ssr / sst)
+
+def main():
+    X, y, btrue = generate()
+    Xp = pinv_svd(X)
+    beta = Xp @ y
+    yhat = X @ beta
+    print("beta:", np.round(beta, 3), "rmse:", round(rmse(y, yhat), 3),
+          "r2:", round(r2(y, yhat), 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\begin{codepy}
+import numpy as np
+
+def main():
+    np.random.seed(0)
+    n = 100
+    x = np.linspace(0.0, 10.0, n)
+    X = np.column_stack([np.ones(n), x])
+    y = 1 + 2 * x + np.random.randn(n) * 0.3
+    beta = np.linalg.pinv(X) @ y
+    yhat = X @ beta
+    ssr = np.sum((y - yhat) ** 2)
+    sst = np.sum((y - np.mean(y)) ** 2)
+    r2 = 1.0 - ssr / sst
+    rmse = np.sqrt(np.mean((y - yhat) ** 2))
+    print("beta:", np.round(beta, 3), "rmse:", round(rmse, 3),
+          "r2:", round(r2, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{RMSE and $R^2$ close to noise floor and near linear ground truth.}
+\INTERPRET{$\beta$ estimates slope and intercept; $XX^{+}$ projects onto span of
+features.}
+\NEXTSTEPS{Add ridge: $(X^{\top}X+\lambda I)^{-1}X^{\top}y$ for robustness.}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Factor exposure estimation: returns $R\in\mathbb{R}^{n}$ explained by factors
+$F\in\mathbb{R}^{n\times k}$; estimate exposures $\beta=F^{+}R$.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Linear factor model with zero\textendash mean residuals.
+\item $F$ may be collinear; use pseudoinverse.
+\end{bullets}
+}
+\WHICHFORMULA{
+$\beta=F^{+}R$ minimizes $\|F\beta-R\|_2$ and has minimum $\|\beta\|_2$.
+}
+\varmapStart
+\var{F}{factor matrix}
+\var{R}{asset return vector}
+\var{\beta}{factor exposures}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Simulate correlated factors and returns.
+\item Estimate $\beta$ via SVD\textendash based pseudoinverse.
+\item Report fit error.
+\end{bullets}
+}
+\begin{codepy}
+import numpy as np
+
+def simulate(n=200, k=3, seed=0):
+    np.random.seed(seed)
+    F = np.random.randn(n, k)
+    beta_true = np.array([0.5, -0.2, 0.8])
+    R = F @ beta_true + np.random.randn(n) * 0.1
+    return F, R, beta_true
+
+def pinv_svd(A):
+    U, s, Vt = np.linalg.svd(A, full_matrices=True)
+    tol = max(A.shape) * np.finfo(float).eps * (s[0] if s.size else 0.0)
+    s_inv = np.array([1/x if x > tol else 0.0 for x in s], float)
+    Splus = np.zeros((A.shape[1], A.shape[0]), float)
+    for i, val in enumerate(s_inv):
+        Splus[i, i] = val
+    return Vt.T @ Splus @ U.T
+
+def main():
+    F, R, btrue = simulate()
+    beta = pinv_svd(F) @ R
+    Rhat = F @ beta
+    rmse = np.sqrt(np.mean((R - Rhat) ** 2))
+    print("beta:", np.round(beta, 3), "rmse:", round(rmse, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{RMSE of fit and comparison to true exposures.}
+\INTERPRET{Pseudoinverse handles collinearity and yields minimum\textendash norm
+exposures.}
+\NEXTSTEPS{Add constraints via quadratic programming if needed.}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Closed\textendash form training of a linear layer: given inputs $X$ and targets
+$Y$, compute $W^{\star}=X^{+}Y$ and compare to gradient descent.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Mean squared error; deterministic initialization and steps.
+\end{bullets}
+}
+\WHICHFORMULA{
+$W^{\star}=X^{+}Y$ minimizes $\|XW-Y\|_F$ with minimum Frobenius norm among
+minimizers.
+}
+\varmapStart
+\var{X}{inputs $(n,d)$}
+\var{Y}{targets $(n,p)$}
+\var{W}{weights $(d,p)$}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic $X,Y$ with fixed seed.
+\item Compute $W^{\star}=X^{+}Y$.
+\item Run a few GD steps and compare errors.
+\end{bullets}
+}
+\begin{codepy}
+import numpy as np
+
+def generate(n=200, d=5, p=3, seed=0):
+    np.random.seed(seed)
+    X = np.random.randn(n, d)
+    Wtrue = np.random.randn(d, p)
+    Y = X @ Wtrue + np.random.randn(n, p) * 0.1
+    return X, Y, Wtrue
+
+def pinv_svd(A):
+    U, s, Vt = np.linalg.svd(A, full_matrices=True)
+    tol = max(A.shape) * np.finfo(float).eps * (s[0] if s.size else 0.0)
+    s_inv = np.array([1/x if x > tol else 0.0 for x in s], float)
+    Splus = np.zeros((A.shape[1], A.shape[0]), float)
+    for i, val in enumerate(s_inv):
+        Splus[i, i] = val
+    return Vt.T @ Splus @ U.T
+
+def mse(Y, Yhat):
+    return float(np.mean((Y - Yhat) ** 2))
+
+def main():
+    X, Y, Wtrue = generate()
+    Wstar = pinv_svd(X) @ Y
+    err_closed = mse(Y, X @ Wstar)
+    W = np.zeros_like(Wstar)
+    lr = 0.1
+    for _ in range(200):
+        grad = X.T @ (X @ W - Y) / X.shape[0]
+        W -= lr * grad
+    err_gd = mse(Y, X @ W)
+    print("MSE closed:", round(err_closed, 5),
+          "MSE GD:", round(err_gd, 5))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Report MSE for closed form and GD; they should be close.}
+\INTERPRET{Closed form provides the optimum in one shot; GD approximates it.}
+\NEXTSTEPS{Use ridge $(X^{\top}X+\lambda I)^{-1}X^{\top}Y$ for stability.}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Impute linear relationship among features by fitting $Y=X\beta$ with
+$\beta=X^{+}Y$ and reporting fitted vs. actual correlations.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item All columns numeric; potential collinearity handled by pseudoinverse.
+\end{bullets}
+}
+\WHICHFORMULA{
+$\beta=X^{+}Y$; fitted $\hat{Y}=XX^{+}Y$.
+}
+\varmapStart
+\var{X}{feature matrix}
+\var{Y}{target matrix or vector}
+\var{\beta}{coefficients}
+\var{\hat{Y}}{fitted data}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Create synthetic correlated features and targets.
+\item Fit via pseudoinverse.
+\item Compare correlations of $\hat{Y}$ with $Y$.
+\end{bullets}
+}
+\begin{codepy}
+import numpy as np
+
+def create_df(n=300, d=4, seed=0):
+    np.random.seed(seed)
+    Z = np.random.randn(n, d)
+    X = Z.copy()
+    X[:, 1] = 0.8 * X[:, 0] + 0.2 * Z[:, 1]
+    X[:, 2] = -0.5 * X[:, 0] + 0.3 * Z[:, 2]
+    beta_true = np.array([1.0, 2.0, -1.0, 0.5])
+    Y = X @ beta_true + np.random.randn(n) * 0.5
+    return X, Y, beta_true
+
+def pinv_svd(A):
+    U, s, Vt = np.linalg.svd(A, full_matrices=True)
+    tol = max(A.shape) * np.finfo(float).eps * (s[0] if s.size else 0.0)
+    s_inv = np.array([1/x if x > tol else 0.0 for x in s], float)
+    Splus = np.zeros((A.shape[1], A.shape[0]), float)
+    for i, val in enumerate(s_inv):
+        Splus[i, i] = val
+    return Vt.T @ Splus @ U.T
+
+def corr(a, b):
+    a = a - np.mean(a)
+    b = b - np.mean(b)
+    return float(np.dot(a, b) / np.sqrt(np.dot(a, a) * np.dot(b, b)))
+
+def main():
+    X, Y, btrue = create_df()
+    beta = pinv_svd(X) @ Y
+    Yhat = X @ beta
+    print("corr(Y, Yhat):", round(corr(Y, Yhat), 3))
+    print("beta:", np.round(beta, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Correlation between $Y$ and $\hat{Y}$ near 1 for good fit.}
+\INTERPRET{Pseudoinverse resolves multicollinearity and recovers stable
+coefficients.}
+\NEXTSTEPS{Augment with cross\textendash validation and ridge regularization.}
+
+\end{document}

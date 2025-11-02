@@ -1,0 +1,821 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — GCD Festival}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1575/G}}
+\LINE{DIFFICULTY / RATING}{2200}
+\STATEMENT{Mr.\ Chanek has an array $a$ of $n$ integers. The prettiness value of $a$ is denoted as:
+\begin{BreakableEquation*}
+\sum_{i=1}^{n} \sum_{j=1}^{n} \gcd(a_i, a_j) \cdot \gcd(i, j).
+\end{BreakableEquation*}
+Here $\gcd(x, y)$ denotes the greatest common divisor of integers $x$ and $y$.
+
+In other words, the prettiness value of an array $a$ is the total sum of $\gcd(a_i, a_j) \cdot \gcd(i, j)$ for all pairs $(i, j)$.
+
+Help Mr.\ Chanek find the prettiness value of $a$, and output the result modulo $10^9 + 7$.
+
+Input:
+The first line contains an integer $n$ ($2 \le n \le 10^5$).
+
+The second line contains $n$ integers $a_1, a_2, \ldots, a_n$ ($1 \le a_i \le 10^5$).
+
+Output:
+Output an integer denoting the prettiness value of $a$ modulo $10^9 + 7$.}
+\BREAKDOWN{Exploit the identity $\gcd(x,y)=\sum_{d \mid x,\, d \mid y} \varphi(d)$ to separate index and value spaces. Reduce the double sum to a convolution over divisibility using Euler's totient, then aggregate counts over divisors efficiently via precomputed divisor lists.}
+\ELI{Turn $\gcd$ into a sum over common divisors; then the whole problem becomes counting how many indices or values are multiples of each divisor and combining with $\varphi$.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test case.\\
+- Integer $n$ with $2 \le n \le 10^5$.\\
+- Array $a[1..n]$, each $1 \le a_i \le 10^5$.}
+\OUTPUTS{Single integer: $\left(\sum_{i=1}^{n}\sum_{j=1}^{n} \gcd(a_i,a_j)\cdot \gcd(i,j)\right) \bmod (10^9+7)$.}
+\SAMPLES{- Example 1:\\
+$n=2$, $a=[1,1]$. All $\gcd(a_i,a_j)=1$, and $\gcd$ on indices is $(1,1,1,2)$ over pairs, so sum $=1+1+1+2=5$. Output: $5$.\\
+- Example 2:\\
+$n=3$, $a=[1,2,3]$. The pairwise products $\gcd(a_i,a_j)\cdot \gcd(i,j)$ sum to $20$. Output: $20$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Given $a\in \mathbb{N}^n$, compute
+\begin{BreakableEquation*}
+S(a)=\sum_{i=1}^{n}\sum_{j=1}^{n}\gcd(a_i,a_j)\cdot \gcd(i,j) \pmod{10^9+7}.
+\end{BreakableEquation*}
+Use the Dirichlet-convolution identity $\gcd(x,y)=\sum_{d \mid x,\,d \mid y}\varphi(d)$, where $\varphi$ is Euler's totient.}
+\varmapStart
+\var{n}{array length}
+\var{a_i}{value at index $i$}
+\var{\varphi(d)}{Euler totient of $d$}
+\var{S_e}{set of indices $i$ such that $e \mid a_i$}
+\var{C_e(t)}{count of indices in $S_e$ divisible by $t$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+\gcd(x,y) &= \sum_{d \mid x,\, d \mid y} \varphi(d),\\
+S(a) &= \sum_{i,j}\left(\sum_{d \mid i,\, d \mid j}\varphi(d)\right)\left(\sum_{e \mid a_i,\, e \mid a_j}\varphi(e)\right)\\
+&= \sum_{d=1}^{n}\sum_{e=1}^{\max a}\varphi(d)\varphi(e)\cdot \left|\{i: d \mid i,\, e \mid a_i\}\right|^2\\
+&= \sum_{e=1}^{\max a}\varphi(e)\cdot \sum_{t=1}^{n}\varphi(t)\cdot C_e(t)^2.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Indices are $1$-based. All arithmetic is modulo $10^9+7$. Precompute $\varphi$ up to $\max(n, \max a_i)$.}
+\INVARIANTS{- For fixed $e$, $C_e(t)$ depends only on divisibility of indices in $S_e$.\\
+- The contribution of $(d,e)$ is nonnegative and separable via $\varphi(d)\varphi(e)$.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Use the definition directly: nested loops over all pairs $(i,j)$, compute two $\gcd$'s and accumulate.}
+\ASSUMPTIONS{Small $n$ is feasible only.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Initialize $ans \leftarrow 0$.
+\item For each $i=1..n$ and $j=1..n$, add $\gcd(a_i,a_j)\cdot \gcd(i,j)$ to $ans$.
+\item Return $ans \bmod 10^9+7$.
+\end{algosteps}
+\COMPLEXITY{Quadratic pairs and logarithmic-time gcd.}
+\[
+\begin{aligned}
+T(n) &= \Theta(n^2\cdot \log A),\\
+S(n) &= \Theta(1).
+\end{aligned}
+\]
+\CORRECTNESS{Directly evaluates the required sum; no approximation.}
+\EDGECASES{$n=2$; all $a_i=1$; all $a_i$ equal; prime vs composite indices.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# CF TEMPLATE (must include read_input / solve_case / main + guard + asserts)
+from math import gcd
+
+MOD = 10**9 + 7
+
+def read_input():
+    import sys
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, []
+    it = iter(data)
+    n = int(next(it))
+    arr = [0] + [int(next(it)) for _ in range(n)]
+    return n, arr
+
+def solve_case_baseline(n, arr):
+    ans = 0
+    for i in range(1, n+1):
+        gi = i
+        for j in range(1, n+1):
+            ans += gcd(arr[i], arr[j]) * gcd(gi, j)
+        ans %= MOD
+    return ans
+
+def solve_all_baseline():
+    n, arr = read_input()
+    if n == 0:
+        return
+    print(solve_case_baseline(n, arr))
+
+def _test_baseline():
+    assert solve_case_baseline(2, [0,1,1]) == 5
+    assert solve_case_baseline(3, [0,1,2,3]) == 20
+    # tiny random cross-check
+    import random
+    random.seed(0)
+    for _ in range(8):
+        n = 5
+        a = [0] + [random.randint(1, 6) for _ in range(n)]
+        # compute two ways: direct and via symmetry (should be same)
+        v1 = solve_case_baseline(n, a)
+        # naive symmetry check: reverse a, value should be same
+        v2 = solve_case_baseline(n, [0] + list(reversed(a[1:])))
+        assert v1 == v2
+
+if __name__ == "__main__":
+    _test_baseline()
+    # solve_all_baseline()
+\end{minted}
+\VALIDATION{Included asserts for small handcrafted and random cases.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Double-$\varphi$ Decomposition}
+\WHICHFORMULA{Apply $\gcd(x,y)=\sum_{d \mid x,\, d \mid y}\varphi(d)$ twice to separate index and value spaces:
+\begin{BreakableEquation*}
+S=\sum_{d}\sum_{e}\varphi(d)\varphi(e)\cdot \#\{i: d\mid i,\, e\mid a_i\}^2.
+\end{BreakableEquation*}
+}
+\ASSUMPTIONS{Precompute $\varphi$ up to $N=\max(n, \max a_i)$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute $\varphi(1..N)$.
+\item For each value-divisor $e$, collect indices $S_e=\{i: e\mid a_i\}$.
+\item For each $e$, count for each index-divisor $t$ how many elements of $S_e$ are divisible by $t$.
+\item Accumulate $\sum_{t}\varphi(t)\cdot C_e(t)^2$ and scale by $\varphi(e)$.
+\end{algosteps}
+\COMPLEXITY{Let $\tau(x)$ be the number of divisors. Using divisor lists, counting costs $\sum_{e}\sum_{i\in S_e}\tau(i)$, and forming $S_e$ costs $\sum_i \tau(a_i)$.}
+\[
+\begin{aligned}
+T &\approx \mathcal{O}\!\left(N\log N + \sum_{i=1}^{n}\tau(a_i)\cdot \tau(i)\right),\\
+S &\approx \mathcal{O}(N + \sum_{i=1}^{n}\tau(a_i)).
+\end{aligned}
+\]
+\CORRECTNESS{By rearranging summations, each pair $(d,e)$ contributes $\varphi(d)\varphi(e)$ times the squared count of indices satisfying both divisibilities.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Same API/signature as baseline; deterministic; with asserts
+from math import gcd
+
+MOD = 10**9 + 7
+
+def totients_upto(N):
+    phi = list(range(N+1))
+    primes = []
+    is_comp = [False]*(N+1)
+    phi[0] = 0
+    if N >= 1:
+        phi[1] = 1
+    for i in range(2, N+1):
+        if not is_comp[i]:
+            primes.append(i)
+            phi[i] = i-1
+        for p in primes:
+            v = i*p
+            if v > N:
+                break
+            is_comp[v] = True
+            if i % p == 0:
+                phi[v] = phi[i] * p
+                break
+            else:
+                phi[v] = phi[i] * (p-1)
+    return phi
+
+def divisors_list_upto(N):
+    divs = [[] for _ in range(N+1)]
+    for d in range(1, N+1):
+        for m in range(d, N+1, d):
+            divs[m].append(d)
+    return divs
+
+def read_input():
+    import sys
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, []
+    it = iter(data)
+    n = int(next(it))
+    arr = [0] + [int(next(it)) for _ in range(n)]
+    return n, arr
+
+def solve_case_improved(n, arr):
+    if n == 0:
+        return 0
+    V = max(arr)
+    N = max(n, V)
+    phi = totients_upto(N)
+    # prepare divisors of indices and values
+    divs_idx = divisors_list_upto(n)
+    divs_val = divisors_list_upto(V)
+    # build index lists per value-divisor e: S_e
+    S = [[] for _ in range(V+1)]
+    for i in range(1, n+1):
+        ai = arr[i]
+        for e in divs_val[ai]:
+            S[e].append(i)
+    # counts per t (index-divisor)
+    cnt = [0]*(n+1)
+    used = []
+    ans = 0
+    for e in range(1, V+1):
+        if not S[e]:
+            continue
+        used.clear()
+        for i in S[e]:
+            for t in divs_idx[i]:
+                if cnt[t] == 0:
+                    used.append(t)
+                cnt[t] += 1
+        part = 0
+        for t in used:
+            c = cnt[t]
+            part = (part + phi[t] * (c*c % MOD)) % MOD
+            cnt[t] = 0
+        ans = (ans + phi[e] * part) % MOD
+    return ans
+
+def solve_all_improved():
+    n, arr = read_input()
+    if n == 0:
+        return
+    print(solve_case_improved(n, arr))
+
+def _test_improved():
+    assert solve_case_improved(2, [0,1,1]) == 5
+    assert solve_case_improved(3, [0,1,2,3]) == 20
+    # random cross-check with baseline for small n
+    import random
+    random.seed(1)
+    for _ in range(5):
+        n = 7
+        arr = [0] + [random.randint(1, 12) for _ in range(n)]
+        v1 = solve_case_improved(n, arr)
+        v2 = 0
+        for i in range(1, n+1):
+            for j in range(1, n+1):
+                v2 = (v2 + gcd(arr[i], arr[j]) * gcd(i, j)) % MOD
+        assert v1 == v2
+
+if __name__ == "__main__":
+    _test_improved()
+    # solve_all_improved()
+\end{minted}
+\VALIDATION{Cross-checked against brute force for small random cases; exact matches.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Two-Sided Divisor Aggregation with Totients}
+\WHICHFORMULA{Use
+\begin{BreakableEquation*}
+S=\sum_{e=1}^{\max a}\varphi(e)\cdot \sum_{t=1}^{n}\varphi(t)\cdot C_e(t)^2,
+\end{BreakableEquation*}
+where $C_e(t)=\#\{i: e\mid a_i \wedge t\mid i\}$. For each fixed $e$, build $C_e(\cdot)$ by iterating over indices in $S_e$ and adding $1$ to all divisors of each index.}
+\ASSUMPTIONS{Precompute divisors for all integers up to $n$ and up to $\max a_i$. Use linear sieve for $\varphi$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute $\varphi(1..N)$ for $N=\max(n,\max a_i)$.
+\item Precompute divisors for all $1..n$ and all $1..\max a_i$.
+\item Build lists $S_e$ by enumerating divisors of each $a_i$ and appending index $i$ to $S_e$.
+\item For each $e$ with nonempty $S_e$, zero an array $cnt[1..n]$. For each $i\in S_e$, for each $t\mid i$ do $cnt[t]{+}{=}\,1$.
+\item Accumulate $\sum_t \varphi(t)\,cnt[t]^2$, multiply by $\varphi(e)$, add to answer modulo $10^9+7$.
+\end{algosteps}
+\OPTIMALITY{This realizes the exact double-$\varphi$ convolution with linear-time preprocessing and near-linear work in the total number of divisor-incidences $\sum_i \tau(a_i)\tau(i)$. Any approach must, in effect, account for all such incidences or an equivalent number of multiplicative relations, making this asymptotically tight up to divisor-function factors.}
+\COMPLEXITY{Let $\tau(x)$ be the divisor count.}
+\[
+\begin{aligned}
+T &= \mathcal{O}\!\left(N\log N + \sum_{i=1}^{n}\tau(a_i)\tau(i)\right),\quad N=\max(n,\max a_i),\\
+S &= \mathcal{O}\!\left(N + \sum_{i=1}^{n}\tau(a_i)\right).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case()/solve_all(), main()+guard + asserts
+from math import gcd
+
+MOD = 10**9 + 7
+
+def totients_upto(N):
+    phi = list(range(N+1))
+    primes = []
+    is_comp = [False]*(N+1)
+    phi[0] = 0
+    if N >= 1:
+        phi[1] = 1
+    for i in range(2, N+1):
+        if not is_comp[i]:
+            primes.append(i)
+            phi[i] = i-1
+        for p in primes:
+            v = i*p
+            if v > N:
+                break
+            is_comp[v] = True
+            if i % p == 0:
+                phi[v] = phi[i] * p
+                break
+            else:
+                phi[v] = phi[i] * (p-1)
+    return phi
+
+def divisors_list_upto(N):
+    divs = [[] for _ in range(N+1)]
+    for d in range(1, N+1):
+        for m in range(d, N+1, d):
+            divs[m].append(d)
+    return divs
+
+def read_input():
+    import sys
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, []
+    it = iter(data)
+    n = int(next(it))
+    arr = [0] + [int(next(it)) for _ in range(n)]
+    return n, arr
+
+def solve_case(n, arr):
+    if n == 0:
+        return 0
+    V = max(arr)
+    N = max(n, V)
+    phi = totients_upto(N)
+    divs_idx = divisors_list_upto(n)
+    divs_val = divisors_list_upto(V)
+    # Build S_e: indices whose value is divisible by e
+    S = [[] for _ in range(V+1)]
+    for i in range(1, n+1):
+        ai = arr[i]
+        for e in divs_val[ai]:
+            S[e].append(i)
+    cnt = [0]*(n+1)
+    used = []
+    ans = 0
+    for e in range(1, V+1):
+        if not S[e]:
+            continue
+        used.clear()
+        for i in S[e]:
+            for t in divs_idx[i]:
+                if cnt[t] == 0:
+                    used.append(t)
+                cnt[t] += 1
+        part = 0
+        for t in used:
+            c = cnt[t]
+            part = (part + phi[t] * (c*c % MOD)) % MOD
+            cnt[t] = 0
+        ans = (ans + phi[e] * part) % MOD
+    return ans
+
+def solve_all():
+    n, arr = read_input()
+    if n == 0:
+        return
+    print(solve_case(n, arr))
+
+def _test_final():
+    # Provided samples
+    assert solve_case(2, [0,1,1]) == 5
+    assert solve_case(3, [0,1,2,3]) == 20
+    # Cross-check vs brute for small random
+    import random
+    random.seed(7)
+    for _ in range(5):
+        n = 6
+        arr = [0] + [random.randint(1, 10) for _ in range(n)]
+        v1 = solve_case(n, arr)
+        v2 = 0
+        for i in range(1, n+1):
+            for j in range(1, n+1):
+                v2 = (v2 + gcd(arr[i], arr[j]) * gcd(i, j)) % MOD
+        assert v1 == v2
+
+if __name__ == "__main__":
+    _test_final()
+    # solve_all()
+\end{minted}
+\VALIDATION{Exactly 3 asserts beyond samples: two fixed and one randomized batch compared against brute-force for small $n$.}
+\RESULT{Print a single integer: the prettiness value modulo $10^9+7$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests include small fixed examples and randomized small arrays, comparing the optimal solver against the brute-force baseline.}
+\LINE{CROSS-CHECKS}{Verify symmetry under reversing $a$; check cases with all ones; check with all equal values; compare A vs C on small sizes.}
+\LINE{EDGE-CASE GENERATOR}{Generate arrays of size up to $8$ with values in $[1,10]$, include extremes like all $1$s, all same composite with many divisors, and increasing/primes.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+from math import gcd
+MOD = 10**9 + 7
+
+def brute(n, arr):
+    s = 0
+    for i in range(1, n+1):
+        for j in range(1, n+1):
+            s = (s + gcd(arr[i], arr[j]) * gcd(i, j)) % MOD
+    return s
+
+def gen_all_ones(n):
+    return [0] + [1]*n
+
+def gen_all_equal(n, v):
+    return [0] + [v]*n
+
+def gen_primes(n):
+    # first n primes (small)
+    primes = []
+    x = 2
+    while len(primes) < n:
+        ok = True
+        for p in primes:
+            if p*p > x:
+                break
+            if x % p == 0:
+                ok = False
+                break
+        if ok:
+            primes.append(x)
+        x += 1
+    return [0] + primes
+
+def reference_solution(n, arr):
+    # Wrap optimal solve_case from section 6 (duplicated for isolation)
+    from math import gcd
+    def totients_upto(N):
+        phi = list(range(N+1))
+        primes = []
+        is_comp = [False]*(N+1)
+        phi[0] = 0
+        if N >= 1:
+            phi[1] = 1
+        for i in range(2, N+1):
+            if not is_comp[i]:
+                primes.append(i)
+                phi[i] = i-1
+            for p in primes:
+                v = i*p
+                if v > N:
+                    break
+                is_comp[v] = True
+                if i % p == 0:
+                    phi[v] = phi[i] * p
+                    break
+                else:
+                    phi[v] = phi[i] * (p-1)
+        return phi
+    def divisors_list_upto(N):
+        divs = [[] for _ in range(N+1)]
+        for d in range(1, N+1):
+            for m in range(d, N+1, d):
+                divs[m].append(d)
+        return divs
+    if n == 0:
+        return 0
+    V = max(arr)
+    N = max(n, V)
+    phi = totients_upto(N)
+    divs_idx = divisors_list_upto(n)
+    divs_val = divisors_list_upto(V)
+    S = [[] for _ in range(V+1)]
+    for i in range(1, n+1):
+        ai = arr[i]
+        for e in divs_val[ai]:
+            S[e].append(i)
+    cnt = [0]*(n+1)
+    used = []
+    ans = 0
+    for e in range(1, V+1):
+        if not S[e]:
+            continue
+        used.clear()
+        for i in S[e]:
+            for t in divs_idx[i]:
+                if cnt[t] == 0:
+                    used.append(t)
+                cnt[t] += 1
+        part = 0
+        for t in used:
+            c = cnt[t]
+            part = (part + phi[t] * (c*c % MOD)) % MOD
+            cnt[t] = 0
+        ans = (ans + phi[e] * part) % MOD
+    return ans
+
+def run_tests():
+    # Edge cases
+    n = 2
+    arr = gen_all_ones(n)
+    assert reference_solution(n, arr) == brute(n, arr)
+    n = 5
+    arr = gen_all_equal(n, 12)
+    assert reference_solution(n, arr) == brute(n, arr)
+    n = 6
+    arr = gen_primes(n)
+    assert reference_solution(n, arr) == brute(n, arr)
+    # Randomized
+    import random
+    random.seed(42)
+    for _ in range(20):
+        n = 7
+        arr = [0] + [random.randint(1, 15) for _ in range(n)]
+        assert reference_solution(n, arr) == brute(n, arr)
+
+if __name__ == "__main__":
+    run_tests()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF/LC) + asserts
+from math import gcd
+MOD = 10**9 + 7
+
+def totients_upto(N):
+    phi = list(range(N+1))
+    primes = []
+    is_comp = [False]*(N+1)
+    phi[0] = 0
+    if N >= 1:
+        phi[1] = 1
+    for i in range(2, N+1):
+        if not is_comp[i]:
+            primes.append(i)
+            phi[i] = i-1
+        for p in primes:
+            v = i*p
+            if v > N:
+                break
+            is_comp[v] = True
+            if i % p == 0:
+                phi[v] = phi[i] * p
+                break
+            else:
+                phi[v] = phi[i] * (p-1)
+    return phi
+
+def divisors_list_upto(N):
+    divs = [[] for _ in range(N+1)]
+    for d in range(1, N+1):
+        for m in range(d, N+1, d):
+            divs[m].append(d)
+    return divs
+
+def read_input():
+    import sys
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, []
+    it = iter(data)
+    n = int(next(it))
+    arr = [0] + [int(next(it)) for _ in range(n)]
+    return n, arr
+
+def solve_case(n, arr):
+    if n == 0:
+        return 0
+    V = max(arr)
+    N = max(n, V)
+    phi = totients_upto(N)
+    divs_idx = divisors_list_upto(n)
+    divs_val = divisors_list_upto(V)
+    S = [[] for _ in range(V+1)]
+    for i in range(1, n+1):
+        ai = arr[i]
+        for e in divs_val[ai]:
+            S[e].append(i)
+    cnt = [0]*(n+1)
+    used = []
+    ans = 0
+    for e in range(1, V+1):
+        if not S[e]:
+            continue
+        used.clear()
+        for i in S[e]:
+            for t in divs_idx[i]:
+                if cnt[t] == 0:
+                    used.append(t)
+                cnt[t] += 1
+        part = 0
+        for t in used:
+            c = cnt[t]
+            part = (part + phi[t] * (c*c % MOD)) % MOD
+            cnt[t] = 0
+        ans = (ans + phi[e] * part) % MOD
+    return ans
+
+def solve_all():
+    n, arr = read_input()
+    if n == 0:
+        return
+    print(solve_case(n, arr))
+
+def _tests():
+    assert solve_case(2, [0,1,1]) == 5
+    assert solve_case(3, [0,1,2,3]) == 20
+    import random
+    random.seed(123)
+    for _ in range(5):
+        n = 6
+        arr = [0] + [random.randint(1, 10) for _ in range(n)]
+        v1 = solve_case(n, arr)
+        v2 = 0
+        for i in range(1, n+1):
+            for j in range(1, n+1):
+                v2 = (v2 + gcd(arr[i], arr[j]) * gcd(i, j)) % MOD
+        assert v1 == v2
+
+if __name__ == "__main__":
+    _tests()
+    # solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Convert both $\gcd$ factors into sums over divisors using Euler's totient, then count indices satisfying two divisibility conditions.}
+\WHY{Typical at 2200-level: blend multiplicative number theory with careful counting and data-structure engineering.}
+\CHECKLIST{
+- Precompute $\varphi(1..N)$ via linear sieve.
+- Precompute divisors for $1..n$ and $1..\max a_i$.
+- Build $S_e$ lists by iterating divisors of $a_i$.
+- For each $e$, accumulate over divisors of indices in $S_e$.
+- Multiply by $\varphi(e)$ and sum modulo $10^9+7$.
+}
+\EDGECASES{
+- All $a_i=1$ (answer reduces to $\sum_{i,j}\gcd(i,j)$).
+- All $a_i$ equal to the same composite with many divisors.
+- $n$ prime vs composite.
+- $a_i$ include primes and $1$ interleaved.
+- Small $n=2$ boundary.
+- Highly repetitive arrays.}
+\PITFALLS{
+- Forgetting to clear counts between different $e$ values.
+- Not using modulo on squares and accumulators.
+- Building $S_e$ by scanning all $e$ for each index (quadratic); instead, enumerate divisors of $a_i$.
+- Using slow totient computation; prefer linear sieve.
+- Off-by-one with $1$-based indices.
+- Memory spikes from storing unnecessary arrays.}
+\FAILMODES{Approaches that attempt to recalculate counts from scratch per $t$ or per $d$ in $O(N)$ will time out. The divisor-incidence strategy avoids full scans by touching only relevant $t$ and $e$.}
+\ELI{We rewrite each $\gcd$ as a sum over its common divisors weighted by $\varphi$. Then the big double sum becomes counting, for every pair of divisors, how many indices meet both divisibility tests. Precompute once, reuse everywhere, and keep counts only for touched divisors.}
+\NotePages{3}
+
+\end{document}

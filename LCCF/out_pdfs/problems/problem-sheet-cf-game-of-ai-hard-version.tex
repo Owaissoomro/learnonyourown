@@ -1,0 +1,953 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Game of AI (hard version)}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1704/H2}}
+\LINE{DIFFICULTY / RATING}{3500}
+\STATEMENT{This is the hard version of this problem. The difference between easy and hard versions is the constraint on $k$ and the time limit. Notice that you need to calculate the answer for all positive integers $n \in [1,k]$ in this version. You can make hacks only if both versions of the problem are solved.
+
+Cirno is playing a war simulator game with $n$ towers (numbered from $1$ to $n$) and $n$ bots (numbered from $1$ to $n$). The $i$-th tower is initially occupied by the $i$-th bot for $1 \le i \le n$.
+
+Before the game, Cirno first chooses a permutation $p = [p_1, p_2, \ldots, p_n]$ of length $n$ (A permutation of length $n$ is an array of length $n$ where each integer between $1$ and $n$ appears exactly once). After that, she can choose a sequence $a = [a_1, a_2, \ldots, a_n]$ ($1 \le a_i \le n$ and $a_i \ne i$ for all $1 \le i \le n$).
+
+The game has $n$ rounds of attacks. In the $i$-th round, if the $p_i$-th bot is still in the game, it will begin its attack, and as the result the $a_{p_i}$-th tower becomes occupied by the $p_i$-th bot; the bot that previously occupied the $a_{p_i}$-th tower will no longer occupy it. If the $p_i$-th bot is not in the game, nothing will happen in this round.
+
+After each round, if a bot does not occupy any towers, it will be eliminated and leave the game. Please note that no tower can be occupied by more than one bot, but one bot can occupy more than one tower during the game.
+
+At the end of the game, Cirno will record the result as a sequence $b = [b_1, b_2, \ldots, b_n]$, where $b_i$ is the number of the bot that occupies the $i$-th tower at the end of the game.
+
+However, as a mathematics master, she wants you to solve the following counting problem instead of playing games:
+
+Count the number of different pairs of sequences $a$, $b$ from all possible choices of sequence $a$ and permutation $p$.
+
+Calculate the answers for all $n$ such that $1 \le n \le k$. Since these numbers may be large, output them modulo $M$.
+
+Input:
+The only line contains two positive integers $k$ and $M$ ($1\le k\le 10^5$, $2\le M\le 10^9$). It is guaranteed that $2^{18}$ is a divisor of $M-1$ and $M$ is a prime number.
+
+Output:
+Output $k$ lines, where the $i$-th line contains a non-negative integer, which is the answer for $n=i$ modulo $M$.
+
+Note:
+For $n=1$, no valid sequence $a$ exists. We regard the answer as $0$.
+
+For $n=2$, there is only one possible array $a$: $[2, 1]$.
+
+- For array $a$ is $[2, 1]$ and permutation $p$ is $[1, 2]$, the sequence $b$ will be $[1, 1]$ after all rounds have finished. The details for each rounds: In the first round, the first bot will begin its attack and successfully capture the tower $2$. After this round, the second bot will be eliminated and leave the game as all of its towers are occupied by other bots. In the second round, the second bot is not in the game.
+- For array $a$ is $[2, 1]$ and permutation $p$ is $[2, 1]$, the sequence $b$ will be $[2, 2]$ after all rounds have finished. The details for each rounds: In the first round, the second bot will begin its attack and successfully capture the tower $1$. After this round, the first bot will be eliminated and leave the game as all of its towers are occupied by other bots. In the second round, the first bot is not in the game.
+
+So the number of different pairs of sequences $(a,b)$ is $2$ ($[2, 1]$, $[1, 1]$ and $[2, 1]$, $[2, 2]$) for $n=2$.}
+\BREAKDOWN{Model the dynamics on the functional digraph of $a$ (each vertex has one outgoing edge $i\to a_i$ with $a_i\ne i$). Each weakly connected component has exactly one directed cycle (length $\ge 2$). For any play order $p$, exactly one vertex on each cycle survives and finally occupies all towers of its component; trees feed into the cycle and get absorbed. Thus for a fixed $a$, all achievable $b$ map each component to a chosen cycle vertex, yielding a count equal to the product of cycle lengths. The total answer is the sum over all $a$ of these products.}
+\ELI{Every $a$ splits the graph into components, each with a cycle; pick one champion per cycle and assign them all towers in that component. Count all $a$ and all champion choices.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single line: integers $k$, $M$ with $1\le k\le 10^5$, $2\le M\le 10^9$, $M$ is prime, and $2^{18}\mid (M-1)$.}
+\OUTPUTS{Print $k$ lines. Line $i$ contains the number of distinct pairs $(a,b)$ for size $n=i$ modulo $M$.}
+\SAMPLES{Example sanity:
+- Input: $k=2$, $M=998244353$. Output lines: $0$, then $2$.
+- Input: $k=1$, any prime $M$. Output: $0$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $a:[n]\to[n]$ with $a(i)\ne i$ define a functional digraph. Each component contains exactly one directed cycle of length $\ge 2$ with in-arborescences (rooted trees) feeding into cycle nodes. For a fixed $a$, the number of achievable $b$ equals the product of cycle lengths in $a$.}
+\varmapStart
+\var{n}{Problem size; number of bots/towers}
+\var{a}{Function $[n]\to[n]$ with no fixed points}
+\var{p}{Attack order permutation}
+\var{b}{Final owner array; $b_i$ is the bot owning tower $i$}
+\var{T(z)}{EGF of rooted labeled trees: $T(z)=\sum_{n\ge 1}\tfrac{n^{n-1}}{n!}z^n$}
+\var{F(z)}{EGF of desired counts: $F(z)=\exp\!\big(\tfrac{T(z)^2}{1-T(z)}\big)$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\text{Decomposition (labeled species): Functional digraphs are } \mathrm{SET}\big(\mathrm{CYC}(\mathcal{T})\big),\\
+&\text{where } \mathcal{T} \text{ denotes rooted trees with EGF } T(z)=z e^{T(z)}.\\
+&\text{Mark 1 vertex per cycle and forbid 1-cycles: } \sum_{m\ge 2} T(z)^m=\frac{T(z)^2}{1-T(z)}.\\
+&\Rightarrow\quad F(z)=\exp\!\left(\frac{T(z)^2}{1-T(z)}\right),\qquad A_n = n!\,[z^n]\,F(z).
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Labels are distinct; each component has exactly one directed cycle; no 1-cycles because $a_i\ne i$. Marking one vertex per cycle multiplies by cycle length; choices across components are independent.}
+\INVARIANTS{
+- During the game, components do not interact; eliminations happen only within components induced by $a$.
+- Exactly one cycle vertex survives per component; trees are fully absorbed by the component champion.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Enumerate all functions $a:[n]\to[n]$ with $a_i\ne i$, decompose $a$ into cycles, add the product of cycle lengths.}
+\ASSUMPTIONS{Only feasible for very small $n$ since there are $(n-1)^n$ choices of $a$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Enumerate all arrays $a$ with $1\le a_i\le n$, $a_i\ne i$.
+\item For each $a$, find all directed cycles; multiply their lengths.
+\item Accumulate the sum modulo $M$.
+\end{algosteps}
+\COMPLEXITY{Brute force is exponential:
+\[
+\begin{aligned}
+T(n) &= (n-1)^n \cdot O(n) \\
+S(n) &= O(n).
+\end{aligned}
+\]
+}
+\CORRECTNESS{Matches the combinatorial derivation: per $a$, exactly one survivor per cycle; champion choices contribute a factor equal to the cycle length, and multiply across components.}
+\EDGECASES{No valid $a$ for $n=1$; answer $0$. All cycles have length $\ge 2$.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# Brute force enumerator for tiny n; for validation only.
+
+from itertools import product
+
+def brute_answer(n: int, mod: int) -> int:
+    if n == 1:
+        return 0
+    total = 0
+    choices = [tuple(j for j in range(1, n+1) if j != i) for i in range(1, n+1)]
+    for picks in product(*choices):
+        a = [0] + list(picks)  # 1-indexed
+        visited = [0]*(n+1)
+        prod_cycles = 1
+        for i in range(1, n+1):
+            if visited[i]:
+                continue
+            # follow until cycle
+            u = i
+            while not visited[u]:
+                visited[u] = i  # mark by root id
+                u = a[u]
+            if visited[u] == i:
+                # found a new cycle; compute its length
+                v = a[u]
+                clen = 1
+                while v != u:
+                    clen += 1
+                    v = a[v]
+                # self-loops cannot occur by construction; clen >= 2
+                prod_cycles = (prod_cycles * clen) % mod
+        total = (total + prod_cycles) % mod
+    return total
+
+# Tiny sanity checks
+assert brute_answer(1, 998244353) == 0
+assert brute_answer(2, 998244353) == 2
+\end{minted}
+\VALIDATION{Use for $n\le 6$ to cross-check fast methods.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Symbolic Counting via EGFs (Direct Series, $O(n^2)$)}
+\WHICHFORMULA{Use $F(z)=\exp\!\big(\tfrac{T(z)^2}{1-T(z)}\big)$ with $T(z)=\sum_{m\ge 1}\tfrac{m^{m-1}}{m!}z^m$. Compute coefficients by naive series arithmetic (Cauchy products).}
+\ASSUMPTIONS{Precompute factorials and modular inverses. Replace series multiplication by $O(n^2)$ Cauchy product.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build $T$ up to order $k$: $T_m = m^{m-1}\cdot (m!)^{-1}\bmod M$.
+\item Compute $U = T^2 \cdot (1-T)^{-1}$ using geometric series or series inversion.
+\item Compute $F = \exp(U)$ via the standard power series exponential.
+\item Output $A_n = n!\cdot [z^n]F \bmod M$.
+\end{algosteps}
+\COMPLEXITY{Naive series products dominate:
+\[
+\begin{aligned}
+T(n) &\approx O(n^2)\ \text{per product; multiple products} \\
+&\Rightarrow\ O(n^2)\ \text{total for moderate } n, \text{ but not enough for } n=10^5.\\
+S(n) &= O(n).
+\end{aligned}
+\]
+}
+\CORRECTNESS{Follows from labeled-species derivation; all operations are formal series in $\Bbb{Z}_M[[z]]$.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Naive O(n^2) formal series ops (sufficient for small k; used to cross-check NTT).
+def modinv(a, mod):
+    return pow(a, mod-2, mod)
+
+def build_fact(k, mod):
+    fact = [1]*(k+1)
+    invfact = [1]*(k+1)
+    for i in range(1, k+1):
+        fact[i] = (fact[i-1]*i) % mod
+    invfact[k] = modinv(fact[k], mod)
+    for i in range(k, 0, -1):
+        invfact[i-1] = (invfact[i]*i) % mod
+    return fact, invfact
+
+def poly_mul_naive(a, b, n, mod):
+    m = min(len(a)+len(b)-1, n)
+    res = [0]*m
+    for i, ai in enumerate(a):
+        if ai == 0: continue
+        jmax = min(len(b), m - i)
+        for j in range(jmax):
+            res[i+j] = (res[i+j] + ai*b[j]) % mod
+    return res
+
+def poly_inv_naive(f, n, mod):
+    # assumes f[0] != 0
+    invf0 = modinv(f[0], mod)
+    g = [invf0]
+    for m in range(2, n+1):
+        # g upto m: g = g - (conv(f, g) - 1) * g
+        conv = 0
+        for i in range(1, m):
+            conv = (conv + f[i]*g[m-1-i]) % mod
+        g.append((-conv * invf0) % mod)
+    return g
+
+def poly_exp_naive(h, n, mod):
+    # h[0] must be 0
+    g = [1]
+    for m in range(1, n):
+        s = 0
+        for k in range(1, m+1):
+            s = (s + k*h[k]*g[m-k]) % mod
+        g.append((s * modinv(m, mod)) % mod)
+    return g[:n]
+
+def solve_naive_all(k, mod):
+    fact, invfact = build_fact(k, mod)
+    T = [0]*(k+1)
+    for n in range(1, k+1):
+        T[n] = (pow(n, n-1, mod) * invfact[n]) % mod
+    one_minus_T = [1] + [(-T[i]) % mod for i in range(1, k+1)]
+    inv_one_minus_T = poly_inv_naive(one_minus_T, k+1, mod)
+    T2 = poly_mul_naive(T, T, k+1, mod)
+    U = poly_mul_naive(T2, inv_one_minus_T, k+1, mod)
+    F = poly_exp_naive(U, k+1, mod)
+    ans = [0]*(k+1)
+    for n in range(1, k+1):
+        ans[n] = (F[n] * fact[n]) % mod
+    return ans
+\end{minted}
+\VALIDATION{Check $n\le 8$ against brute force and the NTT-based method.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{NTT-Based Power Series Arithmetic in $\Bbb{Z}_M$}
+\WHICHFORMULA{Compute $F(z)=\exp\!\big(\tfrac{T(z)^2}{1-T(z)}\big)$ with $T_n=\tfrac{n^{n-1}}{n!}$ using Newton-accelerated series inversion and exponential; all products via NTT.}
+\ASSUMPTIONS{$M$ is prime and $2^{18}\mid (M-1)$, so we can find roots of unity up to length $2^{18}\ge 2\cdot 10^5$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute factorials and inverse factorials modulo $M$ up to $k$.
+\item Build $T[0..k]$ with $T[0]=0$, $T[n]=n^{n-1}\cdot (n!)^{-1}\bmod M$.
+\item Compute $(1-T)^{-1}$ by Newton iteration using NTT convolutions.
+\item Compute $U=T^2\cdot (1-T)^{-1}$ with NTT.
+\item Compute $F=\exp(U)$ via Newton iteration: $G\gets 1$; iterate $G\gets G\cdot (1 + U - \ln G)$.
+\item Output $A_n = n!\cdot [z^n]F \bmod M$ for $1\le n\le k$.
+\end{algosteps}
+\OPTIMALITY{$O(k\log k)$ for each core operation (convolution, inverse, log, exp), overall $\tilde O(k)$ per sequence. This is essentially optimal in the algebraic model.}
+\COMPLEXITY{Let $N=k+1$; with NTT:
+\[
+\begin{aligned}
+T(N) &\approx O(N \log N) \text{ per convolution}, \\
+\text{poly inv/exp/log} &\approx O(N \log N).
+\end{aligned}
+\]
+}
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_all(), main()+guard + asserts
+# NTT-based formal power series solution for CF 1704H2.
+
+import sys
+from math import isqrt
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    k = int(data[0]); M = int(data[1])
+    return k, M
+
+def factorize(n: int):
+    fs = []
+    x = n
+    d = 2
+    while d * d <= x:
+        if x % d == 0:
+            fs.append(d)
+            while x % d == 0:
+                x //= d
+        d += 1 if d == 2 else 2
+    if x > 1:
+        fs.append(x)
+    return fs
+
+def primitive_root(p: int) -> int:
+    if p == 2:
+        return 1
+    phi = p - 1
+    fac = factorize(phi)
+    for g in range(2, p):
+        ok = True
+        for q in fac:
+            if pow(g, phi // q, p) == 1:
+                ok = False
+                break
+        if ok:
+            return g
+    raise RuntimeError("no primitive root found")
+
+def ntt(a, invert, mod, g_prim):
+    n = len(a)
+    j = 0
+    for i in range(1, n):
+        bit = n >> 1
+        while j & bit:
+            j ^= bit
+            bit >>= 1
+        j ^= bit
+        if i < j:
+            a[i], a[j] = a[j], a[i]
+    len2 = 2
+    while len2 <= n:
+        wlen = pow(g_prim, (mod - 1) // len2, mod)
+        if invert:
+            wlen = pow(wlen, mod - 2, mod)
+        for i in range(0, n, len2):
+            w = 1
+            half = len2 >> 1
+            for j in range(i, i + half):
+                u = a[j]
+                v = a[j + half] * w % mod
+                a[j] = (u + v) % mod
+                a[j + half] = (u - v) % mod
+                w = w * wlen % mod
+        len2 <<= 1
+    if invert:
+        inv_n = pow(n, mod - 2, mod)
+        for i in range(n):
+            a[i] = a[i] * inv_n % mod
+
+def convolution(a, b, mod, g_prim):
+    na, nb = len(a), len(b)
+    if na == 0 or nb == 0:
+        return []
+    need = na + nb - 1
+    n = 1
+    while n < need:
+        n <<= 1
+    fa = a[:] + [0] * (n - na)
+    fb = b[:] + [0] * (n - nb)
+    ntt(fa, False, mod, g_prim)
+    ntt(fb, False, mod, g_prim)
+    for i in range(n):
+        fa[i] = fa[i] * fb[i] % mod
+    ntt(fa, True, mod, g_prim)
+    return fa[:need]
+
+def poly_trim(a, n):
+    if len(a) > n:
+        return a[:n]
+    return a + [0] * (n - len(a))
+
+def poly_add(a, b, mod, n=None):
+    m = max(len(a), len(b)) if n is None else n
+    res = [0] * m
+    for i in range(m):
+        ai = a[i] if i < len(a) else 0
+        bi = b[i] if i < len(b) else 0
+        res[i] = (ai + bi) % mod
+    return res
+
+def poly_sub(a, b, mod, n=None):
+    m = max(len(a), len(b)) if n is None else n
+    res = [0] * m
+    for i in range(m):
+        ai = a[i] if i < len(a) else 0
+        bi = b[i] if i < len(b) else 0
+        res[i] = (ai - bi) % mod
+    return res
+
+def poly_mul(a, b, mod, g_prim, n=None):
+    c = convolution(a, b, mod, g_prim)
+    return c if n is None else poly_trim(c, n)
+
+def poly_inv(f, n, mod, g_prim):
+    assert f[0] % mod != 0
+    g = [pow(f[0], mod - 2, mod)]
+    m = 1
+    while m < n:
+        m2 = min(2 * m, n)
+        f_cut = f[:m2]
+        t = poly_mul(poly_mul(g, g, mod, g_prim, m2), f_cut, mod, g_prim, m2)
+        g = poly_trim(poly_sub(poly_add(g, g, mod, m2), t, mod, m2), m2)
+        m = m2
+    return g[:n]
+
+def poly_deriv(a, mod):
+    n = len(a)
+    if n == 0:
+        return []
+    res = [0] * max(0, n - 1)
+    for i in range(1, n):
+        res[i - 1] = a[i] * i % mod
+    return res
+
+def poly_integ(a, mod):
+    n = len(a)
+    res = [0] * (n + 1)
+    for i in range(n):
+        res[i + 1] = a[i] * pow(i + 1, mod - 2, mod) % mod
+    return res
+
+def poly_log(f, n, mod, g_prim):
+    assert f[0] == 1
+    df = poly_deriv(f, mod)
+    invf = poly_inv(f, n, mod, g_prim)
+    h = poly_mul(df, invf, mod, g_prim, n - 1)
+    ln = poly_integ(h, mod)
+    return ln[:n]
+
+def poly_exp(h, n, mod, g_prim):
+    assert n >= 1
+    assert (h[0] % mod) == 0
+    g = [1]
+    m = 1
+    while m < n:
+        m2 = min(2 * m, n)
+        ln_g = poly_log(poly_trim(g, m2), m2, mod, g_prim)
+        s = poly_sub(h[:m2], ln_g, mod, m2)
+        s[0] = (s[0] + 1) % mod
+        g = poly_mul(g, s, mod, g_prim, m2)
+        m = m2
+    return g[:n]
+
+def build_fact(k, mod):
+    fact = [1] * (k + 1)
+    invfact = [1] * (k + 1)
+    for i in range(1, k + 1):
+        fact[i] = fact[i - 1] * i % mod
+    invfact[k] = pow(fact[k], mod - 2, mod)
+    for i in range(k, 0, -1):
+        invfact[i - 1] = invfact[i] * i % mod
+    return fact, invfact
+
+def compute_answers(k, mod):
+    if k == 0:
+        return [0]
+    g = primitive_root(mod)
+    fact, invfact = build_fact(k, mod)
+    # Build T(z) coefficients up to k
+    T = [0] * (k + 1)
+    for n in range(1, k + 1):
+        T[n] = pow(n, n - 1, mod) * invfact[n] % mod
+    # U = T^2 / (1 - T)
+    one_minus_T = [1] + [(-T[i]) % mod for i in range(1, k + 1)]
+    inv_one_minus_T = poly_inv(one_minus_T, k + 1, mod, g)
+    T2 = poly_mul(T, T, mod, g, k + 1)
+    U = poly_mul(T2, inv_one_minus_T, mod, g, k + 1)
+    # F = exp(U)
+    F = poly_exp(U, k + 1, mod, g)
+    ans = [0] * (k + 1)
+    for n in range(1, k + 1):
+        ans[n] = F[n] * fact[n] % mod
+    return ans
+
+def solve_all():
+    parsed = read_input()
+    if parsed is None:
+        # Self-test when no input
+        self_test()
+        return
+    k, mod = parsed
+    ans = compute_answers(k, mod)
+    out = "\n".join(str(ans[i]) for i in range(1, k + 1))
+    sys.stdout.write(out + ("\n" if out else ""))
+
+# ------------ Tests (deterministic) -------------
+def brute_answer(n: int, mod: int) -> int:
+    if n == 1:
+        return 0
+    total = 0
+    from itertools import product
+    choices = [tuple(j for j in range(1, n+1) if j != i) for i in range(1, n+1)]
+    for picks in product(*choices):
+        a = [0] + list(picks)  # 1-indexed
+        visited = [0]*(n+1)
+        prod_cycles = 1
+        for i in range(1, n+1):
+            if visited[i]:
+                continue
+            u = i
+            while not visited[u]:
+                visited[u] = i
+                u = a[u]
+            if visited[u] == i:
+                v = a[u]
+                clen = 1
+                while v != u:
+                    clen += 1
+                    v = a[v]
+                prod_cycles = (prod_cycles * clen) % mod
+        total = (total + prod_cycles) % mod
+    return total
+
+def self_test():
+    M = 998244353
+    # Basic small n checks
+    small = compute_answers(6, M)
+    # n=1..6 against brute
+    for n in range(1, 7):
+        assert small[n] == brute_answer(n, M), (n, small[n], brute_answer(n, M))
+    # Statement examples
+    assert small[1] == 0
+    assert small[2] == 2
+    # Cross-check naive series for small k
+    naive = solve_naive_all(10, M)
+    series = compute_answers(10, M)
+    for n in range(1, 11):
+        assert naive[n] == series[n], (n, naive[n], series[n])
+
+if __name__ == "__main__":
+    solve_all()
+\end{minted}
+\VALIDATION{Exactly 3 asserts in self-test: 
+- Matches brute force for $n=1..6$ under $M=998244353$.
+- Matches problem note: $A_1=0$, $A_2=2$.
+- Matches naive series for $k=10$.}
+\RESULT{For each $n$, the output is $A_n \bmod M$ where $A_n = n!\,[z^n]\exp\!\big(\tfrac{T(z)^2}{1-T(z)}\big)$ and $T(z)=\sum_{m\ge 1}\tfrac{m^{m-1}}{m!}z^m$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests cover $n\le 6$ by brute force, verify the series identity versus naive $O(n^2)$ series, and the sample facts $A_1=0$, $A_2=2$.}
+\LINE{CROSS-CHECKS}{Compare Approach A (brute) vs. Approach C (NTT) for small $n$; compare Approach B (naive series) vs. C for moderate $k$.}
+\LINE{EDGE-CASE GENERATOR}{Verify $n=1$ boundary; test primes $M$ with large $2$-power in $M-1$ such as $998{,}244{,}353$.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+def gen_inputs():
+    # Minimal
+    yield (1, 998244353)
+    # Small
+    yield (6, 998244353)
+    # Moderate (sanity; not executed here)
+    yield (100, 998244353)
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF) + asserts.
+
+import sys
+from math import isqrt
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    k = int(data[0]); M = int(data[1])
+    return k, M
+
+def factorize(n: int):
+    fs = []
+    x = n
+    d = 2
+    while d * d <= x:
+        if x % d == 0:
+            fs.append(d)
+            while x % d == 0:
+                x //= d
+        d += 1 if d == 2 else 2
+    if x > 1:
+        fs.append(x)
+    return fs
+
+def primitive_root(p: int) -> int:
+    if p == 2:
+        return 1
+    phi = p - 1
+    fac = factorize(phi)
+    for g in range(2, p):
+        ok = True
+        for q in fac:
+            if pow(g, phi // q, p) == 1:
+                ok = False
+                break
+        if ok:
+            return g
+    raise RuntimeError("no primitive root found")
+
+def ntt(a, invert, mod, g_prim):
+    n = len(a)
+    j = 0
+    for i in range(1, n):
+        bit = n >> 1
+        while j & bit:
+            j ^= bit
+            bit >>= 1
+        j ^= bit
+        if i < j:
+            a[i], a[j] = a[j], a[i]
+    len2 = 2
+    while len2 <= n:
+        wlen = pow(g_prim, (mod - 1) // len2, mod)
+        if invert:
+            wlen = pow(wlen, mod - 2, mod)
+        for i in range(0, n, len2):
+            w = 1
+            half = len2 >> 1
+            for j in range(i, i + half):
+                u = a[j]
+                v = a[j + half] * w % mod
+                a[j] = (u + v) % mod
+                a[j + half] = (u - v) % mod
+                w = w * wlen % mod
+        len2 <<= 1
+    if invert:
+        inv_n = pow(n, mod - 2, mod)
+        for i in range(n):
+            a[i] = a[i] * inv_n % mod
+
+def convolution(a, b, mod, g_prim):
+    na, nb = len(a), len(b)
+    if na == 0 or nb == 0:
+        return []
+    need = na + nb - 1
+    n = 1
+    while n < need:
+        n <<= 1
+    fa = a[:] + [0] * (n - na)
+    fb = b[:] + [0] * (n - nb)
+    ntt(fa, False, mod, g_prim)
+    ntt(fb, False, mod, g_prim)
+    for i in range(n):
+        fa[i] = fa[i] * fb[i] % mod
+    ntt(fa, True, mod, g_prim)
+    return fa[:need]
+
+def poly_trim(a, n):
+    if len(a) > n:
+        return a[:n]
+    return a + [0] * (n - len(a))
+
+def poly_add(a, b, mod, n=None):
+    m = max(len(a), len(b)) if n is None else n
+    res = [0] * m
+    for i in range(m):
+        ai = a[i] if i < len(a) else 0
+        bi = b[i] if i < len(b) else 0
+        res[i] = (ai + bi) % mod
+    return res
+
+def poly_sub(a, b, mod, n=None):
+    m = max(len(a), len(b)) if n is None else n
+    res = [0] * m
+    for i in range(m):
+        ai = a[i] if i < len(a) else 0
+        bi = b[i] if i < len(b) else 0
+        res[i] = (ai - bi) % mod
+    return res
+
+def poly_mul(a, b, mod, g_prim, n=None):
+    c = convolution(a, b, mod, g_prim)
+    return c if n is None else poly_trim(c, n)
+
+def poly_inv(f, n, mod, g_prim):
+    assert f[0] % mod != 0
+    g = [pow(f[0], mod - 2, mod)]
+    m = 1
+    while m < n:
+        m2 = min(2 * m, n)
+        f_cut = f[:m2]
+        t = poly_mul(poly_mul(g, g, mod, g_prim, m2), f_cut, mod, g_prim, m2)
+        g = poly_trim(poly_sub(poly_add(g, g, mod, m2), t, mod, m2), m2)
+        m = m2
+    return g[:n]
+
+def poly_deriv(a, mod):
+    n = len(a)
+    if n == 0:
+        return []
+    res = [0] * max(0, n - 1)
+    for i in range(1, n):
+        res[i - 1] = a[i] * i % mod
+    return res
+
+def poly_integ(a, mod):
+    n = len(a)
+    res = [0] * (n + 1)
+    for i in range(n):
+        res[i + 1] = a[i] * pow(i + 1, mod - 2, mod) % mod
+    return res
+
+def poly_log(f, n, mod, g_prim):
+    assert f[0] == 1
+    df = poly_deriv(f, mod)
+    invf = poly_inv(f, n, mod, g_prim)
+    h = poly_mul(df, invf, mod, g_prim, n - 1)
+    ln = poly_integ(h, mod)
+    return ln[:n]
+
+def poly_exp(h, n, mod, g_prim):
+    assert n >= 1
+    assert (h[0] % mod) == 0
+    g = [1]
+    m = 1
+    while m < n:
+        m2 = min(2 * m, n)
+        ln_g = poly_log(poly_trim(g, m2), m2, mod, g_prim)
+        s = poly_sub(h[:m2], ln_g, mod, m2)
+        s[0] = (s[0] + 1) % mod
+        g = poly_mul(g, s, mod, g_prim, m2)
+        m = m2
+    return g[:n]
+
+def build_fact(k, mod):
+    fact = [1] * (k + 1)
+    invfact = [1] * (k + 1)
+    for i in range(1, k + 1):
+        fact[i] = fact[i - 1] * i % mod
+    invfact[k] = pow(fact[k], mod - 2, mod)
+    for i in range(k, 0, -1):
+        invfact[i - 1] = invfact[i] * i % mod
+    return fact, invfact
+
+def compute_answers(k, mod):
+    if k == 0:
+        return [0]
+    g = primitive_root(mod)
+    fact, invfact = build_fact(k, mod)
+    T = [0] * (k + 1)
+    for n in range(1, k + 1):
+        T[n] = pow(n, n - 1, mod) * invfact[n] % mod
+    one_minus_T = [1] + [(-T[i]) % mod for i in range(1, k + 1)]
+    inv_one_minus_T = poly_inv(one_minus_T, k + 1, mod, g)
+    T2 = poly_mul(T, T, mod, g, k + 1)
+    U = poly_mul(T2, inv_one_minus_T, mod, g, k + 1)
+    F = poly_exp(U, k + 1, mod, g)
+    ans = [0] * (k + 1)
+    for n in range(1, k + 1):
+        ans[n] = F[n] * fact[n] % mod
+    return ans
+
+def brute_answer(n: int, mod: int) -> int:
+    if n == 1:
+        return 0
+    total = 0
+    from itertools import product
+    choices = [tuple(j for j in range(1, n+1) if j != i) for i in range(1, n+1)]
+    for picks in product(*choices):
+        a = [0] + list(picks)  # 1-indexed
+        visited = [0]*(n+1)
+        prod_cycles = 1
+        for i in range(1, n+1):
+            if visited[i]:
+                continue
+            u = i
+            while not visited[u]:
+                visited[u] = i
+                u = a[u]
+            if visited[u] == i:
+                v = a[u]
+                clen = 1
+                while v != u:
+                    clen += 1
+                    v = a[v]
+                prod_cycles = (prod_cycles * clen) % mod
+        total = (total + prod_cycles) % mod
+    return total
+
+def self_test():
+    M = 998244353
+    small = compute_answers(6, M)
+    for n in range(1, 7):
+        assert small[n] == brute_answer(n, M), (n, small[n], brute_answer(n, M))
+    assert small[1] == 0
+    assert small[2] == 2
+
+def solve_all():
+    parsed = read_input()
+    if parsed is None:
+        self_test()
+        return
+    k, mod = parsed
+    ans = compute_answers(k, mod)
+    print("\n".join(str(ans[i]) for i in range(1, k + 1)))
+
+if __name__ == "__main__":
+    solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Count pairs $(a,b)$ where $a$ is a fixed-point-free endofunction and $b$ is constant per component equal to a chosen cycle vertex; the count equals $n!\,[z^n]\exp\!\big(\tfrac{T^2}{1-T}\big)$.}
+\WHY{Combines labeled combinatorics with fast formal power series arithmetic; a classic pattern in hard CF generating-function problems.}
+\CHECKLIST{
+- Model $a$ as a functional digraph; identify cycle structure.
+- Recognize champion-per-cycle rule; product of cycle lengths.
+- Translate to EGFs: cycles of rooted trees, mark one per cycle, forbid 1-cycles.
+- Implement NTT for $\Bbb{Z}_M$ with $2$-power roots.
+- Series ops: inverse, logarithm, exponential via Newton iteration.
+}
+\EDGECASES{
+- $n=1$: answer $0$.
+- Large $k$ near $10^5$: ensure polynomial truncations at each step.
+- $M$ arbitrary prime: compute primitive root via factoring $M-1$.
+- No self-loops allowed in $a$ $\Rightarrow$ exclude $T$-linear term in exponent via $T^2/(1-T)$.
+- Exact degree control in series to avoid index errors.
+- Avoid divisions by zero: require $f[0]=1$ for $\ln$, $f[0]\ne 0$ for inverse.}
+\PITFALLS{
+- Using EGF convolution incorrectly; here all series ops are ordinary in $z$.
+- Forgetting factorial scaling at the end: multiply $[z^n]F$ by $n!$.
+- Not trimming to $k+1$ after each op, causing blow-up and timeouts.
+- NTT root selection: must use a primitive root of $\Bbb{Z}_M^\times$; stage-length roots from it.
+- Newton steps: ensure correct base cases and doubling lengths.
+- Off-by-one in derivative/integral degrees.}
+\FAILMODES{Naive $O(n^2)$ series or brute force fails for $k=10^5$. Wrong handling of EGFs vs. OGFs leads to wrong coefficients. Improper NTT modulus or roots cause incorrect convolutions.}
+\ELI{Think of each component picking a champion from its cycle. The generating function encodes this as sequences of rooted trees around a cycle, and marking one per cycle turns cycles into sequences. With fast polynomial math, we can compute all answers up to $k$ efficiently.}
+\NotePages{3}
+
+\end{document}

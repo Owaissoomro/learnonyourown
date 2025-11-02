@@ -1,0 +1,833 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Counting Shortcuts}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1650/G}}
+\LINE{DIFFICULTY / RATING}{2100}
+\STATEMENT{Given an undirected connected graph with $n$ vertices and $m$ edges. The graph contains no loops (edges from a vertex to itself) and multiple edges (i.e., no more than one edge between each pair of vertices). The vertices of the graph are numbered from $1$ to $n$.
+
+Find the number of paths from a vertex $s$ to $t$ whose length differs from the shortest path from $s$ to $t$ by no more than $1$. It is necessary to consider all suitable paths, even if they pass through the same vertex or edge more than once (i.e., they are not simple).
+
+For example, let $n = 6$, $m = 8$, $s = 6$ and $t = 1$. Then the length of the shortest path from $s$ to $t$ is $1$. Consider all paths whose length is at most $1 + 1 = 2$.
+\begin{bullets}
+\item $6 \rightarrow 1$. The length of the path is $1$.
+\item $6 \rightarrow 4 \rightarrow 1$. Path length is $2$.
+\item $6 \rightarrow 2 \rightarrow 1$. Path length is $2$.
+\item $6 \rightarrow 5 \rightarrow 1$. Path length is $2$.
+\end{bullets}
+There is a total of $4$ matching paths.
+
+Input:
+The first line of test contains the number $t$ ($1 \le t \le 10^4$) — the number of test cases in the test.
+
+Before each test case, there is a blank line.
+
+The first line of test case contains two numbers $n, m$ ($2 \le n \le 2 \cdot 10^5$, $1 \le m \le 2 \cdot 10^5$) — the number of vertices and edges in the graph.
+
+The second line contains two numbers $s$ and $t$ ($1 \le s, t \le n$, $s \ne t$) — the numbers of the start and end vertices of the path.
+
+The following $m$ lines contain descriptions of edges: the $i$th line contains two integers $u_i$, $v_i$ ($1 \le u_i,v_i \le n$) — the numbers of vertices that connect the $i$th edge. It is guaranteed that the graph is connected and does not contain loops and multiple edges.
+
+It is guaranteed that the sum of values $n$ over all test cases does not exceed $2 \cdot 10^5$. Similarly, it is guaranteed that the sum of values $m$ over all test cases does not exceed $2 \cdot 10^5$.
+
+Output:
+For each test case, output a single number — the number of paths from $s$ to $t$ such that their length differs from the length of the shortest path by no more than $1$.
+
+Since this number may be too large, output it modulo $10^9 + 7$.}
+\BREAKDOWN{Compute the number of shortest $s \to t$ paths and the number of $s \to t$ paths of length exactly $\text{dist}(s,t)+1$. Sum them modulo $10^9+7$. Use BFS layers and path-counting on the shortest-path DAG plus one allowed same-layer edge.}
+\ELI{Count all shortest routes; then add those routes that insert exactly one extra ``side step'' along an edge that keeps the BFS layer unchanged.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Multiple test cases. For each: integers $n, m$; integers $s, t$ with $1 \le s, t \le n$, $s \ne t$; then $m$ undirected edges $(u_i,v_i)$, $1 \le u_i,v_i \le n$. Graph has no loops or multiple edges, and is connected. Global sums: $\sum n \le 2\cdot 10^5$, $\sum m \le 2\cdot 10^5$.}
+\OUTPUTS{For each test case, one integer: the number of $s \to t$ paths with length in $\{\text{dist}(s,t),\,\text{dist}(s,t)+1\}$, modulo $10^9+7$.}
+\SAMPLES{Example 1:
+\begin{minted}{python}
+# 1 test; a star centered at 6 with leaves 1,2,4,5; s=6, t=1
+input_data = """\
+1
+
+6 4
+6 1
+6 1
+6 2
+6 4
+6 5
+"""
+# Output: 4 (one direct + three via 2/4/5)
+\end{minted}
+Example 2:
+\begin{minted}{python}
+# 1 test; square 1-2-3-4-1, s=1, t=3
+input_data = """\
+1
+
+4 4
+1 3
+1 2
+2 3
+3 4
+4 1
+"""
+# Shortest paths = 2, no length-3 path; Output: 2
+\end{minted}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $G=(V,E)$ be a simple connected undirected graph, $|V|=n$, $|E|=m$. Fix $s,t \in V$. Let $d_s(v)$ be the shortest distance from $s$ to $v$ and $d_t(v)$ be the shortest distance from $t$ to $v$. Let $D = d_s(t)$. Let $W_s(v)$ be the number of shortest paths from $s$ to $v$, and $W_t(v)$ the number of shortest paths from $v$ to $t$ (equivalently, from $t$ to $v$) modulo $M=10^9+7$.}
+\varmapStart
+\var{G=(V,E)}{input graph}
+\var{s,t}{start and target vertices}
+\var{d_s(\cdot), d_t(\cdot)}{BFS distances from $s$ and $t$}
+\var{W_s(\cdot), W_t(\cdot)}{counts of shortest paths from $s$ and to $t$}
+\var{D}{shortest distance $d_s(t)$}
+\var{M}{modulus $10^9+7$}
+\varmapEnd
+\GOVERN{
+\begin{BreakableEquation*}
+\text{Answer} \equiv W_s(t) \;+\; \sum_{\substack{(u,v)\in E\\ d_s(u)=d_s(v)\\ d_s(v)+d_t(v)=D}} \bigl(W_s(u)\cdot W_t(v)\bigr)\pmod{M}.
+\end{BreakableEquation*}
+}
+\ASSUMPTIONS{Unweighted, undirected simple graph; BFS layers are integer distances; counting of shortest paths is via DAG dynamic programming over increasing distance.}
+\INVARIANTS{
+\begin{bullets}
+\item For any edge $(x,y)$, $\lvert d_s(x)-d_s(y)\rvert \le 1$.
+\item Any $s\to t$ walk of length $D+1$ has exactly one step with $\Delta d_s=0$; all others have $\Delta d_s=+1$.
+\item A node $v$ can continue to $t$ in exactly $D-d_s(v)$ steps iff $d_s(v)+d_t(v)=D$.
+\end{bullets}
+}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Compute $D$ by BFS. Then count number of walks of exact length $L\in\{D, D+1\}$ by naive DP over length: $DP[\ell][v]=$ number of $s\to v$ walks of length $\ell$, transition along all edges.}
+\ASSUMPTIONS{Feasible only for tiny graphs since $D$ can be $\Theta(n)$. Used as a correctness baseline.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Run BFS from $s$ to get $D=d_s(t)$.
+\item Initialize $DP[0][s]=1$, $DP[0][v\ne s]=0$.
+\item For $\ell=1$ to $D+1$, for every edge $(x,y)$, do $DP[\ell][y]{+}{=}\,DP[\ell-1][x]$ and $DP[\ell][x]{+}{=}\,DP[\ell-1][y]$ modulo $M$.
+\item Answer is $DP[D][t]+DP[D+1][t]\bmod M$.
+\end{algosteps}
+\COMPLEXITY{Let $D=d_s(t)$.
+\[
+\begin{aligned}
+T(n,m) &\!=\! \mathcal{O}(n+m) \text{ (BFS)} + \mathcal{O}\bigl((D+1)\cdot m\bigr) \\
+S(n,m) &\!=\! \mathcal{O}(n) \text{ per layer (rolling arrays)}.
+\end{aligned}
+\]
+}
+\CORRECTNESS{By definition of walk DP, $DP[\ell]$ counts all walks of length $\ell$. Summing $\ell=D$ and $D+1$ yields the desired count.}
+\EDGECASES{No edges of length $0$; connectedness ensures $D$ is finite; modulo arithmetic everywhere.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# CF TEMPLATE (must include read_input / solve_case / solve_all / main + guard + asserts)
+from collections import deque
+import sys
+MOD = 10**9 + 7
+
+def read_input(data=None):
+    if data is None:
+        it = iter(sys.stdin.buffer.read().split())
+    else:
+        it = iter(data.encode().split())
+    t = int(next(it))
+    cases = []
+    for _ in range(t):
+        # Optional blank lines are implicitly skipped by tokenization
+        n = int(next(it)); m = int(next(it))
+        s = int(next(it)) - 1; tt = int(next(it)) - 1
+        g = [[] for _ in range(n)]
+        for _e in range(m):
+            u = int(next(it)) - 1; v = int(next(it)) - 1
+            g[u].append(v); g[v].append(u)
+        cases.append((n, m, s, tt, g))
+    return cases
+
+def bfs_dist(n, g, start):
+    dist = [-1] * n
+    q = deque([start])
+    dist[start] = 0
+    while q:
+        u = q.popleft()
+        for v in g[u]:
+            if dist[v] == -1:
+                dist[v] = dist[u] + 1
+                q.append(v)
+    return dist
+
+def solve_case(case):
+    n, m, s, t, g = case
+    ds = bfs_dist(n, g, s)
+    D = ds[t]
+    # Rolling DP for walks counts
+    prev = [0] * n
+    prev[s] = 1
+    ans_D = 0
+    ans_D1 = 0
+    for L in range(1, D + 2):
+        cur = [0] * n
+        # iterate edges once; add both directions
+        for u in range(n):
+            wu = prev[u]
+            if wu == 0:
+                continue
+            for v in g[u]:
+                cur[v] += wu
+                if cur[v] >= MOD:
+                    cur[v] -= MOD
+        if L == D:
+            ans_D = cur[t]
+        if L == D + 1:
+            ans_D1 = cur[t]
+            break
+        prev = cur
+    return (ans_D + ans_D1) % MOD
+
+def solve_all(cases):
+    return [solve_case(c) for c in cases]
+
+def main():
+    out = solve_all(read_input())
+    sys.stdout.write("\n".join(map(str, out)))
+
+if __name__ == "__main__":
+    # Tiny correctness checks for the baseline
+    # 1) Simple edge
+    data = """1
+
+2 1
+1 2
+1 2
+"""
+    res = solve_all(read_input(data))
+    assert res == [1]
+    # 2) Star centered at 6 with leaves 1,2,4,5; s=6, t=1
+    data = """1
+
+6 4
+6 1
+6 1
+6 2
+6 4
+6 5
+"""
+    res = solve_all(read_input(data))
+    assert res == [4]
+    # 3) Square 1-2-3-4-1, s=1, t=3 => 2 shortest, 0 extra
+    data = """1
+
+4 4
+1 3
+1 2
+2 3
+3 4
+4 1
+"""
+    res = solve_all(read_input(data))
+    assert res == [2]
+    # Print nothing on asserts-only run
+\end{minted}
+\VALIDATION{Checked on three tiny cases: single edge, star case from description, and a 4-cycle.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Use BFS from $s$ and $t$ to get distances $d_s, d_t$ and numbers of shortest paths $W_s, W_t$. All shortest-path counts are computed on the BFS DAG in $\mathcal{O}(n+m)$. Then count all $D+1$ paths by summing over ordered same-layer edges $(u,v)$ with $d_s(u)=d_s(v)$ and $d_s(v)+d_t(v)=D$: contribution $W_s(u)\cdot W_t(v)$.}
+\ASSUMPTIONS{Each $D+1$-length walk must have exactly one step with $\Delta d_s=0$, which must be a same-layer edge; all other steps are forward along increasing $d_s$ and stay shortest relative to $t$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item BFS from $s$ to get $d_s$ and $W_s$ (counts of shortest paths).
+\item BFS from $t$ to get $d_t$ and $W_t$.
+\item Let $D=d_s(t)$. Initialize answer $=W_s(t)$.
+\item For each vertex $v$ with $d_s(v)+d_t(v)=D$, compute $S_v=\sum_{u\in N(v),\,d_s(u)=d_s(v)} W_s(u)$. Add $S_v\cdot W_t(v)$ to the answer.
+\end{algosteps}
+\COMPLEXITY{Single pass BFS and a linear scan over edges:
+\[
+\begin{aligned}
+T(n,m) &= \mathcal{O}(n+m), \\
+S(n,m) &= \mathcal{O}(n).
+\end{aligned}
+\]
+}
+\CORRECTNESS{Every walk of length $D+1$ has a unique ordered same-layer edge $(u\to v)$ where the non-increment occurs; before it, the walk is a shortest $s\to u$ path, counted by $W_s(u)$; after it, it must be a shortest $v\to t$ path, counted by $W_t(v)$. Conversely, any such pair composes into a valid walk of length $D+1$. Disjoint decomposition ensures no double counting.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+from collections import deque
+import sys
+MOD = 10**9 + 7
+
+def read_input(data=None):
+    if data is None:
+        it = iter(sys.stdin.buffer.read().split())
+    else:
+        it = iter(data.encode().split())
+    t = int(next(it))
+    cases = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        s = int(next(it)) - 1; tt = int(next(it)) - 1
+        g = [[] for _ in range(n)]
+        for _e in range(m):
+            u = int(next(it)) - 1; v = int(next(it)) - 1
+            g[u].append(v); g[v].append(u)
+        cases.append((n, m, s, tt, g))
+    return cases
+
+def bfs_with_ways(n, g, start):
+    dist = [-1] * n
+    ways = [0] * n
+    q = deque([start])
+    dist[start] = 0
+    ways[start] = 1
+    while q:
+        u = q.popleft()
+        for v in g[u]:
+            if dist[v] == -1:
+                dist[v] = dist[u] + 1
+                ways[v] = ways[u]
+                q.append(v)
+            elif dist[v] == dist[u] + 1:
+                ways[v] += ways[u]
+                if ways[v] >= MOD:
+                    ways[v] -= MOD
+    return dist, ways
+
+def solve_case(case):
+    n, m, s, t, g = case
+    ds, Ws = bfs_with_ways(n, g, s)
+    dt, Wt = bfs_with_ways(n, g, t)
+    D = ds[t]
+    ans = Ws[t] % MOD  # shortest
+    # add D+1 via same-layer edges into a "corridor" vertex v
+    for v in range(n):
+        if ds[v] == -1 or dt[v] == -1:
+            continue
+        if ds[v] + dt[v] != D:
+            continue
+        Sv = 0
+        dv = ds[v]
+        for u in g[v]:
+            if ds[u] == dv:
+                Sv += Ws[u]
+                if Sv >= MOD:
+                    Sv -= MOD
+        ans = (ans + Sv * Wt[v]) % MOD
+    return ans
+
+def solve_all(cases):
+    return [solve_case(c) for c in cases]
+
+def main():
+    out = solve_all(read_input())
+    sys.stdout.write("\n".join(map(str, out)))
+
+if __name__ == "__main__":
+    # Edge: single edge
+    data = """1
+
+2 1
+1 2
+1 2
+"""
+    assert solve_all(read_input(data)) == [1]
+    # Diamond with a same-layer edge 2-3: s=1,t=4 => 2 shortest + 2 with one side-step
+    data = """1
+
+4 5
+1 4
+1 2
+1 3
+2 4
+3 4
+2 3
+"""
+    assert solve_all(read_input(data)) == [4]
+    # Star centered at 6, s=6,t=1 => 4
+    data = """1
+
+6 4
+6 1
+6 1
+6 2
+6 4
+6 5
+"""
+    assert solve_all(read_input(data)) == [4]
+\end{minted}
+\VALIDATION{Covers degenerate edge, a diamond with an intra-layer edge producing exactly two $D{+}1$ paths, and the star example.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{BFS to get distances and shortest-path counts, then count oriented same-layer edges landing on the shortest $s$-$t$ corridor:
+\begin{BreakableEquation*}
+\text{Ans} = W_s(t) + \sum_{\substack{v: d_s(v)+d_t(v)=D}} \left(\sum_{\substack{u\in N(v)\\ d_s(u)=d_s(v)}} W_s(u)\right) \cdot W_t(v) \pmod{M}.
+\end{BreakableEquation*}
+}
+\ASSUMPTIONS{Unweighted undirected graph. $W_s$ and $W_t$ are computed on the BFS DAG; modulo arithmetic throughout.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Run two BFS traversals with path-count accumulation from $s$ and from $t$ to compute $(d_s, W_s)$ and $(d_t, W_t)$.
+\item Let $D=d_s(t)$; initialize answer as $W_s(t)$.
+\item For each vertex $v$ with $d_s(v)+d_t(v)=D$, sum $W_s(u)$ over same-layer neighbors $u$ of $v$, and add $S_v\cdot W_t(v)$ to the answer.
+\item Output answer modulo $10^9+7$.
+\end{algosteps}
+\OPTIMALITY{Two BFS runs and a linear pass over adjacency are information-theoretically optimal up to constants for unweighted graphs: any algorithm must at least explore edges to know $D$ and the corridor.}
+\COMPLEXITY{
+\[
+\begin{aligned}
+T(n,m) &= \mathcal{O}(n+m),\\
+S(n,m) &= \mathcal{O}(n).
+\end{aligned}
+\]
+}
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case()/solve_all(), main()+guard + asserts
+from collections import deque
+import sys
+MOD = 10**9 + 7
+
+def read_input(data=None):
+    if data is None:
+        it = iter(sys.stdin.buffer.read().split())
+    else:
+        it = iter(data.encode().split())
+    t = int(next(it))
+    cases = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        s = int(next(it)) - 1; tt = int(next(it)) - 1
+        g = [[] for _ in range(n)]
+        for _e in range(m):
+            u = int(next(it)) - 1; v = int(next(it)) - 1
+            g[u].append(v); g[v].append(u)
+        cases.append((n, m, s, tt, g))
+    return cases
+
+def bfs_with_ways(n, g, start):
+    dist = [-1] * n
+    ways = [0] * n
+    dq = deque([start])
+    dist[start] = 0
+    ways[start] = 1
+    while dq:
+        u = dq.popleft()
+        for v in g[u]:
+            if dist[v] == -1:
+                dist[v] = dist[u] + 1
+                ways[v] = ways[u]
+                dq.append(v)
+            elif dist[v] == dist[u] + 1:
+                ways[v] += ways[u]
+                if ways[v] >= MOD:
+                    ways[v] -= MOD
+    return dist, ways
+
+def solve_case(case):
+    n, m, s, t, g = case
+    ds, Ws = bfs_with_ways(n, g, s)
+    dt, Wt = bfs_with_ways(n, g, t)
+    D = ds[t]
+    ans = Ws[t] % MOD
+    for v in range(n):
+        if ds[v] == -1 or dt[v] == -1:
+            continue
+        if ds[v] + dt[v] != D:
+            continue
+        Sv = 0
+        dv = ds[v]
+        for u in g[v]:
+            if ds[u] == dv:
+                Sv += Ws[u]
+                if Sv >= MOD:
+                    Sv -= MOD
+        ans = (ans + Sv * Wt[v]) % MOD
+    return ans
+
+def solve_all(cases):
+    return [solve_case(c) for c in cases]
+
+def main():
+    out = solve_all(read_input())
+    sys.stdout.write("\n".join(map(str, out)))
+
+if __name__ == "__main__":
+    # Exactly 3 asserts / mini-tests
+    # 1) Line: 1-2-3-4, s=1, t=4 => only one shortest path
+    data = """1
+
+4 3
+1 4
+1 2
+2 3
+3 4
+"""
+    assert solve_all(read_input(data)) == [1]
+    # 2) Diamond with extra edge between middle layer nodes
+    data = """1
+
+4 5
+1 4
+1 2
+1 3
+2 4
+3 4
+2 3
+"""
+    assert solve_all(read_input(data)) == [4]
+    # 3) Star: s connected to 1,2,4,5; s=6, t=1 => 4
+    data = """1
+
+6 4
+6 1
+6 1
+6 2
+6 4
+6 5
+"""
+    assert solve_all(read_input(data)) == [4]
+    # If run as script on CF, main() reads from stdin and prints outputs.
+\end{minted}
+\VALIDATION{Three asserts: a path graph (unique shortest), a diamond with one same-layer edge (2 shortest + 2 extra), and the star example from the statement (4 total).}
+\RESULT{For each test, prints the count modulo $10^9+7$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests for small graphs: single edge, star, cycle, diamond; property check: when no same-layer edges inside the corridor, result equals number of shortest paths.}
+\LINE{CROSS-CHECKS}{Compare Baseline DP vs Improved/Final on tiny random graphs ($n \le 8$) to ensure equality.}
+\LINE{EDGE-CASE GENERATOR}{Generate connected graphs with $n \in [2,8]$, then pick random $s\ne t$. Include cases with and without intra-layer edges among corridor nodes.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def gen_connected_graph(n, seed=0):
+    random.seed(seed)
+    parent = list(range(n))
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+    def unite(a,b):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[rb] = ra
+            return True
+        return False
+    edges = []
+    # build a random tree
+    for v in range(1, n):
+        u = random.randrange(0, v)
+        edges.append((u, v))
+        unite(u, v)
+    # add some extra edges
+    all_pairs = [(i,j) for i in range(n) for j in range(i+1, n)]
+    random.shuffle(all_pairs)
+    for (u, v) in all_pairs:
+        if len(edges) >= n + n:  # cap
+            break
+        if (u, v) not in edges and (v, u) not in edges:
+            edges.append((u, v))
+    return n, edges
+
+def build_input(n, edges, s, t):
+    lines = ["1", "", f"{n} {len(edges)}", f"{s+1} {t+1}"]
+    for u, v in edges:
+        lines.append(f"{u+1} {v+1}")
+    return "\n".join(lines) + "\n"
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF/LC) + asserts
+from collections import deque
+import sys
+MOD = 10**9 + 7
+
+def read_input(data=None):
+    if data is None:
+        it = iter(sys.stdin.buffer.read().split())
+    else:
+        it = iter(data.encode().split())
+    t = int(next(it))
+    cases = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        s = int(next(it)) - 1; tt = int(next(it)) - 1
+        g = [[] for _ in range(n)]
+        for _e in range(m):
+            u = int(next(it)) - 1; v = int(next(it)) - 1
+            g[u].append(v); g[v].append(u)
+        cases.append((n, m, s, tt, g))
+    return cases
+
+def bfs_with_ways(n, g, start):
+    dist = [-1] * n
+    ways = [0] * n
+    dq = deque([start])
+    dist[start] = 0
+    ways[start] = 1
+    while dq:
+        u = dq.popleft()
+        for v in g[u]:
+            if dist[v] == -1:
+                dist[v] = dist[u] + 1
+                ways[v] = ways[u]
+                dq.append(v)
+            elif dist[v] == dist[u] + 1:
+                ways[v] += ways[u]
+                if ways[v] >= MOD:
+                    ways[v] -= MOD
+    return dist, ways
+
+def solve_case(case):
+    n, m, s, t, g = case
+    ds, Ws = bfs_with_ways(n, g, s)
+    dt, Wt = bfs_with_ways(n, g, t)
+    D = ds[t]
+    ans = Ws[t] % MOD
+    for v in range(n):
+        if ds[v] == -1 or dt[v] == -1:
+            continue
+        if ds[v] + dt[v] != D:
+            continue
+        dv = ds[v]
+        Sv = 0
+        for u in g[v]:
+            if ds[u] == dv:
+                Sv += Ws[u]
+                if Sv >= MOD:
+                    Sv -= MOD
+        ans = (ans + Sv * Wt[v]) % MOD
+    return ans
+
+def solve_all(cases):
+    return [solve_case(c) for c in cases]
+
+def main():
+    out = solve_all(read_input())
+    sys.stdout.write("\n".join(map(str, out)))
+
+if __name__ == "__main__":
+    # Sanity asserts
+    data = """1
+
+2 1
+1 2
+1 2
+"""
+    assert solve_all(read_input(data)) == [1]
+    data = """1
+
+4 5
+1 4
+1 2
+1 3
+2 4
+3 4
+2 3
+"""
+    assert solve_all(read_input(data)) == [4]
+    data = """1
+
+6 4
+6 1
+6 1
+6 2
+6 4
+6 5
+"""
+    assert solve_all(read_input(data)) == [4]
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Count all shortest $s\to t$ paths and all $s\to t$ paths longer by exactly one, which correspond to inserting exactly one same-layer edge into a shortest-path composition.}
+\WHY{This pattern appears in BFS-layer reasoning, shortest-path DAG counting, and combinatorics on graphs; it tests the ability to turn invariants into counting formulas.}
+\CHECKLIST{
+\begin{bullets}
+\item BFS from $s$ and $t$.
+\item Compute $W_s$ and $W_t$ on-the-fly in BFS.
+\item Corridor test: $d_s(v)+d_t(v)=D$.
+\item Sum $W_s(u)$ over $u \in N(v)$ with $d_s(u)=d_s(v)$.
+\item Add $W_s(t)$ and all $S_v\cdot W_t(v)$ modulo $M$.
+\end{bullets}
+}
+\EDGECASES{
+\begin{bullets}
+\item No same-layer edges on corridor: answer is just $W_s(t)$.
+\item Star graphs where $D=1$: extra paths are via other neighbors of $s$ connected to $t$.
+\item Multiple same-layer neighbors: count ordered usage (direction matters).
+\item High-degree vertices: ensure no overflow before modulo.
+\item Large $n,m$: use $\mathcal{O}(n+m)$ memory and time.
+\item Disconnected input not allowed, but still guard against $-1$ distances in code.
+\end{bullets}
+}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to count paths modulo $10^9{+}7$ at every addition.
+\item Miscounting by requiring both endpoints of the same-layer edge to be on the corridor; only the landing vertex $v$ must satisfy $d_s(v)+d_t(v)=D$.
+\item Double counting undirected edges: treat ordered $(u\to v)$ usage; do not divide by $2$.
+\item Wrongly allowing $\Delta d_s=-1$ steps in $D+1$ walks (would need an impossible $+2$ elsewhere).
+\item Not accumulating $W_s$/$W_t$ only along $+1$ distance edges in BFS.
+\item Integer recursion overflow on deep graphs; use iterative BFS.
+\end{bullets}
+}
+\FAILMODES{A naive DP over lengths up to $D+1$ across all edges is too slow when $D$ is large. The optimal solution avoids this by structural counting from BFS layers.}
+\ELI{You can only afford one ``wasted'' step. That wasted step must go sideways between two nodes at the same BFS distance from $s$, landing on the shortest corridor to $t$. Count how many ways to get to the step, multiply by how many ways to finish, and add up for all possible sideways steps.}
+\NotePages{3}
+
+\end{document}

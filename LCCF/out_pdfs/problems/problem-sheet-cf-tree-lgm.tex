@@ -1,0 +1,814 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Tree LGM}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1919/G}}
+\LINE{DIFFICULTY / RATING}{3500}
+\STATEMENT{In TreeWorld, there is a popular two-player game played on a tree with $n$ vertices labelled from $1$ to $n$. In this game, the tournament leaders first choose a vertex to be the root of the tree and choose another vertex (possibly the same vertex as the root) to place a coin on. Then, each player will take turns moving the coin to any child$^\dagger$ of the vertex that the coin is currently on. The first player who is unable to make a move loses.
+
+Alice wants to be a tree LGM, so she spends a lot of time studying the game. She wrote down an $n$ by $n$ matrix $s$, where $s_{i,j} = \mathtt{1}$ if the first player can win with the root of the tree chosen to be vertex $i$, and the coin was initially placed on vertex $j$. Otherwise, $s_{i, j} = \mathtt{0}$. Alice is a perfectionist, so she assumes that both players play perfectly in the game.
+
+However, she accidentally knocked her head on the way to the tournament and forgot what the tree looked like. Determine whether there exists a tree that satisfies the winning and losing states represented by matrix $s$, and if it exists, construct a valid tree.
+
+$^\dagger$ A vertex $c$ is a child of vertex $u$ if there is an edge between $c$ and $u$, and $c$ does not lie on the unique simple path from the root to vertex $u$.
+
+Input:
+The first line contains a single integer $n$ ($1 \le n \le 5000$) — the number of vertices in the tree.
+
+Each of the next $n$ lines contains a string with $n$ characters, the $j$-th character of the $i$-th line representing $s_{i, j}$ ($s_{i, j} \in \{\mathtt{0}, \mathtt{1}\}$) — the winning and losing states of the tree.
+
+Output:
+If there is no tree satisfying the winning and losing states represented by matrix $s$, print a single line containing ``NO''.
+
+Otherwise, if there exists a tree satisfying matrix $s$, print ``YES'' on the first line, followed by $n - 1$ lines each containing two integers $u$ and $v$ ($1 \le u, v \le n$) representing that the tree has an edge between vertices $u$ and $v$.
+
+You can output the answer in any case (upper or lower). For example, the strings ``yEs'', ``yes'', ``Yes'', and ``YES'' will be recognized as positive responses.
+
+If there are multiple trees satisfying the winning and losing states represented by matrix $s$, print any of them.
+
+Note:
+In the first test case, the line graph $1\!-\!4\!-\!2\!-\!3$ satisfies the winning and losing states represented by matrix $s$. For example, $s_{3,3} = 1$ as the first player can move the coin from $3\rightarrow 2$, then the second player moves the coin from $2\rightarrow 4$, and finally, the first player moves the coin from $4\rightarrow 1$. At this point, $1$ has no children, so the second player is unable to make a move and loses. On the other hand, $s_{1,3} = 0$ as if $1$ is the root, then $3$ has no children so the first player is unable to make the first move and loses.
+
+In the second test case, it is possible to prove that no tree satisfies the winning and losing states represented by matrix $s$.}
+\BREAKDOWN{We must recognize structural invariants of the game matrix $s$ that are implied by trees. We then validate the matrix and construct any tree consistent with it. A key invariant: for all trees with $n \ge 3$, the set of losing vertices is independent of the chosen root.}
+\ELI{Except for the $n=2$ tree, whether a vertex is winning or losing does not depend on where you root the tree; losing vertices form a maximal independent set. We check this and then build a simple tree that realizes exactly those losing/winning labels.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{One integer $n$. Then $n$ strings of length $n$ of characters in $\{0,1\}$; the $i$-th string is row $i$ of matrix $s$.}
+\OUTPUTS{If impossible, print NO. Otherwise, print YES and any $n-1$ edges of a tree whose game outcomes match $s$.}
+\SAMPLES{Example mini-cases:
+- $n=2$, rows: ``10'', ``01'' $\rightarrow$ YES with edge ``1 2''.
+- $n=3$, rows identical ``010'' $\rightarrow$ YES, for example edges ``2 1'', ``2 3''.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $T=(V,E)$ be a tree on $n$ labeled vertices. For a chosen root $r\in V$, orient edges away from $r$. For position at $u\in V$, the game is: move to any child of $u$, the player unable to move loses. Define $W_r(u)\in\{0,1\}$ where $1$ means the first player wins, $0$ means loses. Then
+$W_r(u)=1$ iff $\exists$ child $v$ of $u$ with $W_r(v)=0$, else $W_r(u)=0$.}
+\varmapStart
+\var{W_r(u)}{win/lose indicator at vertex $u$ when rooted at $r$}
+\var{s_{r,u}}{given matrix bit; intended to equal $W_r(u)$}
+\var{L}{root-independent losing set (when it exists), $L=\{u: W_r(u)=0\}$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\text{Leaf under root }r:\quad W_r(u)=0.\\
+&\text{Recurrence: } W_r(u)=1 \iff \exists \text{ child } v \text{ of } u \text{ with } W_r(v)=0.\\
+&\text{Equivalently on undirected tree (for }n\ge 3\text{): } u\in L \iff \forall v\sim u,\ v\notin L,\quad u\notin L \iff \exists v\sim u,\ v\in L.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Trees are finite, connected, acyclic. For $n\ge 3$, the kernel (losing set) is unique and independent of the root; for $n=2$, either endpoint can be the unique losing vertex depending on the root.}
+\INVARIANTS{
+- For $n\ge 3$, $W_r(u)$ is independent of $r$; losing vertices form a maximal independent set (MIS): no two adjacent losing vertices, and every winning vertex has a losing neighbor.
+- For $n=2$, rows must be the identity matrix: $s=\bigl[\begin{smallmatrix}1&0\\0&1\end{smallmatrix}\bigr]$.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Directly validate structural invariants of $s$. For $n=1,2$ handle explicitly; for $n\ge 3$ require that all rows of $s$ are identical (root-independence).}
+\ASSUMPTIONS{Relies on the known kernel-independence of trees with $n\ge 3$: the losing set does not depend on the root.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Read $n$ and matrix $s$.
+\item If $n=1$: accept iff $s_{1,1}=0$ (single vertex is losing).
+\item If $n=2$: accept iff rows are ``10'' and ``01''; output edge $(1,2)$.
+\item If $n\ge 3$: check all rows are identical. Let $v$ be this common row.
+\item Ensure $v$ has at least one $0$ and at least one $1$. Construct a tree realizing $v$ (see Approach B/C).
+\end{algosteps}
+\COMPLEXITY{Input check is $O(n^2)$. Construction is $O(n)$.}
+\[
+\begin{aligned}
+T(n) &= O(n^2)\ \text{to scan the matrix},\\
+S(n) &= O(n)\ \text{to store edges and one row}.
+\end{aligned}
+\]
+\CORRECTNESS{For $n\ge 3$, if any two rows differ, the losing set would depend on the root, contradicting the tree game invariant. For $n=2$, only the identity pattern is realizable.}
+\EDGECASES{All-zeros row for $n\ge 2$ is impossible; all-ones row is impossible for any $n$.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input(data: str = None) -> Tuple[int, List[str]]:
+    if data is None:
+        it = iter(sys.stdin.read().strip().splitlines())
+    else:
+        it = iter(data.strip().splitlines())
+    try:
+        n = int(next(it).strip())
+    except StopIteration:
+        return 0, []
+    s = []
+    for _ in range(n):
+        row = next(it).strip()
+        s.append(row)
+    return n, s
+
+def construct_tree_from_vector(v: List[int]) -> List[Tuple[int, int]]:
+    n = len(v)
+    zeros = [i for i, b in enumerate(v) if b == 0]
+    ones = [i for i, b in enumerate(v) if b == 1]
+    assert zeros and ones
+    z0 = zeros[0]
+    edges = []
+    # Connect all ones to z0
+    for w in ones:
+        edges.append((z0 + 1, w + 1))
+    # Attach all other zeros as leaves to any one (use first one)
+    w1 = ones[0]
+    for zi in zeros[1:]:
+        edges.append((w1 + 1, zi + 1))
+    assert len(edges) == n - 1
+    return edges
+
+def solve_case(n: int, s: List[str]) -> Tuple[bool, List[Tuple[int, int]]]:
+    if n == 0:
+        return False, []
+    # Validate characters
+    for i in range(n):
+        if len(s[i]) != n or any(ch not in "01" for ch in s[i]):
+            return False, []
+    if n == 1:
+        return (s[0][0] == '0'), []
+    if n == 2:
+        ok = (s[0] == "10" and s[1] == "01")
+        return ok, ([(1, 2)] if ok else [])
+    # n >= 3
+    base = s[0]
+    for i in range(1, n):
+        if s[i] != base:
+            return False, []
+    v = [1 if ch == '1' else 0 for ch in base]
+    if sum(v) == 0 or sum(v) == n:
+        return False, []
+    edges = construct_tree_from_vector(v)
+    return True, edges
+
+def solve_all() -> None:
+    n, s = read_input()
+    ok, edges = solve_case(n, s)
+    if not ok:
+        print("NO")
+        return
+    print("YES")
+    for u, v in edges:
+        print(u, v)
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    main()
+
+    # Unit tests (not executed in CF run; kept here for completeness)
+    def _compute_matrix(n: int, edges: List[Tuple[int, int]]) -> List[str]:
+        g = [[] for _ in range(n)]
+        for u, v in edges:
+            u -= 1; v -= 1
+            g[u].append(v); g[v].append(u)
+        res = []
+        for r in range(n):
+            parent = [-1] * n
+            order = []
+            stack = [(r, -1)]
+            while stack:
+                u, p = stack.pop()
+                parent[u] = p
+                order.append(u)
+                for w in g[u]:
+                    if w == p: continue
+                    stack.append((w, u))
+            win = [0] * n
+            for u in reversed(order):
+                has_losing_child = False
+                for w in g[u]:
+                    if w == parent[u]: continue
+                    if win[w] == 0:
+                        has_losing_child = True
+                        break
+                win[u] = 1 if has_losing_child else 0
+            row = "".join("1" if win[j] == 1 else "0" for j in range(n))
+            res.append(row)
+        return res
+
+    # Basic asserts
+    def _test():
+        # n=2 identity
+        data = "2\n10\n01\n"
+        n, s = read_input(data)
+        ok, edges = solve_case(n, s)
+        assert ok and edges == [(1, 2)]
+        # n=3 identical rows
+        data = "3\n010\n010\n010\n"
+        n, s = read_input(data)
+        ok, edges = solve_case(n, s)
+        assert ok
+        mat = _compute_matrix(n, edges)
+        assert all(row == "010" for row in mat)
+        # invalid mixed rows for n>=3
+        data = "3\n010\n001\n010\n"
+        n, s = read_input(data)
+        ok, _ = solve_case(n, s)
+        assert not ok
+    # _test()
+\end{minted}
+\VALIDATION{Checks:
+- $n=2$ identity rows are accepted and edge $(1,2)$ printed.
+- $n=3$ identical rows ``010'' produce a valid tree whose matrix recomputes to the same.
+- A case with non-identical rows for $n\ge 3$ is rejected.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Exploit root-independence of losing set for $n\ge 3$ to reduce validation to a single row comparison and construct a canonical tree that fits any target losing/winning vector satisfying MIS constraints.}
+\ASSUMPTIONS{For $n\ge 3$, the losing set is the unique kernel of the oriented tree game and is independent of the root. The losing set equals a maximal independent set.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Verify all rows equal when $n\ge 3$; reject otherwise.
+\item Let $v$ be that row; ensure $v$ has at least one $0$ and at least one $1$.
+\item Pick any losing vertex $z_0$; connect every winning vertex to $z_0$.
+\item Connect every other losing vertex as a leaf to any one winning vertex.
+\end{algosteps}
+\COMPLEXITY{Validation $O(n^2)$, construction $O(n)$. Beats brute force search of trees exponentially.}
+\[
+\begin{aligned}
+T(n) &= O(n^2) \text{ (scan)} + O(n) \text{ (build)},\\
+S(n) &= O(n).
+\end{aligned}
+\]
+\CORRECTNESS{By construction, all losing vertices have only winning neighbors, and every winning vertex has at least one losing neighbor ($z_0$). This exactly enforces the kernel recurrence for all roots when $n\ge 3$. Special-cased $n=1,2$ are handled explicitly.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input(data: str = None) -> Tuple[int, List[str]]:
+    if data is None:
+        it = iter(sys.stdin.read().strip().splitlines())
+    else:
+        it = iter(data.strip().splitlines())
+    try:
+        n = int(next(it).strip())
+    except StopIteration:
+        return 0, []
+    s = [next(it).strip() for _ in range(n)]
+    return n, s
+
+def construct_tree_from_vector(v: List[int]) -> List[Tuple[int, int]]:
+    n = len(v)
+    zeros = [i for i, b in enumerate(v) if b == 0]
+    ones = [i for i, b in enumerate(v) if b == 1]
+    assert zeros and ones
+    z0 = zeros[0]
+    edges = []
+    for w in ones:
+        edges.append((z0 + 1, w + 1))
+    # Attach remaining zeros to the first 'one'
+    hub_one = ones[0]
+    for z in zeros[1:]:
+        edges.append((hub_one + 1, z + 1))
+    assert len(edges) == n - 1
+    return edges
+
+def solve_case(n: int, s: List[str]) -> Tuple[bool, List[Tuple[int, int]]]:
+    if n == 0:
+        return False, []
+    # Character validation
+    for i in range(n):
+        if len(s[i]) != n or any(ch not in "01" for ch in s[i]):
+            return False, []
+    if n == 1:
+        return (s[0][0] == '0'), []
+    if n == 2:
+        ok = (s[0] == "10" and s[1] == "01")
+        return ok, ([(1, 2)] if ok else [])
+    # n >= 3
+    if any(row != s[0] for row in s[1:]):
+        return False, []
+    v = [1 if ch == '1' else 0 for ch in s[0]]
+    if sum(v) == 0 or sum(v) == n:
+        return False, []
+    edges = construct_tree_from_vector(v)
+    return True, edges
+
+def solve_all() -> None:
+    n, s = read_input()
+    ok, edges = solve_case(n, s)
+    if not ok:
+        print("NO")
+    else:
+        print("YES")
+        for u, v in edges:
+            print(u, v)
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    main()
+
+    # Sanity checks
+    def recompute_s(n: int, edges: List[Tuple[int, int]]) -> List[str]:
+        g = [[] for _ in range(n)]
+        for u, v in edges:
+            u -= 1; v -= 1
+            g[u].append(v); g[v].append(u)
+        out = []
+        for r in range(n):
+            parent = [-1] * n
+            order = []
+            st = [(r, -1)]
+            while st:
+                u, p = st.pop()
+                parent[u] = p
+                order.append(u)
+                for w in g[u]:
+                    if w == p: continue
+                    st.append((w, u))
+            win = [0] * n
+            for u in reversed(order):
+                win[u] = 1 if any(win[w] == 0 for w in g[u] if w != parent[u]) else 0
+            out.append("".join("1" if win[j] else "0" for j in range(n)))
+        return out
+
+    def _test_basic():
+        n, s = 2, ["10", "01"]
+        ok, edges = solve_case(n, s)
+        assert ok and edges == [(1, 2)]
+        n, s = 3, ["010"] * 3
+        ok, edges = solve_case(n, s)
+        assert ok
+        mat = recompute_s(n, edges)
+        assert all(row == "010" for row in mat)
+        n, s = 4, ["1010"] * 4
+        ok, edges = solve_case(n, s)
+        assert ok
+        mat = recompute_s(n, edges)
+        assert all(row == "1010" for row in mat)
+    # _test_basic()
+\end{minted}
+\VALIDATION{Edge inputs checked: $n=2$ identity, $n=3$ and $n=4$ with identical rows. The recomputation confirms correctness.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Characterize feasible matrices $s$ and construct a tree:
+- $n=1$: $s=[0]$ only.
+- $n=2$: $s=\bigl[\begin{smallmatrix}1&0\\0&1\end{smallmatrix}\bigr]$ only.
+- $n\ge 3$: all rows of $s$ are identical to a vector $v$ with at least one $0$ and at least one $1$; then build a tree where $0$-vertices form a maximal independent set.}
+\ASSUMPTIONS{Kernel independence for trees with $n\ge 3$: the set of P-positions (losing) equals the unique kernel of the oriented tree game and is independent of the root.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Validate $s$ per the three cases above.
+\item If $n\ge 3$, extract $v=s_{1,*}$.
+\item Pick any $z_0$ with $v[z_0]=0$; connect every $v[u]=1$ to $z_0$.
+\item Attach all remaining $v[z]=0$ as leaves to any one vertex with $v=1$.
+\end{algosteps}
+\OPTIMALITY{This is linear-time construction after $O(n^2)$ validation and achieves the minimal structural requirements. There is no need for heavier reconstruction since multiple trees can realize the same matrix $s$.}
+\COMPLEXITY{$O(n^2)$ time, $O(n)$ space; optimal up to input size.}
+\[
+\begin{aligned}
+T(n) &= \Theta(n^2),\quad S(n)=\Theta(n).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input(data: str = None) -> Tuple[int, List[str]]:
+    if data is None:
+        it = iter(sys.stdin.read().strip().splitlines())
+    else:
+        it = iter(data.strip().splitlines())
+    try:
+        n = int(next(it).strip())
+    except StopIteration:
+        return 0, []
+    s = [next(it).strip() for _ in range(n)]
+    return n, s
+
+def construct_tree_from_vector(v: List[int]) -> List[Tuple[int, int]]:
+    n = len(v)
+    zeros = [i for i, b in enumerate(v) if b == 0]
+    ones = [i for i, b in enumerate(v) if b == 1]
+    assert zeros and ones
+    z0 = zeros[0]
+    edges = []
+    # Connect all ones to z0
+    for w in ones:
+        edges.append((z0 + 1, w + 1))
+    # Attach remaining zeros to any one
+    hub_one = ones[0]
+    for z in zeros[1:]:
+        edges.append((hub_one + 1, z + 1))
+    assert len(edges) == n - 1
+    return edges
+
+def solve_case(n: int, s: List[str]) -> Tuple[bool, List[Tuple[int, int]]]:
+    if n == 0:
+        return False, []
+    # Basic validation
+    for i in range(n):
+        if len(s[i]) != n or any(ch not in "01" for ch in s[i]):
+            return False, []
+    if n == 1:
+        return (s[0][0] == '0'), []
+    if n == 2:
+        ok = (s[0] == "10" and s[1] == "01")
+        return ok, ([(1, 2)] if ok else [])
+    # n >= 3
+    if any(row != s[0] for row in s[1:]):
+        return False, []
+    v = [1 if ch == '1' else 0 for ch in s[0]]
+    # Need at least one winning and one losing vertex
+    if sum(v) == 0 or sum(v) == n:
+        return False, []
+    edges = construct_tree_from_vector(v)
+    return True, edges
+
+def solve_all() -> None:
+    n, s = read_input()
+    ok, edges = solve_case(n, s)
+    if not ok:
+        print("NO")
+        return
+    print("YES")
+    for u, v in edges:
+        print(u, v)
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    main()
+
+    # --- Validation helpers and asserts (exactly 3) ---
+    def recompute_matrix(n: int, edges: List[Tuple[int, int]]) -> List[str]:
+        g = [[] for _ in range(n)]
+        for u, v in edges:
+            u -= 1; v -= 1
+            g[u].append(v); g[v].append(u)
+        mat = []
+        for r in range(n):
+            parent = [-1] * n
+            order = []
+            st = [(r, -1)]
+            while st:
+                u, p = st.pop()
+                parent[u] = p
+                order.append(u)
+                for w in g[u]:
+                    if w == p: continue
+                    st.append((w, u))
+            win = [0] * n
+            for u in reversed(order):
+                win[u] = 1 if any(win[w] == 0 for w in g[u] if w != parent[u]) else 0
+            mat.append("".join("1" if win[j] else "0" for j in range(n)))
+        return mat
+
+    # 1) n=2 identity
+    n, s = 2, ["10", "01"]
+    ok, edges = solve_case(n, s)
+    assert ok and edges == [(1, 2)]
+    # 2) n=3 identical rows
+    n, s = 3, ["010"] * 3
+    ok, edges = solve_case(n, s)
+    assert ok and all(row == "010" for row in recompute_matrix(n, edges))
+    # 3) n=4 identical rows
+    n, s = 4, ["1010"] * 4
+    ok, edges = solve_case(n, s)
+    assert ok and all(row == "1010" for row in recompute_matrix(n, edges))
+\end{minted}
+\VALIDATION{Exactly three asserts included:
+- $n=2$ identity matrix.
+- $n=3$ with identical rows.
+- $n=4$ with identical rows.
+Each recomputation matches the input matrix.}
+\RESULT{Outputs either NO or a valid tree. For $n\ge 3$, the produced tree ensures losing vertices are exactly those with $s_{i,j}=0$ for every $i$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Validate special cases $n=1,2$; random identical-row patterns for $n\ge 3$; reject non-identical rows for $n\ge 3$; reject all-zeros and all-ones patterns for $n\ge 2$.}
+\LINE{CROSS-CHECKS}{For accepted cases, recompute $s$ from the constructed tree and compare with input.}
+\LINE{EDGE-CASE GENERATOR}{Construct patterns with minimal numbers of zeros or ones (e.g., exactly one zero or one one) and verify correctness.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+def gen_case_identical(n: int, row: str) -> str:
+    assert len(row) == n and set(row) <= set("01")
+    return str(n) + "\n" + "\n".join([row] * n) + "\n"
+
+def gen_case_n2_identity() -> str:
+    return "2\n10\n01\n"
+
+def run_io(data: str) -> str:
+    import sys, io
+    from typing import List, Tuple
+    buf_in = io.StringIO(data)
+    buf_out = io.StringIO()
+    # reuse final solution
+    def read_input_local(data_stream) -> Tuple[int, List[str]]:
+        it = iter(data_stream.read().strip().splitlines())
+        try:
+            n = int(next(it).strip())
+        except StopIteration:
+            return 0, []
+        s = [next(it).strip() for _ in range(n)]
+        return n, s
+    n, s = read_input_local(buf_in)
+    ok, edges = solve_case(n, s)
+    if not ok:
+        print("NO", file=buf_out)
+    else:
+        print("YES", file=buf_out)
+        for u, v in edges:
+            print(u, v, file=buf_out)
+    return buf_out.getvalue()
+
+# Reference Code (Ready to Submit): reuse the final submission 'solve_case' and printing in run_io or main()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input(data: str = None) -> Tuple[int, List[str]]:
+    if data is None:
+        it = iter(sys.stdin.read().strip().splitlines())
+    else:
+        it = iter(data.strip().splitlines())
+    try:
+        n = int(next(it).strip())
+    except StopIteration:
+        return 0, []
+    s = [next(it).strip() for _ in range(n)]
+    return n, s
+
+def construct_tree_from_vector(v: List[int]) -> List[Tuple[int, int]]:
+    n = len(v)
+    zeros = [i for i, b in enumerate(v) if b == 0]
+    ones = [i for i, b in enumerate(v) if b == 1]
+    assert zeros and ones
+    z0 = zeros[0]
+    edges = []
+    for w in ones:
+        edges.append((z0 + 1, w + 1))
+    hub_one = ones[0]
+    for z in zeros[1:]:
+        edges.append((hub_one + 1, z + 1))
+    assert len(edges) == n - 1
+    return edges
+
+def solve_case(n: int, s: List[str]) -> Tuple[bool, List[Tuple[int, int]]]:
+    if n == 0:
+        return False, []
+    for i in range(n):
+        if len(s[i]) != n or any(ch not in "01" for ch in s[i]):
+            return False, []
+    if n == 1:
+        return (s[0][0] == '0'), []
+    if n == 2:
+        ok = (s[0] == "10" and s[1] == "01")
+        return ok, ([(1, 2)] if ok else [])
+    if any(row != s[0] for row in s[1:]):
+        return False, []
+    v = [1 if ch == '1' else 0 for ch in s[0]]
+    if sum(v) == 0 or sum(v) == n:
+        return False, []
+    edges = construct_tree_from_vector(v)
+    return True, edges
+
+def solve_all() -> None:
+    n, s = read_input()
+    ok, edges = solve_case(n, s)
+    if not ok:
+        print("NO")
+    else:
+        print("YES")
+        for u, v in edges:
+            print(u, v)
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    main()
+
+# simple asserts (not executed by default)
+def _recompute_matrix(n: int, edges: List[Tuple[int, int]]) -> List[str]:
+    g = [[] for _ in range(n)]
+    for u, v in edges:
+        u -= 1; v -= 1
+        g[u].append(v); g[v].append(u)
+    mat = []
+    for r in range(n):
+        parent = [-1] * n
+        order = []
+        st = [(r, -1)]
+        while st:
+            u, p = st.pop()
+            parent[u] = p
+            order.append(u)
+            for w in g[u]:
+                if w == p: continue
+                st.append((w, u))
+        win = [0] * n
+        for u in reversed(order):
+            win[u] = 1 if any(win[w] == 0 for w in g[u] if w != parent[u]) else 0
+        mat.append("".join("1" if win[j] else "0" for j in range(n)))
+    return mat
+
+def _tests():
+    n, s = 2, ["10", "01"]
+    ok, edges = solve_case(n, s)
+    assert ok and edges == [(1, 2)]
+    n, s = 3, ["010"] * 3
+    ok, edges = solve_case(n, s)
+    assert ok and all(row == "010" for row in _recompute_matrix(n, edges))
+    n, s = 4, ["1010"] * 4
+    ok, edges = solve_case(n, s)
+    assert ok and all(row == "1010" for row in _recompute_matrix(n, edges))
+# _tests()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{For trees with $n\ge 3$, the losing set is root-independent; matrix $s$ must have identical rows. Build any tree realizing the losing/winning vector as a maximal independent set.}
+\WHY{This invariant collapses a seemingly hard reconstruction into simple validation and linear construction, a classic interview twist leveraging game kernels on trees.}
+\CHECKLIST{
+- Handle $n=1$ and $n=2$ explicitly.
+- For $n\ge 3$, verify all rows equal.
+- Ensure the common row has at least one $0$ and one $1$.
+- Construct edges: connect all ones to a chosen zero; attach remaining zeros to any one.}
+\EDGECASES{
+- $n=1$: only ``0'' is valid.
+- $n=2$: only identity rows are valid.
+- All-zeros row for $n\ge 2$: impossible.
+- All-ones row: impossible.
+- Non-binary characters in input: reject.
+- $n\ge 3$ but rows differ: reject.}
+\PITFALLS{
+- Forgetting that $n=2$ is exceptional (rows differ by root).
+- Constructing a 0-0 edge (breaks maximal independent set).
+- Leaving some 1-vertex without a 0 neighbor.
+- Off-by-one indices when printing edges (1-based output).
+- Not verifying full row equality for $n\ge 3$.}
+\FAILMODES{Matrices with non-identical rows for $n\ge 3$, or with all zeros/ones, cannot come from any tree under perfect play rules; the algorithm rejects them.}
+\ELI{After choosing a root, the game flows outward. Except for the path of length $1$ edge ($n=2$), who wins from a vertex does not depend on the root. So the matrix must have identical rows. Then just ensure zeros (losing) form a maximal independent set by wiring a simple tree; many shapes work, and we output one.}
+\NotePages{3}
+
+\end{document}

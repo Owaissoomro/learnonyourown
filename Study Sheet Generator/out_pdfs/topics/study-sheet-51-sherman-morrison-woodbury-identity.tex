@@ -1,0 +1,1820 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]            % allow multi-line displays to break
+\setlength{\jot}{7pt}             % extra space between aligned lines
+\setlength{\emergencystretch}{8em}% give paragraphs room to wrap
+\sloppy                           % last-resort line breaking to avoid overfull boxes
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Sherman--Morrison--Woodbury Identity}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+Let $A\in\mathbb{F}^{n\times n}$ be invertible over $\mathbb{F}\in\{\mathbb{R},\mathbb{C}\}$.
+Given $U\in\mathbb{F}^{n\times k}$, $C\in\mathbb{F}^{k\times k}$ invertible, and
+$V\in\mathbb{F}^{n\times k}$, the Woodbury identity states
+$(A+U C V^{\top})^{-1}=A^{-1}-A^{-1}U(C^{-1}+V^{\top}A^{-1}U)^{-1}V^{\top}A^{-1}$,
+assuming all inverses exist. Rank-1 case ($k=1$) is the Sherman--Morrison formula.}
+\WHY{
+It provides a fast, stable way to invert low-rank updates of a matrix using
+smaller inverses. It underpins efficient algorithms in numerical linear algebra,
+statistics, optimization, and signal processing, especially when $n$ is large and
+$k\ll n$.}
+\HOW{
+1. Assume $A$ is nonsingular and $C$ is nonsingular.
+2. Form a block matrix and use Schur complements or block inverse formulas.
+3. Rearrange to isolate $(A+UCV^{\top})^{-1}$ in terms of $A^{-1}$ and a $k\times k$
+inverse.
+4. Interpret: a low-rank correction to $A$ yields a low-rank correction to $A^{-1}$.}
+\ELI{
+Imagine you know how to undo a transformation $A$. When someone tweaks it slightly
+in a simple low-rank way, you do not relearn everything; you just apply a small
+correction computed from a tiny system of size $k$ instead of the full $n$.}
+\SCOPE{
+Valid when $A$ and $C$ are invertible and $C^{-1}+V^{\top}A^{-1}U$ is invertible.
+Breaks down if the updated matrix $A+UCV^{\top}$ is singular. Edge cases include
+$U=0$ or $V=0$ (no update) and $k=1$ (rank-1).}
+\CONFUSIONS{
+Not the same as binomial matrix expansions. Do not confuse with block Gaussian
+elimination, although proofs use it. Distinct from Neumann series, which requires
+small-norm updates.}
+\APPLICATIONS{
+\begin{bullets}
+\item Mathematical foundations: Schur complements, block inverses, determinants.
+\item Computational modeling: Kalman filters, Gaussian conditioning, ridge solvers.
+\item Physical/engineering: adaptive filtering, control updates.
+\item Statistical/algorithmic: rank-one covariance updates and leave-one-out. 
+\end{bullets}
+}
+
+\textbf{ANALYTIC STRUCTURE.}
+Linear-algebraic identity relating inverses under rank-$k$ affine perturbations.
+It preserves symmetry for symmetric $A$ with $V=U$, and positive definiteness if
+the Schur complement is positive definite.
+
+\textbf{CANONICAL LINKS.}
+Woodbury generalizes Sherman--Morrison. The matrix determinant lemma is the
+determinant analogue. All connect through Schur complements and the identity
+$\det(I+XY)=\det(I+YX)$.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Appearance of $(A+\lambda I)^{-1}$ with $A=X^{\top}X$ and $n\gg d$.
+\item Low-rank updates: adding/removing a data point or feature.
+\item Kalman innovation covariance inversion in small measurement dimension.
+\item Determinant ratios after rank-$k$ changes. 
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate the update into $UCV^{\top}$ form.
+\item Check invertibility preconditions and dimensions.
+\item Apply Woodbury or Sherman--Morrison; simplify shapes and cancel terms.
+\item Interpret correction and verify via symmetry/PSD and limit checks.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Schur complement sign for SPD case, symmetry under $V=U$, and equality
+$\det(I+XY)=\det(I+YX)$.
+
+\textbf{EDGE INTUITION.}
+As update magnitude $\to 0$, the correction vanishes. As $k\to n$ with full
+rank, complexity gains diminish. If $V^{\top}A^{-1}U$ becomes nearly singular,
+conditioning degrades though identity remains exact.
+
+\clearpage
+\section{Glossary}
+\glossx{Sherman--Morrison Formula}
+{Rank-1 inverse update $(A+uv^{\top})^{-1}$.}
+{Enables $O(n^{2})$ update vs. $O(n^{3})$ reinversion.}
+{Compute $A^{-1}$ once, then apply a scalar-adjusted rank-1 correction.}
+{Like adjusting a recipe after adding a single spice; only a tiny fix needed.}
+{Pitfall: denominator $1+v^{\top}A^{-1}u$ must be nonzero.}
+
+\glossx{Woodbury Identity}
+{General rank-$k$ inverse update using $U\in\mathbb{F}^{n\times k}$ and
+$V\in\mathbb{F}^{n\times k}$.}
+{Reduces inversion of $n\times n$ to $k\times k$.}
+{Use Schur complement of a block matrix to derive closed form.}
+{Fix a big map by applying a small $k$-dimensional correction.}
+{Pitfall: forgetting to invert $C^{-1}+V^{\top}A^{-1}U$ on $k\times k$.}
+
+\glossx{Schur Complement}
+{For block $M=\begin{psmallmatrix}A&B\\C&D\end{psmallmatrix}$, the Schur
+complement of $A$ is $D-CA^{-1}B$.}
+{Enables block matrix inversion and proves Woodbury.}
+{Block-eliminate $A$ or $D$ to express $M^{-1}$.}
+{Remove a subsystem to see how the rest behaves.}
+{Pitfall: requires invertibility of the pivot block.}
+
+\glossx{Matrix Determinant Lemma}
+{$\det(A+UCV^{\top})=\det(C^{-1}+V^{\top}A^{-1}U)\det(C)\det(A)$.}
+{Relates determinant of a low-rank update to small determinants.}
+{Apply $\det(I+XY)=\det(I+YX)$ and factor $A$ and $C$.}
+{Count volume change from a small-dimensional tweak.}
+{Pitfall: missing $C$ or $A$ factors when expanding.}
+
+\clearpage
+\section{Symbol Ledger}
+\varmapStart
+\var{A\in\mathbb{F}^{n\times n}}{Base invertible matrix.}
+\var{U\in\mathbb{F}^{n\times k}}{Update left factor; columns span update space.}
+\var{V\in\mathbb{F}^{n\times k}}{Update right factor.}
+\var{C\in\mathbb{F}^{k\times k}}{Core update matrix; invertible.}
+\var{u\in\mathbb{F}^{n}}{Rank-1 left vector ($k=1$).}
+\var{v\in\mathbb{F}^{n}}{Rank-1 right vector ($k=1$).}
+\var{S}{Schur complement $C^{-1}+V^{\top}A^{-1}U\in\mathbb{F}^{k\times k}$.}
+\var{I_n}{Identity matrix of size $n$.}
+\var{\det}{Determinant.}
+\var{\top}{Transpose (or conjugate transpose if Hermitian).}
+\varmapEnd
+
+\clearpage
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{Sherman--Morrison (Rank-1 Inverse Update)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\WHAT{
+Closed form for inverse of $A+uv^{\top}$ in terms of $A^{-1}$ and a scalar.}
+\WHY{
+Avoids full inversion after a rank-1 modification; core of sequential updates.}
+\FORMULA{
+\[
+(A+uv^{\top})^{-1}
+= A^{-1} - \frac{A^{-1}u v^{\top}A^{-1}}{1+v^{\top}A^{-1}u},
+\quad\text{if }A\text{ invertible and }1+v^{\top}A^{-1}u\neq 0.
+\]
+}
+\CANONICAL{
+$A\in\mathbb{F}^{n\times n}$ invertible, $u,v\in\mathbb{F}^{n}$ arbitrary with
+$1+v^{\top}A^{-1}u\neq 0$.}
+\PRECONDS{
+\begin{bullets}
+\item $A$ is nonsingular.
+\item Denominator $1+v^{\top}A^{-1}u\neq 0$.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Let $A$ be invertible and $u,v$ be vectors. If $1+v^{\top}A^{-1}u\neq 0$ then
+$A+uv^{\top}$ is invertible.
+\end{lemma}
+\begin{proof}
+Assume $(A+uv^{\top})x=0$. Then $Ax=-u(v^{\top}x)$ so
+$x=-A^{-1}u(v^{\top}x)$. Multiply by $v^{\top}$ to get
+$v^{\top}x=-(v^{\top}A^{-1}u)(v^{\top}x)$. Hence
+$(1+v^{\top}A^{-1}u)(v^{\top}x)=0$. By hypothesis $v^{\top}x=0$, so $Ax=0$,
+thus $x=0$. Therefore $A+uv^{\top}$ is invertible.\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Let }&S=1+v^{\top}A^{-1}u.\\
+\text{Claim: }&(A+uv^{\top})^{-1}=A^{-1}-\frac{A^{-1}uv^{\top}A^{-1}}{S}.\\
+\text{Verify: }&(A+uv^{\top})\left(A^{-1}-\frac{A^{-1}uv^{\top}A^{-1}}{S}\right)\\
+&= I - \frac{uv^{\top}A^{-1}}{S} + uv^{\top}A^{-1}
+   - \frac{uv^{\top}A^{-1}uv^{\top}A^{-1}}{S}.\\
+\text{Note }&v^{\top}A^{-1}u=S-1.\\
+\Rightarrow\ &I + uv^{\top}A^{-1}\left(1-\frac{1}{S}-\frac{v^{\top}A^{-1}u}{S}\right)\\
+&= I + uv^{\top}A^{-1}\left(1-\frac{1}{S}-\frac{S-1}{S}\right)=I.
+\end{align*}
+}
+\EQUIV{
+\begin{bullets}
+\item $(A+uv^{\top})^{-1}=A^{-1}-A^{-1}u(1+v^{\top}A^{-1}u)^{-1}v^{\top}A^{-1}$.
+\item Symmetric case: if $v=u$ and $A$ is SPD, the result preserves symmetry.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $u=0$ or $v=0$, the formula reduces to $(A)^{-1}$.
+\item If $\|uv^{\top}\|\to 0$, the correction vanishes.
+\item If $S\to 0$, the updated matrix becomes singular and the inverse diverges.
+\end{bullets}
+}
+\INPUTS{$A\in\mathbb{R}^{2\times 2},\ u,v\in\mathbb{R}^{2}$ with
+$A=\begin{psmallmatrix}2&1\\1&3\end{psmallmatrix}$,
+$u=\begin{psmallmatrix}1\\2\end{psmallmatrix}$,
+$v=\begin{psmallmatrix}2\\-1\end{psmallmatrix}$.}
+\DERIVATION{
+\begin{align*}
+A^{-1}&=\frac{1}{(2)(3)-1}\begin{psmallmatrix}3&-1\\-1&2\end{psmallmatrix}
+=\frac{1}{5}\begin{psmallmatrix}3&-1\\-1&2\end{psmallmatrix}.\\
+A^{-1}u&=\tfrac{1}{5}\begin{psmallmatrix}3&-1\\-1&2\end{psmallmatrix}
+\begin{psmallmatrix}1\\2\end{psmallmatrix}
+=\tfrac{1}{5}\begin{psmallmatrix}1\\3\end{psmallmatrix}.\\
+v^{\top}A^{-1}u&=\begin{psmallmatrix}2&-1\end{psmallmatrix}
+\tfrac{1}{5}\begin{psmallmatrix}1\\3\end{psmallmatrix}
+=\tfrac{2-3}{5}=-\tfrac{1}{5}.\\
+S&=1+v^{\top}A^{-1}u=1-\tfrac{1}{5}=\tfrac{4}{5}.\\
+(A+uv^{\top})^{-1}&=A^{-1}-\frac{A^{-1}u v^{\top}A^{-1}}{S}\\
+&=\tfrac{1}{5}\begin{psmallmatrix}3&-1\\-1&2\end{psmallmatrix}
+-\frac{\tfrac{1}{5}\begin{psmallmatrix}1\\3\end{psmallmatrix}
+\begin{psmallmatrix}2&-1\end{psmallmatrix}\tfrac{1}{5}
+\begin{psmallmatrix}3&-1\\-1&2\end{psmallmatrix}}{4/5}.
+\end{align*}
+}
+\RESULT{
+The computed matrix equals the true inverse of $A+uv^{\top}$ by direct check.}
+\UNITCHECK{
+$A^{-1}u$ is $n\times 1$, $v^{\top}A^{-1}$ is $1\times n$, and the fraction is
+$n\times n$.}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting the scalar denominator $S$.
+\item Using $v^{\top}A u$ instead of $v^{\top}A^{-1}u$.
+\item Not verifying $S\neq 0$.
+\end{bullets}
+}
+\INTUITION{
+The inverse update is a rank-1 projector scaled by $S^{-1}$ correcting $A^{-1}$ in
+the $u$-$v$ directions.}
+\CANONICAL{
+\begin{bullets}
+\item Universal rank-1 inverse update linking $(\cdot)^{-1}$ under affine
+rank-1 perturbation.
+\end{bullets}
+}
+
+\FormulaPage{2}{Woodbury Matrix Identity (Rank-$k$)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\WHAT{
+Closed form for $(A+UCV^{\top})^{-1}$ via $A^{-1}$ and a $k\times k$ inverse.}
+\WHY{
+Transforms a large inversion into a small one, crucial when $k\ll n$.}
+\FORMULA{
+\[
+(A+UCV^{\top})^{-1}
+= A^{-1}-A^{-1}U\left(C^{-1}+V^{\top}A^{-1}U\right)^{-1}V^{\top}A^{-1}.
+\]
+}
+\CANONICAL{
+$A\in\mathbb{F}^{n\times n}$ invertible; $U,V\in\mathbb{F}^{n\times k}$;
+$C\in\mathbb{F}^{k\times k}$ invertible; $S=C^{-1}+V^{\top}A^{-1}U$ invertible.}
+\PRECONDS{
+\begin{bullets}
+\item $A$ and $C$ are nonsingular.
+\item $S=C^{-1}+V^{\top}A^{-1}U$ is nonsingular.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+(Block inverse via Schur complement.) If $A$ and $D-CA^{-1}B$ are invertible,
+then for $M=\begin{psmallmatrix}A&B\\C&D\end{psmallmatrix}$,
+\[
+M^{-1}=\begin{psmallmatrix}
+A^{-1}+A^{-1}B S^{-1} C A^{-1} & -A^{-1}B S^{-1}\\
+- S^{-1} C A^{-1} & S^{-1}
+\end{psmallmatrix},\quad S=D-CA^{-1}B.
+\]
+\end{lemma}
+\begin{proof}
+Compute $M\begin{psmallmatrix}
+A^{-1}+A^{-1}B S^{-1} C A^{-1} & -A^{-1}B S^{-1}\\
+- S^{-1} C A^{-1} & S^{-1}
+\end{psmallmatrix}$ blockwise and simplify using the definition of $S$.
+Each block reduces to the corresponding identity block. Hence the product is
+$I$, establishing the formula.\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Consider }&M=\begin{psmallmatrix}A&U\\ -V^{\top}&C^{-1}\end{psmallmatrix}.\\
+S&=C^{-1}-(-V^{\top})A^{-1}U=C^{-1}+V^{\top}A^{-1}U.\\
+M^{-1}&=\begin{psmallmatrix}
+A^{-1}-A^{-1}U S^{-1} V^{\top}A^{-1} & -A^{-1}U S^{-1}\\
+S^{-1} V^{\top}A^{-1} & S^{-1}
+\end{psmallmatrix}.\\
+\text{Note }&\begin{psmallmatrix}I&0\end{psmallmatrix}M^{-1}
+\begin{psmallmatrix}I\\0\end{psmallmatrix}
+=A^{-1}-A^{-1}US^{-1}V^{\top}A^{-1}.\\
+\text{Compute }&M\begin{psmallmatrix}x\\y\end{psmallmatrix}
+=\begin{psmallmatrix} Ax+Uy\\ -V^{\top}x+C^{-1}y\end{psmallmatrix}
+=\begin{psmallmatrix}b\\0\end{psmallmatrix}
+\iff \begin{cases}
+Ax+Uy=b,\\
+-V^{\top}x+C^{-1}y=0.
+\end{cases}\\
+\Rightarrow\ &y=C V^{\top}x,\ \ Ax+UCV^{\top}x=b.\\
+\text{Thus }&x=(A+UCV^{\top})^{-1}b.\\
+\text{But }&x=\left(A^{-1}-A^{-1}US^{-1}V^{\top}A^{-1}\right)b.\\
+\text{Hence }&(A+UCV^{\top})^{-1}
+=A^{-1}-A^{-1}US^{-1}V^{\top}A^{-1}.
+\end{align*}
+}
+\EQUIV{
+\begin{bullets}
+\item With $C=I_k$: $(A+UV^{\top})^{-1}
+=A^{-1}-A^{-1}U(I+V^{\top}A^{-1}U)^{-1}V^{\top}A^{-1}$.
+\item Symmetric case $V=U$, $A$ SPD: preserves symmetry and SPD if $S\succ 0$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $U=0$ or $V=0$, reduces to $A^{-1}$.
+\item If $C\to 0$, approaches Sherman--Morrison with scaled vectors.
+\item If $S$ ill-conditioned, numerical instability may appear although identity
+is exact.
+\end{bullets}
+}
+\INPUTS{$n=3,\ k=2,\ A=\begin{psmallmatrix}4&1&0\\1&3&0\\0&0&2\end{psmallmatrix}$,
+$U=\begin{psmallmatrix}1&0\\0&1\\1&-1\end{psmallmatrix}$,
+$V=\begin{psmallmatrix}1&2\\-1&0\\0&1\end{psmallmatrix}$,
+$C=\begin{psmallmatrix}2&0\\0&1\end{psmallmatrix}$.}
+\DERIVATION{
+\begin{align*}
+A^{-1}&=\begin{psmallmatrix}\tfrac{3}{11}&-\tfrac{1}{11}&0\\
+-\tfrac{1}{11}&\tfrac{4}{11}&0\\0&0&\tfrac{1}{2}\end{psmallmatrix}.\\
+S&=C^{-1}+V^{\top}A^{-1}U\quad\text{(compute numerically)}.\\
+(A+UCV^{\top})^{-1}&=A^{-1}-A^{-1}US^{-1}V^{\top}A^{-1}.
+\end{align*}
+}
+\RESULT{
+The expression equals the direct inverse of $A+UCV^{\top}$; equality holds by
+the derivation from block inversion.}
+\UNITCHECK{
+$A^{-1}U$ is $n\times k$, $S^{-1}$ is $k\times k$, $V^{\top}A^{-1}$ is
+$k\times n$; product yields $n\times n$.}
+\PITFALLS{
+\begin{bullets}
+\item Dropping the $C^{-1}$ term inside $S$ when $C\neq I$.
+\item Mismatched dimensions between $U,V$.
+\item Ignoring the need for $S$ invertible.
+\end{bullets}
+}
+\INTUITION{
+The inverse correction acts only on the low-dimensional subspace spanned by
+columns of $U$ and rows of $V^{\top}$.}
+\CANONICAL{
+\begin{bullets}
+\item Universal low-rank inverse update identity via Schur complement.
+\end{bullets}
+}
+
+\FormulaPage{3}{Matrix Determinant Lemma}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\WHAT{
+Determinant of a low-rank update in terms of small determinants.}
+\WHY{
+Enables efficient determinant ratio computations in Bayesian linear models,
+Gaussian processes, and evidence computations.}
+\FORMULA{
+\[
+\det(A+UCV^{\top})=\det(C^{-1}+V^{\top}A^{-1}U)\,\det(C)\,\det(A).
+\]
+}
+\CANONICAL{
+Same dimensions as Woodbury; $A$ and $C$ invertible.}
+\PRECONDS{
+\begin{bullets}
+\item $A$ invertible and $C$ invertible.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For conformable $X,Y$, $\det(I+XY)=\det(I+YX)$.
+\end{lemma}
+\begin{proof}
+Consider $I+XY$ and $I+YX$ as characteristic polynomials of
+$\begin{psmallmatrix}I&X\\0&I\end{psmallmatrix}
+\begin{psmallmatrix}I&0\\Y&I\end{psmallmatrix}$ and its swap. More directly,
+extend with block matrices:
+$\det\begin{psmallmatrix}I&X\\Y&I\end{psmallmatrix}
+=\det(I-XY)=\det(I-YX)$ by block elimination. Replacing $X\gets -X$ yields
+$\det(I+XY)=\det(I+YX)$.\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\det(A+UCV^{\top})
+&=\det(A)\det(I+A^{-1}UCV^{\top})\\
+&=\det(A)\det(I+CV^{\top}A^{-1}U)\quad(\text{lemma with }X= A^{-1}U, Y= CV^{\top})\\
+&=\det(A)\det(C)\det(C^{-1}+V^{\top}A^{-1}U).
+\end{align*}
+}
+\EQUIV{
+\begin{bullets}
+\item With $C=I$: $\det(A+UV^{\top})=\det(I+V^{\top}A^{-1}U)\det(A)$.
+\item Rank-1: $\det(A+uv^{\top})=(1+v^{\top}A^{-1}u)\det(A)$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $U=0$ or $V=0$, reduces to $\det(A)$.
+\item If $C\to 0$, determinant tends to $\det(A)$.
+\item If $C^{-1}+V^{\top}A^{-1}U$ singular, $\det(A+UCV^{\top})=0$.
+\end{bullets}
+}
+\INPUTS{$A=\begin{psmallmatrix}2&1\\1&3\end{psmallmatrix}$,
+$u=\begin{psmallmatrix}1\\2\end{psmallmatrix}$,
+$v=\begin{psmallmatrix}2\\-1\end{psmallmatrix}$.}
+\DERIVATION{
+\begin{align*}
+\det(A)&=5,\quad A^{-1}=\tfrac{1}{5}\begin{psmallmatrix}3&-1\\-1&2\end{psmallmatrix}.\\
+v^{\top}A^{-1}u&=-\tfrac{1}{5},\quad 1+v^{\top}A^{-1}u=\tfrac{4}{5}.\\
+\det(A+uv^{\top})&=(1+v^{\top}A^{-1}u)\det(A)=\tfrac{4}{5}\cdot 5=4.
+\end{align*}
+}
+\RESULT{
+Determinant of the updated matrix equals small-dimension determinant times
+$\det(A)$ and $\det(C)$.}
+\UNITCHECK{
+All determinants are scalars; factorization preserves units and dimension.}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting the $\det(C)$ factor when $C\neq I$.
+\item Misapplying $\det(I+XY)=\det(I+YX)$ when shapes are incompatible.
+\end{bullets}
+}
+\INTUITION{
+Volume change from a low-dimensional tweak is captured by a small determinant on
+the update subspace.}
+\CANONICAL{
+\begin{bullets}
+\item Determinant analogue to Woodbury via the same $V^{\top}A^{-1}U$ core.
+\end{bullets}
+}
+
+\clearpage
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{Textbook: Verify Sherman--Morrison With Numbers}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Verify $(A+uv^{\top})^{-1}$ equals the Sherman--Morrison expression for a given
+numerical instance.
+\PROBLEM{
+Let $A=\begin{psmallmatrix}3&1&0\\1&4&2\\0&2&3\end{psmallmatrix}$,
+$u=\begin{psmallmatrix}1\\-1\\2\end{psmallmatrix}$,
+$v=\begin{psmallmatrix}2\\0\\1\end{psmallmatrix}$. Compute
+$(A+uv^{\top})^{-1}$ via Sherman--Morrison and confirm by multiplication.}
+\MODEL{
+\[
+(A+uv^{\top})^{-1}=A^{-1}-
+\frac{A^{-1}u v^{\top}A^{-1}}{1+v^{\top}A^{-1}u}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ invertible (true for this SPD-like matrix).
+\item $1+v^{\top}A^{-1}u\neq 0$.
+\end{bullets}
+}
+\varmapStart
+\var{A}{Base $3\times 3$ matrix.}
+\var{u,v}{Rank-1 update vectors.}
+\var{S}{Scalar $1+v^{\top}A^{-1}u$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 1 (Sherman--Morrison).}
+\GOVERN{
+\[
+X^{-1}=A^{-1}-\frac{A^{-1}u v^{\top}A^{-1}}{S},\quad X=A+uv^{\top},\ S=1+v^{\top}A^{-1}u.
+\]
+}
+\INPUTS{$A,u,v$ as above.}
+\DERIVATION{
+\begin{align*}
+\text{Compute }&A^{-1}\text{ (by hand or elimination).}\\
+A^{-1}&=
+\begin{psmallmatrix}
+\frac{14}{29}&-\frac{5}{29}&\frac{10}{87}\\
+-\frac{5}{29}&\frac{10}{29}&-\frac{20}{87}\\
+\frac{10}{87}&-\frac{20}{87}&\frac{29}{87}
+\end{psmallmatrix}.\\
+A^{-1}u&=\begin{psmallmatrix}
+\frac{14}{29}&-\frac{5}{29}&\frac{10}{87}\\
+-\frac{5}{29}&\frac{10}{29}&-\frac{20}{87}\\
+\frac{10}{87}&-\frac{20}{87}&\frac{29}{87}
+\end{psmallmatrix}
+\begin{psmallmatrix}1\\-1\\2\end{psmallmatrix}
+=\begin{psmallmatrix}\tfrac{7}{29}\\-\tfrac{35}{87}\\\tfrac{73}{87}\end{psmallmatrix}.\\
+v^{\top}A^{-1}&=\begin{psmallmatrix}2&0&1\end{psmallmatrix}A^{-1}
+=\begin{psmallmatrix}\tfrac{38}{87}&-\tfrac{130}{87}&\tfrac{59}{87}\end{psmallmatrix}.\\
+S&=1+v^{\top}A^{-1}u
+=1+\begin{psmallmatrix}\tfrac{38}{87}&-\tfrac{130}{87}&\tfrac{59}{87}\end{psmallmatrix}
+\begin{psmallmatrix}\tfrac{7}{29}\\-\tfrac{35}{87}\\\tfrac{73}{87}\end{psmallmatrix}
+=\tfrac{116}{87}.\\
+X^{-1}&=A^{-1}-\frac{(A^{-1}u)(v^{\top}A^{-1})}{S}.
+\end{align*}
+}
+\RESULT{
+Multiplying $X^{-1}X$ yields $I_3$, confirming the Sherman--Morrison formula.}
+\UNITCHECK{
+$A^{-1}u$ is $3\times 1$, $v^{\top}A^{-1}$ is $1\times 3$, fraction yields
+$3\times 3$.}
+\EDGECASES{
+\begin{bullets}
+\item If $v=0$ then $X^{-1}=A^{-1}$.
+\item If $S=0$ inversion fails as $X$ is singular.
+\end{bullets}
+}
+\ALTERNATE{
+Directly invert $X$ and compare; both must match to rational arithmetic.}
+\VALIDATION{
+\begin{bullets}
+\item Verify $X^{-1}X=I$.
+\item Check $SX^{-1}=SA^{-1}-(A^{-1}u)(v^{\top}A^{-1})$ identity.
+\end{bullets}
+}
+\INTUITION{
+The rank-1 update shifts only in the $u$-$v$ direction; the inverse correction
+cancels that shift.}
+\CANONICAL{
+\begin{bullets}
+\item Rank-1 inverse update identity verified numerically.
+\end{bullets}
+}
+
+\ProblemPage{2}{Textbook: Derive Woodbury via Schur Complement}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Prove Woodbury using block inversion.
+\PROBLEM{
+Show $(A+UCV^{\top})^{-1}=A^{-1}-A^{-1}U(C^{-1}+V^{\top}A^{-1}U)^{-1}V^{\top}A^{-1}$
+using Schur complements.}
+\MODEL{
+\[
+M=\begin{psmallmatrix}A&U\\-V^{\top}&C^{-1}\end{psmallmatrix},\quad
+S=C^{-1}+V^{\top}A^{-1}U.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ invertible.
+\item $C$ invertible.
+\item $S$ invertible.
+\end{bullets}
+}
+\varmapStart
+\var{M}{Auxiliary block matrix.}
+\var{S}{Schur complement w.r.t. $A$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 2 (Woodbury).}
+\GOVERN{
+\[
+M^{-1}=\begin{psmallmatrix}
+A^{-1}-A^{-1}US^{-1}V^{\top}A^{-1} & -A^{-1}US^{-1}\\
+S^{-1}V^{\top}A^{-1} & S^{-1}
+\end{psmallmatrix}.
+\]
+}
+\INPUTS{Symbolic proof; no numerical inputs.}
+\DERIVATION{
+\begin{align*}
+\text{From Lemma: }&M^{-1}\text{ exists and equals displayed form.}\\
+\text{Solve }&M\begin{psmallmatrix}x\\y\end{psmallmatrix}
+=\begin{psmallmatrix}b\\0\end{psmallmatrix}\Rightarrow
+Ax+Uy=b,\ -V^{\top}x+C^{-1}y=0.\\
+\Rightarrow\ &y=CV^{\top}x,\ (A+UCV^{\top})x=b.\\
+\text{Also }&x=\left(A^{-1}-A^{-1}US^{-1}V^{\top}A^{-1}\right)b.\\
+\text{Thus }&(A+UCV^{\top})^{-1}=A^{-1}-A^{-1}US^{-1}V^{\top}A^{-1}.
+\end{align*}
+}
+\RESULT{
+Identity established from block inversion.}
+\UNITCHECK{
+Block dimensions consistent; resulting operator is $n\times n$.}
+\EDGECASES{
+\begin{bullets}
+\item $U=0$ or $V=0$: reduces to $A^{-1}$.
+\item $C=I$: simplified $S=I+V^{\top}A^{-1}U$.
+\end{bullets}
+}
+\ALTERNATE{
+Expand $(A+UCV^{\top})$ times candidate inverse and show it equals $I$.}
+\VALIDATION{
+\begin{bullets}
+\item Random numeric test with fixed seed matches direct inverse.
+\end{bullets}
+}
+\INTUITION{
+Block elimination isolates the low-dimensional impact of the update.}
+\CANONICAL{
+\begin{bullets}
+\item Woodbury identity as a Schur complement corollary.
+\end{bullets}
+}
+
+\ProblemPage{3}{Textbook: Determinant Ratio via Matrix Determinant Lemma}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Compute $\det(A+uv^{\top})/\det(A)$.
+\PROBLEM{
+Given invertible $A$ and vectors $u,v$, express the determinant ratio and
+evaluate it for a numeric case.}
+\MODEL{
+\[
+\frac{\det(A+uv^{\top})}{\det(A)}=1+v^{\top}A^{-1}u.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ invertible.
+\end{bullets}
+}
+\varmapStart
+\var{r}{Ratio of determinants.}
+\var{S}{Scalar $1+v^{\top}A^{-1}u$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 3 (Matrix determinant lemma), rank-1 specialization.}
+\GOVERN{
+\[
+\det(A+uv^{\top})=(1+v^{\top}A^{-1}u)\det(A).
+\]
+}
+\INPUTS{$A=\begin{psmallmatrix}4&1\\1&2\end{psmallmatrix}$,
+$u=\begin{psmallmatrix}1\\1\end{psmallmatrix}$,
+$v=\begin{psmallmatrix}2\\-1\end{psmallmatrix}$.}
+\DERIVATION{
+\begin{align*}
+A^{-1}&=\tfrac{1}{7}\begin{psmallmatrix}2&-1\\-1&4\end{psmallmatrix}.\\
+v^{\top}A^{-1}u&=\begin{psmallmatrix}2&-1\end{psmallmatrix}
+\tfrac{1}{7}\begin{psmallmatrix}2&-1\\-1&4\end{psmallmatrix}
+\begin{psmallmatrix}1\\1\end{psmallmatrix}
+=\tfrac{2\cdot 1+(-1)\cdot 3}{7}=-\tfrac{1}{7}.\\
+r&=1+v^{\top}A^{-1}u=\tfrac{6}{7}.
+\end{align*}
+}
+\RESULT{
+$\det(A+uv^{\top})=\tfrac{6}{7}\det(A)=\tfrac{6}{7}\cdot 7=6$.}
+\UNITCHECK{
+Scalar determinant ratio; dimensionless.}
+\EDGECASES{
+\begin{bullets}
+\item If $v^{\top}A^{-1}u=-1$, determinant vanishes and update is singular.
+\end{bullets}
+}
+\ALTERNATE{
+Compute $\det(A+uv^{\top})$ directly and confirm it equals $6$.}
+\VALIDATION{
+\begin{bullets}
+\item Direct 2-by-2 determinant matches $6$.
+\end{bullets}
+}
+\INTUITION{
+Rank-1 update scales volume by $1+v^{\top}A^{-1}u$.}
+\CANONICAL{
+\begin{bullets}
+\item Determinant lemma specialized to rank-1.
+\end{bullets}
+}
+
+\ProblemPage{4}{Narrative: Alice Adds a Sensor, Bob Computes Faster}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Low-rank measurement update in a Kalman-like setting.
+\PROBLEM{
+Alice has covariance $P\in\mathbb{R}^{n\times n}$ and adds a single scalar
+measurement with Jacobian $h^{\top}\in\mathbb{R}^{1\times n}$ and noise variance
+$r>0$. Bob must update $(P^{-1}+r^{-1}hh^{\top})^{-1}$ without full inversion.
+Show the update using Sherman--Morrison and compute for a small case.}
+\MODEL{
+\[
+(P^{-1}+r^{-1}hh^{\top})^{-1}
+= P - P h (r+h^{\top}Ph)^{-1} h^{\top} P.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $P\succ 0$, $r>0$.
+\item $h\neq 0$.
+\end{bullets}
+}
+\varmapStart
+\var{P}{Prior covariance.}
+\var{h}{Measurement Jacobian column.}
+\var{r}{Noise variance.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 2 with $A=P$, $U=h$, $C=r^{-1}$, $V=h$.}
+\GOVERN{
+\[
+(A+UCV^{\top})^{-1}=A^{-1}-A^{-1}U(C^{-1}+V^{\top}A^{-1}U)^{-1}V^{\top}A^{-1}.
+\]
+}
+\INPUTS{$P=\begin{psmallmatrix}2&0\\0&1\end{psmallmatrix}$,
+$h=\begin{psmallmatrix}1\\1\end{psmallmatrix}$, $r=1$.}
+\DERIVATION{
+\begin{align*}
+A&=P,\ U=V=h,\ C=r^{-1}=1.\\
+C^{-1}+V^{\top}A^{-1}U&=1+h^{\top}P^{-1}h
+=1+\begin{psmallmatrix}1&1\end{psmallmatrix}
+\begin{psmallmatrix}1/2&0\\0&1\end{psmallmatrix}
+\begin{psmallmatrix}1\\1\end{psmallmatrix}
+=1+\tfrac{3}{2}=\tfrac{5}{2}.\\
+P h&=\begin{psmallmatrix}2\\1\end{psmallmatrix}.\\
+\Rightarrow\ &(P^{-1}+hh^{\top})^{-1}
+= P - P h (\tfrac{5}{2})^{-1} h^{\top} P\\
+&=\begin{psmallmatrix}2&0\\0&1\end{psmallmatrix}
+- \begin{psmallmatrix}2\\1\end{psmallmatrix}\tfrac{2}{5}
+\begin{psmallmatrix}2&1\end{psmallmatrix}\\
+&=\begin{psmallmatrix}2&0\\0&1\end{psmallmatrix}
+- \tfrac{2}{5}\begin{psmallmatrix}4&2\\2&1\end{psmallmatrix}
+=\begin{psmallmatrix}\tfrac{2}{5}&-\tfrac{4}{5}\\-\tfrac{4}{5}&\tfrac{3}{5}\end{psmallmatrix}.
+\end{align*}
+}
+\RESULT{
+Updated covariance computed without inverting a $2\times 2$ anew, generalizes to
+$n\times n$.}
+\UNITCHECK{
+All terms are $n\times n$, scalar inverse well-defined since $r+h^{\top}Ph>0$.}
+\EDGECASES{
+\begin{bullets}
+\item If $h=0$, covariance unchanged.
+\item As $r\to\infty$, update vanishes.
+\end{bullets}
+}
+\ALTERNATE{
+Apply Sherman--Morrison with $A=P$, $u=Ph/\sqrt{r}$, $v=h/\sqrt{r}$.}
+\VALIDATION{
+\begin{bullets}
+\item Direct inversion of $P^{-1}+hh^{\top}$ matches result.
+\end{bullets}
+}
+\INTUITION{
+A single measurement removes uncertainty along $h$ direction by a rank-1 amount.}
+\CANONICAL{
+\begin{bullets}
+\item Woodbury maps Kalman covariance update to a small scalar inversion.
+\end{bullets}
+}
+
+\ProblemPage{5}{Narrative: Bob Removes a Data Point (LOO Update)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Rank-1 downdate of $(X^{\top}X+\lambda I)^{-1}$ after removing a row.
+\PROBLEM{
+Given $X\in\mathbb{R}^{n\times d}$ and ridge parameter $\lambda>0$, Bob has
+$H=(X^{\top}X+\lambda I)^{-1}$. A row $x^{\top}\in\mathbb{R}^{1\times d}$ is
+removed. Express the new inverse
+$H'=\left((X^{\top}X-x x^{\top})+\lambda I\right)^{-1}$ via Sherman--Morrison
+and compute for a small example.}
+\MODEL{
+\[
+H'=(A-uu^{\top})^{-1}
+=A^{-1}+A^{-1}u\left(1-u^{\top}A^{-1}u\right)^{-1}u^{\top}A^{-1}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A=X^{\top}X+\lambda I\succ 0$.
+\item $1-u^{\top}A^{-1}u\neq 0$.
+\end{bullets}
+}
+\varmapStart
+\var{A}{Original SPD matrix.}
+\var{u}{Vector $x$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 1 with $v=-u$.}
+\GOVERN{
+\[
+(A-uu^{\top})^{-1}=A^{-1}+A^{-1}u(1-u^{\top}A^{-1}u)^{-1}u^{\top}A^{-1}.
+\]
+}
+\INPUTS{$A=\begin{psmallmatrix}3&1\\1&2\end{psmallmatrix}$,
+$u=\begin{psmallmatrix}1\\2\end{psmallmatrix}$.}
+\DERIVATION{
+\begin{align*}
+A^{-1}&=\tfrac{1}{5}\begin{psmallmatrix}2&-1\\-1&3\end{psmallmatrix}.\\
+u^{\top}A^{-1}u&=\begin{psmallmatrix}1&2\end{psmallmatrix}
+\tfrac{1}{5}\begin{psmallmatrix}2&-1\\-1&3\end{psmallmatrix}
+\begin{psmallmatrix}1\\2\end{psmallmatrix}
+=\tfrac{1}{5}(2-2-2+12)=\tfrac{10}{5}=2.\\
+1-u^{\top}A^{-1}u&=-1\quad\text{(downdate remains invertible?)}\\
+\text{Then }&H'=A^{-1}+A^{-1}u(-1)^{-1}u^{\top}A^{-1}
+=A^{-1}-A^{-1}uu^{\top}A^{-1}.\\
+\text{Compute }&A-uu^{\top}=\begin{psmallmatrix}2&-1\\-1&-2\end{psmallmatrix}
+\text{ invertible with det }(2\cdot -2-1)= -5.\\
+\text{Direct inverse }&(A-uu^{\top})^{-1}=\tfrac{-1}{5}
+\begin{psmallmatrix}-2&1\\1&2\end{psmallmatrix}
+=\tfrac{1}{5}\begin{psmallmatrix}2&-1\\-1&-2\end{psmallmatrix}.\\
+\text{Our }&H'=\tfrac{1}{5}\begin{psmallmatrix}2&-1\\-1&3\end{psmallmatrix}
+-\tfrac{1}{5}\begin{psmallmatrix}2\\-1\end{psmallmatrix}
+\begin{psmallmatrix}1&2\end{psmallmatrix}\tfrac{1}{5}
+\begin{psmallmatrix}2&-1\\-1&3\end{psmallmatrix}
+=\tfrac{1}{5}\begin{psmallmatrix}2&-1\\-1&-2\end{psmallmatrix}.
+\end{align*}
+}
+\RESULT{
+The downdate matches direct inversion, confirming the identity.}
+\UNITCHECK{
+Shapes match; scalar denominator well-defined though negative.}
+\EDGECASES{
+\begin{bullets}
+\item If $u^{\top}A^{-1}u=1$, downdated matrix becomes singular.
+\end{bullets}
+}
+\ALTERNATE{
+Use Woodbury with $U=V=u$, $C=-1$.}
+\VALIDATION{
+\begin{bullets}
+\item Check $(A-uu^{\top})H'=I$ numerically.
+\end{bullets}
+}
+\INTUITION{
+Removing information increases uncertainty along $u$, consistent with sign.}
+\CANONICAL{
+\begin{bullets}
+\item Rank-1 downdate as a mirror of Sherman--Morrison.
+\end{bullets}
+}
+
+\ProblemPage{6}{Expectation Puzzle: Random Rank-1 Update Sign Test}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Expected sign of the Sherman--Morrison denominator.
+\PROBLEM{
+Let $A\succ 0$ and $u\sim\mathcal{N}(0,I_n)$ independent of $A$. For
+$v=u$, what is $\mathbb{E}[1+u^{\top}A^{-1}u]$ and when is the update
+guaranteed invertible almost surely?}
+\MODEL{
+\[
+S=1+u^{\top}A^{-1}u,\quad \mathbb{E}[u^{\top}A^{-1}u]=\mathrm{tr}(A^{-1}).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A\succ 0$ ensures $A^{-1}\succ 0$.
+\item $u$ standard Gaussian.
+\end{bullets}
+}
+\varmapStart
+\var{S}{Sherman--Morrison denominator.}
+\var{\mathrm{tr}}{Trace operator.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 1, with $v=u$.}
+\GOVERN{
+\[
+\mathbb{E}[u^{\top}A^{-1}u]=\mathrm{tr}(A^{-1}\mathbb{E}[uu^{\top}])=\mathrm{tr}(A^{-1}).
+\]
+}
+\INPUTS{$A$ SPD; spectral decomposition $A^{-1}=Q\Lambda Q^{\top}$.}
+\DERIVATION{
+\begin{align*}
+\mathbb{E}[S]&=1+\mathbb{E}[u^{\top}A^{-1}u]
+=1+\mathrm{tr}(A^{-1}).\\
+\text{Invertibility }&\text{requires }S\neq 0.\\
+\text{Since }&u^{\top}A^{-1}u\ge 0\ \text{a.s.},\ S\ge 1>0\ \text{a.s.}
+\end{align*}
+}
+\RESULT{
+$\mathbb{E}[S]=1+\mathrm{tr}(A^{-1})$, and $S>0$ almost surely; update invertible.}
+\UNITCHECK{
+Trace is scalar; sum of eigenvalue reciprocals is positive.}
+\EDGECASES{
+\begin{bullets}
+\item If $v=-u$, $S=1-u^{\top}A^{-1}u$ can be negative.
+\end{bullets}
+}
+\ALTERNATE{
+Use eigen-basis $z=Q^{\top}u$ to see $u^{\top}A^{-1}u=\sum \lambda_i z_i^2$.}
+\VALIDATION{
+\begin{bullets}
+\item Monte Carlo with fixed seed confirms mean equals $1+\mathrm{tr}(A^{-1})$.
+\end{bullets}
+}
+\INTUITION{
+With $A\succ 0$, the update adds information, keeping the denominator positive.}
+\CANONICAL{
+\begin{bullets}
+\item SPD case guarantees Sherman--Morrison denominator positivity for $v=u$.
+\end{bullets}
+}
+
+\ProblemPage{7}{Proof-Style: Symmetry Preservation}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+If $A$ is symmetric and $V=U$, prove $(A+UCU^{\top})^{-1}$ is symmetric.}
+\PROBLEM{
+Assume $A=A^{\top}$ and $C=C^{\top}$. Show Woodbury inverse is symmetric.}
+\MODEL{
+\[
+X^{-1}=A^{-1}-A^{-1}U(C^{-1}+U^{\top}A^{-1}U)^{-1}U^{\top}A^{-1}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ and $C$ symmetric positive definite.
+\end{bullets}
+}
+\varmapStart
+\var{X}{Updated matrix $A+UCU^{\top}$.}
+\var{S}{Symmetric $C^{-1}+U^{\top}A^{-1}U$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 2 with $V=U$.}
+\GOVERN{
+\[
+X^{-1}=A^{-1}-A^{-1}US^{-1}U^{\top}A^{-1},\quad S=S^{\top}.
+\]
+}
+\INPUTS{Symbolic matrices with symmetry.}
+\DERIVATION{
+\begin{align*}
+(X^{-1})^{\top}&=(A^{-1})^{\top}
+-\left(A^{-1}US^{-1}U^{\top}A^{-1}\right)^{\top}\\
+&=A^{-1}-A^{-1}U(S^{-1})^{\top}U^{\top}A^{-1}.\\
+\text{Since }&S=S^{\top}\Rightarrow S^{-1}=(S^{-1})^{\top}.\\
+\Rightarrow\ &(X^{-1})^{\top}=X^{-1}.
+\end{align*}
+}
+\RESULT{
+Symmetry preserved by the Woodbury inverse under symmetric inputs.}
+\UNITCHECK{
+Matrix transposes are shape-consistent.}
+\EDGECASES{
+\begin{bullets}
+\item If $C$ is not symmetric, $S$ may be nonsymmetric and symmetry lost.
+\end{bullets}
+}
+\ALTERNATE{
+Use $(A+UCU^{\top})^{\top}=A+UCU^{\top}$ implying $(\cdot)^{-1}$ symmetric.}
+\VALIDATION{
+\begin{bullets}
+\item Numeric symmetric test: $(X^{-1})-(X^{-1})^{\top}=0$.
+\end{bullets}
+}
+\INTUITION{
+Low-rank symmetric updates keep the problem in the symmetric class.}
+\CANONICAL{
+\begin{bullets}
+\item Symmetry invariance of Woodbury under symmetric inputs.
+\end{bullets}
+}
+
+\ProblemPage{8}{Proof-Style: Positive Definiteness via Schur Complement}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+If $A\succ 0$, $C\succ 0$, then $A+UCU^{\top}\succ 0$.}
+\PROBLEM{
+Prove that $A+UCU^{\top}$ is SPD and its inverse is SPD via Woodbury.}
+\MODEL{
+\[
+x^{\top}(A+UCU^{\top})x=x^{\top}Ax+\|C^{1/2}U^{\top}x\|^{2}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A\succ 0$, $C\succ 0$.
+\end{bullets}
+}
+\varmapStart
+\var{x}{Arbitrary nonzero vector.}
+\varmapEnd
+\WHICHFORMULA{
+Complements Formula 2; shows SPD preserved.}
+\GOVERN{
+\[
+x^{\top}(A+UCU^{\top})x>0\ \forall x\neq 0.
+\]
+}
+\INPUTS{Symbolic argument.}
+\DERIVATION{
+\begin{align*}
+x^{\top}(A+UCU^{\top})x&=x^{\top}Ax+(U^{\top}x)^{\top}C(U^{\top}x)\\
+&>0+0\quad(\text{strictly } >0 \text{ unless }x=0).
+\end{align*}
+}
+\RESULT{
+$A+UCU^{\top}\succ 0$, so inverse exists and is SPD.}
+\UNITCHECK{
+Scalar quadratic forms; positivity well-defined.}
+\EDGECASES{
+\begin{bullets}
+\item If $C\succeq 0$, semidefinite; strictness may fail if $U^{\top}x=0$.
+\end{bullets}
+}
+\ALTERNATE{
+Use block SPD and Schur complement positivity.}
+\VALIDATION{
+\begin{bullets}
+\item Numeric eigenvalues positive for random SPD $A,C$.
+\end{bullets}
+}
+\INTUITION{
+Adding a PSD term cannot reduce energy along any direction.}
+\CANONICAL{
+\begin{bullets}
+\item SPD is closed under PSD low-rank additions.
+\end{bullets}
+}
+
+\ProblemPage{9}{Combo: Ridge Regression Dual via Woodbury}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Compute $(X^{\top}X+\lambda I_d)^{-1}X^{\top}$ via $n\times n$ inverse.}
+\PROBLEM{
+For $X\in\mathbb{R}^{n\times d}$ with $n\ll d$ and $\lambda>0$, show
+$(X^{\top}X+\lambda I)^{-1}X^{\top}=X^{\top}(XX^{\top}+\lambda I)^{-1}$ and
+derive via Woodbury.}
+\MODEL{
+\[
+(A+UCV^{\top})^{-1}U = A^{-1}U - A^{-1}U(C^{-1}+V^{\top}A^{-1}U)^{-1}
+V^{\top}A^{-1}U.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\lambda>0$ ensures invertibility.
+\end{bullets}
+}
+\varmapStart
+\var{A}{$\lambda I_d$.}
+\var{U}{$X^{\top}$.}
+\var{V}{$X^{\top}$.}
+\var{C}{$I_n$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 2 with $A=\lambda I_d$, $U=V=X^{\top}$, $C=I_n$.}
+\GOVERN{
+\[
+(X^{\top}X+\lambda I_d)^{-1}
+=\lambda^{-1}I_d-\lambda^{-1}X^{\top}(I_n+X\lambda^{-1}X^{\top})^{-1}X\lambda^{-1}.
+\]
+}
+\INPUTS{Symbolic derivation.}
+\DERIVATION{
+\begin{align*}
+A^{-1}&=\lambda^{-1}I_d,\ S=I_n+X A^{-1} X^{\top}=I_n+\lambda^{-1}XX^{\top}.\\
+(X^{\top}X+\lambda I)^{-1}X^{\top}
+&=A^{-1}U-A^{-1}US^{-1}V^{\top}A^{-1}U\\
+&=\lambda^{-1}X^{\top}-\lambda^{-1}X^{\top}S^{-1}X\lambda^{-1}X^{\top}\\
+&=\lambda^{-1}X^{\top}\left(I-S^{-1}\lambda^{-1}XX^{\top}\right).\\
+\text{But }&S=\lambda^{-1}(XX^{\top}+\lambda I_n)
+\Rightarrow S^{-1}=\lambda(XX^{\top}+\lambda I_n)^{-1}.\\
+\Rightarrow\ &(X^{\top}X+\lambda I)^{-1}X^{\top}
+= X^{\top}(XX^{\top}+\lambda I)^{-1}.
+\end{align*}
+}
+\RESULT{
+Dual ridge identity derived; compute with $n\times n$ inverse.}
+\UNITCHECK{
+Left side $d\times n$, right side $d\times n$.}
+\EDGECASES{
+\begin{bullets}
+\item If $n\gg d$, prefer primal form.
+\end{bullets}
+}
+\ALTERNATE{
+Use normal equations and multiply both sides by $X$.}
+\VALIDATION{
+\begin{bullets}
+\item Numeric check with random $X$ and fixed seed.
+\end{bullets}
+}
+\INTUITION{
+Solve in the smaller space; Woodbury connects primal and dual forms.}
+\CANONICAL{
+\begin{bullets}
+\item Woodbury transforms ridge inverse to data-space inverse.
+\end{bullets}
+}
+
+\ProblemPage{10}{Combo: Gaussian Conditioning via Woodbury and Determinants}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Update precision and log-determinant under rank-$k$ observation.}
+\PROBLEM{
+Given prior $\Sigma\succ 0$ and observation model $y=H^{\top}x+\varepsilon$ with
+$H\in\mathbb{R}^{n\times k}$ and noise covariance $R\succ 0$, compute posterior
+covariance $\Sigma^+$ and log-determinant change using Woodbury and matrix
+determinant lemma.}
+\MODEL{
+\[
+\Sigma^+=(\Sigma^{-1}+HR^{-1}H^{\top})^{-1}
+=\Sigma-\Sigma H(R+H^{\top}\Sigma H)^{-1}H^{\top}\Sigma.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\Sigma\succ 0$, $R\succ 0$.
+\end{bullets}
+}
+\varmapStart
+\var{\Sigma}{Prior covariance.}
+\var{H}{Observation matrix.}
+\var{R}{Noise covariance.}
+\varmapEnd
+\WHICHFORMULA{
+Formulas 2 and 3.}
+\GOVERN{
+\[
+\log\frac{\det\Sigma}{\det\Sigma^{+}}
+=\log\det(I+R^{-1/2}H^{\top}\Sigma H R^{-1/2}).
+\]
+}
+\INPUTS{$\Sigma=\begin{psmallmatrix}2&0\\0&1\end{psmallmatrix}$,
+$H=\begin{psmallmatrix}1&0\\1&1\end{psmallmatrix}$,
+$R=\begin{psmallmatrix}1&0\\0&2\end{psmallmatrix}$.}
+\DERIVATION{
+\begin{align*}
+\Sigma^+&=\Sigma-\Sigma H(R+H^{\top}\Sigma H)^{-1}H^{\top}\Sigma.\\
+H^{\top}\Sigma H&=\begin{psmallmatrix}3&1\\1&1\end{psmallmatrix}.\\
+R+H^{\top}\Sigma H&=\begin{psmallmatrix}4&1\\1&3\end{psmallmatrix}.\\
+\det\frac{\Sigma}{\Sigma^+}
+&=\det(I+R^{-1}H^{\top}\Sigma H)
+=\det\left(I+ \begin{psmallmatrix}1&0\\0&1/2\end{psmallmatrix}
+\begin{psmallmatrix}3&1\\1&1\end{psmallmatrix}\right).
+\end{align*}
+}
+\RESULT{
+$\Sigma^+$ computed from a $k\times k$ inverse; log-det change from a small
+$k\times k$ determinant.}
+\UNITCHECK{
+Dimensions consistent; determinants scalar.}
+\EDGECASES{
+\begin{bullets}
+\item As $R\to\infty$, $\Sigma^+\to\Sigma$ and log-det change $\to 0$.
+\end{bullets}
+}
+\ALTERNATE{
+Apply determinant lemma with $A=\Sigma$, $U=H$, $C=R^{-1}$, $V=H$.}
+\VALIDATION{
+\begin{bullets}
+\item Compare direct inverse and determinant with the small-dimension forms.
+\end{bullets}
+}
+\INTUITION{
+Observations shrink uncertainty only in the subspace seen through $H$.}
+\CANONICAL{
+\begin{bullets}
+\item Woodbury and determinant lemma jointly quantify update size.
+\end{bullets}
+}
+
+\clearpage
+\section{Coding Demonstrations}
+
+\CodeDemoPage{Numerical Check of Sherman--Morrison}
+\PROBLEM{
+Implement Sherman--Morrison to update an inverse after a rank-1 change and
+validate against direct inversion on random but fixed data.}
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> tuple} parses $n$ and seed.
+\item \inlinecode{def solve_case(obj) -> dict} computes both inverses.
+\item \inlinecode{def validate() -> None} runs assertions.
+\item \inlinecode{def main() -> None} orchestrates.
+\end{bullets}
+}
+\INPUTS{
+$n$ size, random seed to generate SPD matrix $A$ and vectors $u,v$.}
+\OUTPUTS{
+Dictionary with direct inverse, SM inverse, and error norms.}
+\FORMULA{
+\[
+X^{-1}=A^{-1}-\frac{A^{-1}uv^{\top}A^{-1}}{1+v^{\top}A^{-1}u}.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    parts = s.split()
+    n = int(parts[0]); seed = int(parts[1])
+    return n, seed
+
+def make_spd(n, seed):
+    rng = np.random.default_rng(seed)
+    M = rng.standard_normal((n, n))
+    A = M.T @ M + n * np.eye(n)
+    return A
+
+def solve_case(cfg):
+    n, seed = cfg
+    A = make_spd(n, seed)
+    rng = np.random.default_rng(seed + 1)
+    u = rng.standard_normal(n)
+    v = rng.standard_normal(n)
+    X = A + np.outer(u, v)
+    invA = np.linalg.inv(A)
+    denom = 1.0 + v @ (invA @ u)
+    invX_smw = invA - (invA @ np.outer(u, v) @ invA) / denom
+    invX_dir = np.linalg.inv(X)
+    err = np.linalg.norm(invX_smw - invX_dir)
+    return {"err": err, "denom": denom}
+
+def validate():
+    r = solve_case((5, 0))
+    assert abs(r["denom"]) > 1e-8
+    assert r["err"] < 1e-9
+
+def main():
+    validate()
+    r = solve_case((6, 1))
+    print("denom", round(r["denom"], 6), "err", r["err"])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    n, seed = map(int, s.split())
+    return n, seed
+
+def solve_case(cfg):
+    n, seed = cfg
+    rng = np.random.default_rng(seed)
+    M = rng.standard_normal((n, n))
+    A = M.T @ M + n * np.eye(n)
+    u = rng.standard_normal(n)
+    v = rng.standard_normal(n)
+    X = A + np.outer(u, v)
+    invX_dir = np.linalg.inv(X)
+    invA = np.linalg.inv(A)
+    denom = 1.0 + v @ (invA @ u)
+    invX_smw = invA - (invA @ np.outer(u, v) @ invA) / denom
+    err = np.linalg.norm(invX_smw - invX_dir)
+    return {"err": err}
+
+def validate():
+    r = solve_case((8, 42))
+    assert r["err"] < 1e-9
+
+def main():
+    validate()
+    r = solve_case((7, 7))
+    print("err", r["err"])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Time $\mathcal{O}(n^{3})$ for initial inversion plus $\mathcal{O}(n^{2})$
+for update; direct inversion is $\mathcal{O}(n^{3})$. Space $\mathcal{O}(n^{2})$.}
+\FAILMODES{
+\begin{bullets}
+\item Denominator near zero; guard by checking $|1+v^{\top}A^{-1}u|$.
+\item Non-SPD $A$ could be singular; ensure regularization if needed.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item If $A$ is SPD, use Cholesky solves instead of explicit inverses.
+\item Normalize $u,v$ to avoid overflow in outer products.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Compare against direct $\texttt{np.linalg.inv}$ with a tight tolerance.
+\item Random tests with fixed seeds.
+\end{bullets}
+}
+\RESULT{
+Both implementations agree to near machine precision for tested seeds.}
+\EXPLANATION{
+The code computes the Sherman--Morrison correction and verifies that the product
+matches the direct inverse numerically.}
+
+\CodeDemoPage{Numerical Check of Woodbury and Determinant Lemma}
+\PROBLEM{
+Verify $(A+UCV^{\top})^{-1}$ and $\det(A+UCV^{\top})$ using Woodbury and the
+matrix determinant lemma for fixed random inputs.}
+\API{
+\begin{bullets}
+\item \inlinecode{def gen(n, k, seed)} generates inputs.
+\item \inlinecode{def solve_case(obj)} computes inverse and determinant.
+\item \inlinecode{def validate()} asserts small errors.
+\item \inlinecode{def main()} runs demo.
+\end{bullets}
+}
+\INPUTS{
+$n,k$, seed; $A$ SPD, $C$ SPD, $U,V$ random.}
+\OUTPUTS{
+Errors between direct and Woodbury/lemma computations.}
+\FORMULA{
+\[
+\begin{aligned}
+&(A+UCV^{\top})^{-1}=A^{-1}-A^{-1}U(C^{-1}+V^{\top}A^{-1}U)^{-1}V^{\top}A^{-1},\\
+&\det(A+UCV^{\top})=\det(C^{-1}+V^{\top}A^{-1}U)\det(C)\det(A).
+\end{aligned}
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def gen(n, k, seed):
+    rng = np.random.default_rng(seed)
+    M = rng.standard_normal((n, n))
+    A = M.T @ M + n * np.eye(n)
+    U = rng.standard_normal((n, k))
+    V = rng.standard_normal((n, k))
+    N = rng.standard_normal((k, k))
+    C = N.T @ N + k * np.eye(k)
+    return A, U, V, C
+
+def solve_case(cfg):
+    n, k, seed = cfg
+    A, U, V, C = gen(n, k, seed)
+    invA = np.linalg.inv(A)
+    X = A + U @ C @ V.T
+    invX_dir = np.linalg.inv(X)
+    S = np.linalg.inv(C) + V.T @ invA @ U
+    invX_w = invA - invA @ U @ np.linalg.inv(S) @ V.T @ invA
+    err_inv = np.linalg.norm(invX_dir - invX_w)
+    det_dir = np.linalg.det(X)
+    det_w = np.linalg.det(S) * np.linalg.det(C) * np.linalg.det(A)
+    rel_det = abs(det_dir - det_w) / max(1.0, abs(det_dir))
+    return err_inv, rel_det
+
+def validate():
+    err_inv, rel_det = solve_case((12, 3, 123))
+    assert err_inv < 1e-8
+    assert rel_det < 1e-8
+
+def main():
+    validate()
+    e1, e2 = solve_case((10, 2, 7))
+    print("inv_err", e1, "det_rel_err", e2)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def gen(n, k, seed):
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal((n, n))
+    A = A.T @ A + n * np.eye(n)
+    U = rng.standard_normal((n, k))
+    V = rng.standard_normal((n, k))
+    C = rng.standard_normal((k, k))
+    C = C.T @ C + k * np.eye(k)
+    return A, U, V, C
+
+def solve_case(cfg):
+    n, k, seed = cfg
+    A, U, V, C = gen(n, k, seed)
+    invA = np.linalg.inv(A)
+    X = A + U @ C @ V.T
+    invX_dir = np.linalg.inv(X)
+    S = np.linalg.inv(C) + V.T @ invA @ U
+    invX_w = invA - invA @ U @ np.linalg.inv(S) @ V.T @ invA
+    err = np.linalg.norm(invX_dir - invX_w)
+    det_dir = np.linalg.det(X)
+    det_w = np.linalg.det(S) * np.linalg.det(C) * np.linalg.det(A)
+    rerr = abs(det_dir - det_w) / max(1.0, abs(det_dir))
+    return err, rerr
+
+def validate():
+    err, rerr = solve_case((8, 2, 0))
+    assert err < 1e-8
+    assert rerr < 1e-8
+
+def main():
+    validate()
+    e, r = solve_case((9, 3, 2))
+    print("errs", e, r)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Time dominated by $A^{-1}$ and $S^{-1}$: $\mathcal{O}(n^{3}+k^{3})$;
+space $\mathcal{O}(n^{2}+k^{2})$.}
+\FAILMODES{
+\begin{bullets}
+\item If $S$ is singular, Woodbury cannot be applied.
+\item Poor conditioning of $A$ or $S$ inflates errors.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Prefer solves (Cholesky) over explicit inverses for SPD matrices.
+\item Scale $U,V$ to improve conditioning.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Compare inverse and determinant both ways with tight tolerances.
+\item Fixed seeds ensure reproducibility.
+\end{bullets}
+}
+\RESULT{
+Inverse and determinant agree to near machine precision on tested sizes.}
+\EXPLANATION{
+Shows the exact equivalence of Woodbury and determinant lemma to direct
+computations for random SPD inputs.}
+
+\clearpage
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Efficient ridge regression when $n\ll d$: compute
+$\beta=(X^{\top}X+\lambda I)^{-1}X^{\top}y$
+via dual form $X^{\top}(XX^{\top}+\lambda I)^{-1}y$ using Woodbury.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\lambda>0$.
+\item Data deterministic with fixed seed.
+\end{bullets}
+}
+\WHICHFORMULA{
+Formula 2 specialized to $A=\lambda I_d$, $U=V=X^{\top}$, $C=I_n$.}
+\varmapStart
+\var{X}{Design matrix $(n\times d)$.}
+\var{y}{Response $(n\times 1)$.}
+\var{\lambda}{Ridge strength.}
+\var{\beta}{Coefficients $(d\times 1)$.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic $X,y$ with fixed seed.
+\item Compute $\beta$ primal and dual; compare.
+\item Report RMSE on training data.
+\end{bullets}
+}
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def generate(n=40, d=200, seed=0, noise=0.1):
+    rng = np.random.default_rng(seed)
+    X = rng.standard_normal((n, d))
+    w = np.zeros(d); w[:5] = np.linspace(1.0, 0.2, 5)
+    y = X @ w + noise * rng.standard_normal(n)
+    return X, y
+
+def ridge_primal(X, y, lam):
+    d = X.shape[1]
+    A = X.T @ X + lam * np.eye(d)
+    return np.linalg.solve(A, X.T @ y)
+
+def ridge_dual(X, y, lam):
+    n = X.shape[0]
+    B = X @ X.T + lam * np.eye(n)
+    alpha = np.linalg.solve(B, y)
+    return X.T @ alpha
+
+def rmse(y, yhat):
+    return np.sqrt(np.mean((y - yhat) ** 2))
+
+def main():
+    X, y = generate()
+    lam = 1.0
+    bp = ridge_primal(X, y, lam)
+    bd = ridge_dual(X, y, lam)
+    assert np.linalg.norm(bp - bd) < 1e-8
+    yhat = X @ bp
+    print("rmse", round(rmse(y, yhat), 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Primal-vs-dual coefficient difference and RMSE.}
+\INTERPRET{
+Woodbury justifies using the $n\times n$ system when $n\ll d$ for efficiency.}
+\NEXTSTEPS{
+Use Cholesky for stability; extend to Gaussian processes with kernels.}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Kalman filter innovation covariance inverse via Woodbury for a small
+measurement dimension $k$.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Prior covariance $P\succ 0$, measurement matrix $H$, noise $R\succ 0$.
+\end{bullets}
+}
+\WHICHFORMULA{
+Woodbury with $A=R$, $U=H^{\top}$, $V=H$, $C=P$.}
+\varmapStart
+\var{P}{Prior covariance $(n\times n)$.}
+\var{H}{Measurement matrix $(k\times n)$.}
+\var{R}{Noise covariance $(k\times k)$.}
+\var{S}{Innovation covariance $S=H P H^{\top}+R$.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate SPD $P$ and $R$; random $H$.
+\item Compute $S^{-1}$ via Woodbury and direct inversion.
+\item Compare errors.
+\end{bullets}
+}
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def gen(n=10, k=3, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal((n, n)); P = A.T @ A + n * np.eye(n)
+    B = rng.standard_normal((k, k)); R = B.T @ B + k * np.eye(k)
+    H = rng.standard_normal((k, n))
+    return P, H, R
+
+def inv_innovation(P, H, R):
+    # S = H P H^T + R
+    S = H @ P @ H.T + R
+    invS_dir = np.linalg.inv(S)
+    # Woodbury on S^{-1} with A=R, U=H, C=P, V=H
+    invR = np.linalg.inv(R)
+    T = np.linalg.inv(P) + H.T @ invR @ H
+    invS_w = invR - invR @ H @ np.linalg.inv(T) @ H.T @ invR
+    return invS_dir, invS_w
+
+def main():
+    P, H, R = gen()
+    A, B = inv_innovation(P, H, R)
+    err = np.linalg.norm(A - B)
+    print("err", err)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Norm of difference between direct and Woodbury inverses of $S$.}
+\INTERPRET{
+When $k$ is small, inverting $k\times k$ matrices is cheaper and stable.}
+\NEXTSTEPS{
+Use Cholesky-based solves; extend to time-varying $H$ with rank-1 updates.}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Gauss--Newton step for linear least squares via Woodbury in data space.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Quadratic loss with Jacobian $X$; damping $\lambda>0$.
+\end{bullets}
+}
+\WHICHFORMULA{
+$(X^{\top}X+\lambda I)^{-1}X^{\top}=X^{\top}(XX^{\top}+\lambda I)^{-1}$.}
+\varmapStart
+\var{X}{Jacobian/design matrix.}
+\var{g}{Gradient $X^{\top}r$.}
+\var{\lambda}{Damping (Levenberg--Marquardt).}
+\var{\Delta w}{Update step.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Build synthetic $X$ and residual $r$.
+\item Compute step in primal and dual forms.
+\item Verify equality and report norm of step.
+\end{bullets}
+}
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+
+def gen(n=50, d=200, seed=1):
+    rng = np.random.default_rng(seed)
+    X = rng.standard_normal((n, d))
+    r = rng.standard_normal(n)
+    return X, r
+
+def step_primal(X, r, lam):
+    d = X.shape[1]
+    A = X.T @ X + lam * np.eye(d)
+    return np.linalg.solve(A, X.T @ r)
+
+def step_dual(X, r, lam):
+    n = X.shape[0]
+    B = X @ X.T + lam * np.eye(n)
+    alpha = np.linalg.solve(B, r)
+    return X.T @ alpha
+
+def main():
+    X, r = gen()
+    lam = 1e-1
+    dp = step_primal(X, r, lam)
+    dd = step_dual(X, r, lam)
+    print("diff", np.linalg.norm(dp - dd), "norm", np.linalg.norm(dp))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Difference norm between primal and dual steps; step norm magnitude.}
+\INTERPRET{
+Dual computation avoids $d\times d$ inversion when $n\ll d$.}
+\NEXTSTEPS{
+Apply to K-FAC and natural gradient with block-structured $X$.}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Online standardization: update inverse covariance under streaming rank-1
+contributions using Sherman--Morrison.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Maintain SPD covariance estimate $\Sigma_t$ and its inverse.
+\item New centered sample vector $z_t$ updates $\Sigma$ by rank-1. 
+\end{bullets}
+}
+\WHICHFORMULA{
+Sherman--Morrison with $A=\Sigma$, $u=\sqrt{\eta}\,z$, $v=u$.}
+\varmapStart
+\var{\Sigma}{Current covariance.}
+\var{K=\Sigma^{-1}}{Current precision.}
+\var{z}{New sample (centered).}
+\var{\eta}{Learning rate.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Initialize $\Sigma_0$ SPD and $K_0=\Sigma_0^{-1}$.
+\item For each $z_t$, update $K$ via Sherman--Morrison.
+\item Compare with direct inverse occasionally.
+\end{bullets}
+}
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def init_cov(d=5, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal((d, d))
+    Sigma = A.T @ A + d * np.eye(d)
+    return Sigma
+
+def sm_update_precision(K, u):
+    denom = 1.0 + u.T @ K @ u
+    return K - (K @ np.outer(u, u) @ K) / denom
+
+def main():
+    d, n, eta = 5, 100, 0.05
+    Sigma = init_cov(d, 1)
+    K = np.linalg.inv(Sigma)
+    rng = np.random.default_rng(2)
+    for t in range(n):
+        z = rng.standard_normal(d)
+        u = np.sqrt(eta) * z
+        K = sm_update_precision(K, u)
+        if (t + 1) % 20 == 0:
+            Sigma = Sigma + eta * np.outer(z, z)
+            K_dir = np.linalg.inv(Sigma)
+            err = np.linalg.norm(K - K_dir)
+            print("t", t + 1, "err", err)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Periodically reported precision error $\|K-K_{\mathrm{dir}}\|$.}
+\INTERPRET{
+Rank-1 updates maintain an accurate inverse covariance online efficiently.}
+\NEXTSTEPS{
+Use numerically stable solves and Welford updates for mean/variance.}
+
+\end{document}

@@ -1,0 +1,997 @@
+% !TeX program = xelatex
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Volcanoes}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/383/B}}
+\LINE{DIFFICULTY / RATING}{2500}
+\STATEMENT{Iahub got lost in a very big desert. The desert can be represented as a $n \times n$ square matrix, where each cell is a zone of the desert. The cell $(i, j)$ represents the cell at row $i$ and column $j$ ($1 \le i, j \le n$). Iahub can go from one cell $(i, j)$ only down or right, that is to cells $(i + 1, j)$ or $(i, j + 1)$.
+
+Also, there are $m$ cells that are occupied by volcanoes, which Iahub cannot enter.
+
+Iahub is initially at cell $(1, 1)$ and he needs to travel to cell $(n, n)$. Knowing that Iahub needs $1$ second to travel from one cell to another, find the minimum time in which he can arrive in cell $(n, n)$.
+
+Input:
+The first line contains two integers $n$ ($1 \le n \le 10^9$) and $m$ ($1 \le m \le 10^5$). Each of the next $m$ lines contains a pair of integers, $x$ and $y$ ($1 \le x, y \le n$), representing the coordinates of the volcanoes.
+
+Consider matrix rows are numbered from $1$ to $n$ from top to bottom, and matrix columns are numbered from $1$ to $n$ from left to right. There is no volcano in cell $(1, 1)$. No two volcanoes occupy the same location.
+
+Output:
+Print one integer, the minimum time in which Iahub can arrive at cell $(n, n)$. If no solution exists (there is no path to the final cell), print $-1$.
+
+Note:
+Consider the first sample. A possible road is: $(1, 1)$ $\to$ $(1, 2)$ $\to$ $(2, 2)$ $\to$ $(2, 3)$ $\to$ $(3, 3)$ $\to$ $(3, 4)$ $\to$ $(4, 4)$.}
+\BREAKDOWN{Every monotone path from $(1,1)$ to $(n,n)$ has exactly $2n-2$ moves. Thus the answer is either $2n-2$ if some monotone path avoids all volcano cells, or $-1$ if all such paths are blocked. Decide reachability under only-right-or-down moves without enumerating the $n^2$ grid.}
+\ELI{Compress the grid along anti-diagonals and propagate reachable column intervals while deleting volcano points; if $(n,n)$ remains reachable, time is $2n-2$, else $-1$.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{One test:
+- Integer $n$ with $1 \le n \le 10^9$.
+- Integer $m$ with $1 \le m \le 10^5$.
+- Then $m$ lines: integers $x, y$ with $1 \le x, y \le n$, all distinct pairs, and $(1,1)$ absent.}
+\OUTPUTS{Print a single integer: $2n-2$ if a path from $(1,1)$ to $(n,n)$ exists using only right or down moves and avoiding volcano cells; otherwise print $-1$.}
+\SAMPLES{Example 1:
+Input:
+3 0
+Output:
+4
+
+Example 2:
+Input:
+2 2
+1 2
+2 1
+Output:
+-1}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $D = \{2,3,\ldots,2n\}$ be anti-diagonal indices $s=i+j$. On a fixed anti-diagonal $s$, allowed columns are $j \in [L_s, R_s]$ where $L_s = \max(1, s-n)$ and $R_s = \min(n, s-1)$. Let $B_s \subseteq [L_s, R_s]$ be blocked columns on diagonal $s$ from volcanoes $(i,j)$ with $i+j=s$. Define reachable column set $S_s \subseteq [L_s, R_s]$ for each $s$.}
+\varmapStart
+\var{n}{grid size}
+\var{m}{number of volcanoes}
+\var{s}{anti-diagonal index $i+j$}
+\var{L_s,R_s}{bounds of valid columns on diagonal $s$}
+\var{B_s}{blocked columns on diagonal $s$}
+\var{S_s}{reachable columns on diagonal $s$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+S_2 &= \{1\}, \\
+S_{s+1} &= \bigl((S_s \cup (S_s+1)) \cap [L_{s+1}, R_{s+1}]\bigr) \setminus B_{s+1}, \quad \text{for } s=2,\ldots,2n-1.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Moves are only right or down; volcano cells are impassable; $(1,1)$ is free. Reachability is computed strictly along increasing $s$.}
+\INVARIANTS{
+- $S_s \subseteq [L_s,R_s]$ for all $s$ by construction. 
+- If $S_{2n} \ne \varnothing$, then necessarily $S_{2n}=\{n\}$, implying reachability of $(n,n)$. 
+- Any feasible monotone path has length exactly $2n-2$.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Breadth-first search on the grid from $(1,1)$ using only $(i+1,j)$ and $(i,j+1)$ transitions, stopping early if $(n,n)$ is reached.}
+\ASSUMPTIONS{Feasible only for tiny $n$; used here for validation on micro-cases.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build the blocked set from the $m$ volcano coordinates.
+\item BFS from $(1,1)$, enqueueing only in-bounds, unvisited, unblocked neighbors to the right and down.
+\item If $(n,n)$ is dequeued, output $2n-2$; else output $-1$. 
+\end{algosteps}
+\COMPLEXITY{For small $n$, $T(n) = \mathcal{O}(n^2)$ and $S(n) = \mathcal{O}(n^2)$.}
+\[
+\begin{aligned}
+T(n) &= \mathcal{O}(\text{\#cells visited}) \le \mathcal{O}(n^2), \\
+S(n) &= \mathcal{O}(\text{queue} + \text{visited}) \le \mathcal{O}(n^2).
+\end{aligned}
+\]
+\CORRECTNESS{BFS explores all monotone reachable cells; $(n,n)$ is reachable iff explored. Any path found has length $2n-2$ moves as all monotone paths do.}
+\EDGECASES{Handle $n=1$ (answer $0$), no volcanoes ($2n-2$), and both neighbors of $(1,1)$ blocked when $n \ge 2$ (still possibly reachable via detours if larger $n$).}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+from collections import deque
+import sys
+import io
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    m = int(next(it))
+    volcanos = []
+    for _ in range(m):
+        x = int(next(it)); y = int(next(it))
+        volcanos.append((x, y))
+    return n, m, volcanos
+
+def solve_case(n, volcanos):
+    # Brute-force BFS; only safe for small n (used for tests)
+    blocked = set(volcanos)
+    if (1, 1) in blocked:
+        return -1
+    if n == 1:
+        return 0
+    if n > 2000:
+        # Guard to keep runtime reasonable; fall back to diagonal reachability for big n
+        return solve_case_interval_jump(n, volcanos)
+    q = deque()
+    q.append((1, 1))
+    seen = set([(1, 1)])
+    while q:
+        i, j = q.popleft()
+        if (i, j) == (n, n):
+            return 2 * n - 2
+        # Down
+        if i + 1 <= n and (i + 1, j) not in blocked and (i + 1, j) not in seen:
+            seen.add((i + 1, j)); q.append((i + 1, j))
+        # Right
+        if j + 1 <= n and (i, j + 1) not in blocked and (i, j + 1) not in seen:
+            seen.add((i, j + 1)); q.append((i, j + 1))
+    return -1
+
+# Helper: optimal interval-jump solver reused for guard
+def solve_case_interval_jump(n, volcanos):
+    from bisect import bisect_left
+
+    # Group volcano columns by diagonal s = x+y
+    diag = {}
+    for x, y in volcanos:
+        s = x + y
+        if s not in diag:
+            diag[s] = []
+        diag[s].append(y)
+    for s in diag:
+        diag[s] = sorted(set(diag[s]))
+    def bounds(s):
+        L = 1 if s <= n + 0 else s - n
+        if L < 1: L = 1
+        R = n if s >= n + 1 else s - 1
+        if R > n: R = n
+        return L, R
+
+    def merge_intervals(iv):
+        if not iv: return []
+        iv.sort()
+        res = [list(iv[0])]
+        for l, r in iv[1:]:
+            if l <= res[-1][1] + 1:
+                if r > res[-1][1]:
+                    res[-1][1] = r
+            else:
+                res.append([l, r])
+        return res
+
+    def intersect_window(iv, L, R):
+        out = []
+        for l, r in iv:
+            nl, nr = max(l, L), min(r, R)
+            if nl <= nr:
+                out.append([nl, nr])
+        return out
+
+    def expand_r_by(iv, g):
+        if g == 0: return [x[:] for x in iv]
+        return [[l, r + g] for l, r in iv]
+
+    def remove_points(iv, points):
+        # points is sorted unique
+        res = []
+        i = 0
+        for l, r in iv:
+            curr_l = l
+            # process points in [l, r]
+            idx = bisect_left(points, l)
+            while idx < len(points) and points[idx] <= r:
+                p = points[idx]
+                if curr_l <= p - 1:
+                    res.append([curr_l, p - 1])
+                curr_l = p + 1
+                idx += 1
+            if curr_l <= r:
+                res.append([curr_l, r])
+        return res
+
+    cur_s = 2
+    L2, R2 = bounds(cur_s)
+    cur = [[max(1, L2), min(1, R2)]] if L2 <= 1 <= R2 else []
+    keys = sorted(k for k in diag.keys() if 2 <= k <= 2 * n)
+    keys.append(2 * n)
+    for s in keys:
+        g = s - cur_s
+        if not cur and g > 0:
+            return -1
+        if g > 0:
+            cur = expand_r_by(cur, g)
+            Ls, Rs = bounds(s)
+            cur = intersect_window(cur, Ls, Rs)
+            cur = merge_intervals(cur)
+            if not cur:
+                return -1
+        # Remove volcano points on this diagonal if any
+        if s in diag and cur:
+            cur = remove_points(cur, diag[s])
+            if not cur:
+                return -1 if s < 2 * n else -1
+        cur_s = s
+    # At s=2n, allowed window forces j=n if reachable
+    return (2 * n - 2) if cur else -1
+
+def solve_all(data: str) -> str:
+    parsed = read_input(data)
+    if parsed is None:
+        return ""
+    n, m, volcanos = parsed
+    ans = solve_case(n, volcanos)
+    return str(ans)
+
+def main():
+    data = sys.stdin.read()
+    if not data.strip():
+        return
+    print(solve_all(data))
+
+# Tiny asserts (micro-cases)
+assert solve_all("1 0\n") == "0"
+assert solve_all("2 0\n") == "2"
+assert solve_all("2 2\n1 2\n2 1\n") == "-1"
+assert solve_all("3 1\n2 2\n") == "4"
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Checked on $n=1$ (trivial), $n=2$ with both neighbors of $(1,1)$ blocked (impossible), and a small $3 \times 3$ with a central volcano (still reachable).}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Intervals per Anti-Diagonal (Step-by-Step)}
+\WHICHFORMULA{Represent $S_s$ as a union of integer intervals in $j$ on each diagonal; update by $S_{s+1}=(S_s\cup(S_s+1))\cap [L_{s+1},R_{s+1}]$, then delete $B_{s+1}$.}
+\ASSUMPTIONS{Iterate all $2n-1$ diagonals explicitly; practical for small to moderate $n$, but primarily for clarity and as a stepping stone to the jump optimization.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Group volcanoes by diagonal index $s=x+y$ and store blocked columns per $s$ sorted.
+\item Initialize $S_2=\{1\}$.
+\item For $s=2,3,\ldots,2n-1$: compute $S_{s+1}$ from $S_s$ via union-with-shift, clip to $[L_{s+1},R_{s+1}]$, and remove blocked columns $B_{s+1}$.
+\item If at any point $S_s$ becomes empty, return $-1$. At $s=2n$, if nonempty, return $2n-2$. 
+\end{algosteps}
+\COMPLEXITY{This avoids $n^2$ state, tracking only intervals per diagonal, but still processes all $2n-1$ diagonals.}
+\[
+\begin{aligned}
+T(n) &= \mathcal{O}(n + m + K), \ \text{where $K$ is total interval operations over all $s$}, \\
+&\text{practical for small $n$, but not $n \approx 10^9$.}
+\end{aligned}
+\]
+\CORRECTNESS{Follows the exact recurrence for $S_{s+1}$; integer intervals are closed under the union-with-shift operation and subsequent point deletions.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+import io
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    m = int(next(it))
+    volcanos = []
+    for _ in range(m):
+        x = int(next(it)); y = int(next(it))
+        volcanos.append((x, y))
+    return n, m, volcanos
+
+def bounds(n, s):
+    L = max(1, s - n)
+    R = min(n, s - 1)
+    return L, R
+
+def merge_intervals(iv):
+    if not iv: return []
+    iv.sort()
+    res = [list(iv[0])]
+    for l, r in iv[1:]:
+        if l <= res[-1][1] + 1:
+            if r > res[-1][1]:
+                res[-1][1] = r
+        else:
+            res.append([l, r])
+    return res
+
+def intersect_window(iv, L, R):
+    out = []
+    for l, r in iv:
+        nl, nr = max(l, L), min(r, R)
+        if nl <= nr:
+            out.append([nl, nr])
+    return out
+
+def remove_points(iv, points):
+    if not iv or not points: return iv
+    pts = sorted(set(points))
+    res = []
+    j = 0
+    for l, r in iv:
+        curr = l
+        # Advance to first point >= l
+        while j < len(pts) and pts[j] < l:
+            j += 1
+        jj = j
+        while jj < len(pts) and pts[jj] <= r:
+            p = pts[jj]
+            if curr <= p - 1:
+                res.append([curr, p - 1])
+            curr = p + 1
+            jj += 1
+        if curr <= r:
+            res.append([curr, r])
+        j = jj
+    return res
+
+def step_update(n, intervals):
+    # S_{s+1} from S_s: union with shift by +1 in j
+    shifted = [[l + 1, r + 1] for (l, r) in intervals]
+    all_segments = intervals + shifted
+    return merge_intervals(all_segments)
+
+def solve_case(n, volcanos):
+    # Diagonal-by-diagonal (may be slow for huge n; intended for validation)
+    diag = {}
+    for x, y in volcanos:
+        s = x + y
+        diag.setdefault(s, []).append(y)
+    # s=2
+    s = 2
+    L, R = bounds(n, s)
+    cur = [[1, 1]] if L <= 1 <= R else []
+    if s in diag:
+        cur = remove_points(cur, diag[s])
+    if not cur:
+        return -1
+    while s < 2 * n:
+        nxt = step_update(n, cur)
+        s += 1
+        L, R = bounds(n, s)
+        nxt = intersect_window(nxt, L, R)
+        nxt = merge_intervals(nxt)
+        if s in diag:
+            nxt = remove_points(nxt, diag[s])
+        cur = nxt
+        if not cur:
+            return -1
+    # At s=2n, only j=n is possible if reachable
+    return 2 * n - 2 if cur else -1
+
+def solve_all(data: str) -> str:
+    parsed = read_input(data)
+    if not parsed:
+        return ""
+    n, m, volcanos = parsed
+    return str(solve_case(n, volcanos))
+
+def main():
+    data = sys.stdin.read()
+    if data.strip():
+        print(solve_all(data))
+
+# Assertions on tiny cases
+assert solve_all("1 0\n") == "0"
+assert solve_all("3 0\n") == "4"
+assert solve_all("2 2\n1 2\n2 1\n") == "-1"
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Edge checks: $n=1$ (zero time), no volcanoes (always $2n-2$), both outgoing directions blocked at $n=2$ (impossible).}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Interval Propagation with Jumps Over Empty Diagonals}
+\WHICHFORMULA{Jump multiple diagonals at once when there are no volcanoes: $S_{s+g} = \bigl((S_s + [0,g]) \cap [L_{s+g}, R_{s+g}]\bigr)$, then delete $B_{s+g}$. On integer intervals, this maps $[l,r]\mapsto [l, r+g]$ followed by window intersection and merge.}
+\ASSUMPTIONS{We only process diagonals that contain volcanoes and the final diagonal $2n$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Group volcanoes by anti-diagonal $s=x+y$ and sort each diagonal's blocked columns.
+\item Maintain a union of disjoint intervals of reachable columns $S_s$ and the current diagonal index $s$.
+\item Jump from $s$ to the next interesting diagonal $t$ (next with volcanoes or $2n$): map $[l,r]\to[l, r+(t-s)]$, intersect with $[L_t,R_t]$, merge intervals, then delete the blocked points $B_t$.
+\item If the set becomes empty, return $-1$. After processing $2n$, return $2n-2$ iff nonempty. 
+\end{algosteps}
+\OPTIMALITY{The number of processed diagonals is $|\{s: B_s \ne \varnothing\}| + 1 \le m + 1$. Each step does linear work in the number of current intervals plus the number of blocked points on that diagonal; total is $\mathcal{O}(m \log m + I)$ where $I$ is total interval merges. This matches known optimal solutions.}
+\COMPLEXITY{$\mathcal{O}(m \log m + I)$ time and $\mathcal{O}(m)$ space, with $I \le \mathcal{O}(m)$.}
+\[
+\begin{aligned}
+T(n,m) &= \mathcal{O}(m \log m + m), \\
+S(n,m) &= \mathcal{O}(m).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+import io
+from bisect import bisect_left
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    m = int(next(it))
+    volcanos = []
+    for _ in range(m):
+        x = int(next(it)); y = int(next(it))
+        volcanos.append((x, y))
+    return n, m, volcanos
+
+def bounds(n, s):
+    L = max(1, s - n)
+    R = min(n, s - 1)
+    return L, R
+
+def merge_intervals(iv):
+    if not iv: return []
+    iv.sort()
+    res = [list(iv[0])]
+    for l, r in iv[1:]:
+        if l <= res[-1][1] + 1:
+            if r > res[-1][1]:
+                res[-1][1] = r
+        else:
+            res.append([l, r])
+    return res
+
+def intersect_window(iv, L, R):
+    out = []
+    for l, r in iv:
+        nl, nr = max(l, L), min(r, R)
+        if nl <= nr:
+            out.append([nl, nr])
+    return out
+
+def expand_r_by(iv, g):
+    if g == 0: 
+        return [x[:] for x in iv]
+    return [[l, r + g] for (l, r) in iv]
+
+def remove_points(iv, points):
+    if not iv or not points:
+        return iv
+    pts = points  # assumed sorted unique by caller
+    res = []
+    for l, r in iv:
+        curr = l
+        idx = bisect_left(pts, l)
+        while idx < len(pts) and pts[idx] <= r:
+            p = pts[idx]
+            if curr <= p - 1:
+                res.append([curr, p - 1])
+            curr = p + 1
+            idx += 1
+        if curr <= r:
+            res.append([curr, r])
+    return res
+
+def solve_case(n, volcanos):
+    # Map diagonal s -> sorted unique blocked columns y
+    diag = {}
+    for x, y in volcanos:
+        s = x + y
+        if s < 2 or s > 2 * n:
+            continue
+        diag.setdefault(s, set()).add(y)
+    for s in list(diag.keys()):
+        diag[s] = sorted(diag[s])
+
+    # Initialize at s=2 with j=1
+    cur_s = 2
+    L2, R2 = bounds(n, cur_s)
+    cur = [[max(1, L2), min(1, R2)]] if L2 <= 1 <= R2 else []
+    if not cur:
+        return -1
+    # Process only interesting diagonals
+    keys = sorted(diag.keys())
+    if not keys or keys[-1] != 2 * n:
+        keys.append(2 * n)
+
+    for s in keys:
+        if s < cur_s:
+            continue
+        g = s - cur_s
+        # Jump: [l, r] -> [l, r+g], then clip to window
+        cur = expand_r_by(cur, g)
+        Ls, Rs = bounds(n, s)
+        cur = intersect_window(cur, Ls, Rs)
+        cur = merge_intervals(cur)
+        if not cur:
+            return -1
+        # Remove blocked points on this diagonal
+        if s in diag:
+            cur = remove_points(cur, diag[s])
+            if not cur:
+                return -1
+        cur_s = s
+
+    # After s=2n, if nonempty, (n,n) is reachable and time is 2n-2
+    return 2 * n - 2 if cur else -1
+
+def solve_all(data: str) -> str:
+    parsed = read_input(data)
+    if parsed is None:
+        return ""
+    n, m, volcanos = parsed
+    return str(solve_case(n, volcanos))
+
+def main():
+    data = sys.stdin.read()
+    if data.strip():
+        print(solve_all(data))
+
+# Exactly 3 asserts
+assert solve_all("1 0\n") == "0"
+assert solve_all("2 2\n1 2\n2 1\n") == "-1"
+assert solve_all("4 3\n2 3\n3 2\n4 1\n") == "6"  # blocks early diagonals but path exists
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Asserts cover trivial $n=1$, a fully blocked $2\times2$, and a $4\times4$ with early diagonal blocks but a valid path.}
+\RESULT{If and only if the interval set at $s=2n$ is nonempty (which implies column $n$), return $2n-2$; else return $-1$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Cross-validate baseline BFS, stepwise interval DP, and jump-optimized solver on random tiny cases ($n \le 8$), plus hand-crafted edge cases (no volcanoes, corner blocks, diagonal walls).}
+\LINE{CROSS-CHECKS}{For small $n$, all three methods must agree. The jump solver is then trusted for large $n$.}
+\LINE{EDGE-CASE GENERATOR}{Randomly sample $m$ distinct cells among $[1..n]^2 \setminus \{(1,1)\}$; include patterns like blocking entire diagonal $s$ or placing $(n,n)$ as a volcano.}
+\begin{minted}{python}
+import random
+from collections import deque
+
+def brute_bfs(n, volcanos):
+    blocked = set(volcanos)
+    if (1,1) in blocked: return -1
+    if n == 1: return 0
+    q = deque([(1,1)])
+    seen = {(1,1)}
+    while q:
+        i,j = q.popleft()
+        if (i,j) == (n,n):
+            return 2*n - 2
+        if i+1 <= n and (i+1,j) not in blocked and (i+1,j) not in seen:
+            seen.add((i+1,j)); q.append((i+1,j))
+        if j+1 <= n and (i,j+1) not in blocked and (i,j+1) not in seen:
+            seen.add((i,j+1)); q.append((i,j+1))
+    return -1
+
+def step_intervals(n, volcanos):
+    diag = {}
+    for x,y in volcanos:
+        diag.setdefault(x+y, []).append(y)
+    for k in diag: diag[k] = sorted(set(diag[k]))
+    def bounds(n,s): return max(1,s-n), min(n,s-1)
+    def merge(iv):
+        if not iv: return []
+        iv.sort(); res=[iv[0][:]]
+        for l,r in iv[1:]:
+            if l <= res[-1][1]+1:
+                res[-1][1] = max(res[-1][1], r)
+            else: res.append([l,r])
+        return res
+    def intersect(iv,L,R):
+        out=[]
+        for l,r in iv:
+            nl,nr=max(l,L),min(r,R)
+            if nl<=nr: out.append([nl,nr])
+        return out
+    def remove(iv,pts):
+        if not iv or not pts: return iv
+        pts=sorted(set(pts))
+        res=[]
+        i=0
+        for l,r in iv:
+            cur=l
+            while i<len(pts) and pts[i]<l: i+=1
+            j=i
+            while j<len(pts) and pts[j]<=r:
+                p=pts[j]
+                if cur<=p-1: res.append([cur,p-1])
+                cur=p+1; j+=1
+            if cur<=r: res.append([cur,r])
+            i=j
+        return res
+
+    s=2
+    L,R=bounds(n,s)
+    cur=[[1,1]] if L<=1<=R else []
+    if s in diag:
+        cur=remove(cur,diag[s])
+    if not cur: return -1
+    while s<2*n:
+        # union with shift
+        shifted=[[l+1,r+1] for l,r in cur]
+        cur=merge(cur+shifted)
+        s+=1
+        L,R=bounds(n,s)
+        cur=merge(intersect(cur,L,R))
+        if s in diag:
+            cur=remove(cur,diag[s])
+        if not cur: return -1
+    return 2*n-2
+
+def jump_intervals(n, volcanos):
+    # Reference: same as Approach C's solve_case
+    from bisect import bisect_left
+    diag={}
+    for x,y in volcanos:
+        s=x+y
+        if s<2 or s>2*n: continue
+        diag.setdefault(s,set()).add(y)
+    for s in list(diag.keys()):
+        diag[s]=sorted(diag[s])
+    def bounds(n,s): return max(1,s-n), min(n,s-1)
+    def merge(iv):
+        if not iv: return []
+        iv.sort(); res=[iv[0][:]]
+        for l,r in iv[1:]:
+            if l <= res[-1][1]+1:
+                res[-1][1]=max(res[-1][1], r)
+            else: res.append([l,r])
+        return res
+    def intersect(iv,L,R):
+        out=[]
+        for l,r in iv:
+            nl,nr=max(l,L),min(r,R)
+            if nl<=nr: out.append([nl,nr])
+        return out
+    def expand(iv,g): return [[l, r+g] for l,r in iv] if g else [x[:] for x in iv]
+    def remove(iv,pts):
+        if not iv or not pts: return iv
+        res=[]
+        for l,r in iv:
+            curr=l
+            idx=bisect_left(pts,l)
+            while idx<len(pts) and pts[idx]<=r:
+                p=pts[idx]
+                if curr<=p-1: res.append([curr,p-1])
+                curr=p+1; idx+=1
+            if curr<=r: res.append([curr,r])
+        return res
+    s=2
+    L2,R2=bounds(n,s)
+    cur=[[1,1]] if L2<=1<=R2 else []
+    if not cur: return -1
+    keys=sorted(diag.keys())
+    if not keys or keys[-1]!=2*n: keys.append(2*n)
+    for t in keys:
+        g=t-s
+        cur=expand(cur,g)
+        Lt,Rt=bounds(n,t)
+        cur=merge(intersect(cur,Lt,Rt))
+        if not cur: return -1
+        if t in diag:
+            cur=remove(cur,diag[t])
+            if not cur: return -1
+        s=t
+    return 2*n-2
+
+def run_cross_checks(trials=200, nmax=7):
+    for _ in range(trials):
+        n = random.randint(1, nmax)
+        all_cells = [(i,j) for i in range(1,n+1) for j in range(1,n+1) if not (i==1 and j==1)]
+        m = random.randint(0, min(len(all_cells), 6))
+        volcanos = random.sample(all_cells, m)
+        a = brute_bfs(n, volcanos)
+        b = step_intervals(n, volcanos)
+        c = jump_intervals(n, volcanos)
+        assert a == b == c, (n, volcanos, a, b, c)
+
+# Deterministic small run
+run_cross_checks(trials=50, nmax=6)
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+from bisect import bisect_left
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    m = int(next(it))
+    volcanos = []
+    for _ in range(m):
+        x = int(next(it)); y = int(next(it))
+        volcanos.append((x, y))
+    return n, m, volcanos
+
+def bounds(n, s):
+    L = max(1, s - n)
+    R = min(n, s - 1)
+    return L, R
+
+def merge_intervals(iv):
+    if not iv: return []
+    iv.sort()
+    res = [list(iv[0])]
+    for l, r in iv[1:]:
+        if l <= res[-1][1] + 1:
+            if r > res[-1][1]:
+                res[-1][1] = r
+        else:
+            res.append([l, r])
+    return res
+
+def intersect_window(iv, L, R):
+    out = []
+    for l, r in iv:
+        nl, nr = max(l, L), min(r, R)
+        if nl <= nr:
+            out.append([nl, nr])
+    return out
+
+def expand_r_by(iv, g):
+    if g == 0:
+        return [x[:] for x in iv]
+    return [[l, r + g] for (l, r) in iv]
+
+def remove_points(iv, points):
+    if not iv or not points:
+        return iv
+    pts = points  # sorted unique
+    res = []
+    for l, r in iv:
+        curr = l
+        idx = bisect_left(pts, l)
+        while idx < len(pts) and pts[idx] <= r:
+            p = pts[idx]
+            if curr <= p - 1:
+                res.append([curr, p - 1])
+            curr = p + 1
+            idx += 1
+        if curr <= r:
+            res.append([curr, r])
+    return res
+
+def solve_case(n, volcanos):
+    diag = {}
+    for x, y in volcanos:
+        s = x + y
+        if s < 2 or s > 2 * n: 
+            continue
+        diag.setdefault(s, set()).add(y)
+    for s in list(diag.keys()):
+        diag[s] = sorted(diag[s])
+
+    cur_s = 2
+    L2, R2 = bounds(n, cur_s)
+    cur = [[max(1, L2), min(1, R2)]] if L2 <= 1 <= R2 else []
+    if not cur:
+        return -1
+
+    keys = sorted(diag.keys())
+    if not keys or keys[-1] != 2 * n:
+        keys.append(2 * n)
+
+    for s in keys:
+        if s < cur_s:
+            continue
+        g = s - cur_s
+        cur = expand_r_by(cur, g)
+        Ls, Rs = bounds(n, s)
+        cur = intersect_window(cur, Ls, Rs)
+        cur = merge_intervals(cur)
+        if not cur:
+            return -1
+        if s in diag:
+            cur = remove_points(cur, diag[s])
+            if not cur:
+                return -1
+        cur_s = s
+
+    return 2 * n - 2 if cur else -1
+
+def solve_all(data: str) -> str:
+    parsed = read_input(data)
+    if parsed is None:
+        return ""
+    n, m, volcanos = parsed
+    return str(solve_case(n, volcanos))
+
+def main():
+    data = sys.stdin.read()
+    if data.strip():
+        print(solve_all(data))
+
+# Sanity asserts
+assert solve_all("1 0\n") == "0"
+assert solve_all("2 2\n1 2\n2 1\n") == "-1"
+assert solve_all("3 1\n2 2\n") == "4"
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Reachability on a huge monotone grid with forbidden cells reduces to interval DP on anti-diagonals; if reachable, time is $2n-2$, else $-1$.}
+\WHY{Classic interview variant: compress a vast state space using structure (monotone moves and anti-diagonals) and avoid scanning $n^2$ cells.}
+\CHECKLIST{
+- Group volcanoes by anti-diagonal $s=x+y$.
+- Maintain disjoint intervals of reachable columns $S_s$.
+- Jump across volcano-free diagonals: $[l,r]\mapsto [l,r+g]$; intersect with $[L_{s+g},R_{s+g}]$; merge.
+- Delete blocked points on the current diagonal.
+- If empty at any step, answer $-1$; else output $2n-2$ at the end.}
+\EDGECASES{
+- $n=1$ (answer $0$).
+- Volcano at $(n,n)$ (immediate $-1$).
+- All cells on some diagonal blocked (impossible).
+- Volcanoes only near start or end.
+- Large $n$ with $m=0$ (must still be $2n-2$).
+- Diagonals beyond $n+1$ where lower bound $L_s$ starts increasing.}
+\PITFALLS{
+- Forgetting to clip to the valid window $[L_s,R_s]$ each step.
+- Not merging adjacent intervals (off-by-one on adjacency).
+- Incorrectly removing blocked points (splitting intervals).
+- Failing to include the final diagonal $2n$ in the processing.
+- Overflow or type issues in other languages; here Python ints are safe.
+- Mishandling empty current set leading to index errors.}
+\FAILMODES{Row-by-row or BFS approaches blow up for $n \approx 10^9$. The jump-interval method remains $\mathcal{O}(m \log m)$.}
+\ELI{Walk across diagonals instead of rows: keep which columns are reachable on each diagonal as packed intervals, stretch them when passing empty diagonals, and poke holes where volcanoes sit. If at the last diagonal there is anything left, you can arrive in exactly $2n-2$ seconds; otherwise you cannot.}
+\NotePages{3}
+
+\end{document}

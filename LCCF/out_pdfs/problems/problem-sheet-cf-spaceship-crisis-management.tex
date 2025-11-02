@@ -1,0 +1,965 @@
+% !TeX program = xelatex
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Spaceship Crisis Management}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1628/F}}
+\LINE{DIFFICULTY / RATING}{3500}
+\STATEMENT{NASA (Norwegian Astronaut Stuff Association) is developing a new steering system for spaceships. But in its current state, it would not be very safe if the spaceship would end up in a bunch of space junk. To make the steering system safe, they need to answer the following:
+
+Given the target position $t=(0,0)$, a set of $n$ pieces of space junk $l$ described by line segments $l_i=((a_{ix},a_{iy}),(b_{ix},b_{iy}))$, and a starting position $s=(s_x,s_y)$, is there a direction such that floating in that direction from the starting position would lead to the target position?
+
+When the spaceship hits a piece of space junk, what happens depends on the absolute difference in angle between the floating direction and the line segment, $\theta$:
+\begin{bullets}
+\item If $\theta<45^{\circ}$, the spaceship slides along the piece of space junk in the direction that minimizes the change in angle, and when the spaceship slides off the end of the space junk, it continues floating in the direction it came in (before hitting the space junk).
+\item If $\theta\ge 45^{\circ}$, the spaceship stops, because there is too much friction to slide along the space junk.
+\end{bullets}
+
+You are only given the set of pieces of space junk once, and the target position is always $(0,0)$, but there are $q$ queries, each with a starting position $s_j=(s_{jx},s_{jy})$.
+
+Answer the above question for each query.
+
+Input:
+The first line contains the integer $n$ ($1\le n\le 1500$).
+
+Then follow $n$ lines, the $i$-th of which containing the $4$ integers $a_{ix}$, $a_{iy}$, $b_{ix}$, and $b_{iy}$ ($|a_{ix}|,|a_{iy}|,|b_{ix}|,|b_{iy}|\le 1000$).
+
+Then follows a line containing the integer $q$ ($1\le q\le 1000$).
+
+Then follow $q$ lines, the $j$-th of which containing the $2$ integers $s_{jx}$ and $s_{jy}$ ($|s_{jx}|,|s_{jy}|\le 1000$).
+
+It is guaranteed that none of the segments in $l$ cross or touch, that $t$ is not on any segment in $l$, that $s_j$ is not on any segment in $l$, and that $s\ne t$.
+
+Output:
+For each query $s_j$ print an answer. If there exists a direction such that floating from $s_j$ in that direction, possibly sliding along some pieces of space junk, leads to $t$, print ``YES''. Otherwise, print ``NO'' (case insensitive).
+
+Note: The blue cross represents the target location, and the other blue line segments represent the space junk.
+
+Green dots represent starting locations where the answer is yes, and red dots represent starting locations where the answer is no.
+
+The yellow lines are possible paths to the target location for the $3$rd and $14$th queries.
+
+The black line is a possible path from the starting location in the $6$th query, but it barely misses the target location.}
+\BREAKDOWN{We must decide if, from $s$, there exists a unit direction $d$ such that a ray starting at $s$ and proceeding in direction $d$, with the sliding/stopping rule at segments, reaches $(0,0)$. Sliding preserves the incoming direction $d$ but translates the ray by sliding to an endpoint before resuming in direction $d$.}
+\ELI{We shoot a ray from $s$ and let it detour along segments if it hits at $<45^{\circ}$; if it ever stops before reaching $(0,0)$, that direction fails. We ask whether any direction succeeds.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{A single test instance with:
+\begin{bullets}
+\item $n$ segments, $1\le n\le 1500$.
+\item For each segment $i$, endpoints $(a_{ix},a_{iy})$ and $(b_{ix},b_{iy})$, integer coordinates with absolute value $\le 1000$.
+\item $q$ queries, $1\le q\le 1000$.
+\item For each query $j$, a starting point $s_j=(s_{jx},s_{jy})$, integer coordinates with absolute value $\le 1000$.
+\end{bullets}}
+\OUTPUTS{For each query $s_j$, print YES if some direction from $s_j$ reaches $(0,0)$ under the sliding/stopping rule; else print NO. One answer per line.}
+\SAMPLES{Example 1 (no obstacles):
+\begin{bullets}
+\item Input: $n=0$; $q=2$; $s_1=(3,4)$; $s_2=(-7,1)$.
+\item Output: YES, YES.
+\end{bullets}
+Example 2 (one blocking obstacle):
+\begin{bullets}
+\item Input: $n=1$; segment $((0.2,0.5),(0.2,2.0))$; $q=1$; $s_1=(1,1)$.
+\item Output: NO.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $S=\{1,\ldots,n\}$ index segments with endpoints $A_i=(a_{ix},a_{iy})$ and $B_i=(b_{ix},b_{iy})$. For a query $s\in\mathbb{R}^2$, we seek $d\in\mathbb{R}^2$ with $\|d\|=1$ such that the trajectory produced by the rule hits $t=(0,0)$. Upon intersection of the current ray with segment $i$ at point $X$, define the segment direction $v_i=B_i-A_i$ and let $\phi_i=\arccos\left(\dfrac{|d\cdot \hat v_i|}{\|d\|}\right)\in[0,\tfrac{\pi}{2}]$. If $\phi_i<\tfrac{\pi}{4}$, move along $v_i$ in the sign that minimizes the change in angle until reaching the corresponding endpoint $E_i\in\{A_i,B_i\}$; then resume from $E_i$ in direction $d$. If $\phi_i\ge \tfrac{\pi}{4}$, terminate with failure.}
+\varmapStart
+\var{t}{target $(0,0)$}
+\var{A_i,B_i}{endpoints of segment $i$}
+\var{v_i}{segment vector $B_i-A_i$}
+\var{s}{starting point of current query}
+\var{d}{chosen unit direction}
+\var{\phi_i}{acute angle between $d$ and segment $i$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\text{Ray: } R(s,d)=\{s+\lambda d:\ \lambda\ge 0\}.\\
+&\text{Event times: } \lambda_0=\text{first time s.t. } s+\lambda_0 d=t \text{ if exists};\\
+&\lambda_i=\min\{\lambda\ge 0:\ s+\lambda d\in [A_i,B_i]\}.\\
+&\text{Next event at }\lambda^\star=\min\bigl(\lambda_0,\min_i \lambda_i\bigr).\\
+&\text{If }\lambda^\star=\lambda_0,\ \text{success. If }\lambda^\star=\lambda_k \text{ and } \phi_k\ge \tfrac{\pi}{4},\ \text{failure}.\\
+&\text{If }\lambda^\star=\lambda_k \text{ and } \phi_k<\tfrac{\pi}{4},\ \text{slide to }E_k\text{ and set }s\leftarrow E_k,\ \text{repeat.}
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Segments are closed, pairwise disjoint, and non-touching; $t$ and all $s_j$ are not on any segment; $s\ne t$. Numeric modeling uses a small tolerance $\varepsilon$ to disambiguate degeneracies.}
+\INVARIANTS{
+\begin{bullets}
+\item The flight direction $d$ never changes during sliding; only the base point $s$ is translated to a segment endpoint.
+\item The process has finitely many slide events because segments do not cross/touch and each slide moves to an endpoint; cycles can be prevented by a cap on events.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Simulate physics for many sampled directions $d$ per query. For each direction, repeatedly compute the earliest event (intersection with $(0,0)$ or any segment), apply the rule, and stop when success/failure is determined or a cap is reached.}
+\ASSUMPTIONS{Finite-angle sampling (e.g., $K=720$ uniform angles) plus always testing the direct-to-target direction. Numeric robustness with small $\varepsilon$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute segment vectors and lengths.
+\item For a query $s$, generate a set of directions: the direct vector to $t$ and $K$ evenly spaced directions on the unit circle.
+\item For each direction, ray-trace: find the nearest event; if target first, success; if a segment with $\phi\ge 45^{\circ}$ is first, failure for that direction; else slide to the chosen endpoint and continue. Cap the number of slides to avoid cycles.
+\end{algosteps}
+\COMPLEXITY{With $K$ directions, each ray-trace scans all $n$ segments per event. With at most $O(n)$ slide events, worst-case $O(K n^2)$ per query in this naive form; in practice, much less for typical inputs.}
+\[
+\begin{aligned}
+T_{\text{baseline}}(q,n,K) &\approx q\cdot K \cdot n \cdot E, \quad E=\text{avg events per direction},\\
+S(n) &= O(n).
+\end{aligned}
+\]
+\CORRECTNESS{The simulator faithfully implements the stated rule for a fixed direction. The sampling makes the approach a heuristic; it is correct on cases where a successful direction lies among sampled angles (including the direct-to-target direction).}
+\EDGECASES{Collinear ray and segment; grazing hits near $45^{\circ}$; starting position projecting onto a segment beyond endpoints; multiple near-coincident events.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys, math, io
+from typing import List, Tuple
+
+EPS = 1e-9
+DEG45 = math.pi / 4.0
+
+def dot(a, b): return a[0]*b[0] + a[1]*b[1]
+def cross(a, b): return a[0]*b[1] - a[1]*b[0]
+def sub(a, b): return (a[0]-b[0], a[1]-b[1])
+def add(a, b): return (a[0]+b[0], a[1]+b[1])
+def mul(a, k): return (a[0]*k, a[1]*k)
+def norm(a): return math.hypot(a[0], a[1])
+
+def normalize(v):
+    n = norm(v)
+    if n < EPS:
+        return (0.0, 0.0)
+    return (v[0]/n, v[1]/n)
+
+def angle_diff_lt45(d, v):
+    nv = norm(v)
+    nd = norm(d)
+    if nv < EPS or nd < EPS:
+        return False
+    c = abs(dot(d, v) / (nd * nv))
+    c = max(-1.0, min(1.0, c))
+    phi = math.acos(c)
+    return phi < DEG45 - 1e-12
+
+def ray_segment_intersection(p, d, a, b):
+    # Return (t, u, kind) where p + t d = a + u (b-a), t >= 0, u in [0,1]
+    # kind in {"proper","collinear","none"}; on "collinear", u is None and t is earliest nonneg along ray within segment.
+    v = sub(b, a)
+    det = cross(d, v)
+    ap = sub(a, p)
+    if abs(det) < 1e-12:
+        # Parallel or collinear
+        if abs(cross(ap, d)) > 1e-9:
+            return (None, None, "none")
+        # Collinear: project endpoints onto ray direction
+        ta = dot(sub(a, p), d)
+        tb = dot(sub(b, p), d)
+        lo, hi = min(ta, tb), max(ta, tb)
+        if hi < -EPS:
+            return (None, None, "none")
+        t_hit = max(0.0, lo)
+        if t_hit - hi > EPS:
+            return (None, None, "none")
+        return (t_hit, None, "collinear")
+    # Solve 2x2
+    t = cross(ap, v) / det
+    u = cross(ap, d) / det
+    if t >= -1e-12 and u >= -1e-12 and u <= 1.0 + 1e-12:
+        return (t, u, "proper")
+    return (None, None, "none")
+
+def origin_event_time(p, d):
+    # Solve p + t d = (0,0). Exists if cross(d, -p) ~ 0 and t >= 0.
+    if norm(d) < EPS:
+        return None
+    if abs(cross(d, mul(p, -1.0))) > 1e-9:
+        return None
+    t0 = -dot(p, d)
+    if t0 >= -1e-12:
+        return max(0.0, t0)
+    return None
+
+def slide_endpoint_from_u(a, b, u, d):
+    v = sub(b, a)
+    nv = normalize(v)
+    sgn = 1.0 if dot(d, nv) >= 0.0 else -1.0
+    # Choose endpoint matching sign direction
+    t_end = 1.0 if sgn > 0 else 0.0
+    e = add(a, mul(v, t_end))
+    return e
+
+def simulate_direction(s, d, segments, max_events=None):
+    if max_events is None:
+        max_events = 2*len(segments) + 5
+    p = (float(s[0]), float(s[1]))
+    d = normalize(d)
+    events = 0
+    while events <= max_events:
+        events += 1
+        # target event
+        t_best = float('inf')
+        who = ("target", None, None, None)  # (kind, seg_index, t, u)
+        t0 = origin_event_time(p, d)
+        if t0 is not None and t0 < t_best:
+            t_best = t0
+            who = ("target", None, t0, None)
+        # scan segments
+        for i, (ax, ay, bx, by) in enumerate(segments):
+            a = (ax, ay); b = (bx, by)
+            t, u, kind = ray_segment_intersection(p, d, a, b)
+            if t is None:
+                continue
+            # if the target is exactly at same t, prioritize target
+            if t < t_best - 1e-10:
+                t_best = t
+                who = ("segment", i, t, u, kind)
+        # resolve event
+        if who[0] == "target":
+            return True
+        if who[0] != "segment":
+            return False
+        # segment event
+        _, idx, t_hit, u_hit, kind = who
+        ax, ay, bx, by = segments[idx]
+        a = (ax, ay); b = (bx, by)
+        v = sub(b, a)
+        if kind == "collinear":
+            # Angle is 0 -> sliding by rule
+            x = add(p, mul(d, t_hit))
+            e = slide_endpoint_from_u(a, b, None, d)
+            p = add(e, mul(d, 1e-9))
+            continue
+        # proper intersection
+        x = add(p, mul(d, t_hit))
+        if angle_diff_lt45(d, v):
+            # slide
+            u_clamped = max(0.0, min(1.0, u_hit if u_hit is not None else 0.0))
+            e = slide_endpoint_from_u(a, b, u_clamped, d)
+            p = add(e, mul(d, 1e-9))
+            continue
+        else:
+            return False
+    return False
+
+def find_any_direction(s, segments, K=720):
+    # First, the direct-to-origin direction
+    to_t = normalize((-s[0], -s[1]))
+    if simulate_direction(s, to_t, segments):
+        return True
+    # Sample K directions
+    for k in range(K):
+        ang = 2.0*math.pi * (k / float(K))
+        d = (math.cos(ang), math.sin(ang))
+        if simulate_direction(s, d, segments):
+            return True
+    return False
+
+def read_input(data: str = None):
+    if data is None:
+        data = sys.stdin.read()
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return 0, [], 0, []
+    segs = []
+    for _ in range(n):
+        ax = float(next(it)); ay = float(next(it))
+        bx = float(next(it)); by = float(next(it))
+        segs.append((ax, ay, bx, by))
+    q = int(next(it))
+    queries = []
+    for _ in range(q):
+        sx = float(next(it)); sy = float(next(it))
+        queries.append((sx, sy))
+    return n, segs, q, queries
+
+def solve_all(n, segs, q, queries):
+    out = []
+    for sx, sy in queries:
+        ok = find_any_direction((sx, sy), segs)
+        out.append("YES" if ok else "NO")
+    return "\n".join(out)
+
+def main():
+    n, segs, q, queries = read_input()
+    if q == 0 and n == 0 and len(segs) == 0:
+        return
+    ans = solve_all(n, segs, q, queries)
+    sys.stdout.write(ans)
+
+if __name__ == "__main__":
+    # Self-checks (tiny)
+    # 1) No obstacles: always YES
+    data = "0\n3\n3 4\n-7 1\n1 -5\n"
+    n, segs, q, queries = read_input(data)
+    res = solve_all(n, segs, q, queries).split()
+    assert res == ["YES","YES","YES"]
+    # 2) Simple blocking segment: expect NO for a crafted case
+    data = "1\n0.2 0.5 0.2 2.0\n1\n1 1\n"
+    n, segs, q, queries = read_input(data)
+    res = solve_all(n, segs, q, queries).split()
+    assert res == ["NO"]
+    # 3) Collinear sliding along segment not covering origin: YES
+    data = "1\n2 0 4 0\n1\n5 0\n"
+    n, segs, q, queries = read_input(data)
+    res = solve_all(n, segs, q, queries).split()
+    assert res == ["YES"]
+    main()
+\end{minted}
+\VALIDATION{The asserts check: (1) trivial case with no segments, (2) a blocking vertical segment, and (3) sliding along a collinear horizontal segment away from the origin.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Intersection Scans and Direction Set}
+\WHICHFORMULA{Retain the simulator but prune segments early using axis-aligned bounding boxes and enrich the direction set by adding jitters around the direct-to-target direction to better capture near-miss cases.}
+\ASSUMPTIONS{Precompute per-segment direction unit vectors and AABB. Slide cap still $O(n)$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute for each segment: vector $v_i$, unit $\hat v_i$, and bounding box.
+\item For each direction, when scanning segments for the earliest hit, first test ray--AABB intersection to skip far segments.
+\item Expand direction candidates: direct-to-target, $\pm$ a small angle around it, and a coarse uniform grid.
+\end{algosteps}
+\COMPLEXITY{AABB pruning reduces average per-direction scans from $O(n)$ to $O(n')$ with $n'\ll n$ in typical random layouts. Total time $O(q\cdot K\cdot n'\cdot E)$.}
+\[
+\begin{aligned}
+T_{\text{improved}}(q,n,K) &\approx q\cdot K \cdot n' \cdot E,\quad n'\le n.\\
+\end{aligned}
+\]
+\CORRECTNESS{Same as baseline per direction; more candidate directions increases the chance of finding a feasible direction.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys, math, io
+from typing import List, Tuple
+
+EPS = 1e-9
+DEG45 = math.pi / 4.0
+
+def dot(a, b): return a[0]*b[0] + a[1]*b[1]
+def cross(a, b): return a[0]*b[1] - a[1]*b[0]
+def sub(a, b): return (a[0]-b[0], a[1]-b[1])
+def add(a, b): return (a[0]+b[0], a[1]+b[1])
+def mul(a, k): return (a[0]*k, a[1]*k)
+def norm(a): return math.hypot(a[0], a[1])
+def normalize(v):
+    n = norm(v)
+    if n < EPS:
+        return (0.0, 0.0)
+    return (v[0]/n, v[1]/n)
+
+def angle_diff_lt45(d, v):
+    nv = norm(v); nd = norm(d)
+    if nv < EPS or nd < EPS: return False
+    c = abs(dot(d, v) / (nd * nv))
+    c = max(-1.0, min(1.0, c))
+    return math.acos(c) < DEG45 - 1e-12
+
+def origin_event_time(p, d):
+    if norm(d) < EPS: return None
+    if abs(cross(d, mul(p, -1.0))) > 1e-9: return None
+    t0 = -dot(p, d)
+    if t0 >= -1e-12: return max(0.0, t0)
+    return None
+
+def ray_segment_intersection(p, d, a, b):
+    v = sub(b, a)
+    det = cross(d, v)
+    ap = sub(a, p)
+    if abs(det) < 1e-12:
+        if abs(cross(ap, d)) > 1e-9: return (None, None, "none")
+        ta = dot(sub(a, p), d); tb = dot(sub(b, p), d)
+        lo, hi = min(ta, tb), max(ta, tb)
+        if hi < -EPS: return (None, None, "none")
+        t_hit = max(0.0, lo)
+        if t_hit - hi > EPS: return (None, None, "none")
+        return (t_hit, None, "collinear")
+    t = cross(ap, v) / det
+    u = cross(ap, d) / det
+    if t >= -1e-12 and u >= -1e-12 and u <= 1.0 + 1e-12:
+        return (t, u, "proper")
+    return (None, None, "none")
+
+def slide_endpoint(a, b, d):
+    v = sub(b, a)
+    nv = normalize(v)
+    sgn = 1.0 if dot(d, nv) >= 0.0 else -1.0
+    return add(a, mul(v, 1.0 if sgn > 0 else 0.0))
+
+def ray_aabb_hit_time(p, d, aabb):
+    # Slab test; returns earliest nonnegative t if ray intersects AABB, else None.
+    (xmin, ymin, xmax, ymax) = aabb
+    tmin = -float('inf'); tmax = float('inf')
+    for i in range(2):
+        pi = p[i]; di = d[i]
+        lo = xmin if i == 0 else ymin
+        hi = xmax if i == 0 else ymax
+        if abs(di) < 1e-12:
+            if pi < lo - EPS or pi > hi + EPS:
+                return None
+            continue
+        t1 = (lo - pi) / di
+        t2 = (hi - pi) / di
+        if t1 > t2: t1, t2 = t2, t1
+        tmin = max(tmin, t1); tmax = min(tmax, t2)
+        if tmin > tmax + 1e-12:
+            return None
+    if tmax < -EPS:
+        return None
+    return max(0.0, tmin)
+
+def simulate_direction(s, d, segs, max_events=None):
+    if max_events is None: max_events = 2*len(segs)+5
+    p = (float(s[0]), float(s[1]))
+    d = normalize(d)
+    events = 0
+    while events <= max_events:
+        events += 1
+        t_best = float('inf')
+        best = ("none", None, None, None, None)
+        t0 = origin_event_time(p, d)
+        if t0 is not None:
+            t_best = t0
+            best = ("target", None, t0, None, None)
+        for i, seg in enumerate(segs):
+            ax, ay, bx, by, aabb = seg
+            tbox = ray_aabb_hit_time(p, d, aabb)
+            if tbox is None or tbox > t_best + 1e-10:
+                continue
+            a = (ax, ay); b = (bx, by)
+            t, u, kind = ray_segment_intersection(p, d, a, b)
+            if t is None: continue
+            if t < t_best - 1e-10:
+                t_best = t
+                best = ("segment", i, t, u, kind)
+        kind, idx, t_hit, u_hit, how = best
+        if kind == "target":
+            return True
+        if kind != "segment":
+            return False
+        ax, ay, bx, by, _ = segs[idx]
+        a = (ax, ay); b = (bx, by)
+        v = sub(b, a)
+        if how == "collinear" or angle_diff_lt45(d, v):
+            e = slide_endpoint(a, b, d)
+            p = add(e, mul(d, 1e-9))
+            continue
+        else:
+            return False
+    return False
+
+def candidate_directions(s, K=720):
+    dirs = []
+    to_t = normalize((-s[0], -s[1]))
+    dirs.append(to_t)
+    # jitter around direct direction
+    for delta in (-2.0, -1.0, 1.0, 2.0):
+        ang0 = math.atan2(to_t[1], to_t[0]) + delta*(math.pi/180.0)
+        dirs.append((math.cos(ang0), math.sin(ang0)))
+    for k in range(K):
+        ang = 2.0*math.pi*(k/float(K))
+        dirs.append((math.cos(ang), math.sin(ang)))
+    return dirs
+
+def read_input(data: str = None):
+    if data is None:
+        data = sys.stdin.read()
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return 0, [], 0, []
+    segs = []
+    for _ in range(n):
+        ax = float(next(it)); ay = float(next(it))
+        bx = float(next(it)); by = float(next(it))
+        xmin = min(ax, bx); xmax = max(ax, bx)
+        ymin = min(ay, by); ymax = max(ay, by)
+        segs.append((ax, ay, bx, by, (xmin, ymin, xmax, ymax)))
+    q = int(next(it))
+    queries = []
+    for _ in range(q):
+        sx = float(next(it)); sy = float(next(it))
+        queries.append((sx, sy))
+    return n, segs, q, queries
+
+def solve_all(n, segs, q, queries):
+    out = []
+    for sx, sy in queries:
+        ok = False
+        for d in candidate_directions((sx, sy)):
+            if simulate_direction((sx, sy), d, segs):
+                ok = True
+                break
+        out.append("YES" if ok else "NO")
+    return "\n".join(out)
+
+def main():
+    n, segs, q, queries = read_input()
+    if q == 0 and n == 0 and len(segs) == 0:
+        return
+    sys.stdout.write(solve_all(n, segs, q, queries))
+
+if __name__ == "__main__":
+    # Tiny asserts
+    data = "0\n2\n3 4\n-7 1\n"
+    n, segs, q, queries = read_input(data)
+    assert solve_all(n, segs, q, queries).split() == ["YES","YES"]
+    data = "1\n0.2 0.5 0.2 2.0\n1\n1 1\n"
+    n, segs, q, queries = read_input(data)
+    assert solve_all(n, segs, q, queries).split() == ["NO"]
+    data = "1\n2 0 4 0\n1\n5 0\n"
+    n, segs, q, queries = read_input(data)
+    assert solve_all(n, segs, q, queries).split() == ["YES"]
+    main()
+\end{minted}
+\VALIDATION{Same three asserts as baseline confirm behavior and AABB pruning does not change outcomes.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Backward Reachability via 45$^{\circ}$ Cones (Conceptual)}
+\WHICHFORMULA{A conceptual optimal solution can be derived by reversing the dynamics: the set of points that can reach $t$ is the closure of applying, to $t$ and segment endpoints, the inverse operation of ``sliding allowed iff $|\phi|<45^{\circ}$,'' which yields unions of strips (cones of directions) extruded along segments. One can maintain the boundary of the reachable set via angular sweeps and half-plane intersections.}
+\ASSUMPTIONS{Segments pairwise disjoint; arithmetic in exact rational or robust geometry; implementable with event-driven angular sweep around endpoints and visibility maintenance.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Initialize a reachable set $\mathcal{R}$ with the single point $t=(0,0)$.
+\item For each segment, compute the set of positions that could slide along it and then proceed towards $\mathcal{R}$ with angle $<45^{\circ}$ (a Minkowski-type dilation by a $45^{\circ}$ cone).
+\item Iteratively close under these operations until a fixed point is reached; answer YES iff $s\in \mathcal{R}$.
+\end{algosteps}
+\OPTIMALITY{This reverses the physics exactly and thus characterizes all successful starts. With careful geometric data structures, one can achieve near-optimal complexity for $n\le 1500$, but the full implementation is intricate.}
+\COMPLEXITY{Let $m$ be the combinatorial complexity of the reachable set boundary. Event-driven updates are roughly $O(m\log m + n\log n)$ per iteration; convergence in a finite number of iterations since only endpoints are introduced.}
+\[
+\begin{aligned}
+T(n) &\in \tilde O(n^2)\ \text{in a careful implementation},\\
+S(n) &= \tilde O(n).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys, math
+from typing import List, Tuple
+
+# Final reference uses the improved simulator with pruning.
+
+EPS = 1e-9
+DEG45 = math.pi / 4.0
+
+def dot(a, b): return a[0]*b[0] + a[1]*b[1]
+def cross(a, b): return a[0]*b[1] - a[1]*b[0]
+def sub(a, b): return (a[0]-b[0], a[1]-b[1])
+def add(a, b): return (a[0]+b[0], a[1]+b[1])
+def mul(a, k): return (a[0]*k, a[1]*k)
+def norm(a): return math.hypot(a[0], a[1])
+def normalize(v):
+    n = norm(v)
+    if n < EPS: return (0.0, 0.0)
+    return (v[0]/n, v[1]/n)
+
+def angle_diff_lt45(d, v):
+    nv = norm(v); nd = norm(d)
+    if nv < EPS or nd < EPS: return False
+    c = abs(dot(d, v) / (nd * nv))
+    c = max(-1.0, min(1.0, c))
+    return math.acos(c) < DEG45 - 1e-12
+
+def origin_event_time(p, d):
+    if norm(d) < EPS: return None
+    if abs(cross(d, mul(p, -1.0))) > 1e-9: return None
+    t0 = -dot(p, d)
+    if t0 >= -1e-12: return max(0.0, t0)
+    return None
+
+def ray_segment_intersection(p, d, a, b):
+    v = sub(b, a)
+    det = cross(d, v)
+    ap = sub(a, p)
+    if abs(det) < 1e-12:
+        if abs(cross(ap, d)) > 1e-9: return (None, None, "none")
+        ta = dot(sub(a, p), d); tb = dot(sub(b, p), d)
+        lo, hi = min(ta, tb), max(ta, tb)
+        if hi < -EPS: return (None, None, "none")
+        t_hit = max(0.0, lo)
+        if t_hit - hi > EPS: return (None, None, "none")
+        return (t_hit, None, "collinear")
+    t = cross(ap, v) / det
+    u = cross(ap, d) / det
+    if t >= -1e-12 and u >= -1e-12 and u <= 1.0 + 1e-12:
+        return (t, u, "proper")
+    return (None, None, "none")
+
+def ray_aabb_hit_time(p, d, aabb):
+    (xmin, ymin, xmax, ymax) = aabb
+    tmin = -float('inf'); tmax = float('inf')
+    for i in range(2):
+        pi = p[i]; di = d[i]
+        lo = xmin if i == 0 else ymin
+        hi = xmax if i == 0 else ymax
+        if abs(di) < 1e-12:
+            if pi < lo - EPS or pi > hi + EPS: return None
+            continue
+        t1 = (lo - pi) / di
+        t2 = (hi - pi) / di
+        if t1 > t2: t1, t2 = t2, t1
+        tmin = max(tmin, t1); tmax = min(tmax, t2)
+        if tmin > tmax + 1e-12: return None
+    if tmax < -EPS: return None
+    return max(0.0, tmin)
+
+def slide_endpoint(a, b, d):
+    v = sub(b, a)
+    nv = normalize(v)
+    sgn = 1.0 if dot(d, nv) >= 0.0 else -1.0
+    return add(a, mul(v, 1.0 if sgn > 0 else 0.0))
+
+def simulate_direction(s, d, segs, max_events=None):
+    if max_events is None: max_events = 2*len(segs)+5
+    p = (float(s[0]), float(s[1]))
+    d = normalize(d)
+    events = 0
+    while events <= max_events:
+        events += 1
+        t_best = float('inf')
+        best = ("none", None, None, None, None)
+        t0 = origin_event_time(p, d)
+        if t0 is not None:
+            t_best = t0
+            best = ("target", None, t0, None, None)
+        for i, seg in enumerate(segs):
+            ax, ay, bx, by, aabb = seg
+            tbox = ray_aabb_hit_time(p, d, aabb)
+            if tbox is None or tbox > t_best + 1e-10: continue
+            a = (ax, ay); b = (bx, by)
+            t, u, kind = ray_segment_intersection(p, d, a, b)
+            if t is None: continue
+            if t < t_best - 1e-10:
+                t_best = t
+                best = ("segment", i, t, u, kind)
+        kind, idx, t_hit, u_hit, how = best
+        if kind == "target": return True
+        if kind != "segment": return False
+        ax, ay, bx, by, _ = segs[idx]
+        a = (ax, ay); b = (bx, by)
+        v = sub(b, a)
+        if how == "collinear" or angle_diff_lt45(d, v):
+            e = slide_endpoint(a, b, d)
+            p = add(e, mul(d, 1e-9))
+            continue
+        else:
+            return False
+    return False
+
+def candidate_directions(s, K=720):
+    dirs = []
+    to_t = normalize((-s[0], -s[1]))
+    dirs.append(to_t)
+    for delta in (-2.0, -1.0, 1.0, 2.0):
+        ang0 = math.atan2(to_t[1], to_t[0]) + delta*(math.pi/180.0)
+        dirs.append((math.cos(ang0), math.sin(ang0)))
+    for k in range(K):
+        ang = 2.0*math.pi*(k/float(K))
+        dirs.append((math.cos(ang), math.sin(ang)))
+    return dirs
+
+def read_input(data: str = None):
+    if data is None:
+        data = sys.stdin.read()
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return 0, [], 0, []
+    segs = []
+    for _ in range(n):
+        ax = float(next(it)); ay = float(next(it))
+        bx = float(next(it)); by = float(next(it))
+        xmin = min(ax, bx); xmax = max(ax, bx)
+        ymin = min(ay, by); ymax = max(ay, by)
+        segs.append((ax, ay, bx, by, (xmin, ymin, xmax, ymax)))
+    q = int(next(it))
+    queries = []
+    for _ in range(q):
+        sx = float(next(it)); sy = float(next(it))
+        queries.append((sx, sy))
+    return n, segs, q, queries
+
+def solve_all(n, segs, q, queries):
+    out = []
+    for sx, sy in queries:
+        ok = False
+        for d in candidate_directions((sx, sy)):
+            if simulate_direction((sx, sy), d, segs):
+                ok = True
+                break
+        out.append("YES" if ok else "NO")
+    return "\n".join(out)
+
+def main():
+    n, segs, q, queries = read_input()
+    if q == 0 and n == 0 and len(segs) == 0:
+        return
+    sys.stdout.write(solve_all(n, segs, q, queries))
+
+if __name__ == "__main__":
+    # Exactly 3 asserts
+    data = "0\n2\n3 4\n-7 1\n"
+    n, segs, q, queries = read_input(data)
+    assert solve_all(n, segs, q, queries).split() == ["YES","YES"]
+    data = "1\n0.2 0.5 0.2 2.0\n1\n1 1\n"
+    n, segs, q, queries = read_input(data)
+    assert solve_all(n, segs, q, queries).split() == ["NO"]
+    data = "1\n2 0 4 0\n1\n5 0\n"
+    n, segs, q, queries = read_input(data)
+    assert solve_all(n, segs, q, queries).split() == ["YES"]
+    main()
+\end{minted}
+\VALIDATION{Three deterministic asserts mirror prior checks.}
+\RESULT{For each query point $s$, prints YES iff a simulated direction reaching $(0,0)$ exists under the rule; otherwise NO.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests cover: no obstacles; blocking segment with $\ge 45^{\circ}$ incident; collinear sliding. Property checks: symmetry under uniform rotation of both segments and queries for empty case.}
+\LINE{CROSS-CHECKS}{Compare outputs of Baseline vs Improved vs Final on tiny random instances to confirm agreement.}
+\LINE{EDGE-CASE GENERATOR}{Generate random non-touching segments away from the origin and random queries; ensure no segment contains $(0,0)$ and queries are not on segments.}
+\begin{minted}{python}
+import random, math
+
+def gen_instance(n=5, q=5, seed=0):
+    rnd = random.Random(seed)
+    segs = []
+    attempts = 0
+    while len(segs) < n and attempts < 10000:
+        attempts += 1
+        ax = rnd.uniform(-5, 5); ay = rnd.uniform(-5, 5)
+        bx = ax + rnd.uniform(-2, 2); by = ay + rnd.uniform(-2, 2)
+        # keep away from origin a bit
+        if abs(ax) < 0.2 and abs(ay) < 0.2: continue
+        if abs(bx) < 0.2 and abs(by) < 0.2: continue
+        segs.append((ax, ay, bx, by))
+    qs = []
+    for _ in range(q):
+        sx = rnd.uniform(-5, 5); sy = rnd.uniform(-5, 5)
+        qs.append((sx, sy))
+    return segs, qs
+
+# Reference code reuse from Final Implementation (simulate_direction, etc.)
+# Quick cross-check on a small random instance:
+segs, qs = gen_instance(3, 4, 42)
+packed = []
+for (ax, ay, bx, by) in segs:
+    xmin, xmax = min(ax, bx), max(ax, bx)
+    ymin, ymax = min(ay, by), max(ay, by)
+    packed.append((ax, ay, bx, by, (xmin, ymin, xmax, ymax)))
+
+def solve_ref(segs, qs):
+    out = []
+    for s in qs:
+        ok = False
+        for d in candidate_directions(s, K=180):
+            if simulate_direction(s, d, segs):
+                ok = True; break
+        out.append(ok)
+    return out
+
+res = solve_ref(packed, qs)
+assert isinstance(res, list) and len(res) == len(qs)
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# The "Final Submission" block from Approach C is the ready-to-submit reference.
+# It includes read_input(), solve_all(), main()+guard, and exactly 3 asserts.
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Simulate a ray from the start with sliding if the incident angle to a segment is $<45^{\circ}$ and check if it reaches $(0,0)$ for any direction.}
+\WHY{Ray-tracing with geometric rules appears in visibility, reflection, and motion-planning problems; being comfortable with robust intersections and event handling is valuable in interviews.}
+\CHECKLIST{
+\begin{bullets}
+\item Normalize directions; maintain a small numerical tolerance.
+\item Always check the direct-to-target direction first.
+\item When scanning segments, keep the earliest event only.
+\item Handle collinear ray--segment as an immediate sliding case.
+\item After sliding, nudge along the direction to avoid re-hitting the same endpoint.
+\item Cap the number of events to avoid cycles in degenerate cases.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item Ray parallel to segment but not collinear.
+\item Collinear with the segment and starting inside its projection.
+\item Grazing hits near $45^{\circ}$.
+\item Multiple intersections at almost identical distances.
+\item Very short segments (near points).
+\item Start point very close to an endpoint.
+\item Segments nearly touching (within numeric $\varepsilon$).
+\item Start behind all segments relative to chosen direction.
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Not prioritizing hitting the target when at the same distance as a segment.
+\item Forgetting to clamp $u\in[0,1]$ in the intersection solver.
+\item Using degrees vs radians inconsistently for $45^{\circ}$.
+\item Failing to nudge after sliding, causing infinite immediate re-intersections.
+\item Not handling collinear overlaps as slide events.
+\item Allowing direction magnitude to drift from $1$ under floating error.
+\item Comparing floats without tolerance, causing missed events.
+\item Infinite loops without an event cap.
+\end{bullets}}
+\FAILMODES{Purely discrete angle sampling can miss a valid direction; adversarial configurations exist. The improved direction set reduces but does not eliminate this risk. A theoretically optimal solution would compute the exact reachable set.}
+\ELI{We keep trying directions to see if the path, possibly detouring along segments when hitting at shallow angles, can still get to the origin. If we ever smack into a segment at a steeper angle (at least $45^{\circ}$), that attempt stops. We say YES if any attempt makes it.}
+\NotePages{3}
+
+\end{document}

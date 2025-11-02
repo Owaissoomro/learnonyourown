@@ -1,0 +1,885 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Christmas Chocolates}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1617/E}}
+\LINE{DIFFICULTY / RATING}{2700}
+\STATEMENT{Christmas is coming, Icy has just received a box of chocolates from her grandparents! The box contains $n$ chocolates. The $i$-th chocolate has a non-negative integer type $a_i$.
+
+Icy believes that good things come in pairs. Unfortunately, all types of chocolates are distinct (all $a_i$ are distinct). Icy wants to make at least one pair of chocolates the same type.
+
+As a result, she asks her grandparents to perform some chocolate exchanges. Before performing any chocolate exchanges, Icy chooses two chocolates with indices $x$ and $y$ ($1 \le x, y \le n$, $x \ne y$).
+
+In a chocolate exchange, Icy's grandparents choose a non-negative integer $k$, such that $2^k \ge a_x$, and change the type of the chocolate $x$ from $a_x$ to $2^k - a_x$ (that is, perform $a_x := 2^k - a_x$).
+
+The chocolate exchanges will be stopped only when $a_x = a_y$. Note that other pairs of equal chocolate types do not stop the procedure.
+
+Icy's grandparents are smart, so they would choose the sequence of chocolate exchanges that minimizes the number of exchanges needed. Since Icy likes causing trouble, she wants to maximize the minimum number of exchanges needed by choosing $x$ and $y$ appropriately. She wonders what is the optimal pair $(x, y)$ such that the minimum number of exchanges needed is maximized across all possible choices of $(x, y)$.
+
+Since Icy is not good at math, she hopes that you can help her solve the problem.
+
+Input:
+The first line of the input contains a single integer $n$ ($2 \le n \le 2 \cdot 10^5$) — the number of chocolates.
+
+The second line of the input contains $n$ integers $a_1, a_2, \dots, a_n$ ($0 \le a_i \le 10^9$).
+
+It is guaranteed that all $a_i$ are distinct.
+
+Output:
+Output three integers $x$, $y$, and $m$.
+
+$x$ and $y$ are indices of the optimal chocolates to perform exchanges on. Your output must satisfy $1 \le x, y \le n$, $x \ne y$.
+
+$m$ is the number of exchanges needed to obtain $a_x = a_y$. We can show that $m \le 10^9$ for any pair of chocolates.
+
+If there are multiple solutions, output any.
+
+Note:
+In the first test case, the minimum number of exchanges needed to exchange a chocolate of type $6$ to a chocolate of type $9$ is $5$. The sequence of exchanges is as follows: $6 \rightarrow 2 \rightarrow 0 \rightarrow 1 \rightarrow 7 \rightarrow 9$.
+
+In the second test case, the minimum number of exchanges needed to exchange a chocolate of type $4$ to a chocolate of type $8$ is $2$. The sequence of exchanges is as follows: $4 \rightarrow 0 \rightarrow 8$.}
+\BREAKDOWN{Model the allowed operation as an undirected edge on non-negative integers: $v \leftrightarrow 2^k - v$ for any $k$ with $2^k \ge v$. Show this graph is a rooted tree with root $0$, where each $x>0$ has unique parent $p(x)=2^{\lceil \log_2 x \rceil}-x$. Then the minimal exchanges between two values equals their tree distance. The task becomes finding two indices whose values have maximum tree distance (the diameter among given nodes).}
+\ELI{Every number links to a unique ``parent'' by folding at the next power of two; all numbers form a tree rooted at $0$. The best pair is the farthest two nodes (by edges) in this tree among the given values.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test:
+\begin{bullets}
+\item $n$ — integer, $2 \le n \le 2 \cdot 10^5$.
+\item Array $(a_1,\ldots,a_n)$ — distinct integers, $0 \le a_i \le 10^9$.
+\end{bullets}}
+\OUTPUTS{Three integers $x$, $y$, $m$:
+\begin{bullets}
+\item $x, y$ — 1-based indices with $x \ne y$.
+\item $m$ — the minimal number of exchanges to make $a_x$ equal to $a_y$ under optimal play by grandparents, maximized by the choice of $x, y$.
+\end{bullets}}
+\SAMPLES{
+Example 1:
+\begin{bullets}
+\item Input: $n=2$, $a=[6, 9]$
+\item Output: $x=1$, $y=2$, $m=5$
+\end{bullets}
+Example 2:
+\begin{bullets}
+\item Input: $n=2$, $a=[4, 8]$
+\item Output: $x=1$, $y=2$, $m=2$
+\end{bullets}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let the state space be $\mathbb{Z}_{\ge 0}$. For any $v \in \mathbb{Z}_{\ge 0}$ and any integer $k \ge 0$ with $2^k \ge v$, define an undirected edge between $v$ and $2^k - v$. This graph is a rooted tree with root $0$ via the unique-parent mapping
+\begin{BreakableEquation*}
+p(x) = 2^{\lceil \log_2 x \rceil} - x \quad \text{for } x>0,\quad p(0)\text{ undefined.}
+\end{BreakableEquation*}
+Define the depth $d(x)$ as the number of steps to reach $0$ by iterating $p$. The distance between $u,v$ is the tree distance:
+\begin{BreakableEquation*}
+\operatorname{dist}(u,v) = d(u)+d(v)-2\,d(\operatorname{LCA}(u,v)).
+\end{BreakableEquation*}
+Among the given multiset $A=\{a_1,\dots,a_n\}$ (distinct values), choose indices $(x,y)$ that maximize $\operatorname{dist}(a_x,a_y)$.}
+\varmapStart
+\var{n}{number of chocolates}
+\var{a_i}{type of the $i$-th chocolate; array elements are distinct}
+\var{p(x)}{parent of $x$ in the tree: $p(x)=2^{\lceil \log_2 x \rceil}-x$ for $x>0$}
+\var{d(x)}{depth of $x$ in the tree (distance to $0$)}
+\var{\operatorname{dist}(u,v)}{tree distance between $u$ and $v$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+p(x) &= 2^{\lceil \log_2 x \rceil}-x,\quad x>0,\\
+d(0) &= 0,\quad d(x) = 1 + d\bigl(p(x)\bigr),\\
+\operatorname{dist}(u,v) &= \min\{\text{# edges on a path from $u$ to $v$}\}\\
+&= d(u)+d(v)-2\,d(\operatorname{LCA}(u,v)).
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item All $a_i$ are distinct and within $[0,10^9]$.
+\item The graph induced by the operation is exactly the rooted tree defined by $p(x)$.
+\item Depths are $O(\log a_i)$, so per-distance computation is $O(\log a_i)$.
+\end{bullets}}
+\INVARIANTS{
+\begin{bullets}
+\item Each $x>0$ has a unique parent $p(x)$; iterating $p$ strictly decreases $\lceil \log_2 x \rceil$ until reaching $0$.
+\item Any allowed operation edge $x \leftrightarrow 2^k-x$ connects a node to the parent of the larger endpoint; hence no cross-edges beyond the tree.
+\item Minimal exchanges between two values equals their tree distance.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Use the parent mapping $p(x)=2^{\lceil \log_2 x \rceil}-x$ to define a rooted tree at $0$. Compute distance via lifting both nodes up to their lowest common ancestor by repeatedly applying $p$. Find the farthest pair by two sweeps: farthest from an arbitrary node, then farthest from that.}
+\ASSUMPTIONS{No memoization; compute $p(\cdot)$ and $d(\cdot)$ on the fly for each query.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Implement $p(x)$ using $k=(x-1)$.\texttt{bit\_length} and $p(x)=(1\ll k)-x$ for $x>0$.
+\item Implement $\operatorname{depth}(x)$ by iterating $p$ until $0$.
+\item Implement $\operatorname{dist}(u,v)$ by leveling depths, then moving both up until equal, counting steps.
+\item Run two sweeps over the $n$ elements to find a diameter endpoint pair $(x,y)$ and output $m=\operatorname{dist}(a_x,a_y)$.
+\end{algosteps}
+\COMPLEXITY{Per distance in $O(\log \max a)$; two sweeps compute $O(n)$ distances.}
+\[
+\begin{aligned}
+T(n) & = O\bigl(n \cdot \log \max a\bigr),\\
+S(n) & = O(1).
+\end{aligned}
+\]
+\CORRECTNESS{The allowed operation edges coincide exactly with parent-child edges in the rooted tree at $0$, so minimal exchanges equal tree distance. The two-sweep method finds a diameter in any tree metric among a fixed node set by computing a farthest node from an arbitrary start and then from that node.}
+\EDGECASES{Values $0$ or powers of two are handled: $p(0)$ is not queried; $p(2^k)=0$. Distances involving $0$ are the depth of the other node.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def parent(x: int) -> int:
+    assert x >= 0
+    if x == 0:
+        return 0  # never used in upward steps
+    k = (x - 1).bit_length()  # minimal k with 2^k >= x
+    return (1 << k) - x
+
+def depth_naive(x: int) -> int:
+    d = 0
+    while x > 0:
+        x = parent(x)
+        d += 1
+    return d
+
+def dist_naive(u: int, v: int) -> int:
+    du = depth_naive(u)
+    dv = depth_naive(v)
+    steps = 0
+    # Bring to same depth
+    while du > dv:
+        u = parent(u)
+        du -= 1
+        steps += 1
+    while dv > du:
+        v = parent(v)
+        dv -= 1
+        steps += 1
+    # Climb together
+    while u != v:
+        u = parent(u)
+        v = parent(v)
+        steps += 2
+    return steps
+
+def farthest_index_baseline(a: List[int], start_idx: int) -> Tuple[int, int]:
+    """Return (idx, distance) farthest from a[start_idx] using dist_naive."""
+    s_val = a[start_idx]
+    best_d, best_i = -1, start_idx
+    for i, v in enumerate(a):
+        d = dist_naive(s_val, v)
+        if d > best_d:
+            best_d, best_i = d, i
+    return best_i, best_d
+
+def solve_case(a: List[int]) -> Tuple[int, int, int]:
+    n = len(a)
+    # First sweep from index 0
+    s, _ = farthest_index_baseline(a, 0)
+    # Second sweep from s
+    t, diam = farthest_index_baseline(a, s)
+    # Convert to 1-based indices
+    return (s + 1, t + 1, diam)
+
+def read_input() -> List[int]:
+    data = sys.stdin.buffer.read().split()
+    if not data:
+        return []
+    it = iter(data)
+    n = int(next(it))
+    arr = [int(next(it)) for _ in range(n)]
+    return arr
+
+def solve_all() -> None:
+    arr = read_input()
+    if not arr:
+        return
+    x, y, m = solve_case(arr)
+    print(x, y, m)
+
+def _run_tests() -> None:
+    # Parent / depth sanity
+    assert parent(6) == 2 and parent(2) == 0
+    assert depth_naive(0) == 0
+    assert depth_naive(1) == 1  # 1 -> 0
+    assert dist_naive(6, 9) == 5  # given in statement
+    assert dist_naive(4, 8) == 2  # 4 -> 0 -> 8
+    # Baseline solver on tiny cases
+    assert solve_case([6, 9])[2] == 5
+    assert solve_case([4, 8])[2] == 2
+    assert solve_case([0, 1, 2])[2] == 2  # farthest are 1 and 2
+
+if __name__ == "__main__":
+    data = sys.stdin.buffer.read()
+    if not data.strip():
+        _run_tests()
+    else:
+        sys.stdin = sys.__stdin__
+        sys.stdin = sys.__stdin__
+        # Re-parse using our reader for simplicity
+        sys.stdin = sys.__stdin__
+        sys.stdout.flush()
+        # Feed back the data into read_input
+        sys.stdin = sys.__stdin__
+        # Simpler: parse directly here
+        toks = data.split()
+        it = iter(toks)
+        n = int(next(it))
+        arr = [int(next(it)) for _ in range(n)]
+        x, y, m = solve_case(arr)
+        print(x, y, m)
+\end{minted}
+\VALIDATION{Checked distances against the two illustrative sequences and a small mixed set including $0$. The baseline produces correct minimal exchanges and valid indices.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Memoize depths of encountered nodes to avoid recomputing along shared ancestor chains across $O(n)$ distance evaluations. Also cache parent results. This reduces constant factors while keeping $O(n \log \max a)$ asymptotics.}
+\ASSUMPTIONS{We only ever ascend toward $0$. Memoization tables remain small, $O(n \log \max a)$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Maintain dicts for cached parents and depths.
+\item When computing $d(x)$, walk up, collect the chain, and assign depths in one pass using the known $d$ at the first cached ancestor (or $0$).
+\item Compute distances and perform two sweeps as in Approach A.
+\end{algosteps}
+\COMPLEXITY{Same big-O, smaller constants due to reuse across many queries.}
+\[
+\begin{aligned}
+T(n) &= O\bigl(n \log \max a\bigr) \text{ with lower constants},\\
+S(n) &= O\bigl(n \log \max a\bigr) \text{ for caches}.
+\end{aligned}
+\]
+\CORRECTNESS{Memoization does not change computed parents or depths, just reuses them. Distances remain exact; the two-sweep still returns a diameter pair among the given nodes.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple, Dict
+
+def parent_cached(x: int, pmap: Dict[int, int]) -> int:
+    if x == 0:
+        return 0
+    if x in pmap:
+        return pmap[x]
+    k = (x - 1).bit_length()
+    px = (1 << k) - x
+    pmap[x] = px
+    return px
+
+def depth_cached(x: int, pmap: Dict[int, int], dmap: Dict[int, int]) -> int:
+    if x in dmap:
+        return dmap[x]
+    path = []
+    cur = x
+    while cur not in dmap:
+        path.append(cur)
+        if cur == 0:
+            break
+        cur = parent_cached(cur, pmap)
+    base = dmap.get(cur, 0)
+    # Assign depths backwards
+    for node in reversed(path):
+        dmap[node] = base + 1 if node != cur else base
+        base = dmap[node]
+    return dmap[x]
+
+def dist_cached(u: int, v: int, pmap: Dict[int, int], dmap: Dict[int, int]) -> int:
+    du = depth_cached(u, pmap, dmap)
+    dv = depth_cached(v, pmap, dmap)
+    steps = 0
+    while du > dv:
+        u = parent_cached(u, pmap)
+        du -= 1
+        steps += 1
+    while dv > du:
+        v = parent_cached(v, pmap)
+        dv -= 1
+        steps += 1
+    while u != v:
+        u = parent_cached(u, pmap)
+        v = parent_cached(v, pmap)
+        steps += 2
+    return steps
+
+def farthest_index_improved(a: List[int], start_idx: int) -> Tuple[int, int]:
+    pmap: Dict[int, int] = {}
+    dmap: Dict[int, int] = {0: 0}
+    s_val = a[start_idx]
+    best_d, best_i = -1, start_idx
+    for i, v in enumerate(a):
+        d = dist_cached(s_val, v, pmap, dmap)
+        if d > best_d:
+            best_d, best_i = d, i
+    return best_i, best_d
+
+def solve_case(a: List[int]) -> Tuple[int, int, int]:
+    # First sweep
+    s, _ = farthest_index_improved(a, 0)
+    # Second sweep
+    t, diam = farthest_index_improved(a, s)
+    return (s + 1, t + 1, diam)
+
+def read_input() -> List[int]:
+    data = sys.stdin.buffer.read().split()
+    if not data:
+        return []
+    it = iter(data)
+    n = int(next(it))
+    arr = [int(next(it)) for _ in range(n)]
+    return arr
+
+def solve_all() -> None:
+    arr = read_input()
+    if not arr:
+        return
+    x, y, m = solve_case(arr)
+    print(x, y, m)
+
+def _run_tests() -> None:
+    pmap: Dict[int, int] = {}
+    dmap: Dict[int, int] = {0: 0}
+    assert parent_cached(8, pmap) == 0
+    assert depth_cached(7, pmap, dmap) >= 0
+    assert dist_cached(6, 9, pmap, dmap) == 5
+    assert solve_case([6, 9])[2] == 5
+    assert solve_case([4, 8])[2] == 2
+    assert solve_case([0, 1, 2])[2] == 2
+
+if __name__ == "__main__":
+    data = sys.stdin.buffer.read()
+    if not data.strip():
+        _run_tests()
+    else:
+        toks = data.split()
+        it = iter(toks)
+        n = int(next(it))
+        arr = [int(next(it)) for _ in range(n)]
+        x, y, m = solve_case(arr)
+        print(x, y, m)
+\end{minted}
+\VALIDATION{Validated identical outputs to Approach A on the same tiny checks, with additional cache checks.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Use the tree metric induced by $p(x)$ and compute the diameter endpoints among the given nodes via two sweeps with full memoization of depths and parents encountered. This achieves linear in $n$ times $O(\log \max a)$ with tiny constants.}
+\ASSUMPTIONS{All operations ascend toward the root; the graph has no cross-edges beyond the parent-child ones, so the tree distance is exact and the diameter two-sweep is optimal for finding farthest pair.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Maintain global caches for $p(x)$ and $d(x)$, seeded with $d(0)=0$.
+\item Define $p(x)=(1 \ll (x-1).\texttt{bit\_length}()) - x$ for $x>0$.
+\item Define $\operatorname{dist}(u,v)$ by leveling depths using $d(\cdot)$ and then climbing parents until equal.
+\item Run two sweeps over the array to get endpoints $(x,y)$ and $m=\operatorname{dist}(a_x,a_y)$.
+\end{algosteps}
+\OPTIMALITY{Each distance computation touches at most $O(\log \max a)$ ancestors; caches ensure repeated hits are $O(1)$. Two sweeps suffice to find a diameter pair in any tree metric restricted to a set of nodes.}
+\COMPLEXITY{$T(n)=O(n \log \max a)$, $S(n)=O(n \log \max a)$.}
+\[
+\begin{aligned}
+T(n) &= O\bigl(n \cdot \log \max a\bigr), \\
+S(n) &= O\bigl(n \cdot \log \max a\bigr).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple, Dict
+
+# Global caches for performance
+_PMAP: Dict[int, int] = {}
+_DMAP: Dict[int, int] = {0: 0}
+
+def parent(x: int) -> int:
+    if x == 0:
+        return 0
+    px = _PMAP.get(x)
+    if px is not None:
+        return px
+    k = (x - 1).bit_length()
+    px = (1 << k) - x
+    _PMAP[x] = px
+    return px
+
+def depth(x: int) -> int:
+    dv = _DMAP.get(x)
+    if dv is not None:
+        return dv
+    path = []
+    cur = x
+    while cur not in _DMAP:
+        path.append(cur)
+        if cur == 0:
+            break
+        cur = parent(cur)
+    base = _DMAP.get(cur, 0)
+    for node in reversed(path):
+        _DMAP[node] = base + 1 if node != cur else base
+        base = _DMAP[node]
+    return _DMAP[x]
+
+def dist(u: int, v: int) -> int:
+    du = depth(u)
+    dv = depth(v)
+    steps = 0
+    while du > dv:
+        u = parent(u)
+        du -= 1
+        steps += 1
+    while dv > du:
+        v = parent(v)
+        dv -= 1
+        steps += 1
+    while u != v:
+        u = parent(u)
+        v = parent(v)
+        steps += 2
+    return steps
+
+def farthest_index(a: List[int], start_idx: int) -> Tuple[int, int]:
+    s_val = a[start_idx]
+    best_d, best_i = -1, start_idx
+    for i, v in enumerate(a):
+        d = dist(s_val, v)
+        if d > best_d:
+            best_d, best_i = d, i
+    return best_i, best_d
+
+def solve_case(a: List[int]) -> Tuple[int, int, int]:
+    s, _ = farthest_index(a, 0)
+    t, diam = farthest_index(a, s)
+    return (s + 1, t + 1, diam)
+
+def read_input() -> List[int]:
+    data = sys.stdin.buffer.read().split()
+    if not data:
+        return []
+    it = iter(data)
+    n = int(next(it))
+    arr = [int(next(it)) for _ in range(n)]
+    return arr
+
+def solve_all() -> None:
+    arr = read_input()
+    if not arr:
+        return
+    x, y, m = solve_case(arr)
+    print(x, y, m)
+
+def _run_tests() -> None:
+    # Edge basics
+    assert parent(1) == 0
+    assert parent(6) == 2 and parent(9) == 7 and parent(7) == 1
+    assert depth(0) == 0 and depth(1) == 1
+    assert dist(6, 9) == 5  # given sequence
+    assert dist(4, 8) == 2  # 4 -> 0 -> 8
+    # Solver checks
+    assert solve_case([6, 9])[2] == 5
+    assert solve_case([4, 8])[2] == 2
+    assert solve_case([0, 1, 2])[2] == 2
+
+if __name__ == "__main__":
+    data = sys.stdin.buffer.read()
+    if not data.strip():
+        _run_tests()
+    else:
+        toks = data.split()
+        it = iter(toks)
+        n = int(next(it))
+        arr = [int(next(it)) for _ in range(n)]
+        x, y, m = solve_case(arr)
+        print(x, y, m)
+\end{minted}
+\VALIDATION{Exactly 3 checks:
+\begin{bullets}
+\item dist$(6,9)=5$ and solver on $[6,9]$ yields $m=5$.
+\item dist$(4,8)=2$ and solver on $[4,8]$ yields $m=2$.
+\item Solver on $[0,1,2]$ yields $m=2$ (endpoints $1$ and $2$).
+\end{bullets}}
+\RESULT{Outputs any optimal pair of indices $(x,y)$ maximizing the minimal number of exchanges, along with $m$, the number of exchanges under optimal grandparents' choice.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit-test primitives $p(x)$, $d(x)$, and $\operatorname{dist}$; then end-to-end on tiny arrays including $0$, powers of two, and random small values.}
+\LINE{CROSS-CHECKS}{Compare distances and endpoints produced by Approaches A, B, and C on the same inputs; they must coincide.}
+\LINE{EDGE-CASE GENERATOR}{Generate arrays containing $\{0,1\}$, adjacent integers, and mixtures of powers of two and near-powers to stress parent/ancestor chains.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+def gen_cases():
+    yield [6, 9]
+    yield [4, 8]
+    yield [0, 1]
+    yield [0, 1, 2, 3]
+    yield [1, 2, 3, 4, 5, 6, 7, 8]
+    yield [2**i for i in range(0, 10)]
+    yield [2**i - 1 for i in range(1, 10)]
+    yield [2**i + 1 for i in range(1, 10)]
+
+def reference_solve(a):
+    # Use Approach C's functions locally
+    from typing import Dict
+    _PMAP: Dict[int, int] = {}
+    _DMAP: Dict[int, int] = {0: 0}
+    def parent(x: int) -> int:
+        if x == 0: return 0
+        if x in _PMAP: return _PMAP[x]
+        k = (x - 1).bit_length()
+        px = (1 << k) - x
+        _PMAP[x] = px
+        return px
+    def depth(x: int) -> int:
+        if x in _DMAP: return _DMAP[x]
+        path = []
+        cur = x
+        while cur not in _DMAP:
+            path.append(cur)
+            if cur == 0: break
+            cur = parent(cur)
+        base = _DMAP.get(cur, 0)
+        for node in reversed(path):
+            _DMAP[node] = base + 1 if node != cur else base
+            base = _DMAP[node]
+        return _DMAP[x]
+    def dist(u: int, v: int) -> int:
+        du = depth(u); dv = depth(v)
+        steps = 0
+        while du > dv:
+            u = parent(u); du -= 1; steps += 1
+        while dv > du:
+            v = parent(v); dv -= 1; steps += 1
+        while u != v:
+            u = parent(u); v = parent(v); steps += 2
+        return steps
+    def farthest(a, s):
+        best_i, best_d = s, -1
+        for i, v in enumerate(a):
+            d = dist(a[s], v)
+            if d > best_d: best_i, best_d = i, d
+        return best_i, best_d
+    s, _ = farthest(a, 0)
+    t, diam = farthest(a, s)
+    return s + 1, t + 1, diam
+
+def main_reference():
+    import sys
+    data = sys.stdin.buffer.read().split()
+    if not data:
+        # self-checks
+        for arr in gen_cases():
+            x, y, m = reference_solve(arr)
+            assert 1 <= x != y <= len(arr)
+            # symmetric distance
+            # compute m explicitly
+            # We rebuild the distance quickly inline
+            pass
+        print("OK")
+        return
+    it = iter(data)
+    n = int(next(it)); arr = [int(next(it)) for _ in range(n)]
+    x, y, m = reference_solve(arr)
+    print(x, y, m)
+
+if __name__ == "__main__":
+    main_reference()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple, Dict
+
+_PMAP: Dict[int, int] = {}
+_DMAP: Dict[int, int] = {0: 0}
+
+def parent(x: int) -> int:
+    if x == 0:
+        return 0
+    px = _PMAP.get(x)
+    if px is not None:
+        return px
+    k = (x - 1).bit_length()
+    px = (1 << k) - x
+    _PMAP[x] = px
+    return px
+
+def depth(x: int) -> int:
+    dv = _DMAP.get(x)
+    if dv is not None:
+        return dv
+    path = []
+    cur = x
+    while cur not in _DMAP:
+        path.append(cur)
+        if cur == 0:
+            break
+        cur = parent(cur)
+    base = _DMAP.get(cur, 0)
+    for node in reversed(path):
+        _DMAP[node] = base + 1 if node != cur else base
+        base = _DMAP[node]
+    return _DMAP[x]
+
+def dist(u: int, v: int) -> int:
+    du = depth(u)
+    dv = depth(v)
+    steps = 0
+    while du > dv:
+        u = parent(u)
+        du -= 1
+        steps += 1
+    while dv > du:
+        v = parent(v)
+        dv -= 1
+        steps += 1
+    while u != v:
+        u = parent(u)
+        v = parent(v)
+        steps += 2
+    return steps
+
+def farthest_index(a: List[int], start_idx: int) -> Tuple[int, int]:
+    s_val = a[start_idx]
+    best_d, best_i = -1, start_idx
+    for i, v in enumerate(a):
+        d = dist(s_val, v)
+        if d > best_d:
+            best_d, best_i = d, i
+    return best_i, best_d
+
+def solve_case(a: List[int]) -> Tuple[int, int, int]:
+    s, _ = farthest_index(a, 0)
+    t, diam = farthest_index(a, s)
+    return (s + 1, t + 1, diam)
+
+def read_input() -> List[int]:
+    data = sys.stdin.buffer.read().split()
+    if not data:
+        return []
+    it = iter(data)
+    n = int(next(it))
+    arr = [int(next(it)) for _ in range(n)]
+    return arr
+
+def solve_all() -> None:
+    arr = read_input()
+    if not arr:
+        return
+    x, y, m = solve_case(arr)
+    print(x, y, m)
+
+def _run_tests() -> None:
+    # Parent and depth checks
+    assert parent(8) == 0 and parent(1) == 0 and parent(6) == 2
+    assert depth(0) == 0 and depth(1) == 1
+    # Distance checks from statement
+    assert dist(6, 9) == 5
+    assert dist(4, 8) == 2
+    # Solver on small arrays
+    assert solve_case([6, 9])[2] == 5
+    assert solve_case([4, 8])[2] == 2
+    assert solve_case([0, 1, 2])[2] == 2
+
+if __name__ == "__main__":
+    data = sys.stdin.buffer.read()
+    if not data.strip():
+        _run_tests()
+    else:
+        toks = data.split()
+        it = iter(toks)
+        n = int(next(it))
+        arr = [int(next(it)) for _ in range(n)]
+        x, y, m = solve_case(arr)
+        print(x, y, m)
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Reduce the operation graph to a rooted tree via $p(x)=2^{\lceil \log_2 x \rceil}-x$ and find the diameter among given values using two sweeps with fast distance via ancestor climbing.}
+\WHY{Tree metrics and diameter finding appear frequently in hard interviews and contests; recognizing the hidden tree structure is the key insight.}
+\CHECKLIST{
+\begin{bullets}
+\item Define and verify the parent mapping $p(x)$ for $x>0$.
+\item Prove every operation edge is a parent-child edge.
+\item Implement depth and distance with careful handling of $0$.
+\item Use two sweeps to get endpoints.
+\item Map back to 1-based indices.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item Presence of $0$ in the array.
+\item Powers of two (immediate parent $0$).
+\item Neighboring values like $(1,2)$ (no shortcut edge).
+\item Large values near $10^9$ (bit lengths around $30$).
+\item Arrays of size $2$ (trivial pair).
+\item Highly skewed sets (e.g., many powers of two).
+\item Values equal to $2^{k-1}$ (midpoints).
+\item Mixed small and large values.
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Using floor instead of ceil for $\log_2$ in $p(x)$.
+\item Forgetting $k=0$ is allowed; ensure $1 \le 2^k$ logic is correct for $x=0$ cases.
+\item Calling $p(0)$ inside loops (should not happen).
+\item Off-by-one in depth leveling and counting steps.
+\item Not caching depths, causing slowdowns on large $n$.
+\item Returning $0$-based indices instead of $1$-based.
+\item Overflow not an issue in Python, but avoid bit shifts with negative $k$.
+\item Misinterpreting the graph as having cross-edges; it is a tree.
+\end{bullets}}
+\FAILMODES{A naive BFS on the implicit infinite graph will not terminate or will be infeasible. Miscomputing $p(x)$ or allowing $p(0)$ in loops leads to wrong distances or infinite loops. The presented method ascends strictly and terminates quickly.}
+\ELI{The operation is just a mirror across powers of two. Each number has a unique \textquotedblleft parent\textquotedblright{} found by folding at the next power of two; repeating this reaches $0$. So the whole world is a tree. The hardest pair to match is simply the farthest two nodes in that tree among your chocolates.}
+\NotePages{3}
+
+\end{document}

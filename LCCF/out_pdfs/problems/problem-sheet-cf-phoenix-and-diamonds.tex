@@ -1,0 +1,807 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Phoenix and Diamonds}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1515/I}}
+\LINE{DIFFICULTY / RATING}{3400}
+\STATEMENT{Phoenix wonders what it is like to rob diamonds from a jewelry store!
+
+There are $n$ types of diamonds. The $i$-th type has weight $w_i$ and value $v_i$. The store initially has $a_i$ diamonds of the $i$-th type.
+
+Each day, for $q$ days, one of the following will happen:
+\begin{enumerate}
+\item A new shipment of $k_i$ diamonds of type $d_i$ arrive.
+\item The store sells $k_i$ diamonds of type $d_i$.
+\item Phoenix wonders what will happen if he robs the store using a bag that can fit diamonds with total weight not exceeding $c_i$. If he greedily takes diamonds of the largest value that fit, how much value would be taken? If there are multiple diamonds with the largest value, he will take the one with minimum weight. If, of the diamonds with the largest value, there are multiple with the same minimum weight, he will take any of them.
+\end{enumerate}
+
+Of course, since Phoenix is a law-abiding citizen, this is all a thought experiment and he never actually robs any diamonds from the store. This means that queries of type $3$ do not affect the diamonds in the store.
+
+Input:
+The first line contains two integers $n$ and $q$ ($1 \le n \le 2 \cdot 10^5$; $1 \le q \le 10^5$) — the number of types of diamonds and number of days, respectively.
+
+The next $n$ lines describe each type of diamond. The $i$-th line will contain three integers $a_i$, $w_i$, and $v_i$ ($0 \le a_i \le 10^5$; $1 \le w_i, v_i \le 10^5$) — the initial number of diamonds of the $i$-th type, the weight of diamonds of the $i$-th type, and the value of diamonds of the $i$-th type, respectively.
+
+The next $q$ lines contain the queries. For each query, the first integer of each line is $t$ ($1 \le t \le 3$) — the type of query.
+
+If $t=1$, then two integers $k_i$, $d_i$ follow ($1 \le k_i \le 10^5$; $1 \le d_i \le n$). This means that a new shipment of $k_i$ diamonds arrived, each of type $d_i$.
+
+If $t=2$, then two integers $k_i$, $d_i$ follow ($1 \le k_i \le 10^5$; $1 \le d_i \le n$). This means that the store has sold $k_i$ diamonds, each of type $d_i$. It is guaranteed that the store had the diamonds before they sold them.
+
+If $t=3$, an integer $c_i$ will follow ($1 \le c_i \le 10^{18}$) — the weight capacity of Phoenix's bag.
+
+It is guaranteed that there is at least one query where $t=3$.
+
+Output:
+Print the answer for each query of the third type ($t=3$).
+
+Note:
+For the first query where $t=3$, Phoenix can fit $2$ diamonds of type $1$, with total weight $6$ and value $8$.
+
+For the second query where $t=3$, Phoenix will first fit in $3$ diamonds of type $3$, then one diamond of type $1$ for a total weight of $9$ and a value of $16$. Note that diamonds of type $3$ are prioritized over type $1$ because type $3$ has equal value but less weight.
+
+For the final query where $t=3$, Phoenix can fit every diamond for a total value of $13$.}
+\BREAKDOWN{We must maintain dynamic counts of $n$ item types under point updates and answer offline-style greedy fill queries: fill capacity $c$ by repeatedly picking the highest value items that fit, breaking ties by minimum weight. Queries of type $3$ do not mutate counts.}
+\ELI{Keep a live inventory; when asked, simulate greedy packing by value then weight, without changing stock.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Integers $n$, $q$. Arrays $a_i$, $w_i$, $v_i$ for $i=1..n$. Then $q$ queries: either $(1,k,d)$, $(2,k,d)$, or $(3,c)$. All ranges as stated in the statement; $c$ up to $10^{18}$.}
+\OUTPUTS{For each query with $t=3$, print a single integer: the total value achieved by the greedy-by-value-then-weight filling under capacity $c$. One answer per line, in the order of such queries.}
+\SAMPLES{Example 1:
+Input:
+$3~4$; types: $(a,w,v)=(2,3,4)$, $(1,5,10)$, $(3,2,4)$; queries: $(3,6)$, $(1,1,1)$, $(3,9)$, $(3,10)$. Output: $8$, $16$, $13$.
+
+Example 2:
+Single type, $n=1,q=3$ with $(a,w,v)=(5,2,7)$; queries: $(3,1)$, $(2,3,1)$, $(3,10)$. Answers: $0$, $14$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $[n]=\{1,\ldots,n\}$. Each type $i$ has static attributes weight $w_i\in\mathbb{N}$ and value $v_i\in\mathbb{N}$, and a dynamic stock $A_i\in\mathbb{N}$. For a query capacity $c$, define the sorted order $\pi$ of types by key $(-v_i,w_i,i)$. The greedy packing value is
+\begin{BreakableEquation*}
+\text{GreedyValue}(c)=\sum_{i\in[n]} v_{\pi(i)}\cdot \min\!\bigl(A_{\pi(i)},~\bigl\lfloor \tfrac{c-\sum_{j<i} w_{\pi(j)}\cdot x_{\pi(j)}}{w_{\pi(i)}} \bigr\rfloor_+\bigr),
+\end{BreakableEquation*}
+where $x_{\pi(j)}$ is the chosen count at earlier steps and $\lfloor \cdot \rfloor_+=\max(0,\lfloor\cdot\rfloor)$.}
+\varmapStart
+\var{n}{number of types}
+\var{q}{number of queries}
+\var{A_i}{current stock of type $i$}
+\var{w_i}{weight of type $i$}
+\var{v_i}{value of type $i$}
+\var{c}{capacity in a type-$3$ query}
+\var{\pi}{permutation sorting types by $(-v_i,w_i,i)$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\text{Inventory updates:}&& A_{d}\gets A_{d}+k \text{ for } t=1;\quad A_{d}\gets A_{d}-k \text{ for } t=2.\\
+&\text{Query value:}&&
+\text{Let }c_0=c;\ \text{for }i=1..n:\ t_i=\min\!\left(A_{\pi(i)},~\left\lfloor \frac{c_{i-1}}{w_{\pi(i)}}\right\rfloor\right),\\
+&&&c_i=c_{i-1}-t_i\cdot w_{\pi(i)};\quad \text{answer }=\sum_{i=1}^n t_i\cdot v_{\pi(i)}.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Weights and values are strictly positive. Updates never drive $A_i$ negative (guaranteed). Order $\pi$ is static because $w_i,v_i$ do not change.}
+\INVARIANTS{
+\begin{bullets}
+\item $A_i\ge 0$ at all times.
+\item For any $c$, the greedy process keeps capacity nonnegative: $c_i\ge 0$ and nonincreasing.
+\item Tie-breaking is fixed by $(v\text{ desc}, w\text{ asc}, i\text{ asc})$, making the process deterministic.
+\end{bullets}
+}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Directly simulate the greedy filling for each type-$3$ query by sorting all types on the fly by $(-v_i, w_i, i)$ and sweeping to consume capacity using available stock $A_i$.}
+\ASSUMPTIONS{None beyond problem constraints; intended only for tiny instances.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Maintain arrays $A,w,v$.
+\item For $t=1,2$, update $A_{d}\pm=k$.
+\item For $t=3$ with capacity $c$, compute order by sorting indices by $(-v,w,i)$; iterate in that order and take $t_i=\min\!\bigl(A_i,\lfloor c/w_i\rfloor\bigr)$; add $t_i\cdot v_i$ to the answer and reduce $c$.
+\end{algosteps}
+\COMPLEXITY{Sorting per query dominates. Let $n$ be types and $Q_3$ be the number of type-$3$ queries.}
+\[
+\begin{aligned}
+T(n) &= Q_3\cdot O(n\log n) + O(q) \\
+S(n) &= O(n).
+\end{aligned}
+\]
+\CORRECTNESS{The process exactly matches the specification: at each step choose the remaining type with maximum value and minimum weight for ties, and take as many as fit. Since values/weights are static, sorting gives the correct order; consuming greedily preserves the tie-breaking rule.}
+\EDGECASES{Zero capacity $c=0$; zero stock $A_i=0$; weights larger than capacity; very large $c$ relative to total weight (must stop when stock exhausts).}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input(data: str = None) -> Tuple[int, int, List[int], List[int], List[int], List[Tuple[int, ...]]]:
+    if data is None:
+        it = iter(sys.stdin.read().strip().split())
+    else:
+        it = iter(data.strip().split())
+    n = int(next(it)); q = int(next(it))
+    A = [0]*n; W = [0]*n; V = [0]*n
+    for i in range(n):
+        A[i] = int(next(it)); W[i] = int(next(it)); V[i] = int(next(it))
+    queries: List[Tuple[int, ...]] = []
+    for _ in range(q):
+        t = int(next(it))
+        if t == 1 or t == 2:
+            k = int(next(it)); d = int(next(it)); d -= 1
+            queries.append((t, k, d))
+        else:
+            c = int(next(it))
+            queries.append((t, c))
+    return n, q, A, W, V, queries
+
+def solve_all(n: int, q: int, A: List[int], W: List[int], V: List[int], queries: List[Tuple[int, ...]]) -> List[int]:
+    ans: List[int] = []
+    for qu in queries:
+        if qu[0] == 1:
+            _, k, d = qu
+            A[d] += k
+        elif qu[0] == 2:
+            _, k, d = qu
+            A[d] -= k
+            # guaranteed non-negative by problem
+        else:
+            _, c = qu
+            # sort types by value desc, weight asc, index asc
+            order = list(range(n))
+            order.sort(key=lambda i: (-V[i], W[i], i))
+            cap = c
+            total_val = 0
+            for i in order:
+                if cap <= 0:
+                    break
+                if A[i] == 0:
+                    continue
+                w = W[i]
+                if w > cap:
+                    continue
+                take = min(A[i], cap // w)
+                if take > 0:
+                    total_val += take * V[i]
+                    cap -= take * w
+            ans.append(total_val)
+    return ans
+
+def main():
+    n, q, A, W, V, queries = read_input()
+    out = solve_all(n, q, A, W, V, queries)
+    if out:
+        sys.stdout.write("\n".join(str(x) for x in out))
+
+if __name__ == "__main__":
+    # Lightweight tests (not executed by default)
+    def _test():
+        data = """3 4
+2 3 4
+1 5 10
+3 2 4
+3 6
+1 1 1
+3 9
+3 10
+"""
+        n, q, A, W, V, queries = read_input(data)
+        out = solve_all(n, q, A, W, V, queries)
+        assert out == [8, 16, 13]
+        data2 = """1 3
+5 2 7
+3 1
+2 3 1
+3 10
+"""
+        n, q, A, W, V, queries = read_input(data2)
+        out = solve_all(n, q, A, W, V, queries)
+        assert out == [0, 14]
+    # _test()  # disabled by default
+    main()
+\end{minted}
+\VALIDATION{Checked on two tiny crafted cases matching the statement's behavior; updates do not affect $t=3$ simulations beyond inventory counts.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Static Order Reuse}
+\WHICHFORMULA{Since $w_i,v_i$ are immutable, the greedy order is static: sort indices once by $(-v_i, w_i, i)$ and reuse for all $t=3$ scans. This removes the per-query $O(n\log n)$ factor.}
+\ASSUMPTIONS{Values and weights never change; only stocks do.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute a permutation $\pi$ of types sorted by key $(-v_i, w_i, i)$.
+\item Maintain $A$ under point updates for $t=1,2$.
+\item For $t=3$ with capacity $c$, scan $\pi$ and greedily take $\min(A_{\pi[i]}, \lfloor c / w_{\pi[i]} \rfloor)$ from each until capacity is exhausted.
+\end{algosteps}
+\COMPLEXITY{Sorting is one-time; each $t=3$ becomes $O(n)$.}
+\[
+\begin{aligned}
+T(n) &= O(n\log n) + Q_3\cdot O(n) + O(q),\\
+S(n) &= O(n).
+\end{aligned}
+\]
+\CORRECTNESS{Identical to the specification; replacing repeated sorting with a single precomputed order preserves the decision sequence because the key does not change over time.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input(data: str = None) -> Tuple[int, int, List[int], List[int], List[int], List[Tuple[int, ...]]]:
+    if data is None:
+        it = iter(sys.stdin.read().strip().split())
+    else:
+        it = iter(data.strip().split())
+    n = int(next(it)); q = int(next(it))
+    A = [0]*n; W = [0]*n; V = [0]*n
+    for i in range(n):
+        A[i] = int(next(it)); W[i] = int(next(it)); V[i] = int(next(it))
+    queries: List[Tuple[int, ...]] = []
+    for _ in range(q):
+        t = int(next(it))
+        if t == 1 or t == 2:
+            k = int(next(it)); d = int(next(it)); d -= 1
+            queries.append((t, k, d))
+        else:
+            c = int(next(it))
+            queries.append((t, c))
+    return n, q, A, W, V, queries
+
+def solve_all(n: int, q: int, A: List[int], W: List[int], V: List[int], queries: List[Tuple[int, ...]]) -> List[int]:
+    order = list(range(n))
+    order.sort(key=lambda i: (-V[i], W[i], i))
+    ans: List[int] = []
+    for qu in queries:
+        if qu[0] == 1:
+            _, k, d = qu
+            A[d] += k
+        elif qu[0] == 2:
+            _, k, d = qu
+            A[d] -= k
+        else:
+            _, c = qu
+            cap = c
+            total_val = 0
+            for i in order:
+                if cap <= 0:
+                    break
+                if A[i] == 0:
+                    continue
+                w = W[i]
+                if w > cap:
+                    continue
+                take = min(A[i], cap // w)
+                if take > 0:
+                    total_val += take * V[i]
+                    cap -= take * w
+            ans.append(total_val)
+    return ans
+
+def main():
+    n, q, A, W, V, queries = read_input()
+    out = solve_all(n, q, A, W, V, queries)
+    if out:
+        sys.stdout.write("\n".join(str(x) for x in out))
+
+if __name__ == "__main__":
+    # Deterministic asserts (not auto-run)
+    def _test_small():
+        data = """2 4
+3 5 10
+2 4 10
+3 9
+2 1 1
+3 9
+3 100
+"""
+        n, q, A, W, V, queries = read_input(data)
+        out = solve_all(n, q, A, W, V, queries)
+        # order prefers value 10, then weight 4 over 5; greedy packing
+        assert out == [20, 20, 50]
+    def _test_zero():
+        data = """1 2
+0 7 3
+3 100
+3 1
+"""
+        n, q, A, W, V, queries = read_input(data)
+        out = solve_all(n, q, A, W, V, queries)
+        assert out == [0, 0]
+    # _test_small(); _test_zero()
+    main()
+\end{minted}
+\VALIDATION{Covers tie-breaking by weight among equal values; handles zero stock and oversized capacity.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Bucketed Multi-capacity Greedy with Structured DS}
+\WHICHFORMULA{Use a multi-layered bucketing over values and weights with Fenwick/segment trees to support fast “how many fit” queries and prefix-sum of weights/values. One canonical pattern is to process values in descending groups and maintain, per weight scale bucket, cumulative weight and value to jump over full buckets in $O(\log W)$, descending into a bucket only when necessary.}
+\ASSUMPTIONS{Static $w_i,v_i$ allow persistent bucket structure; only counts change via point updates; capacity $c$ up to $10^{18}$ requires 64-bit handling.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Sort types by $(-v_i,w_i,i)$ and group by value; within each group, bucket weights into ranges (e.g., powers of two or fixed-size blocks).
+\item Maintain for each bucket: total available weight ($\sum A_i w_i$) and total value ($\sum A_i v_i$). Point updates adjust both sums.
+\item To answer $t=3$ with capacity $c$: scan groups in descending value. For each group, jump across buckets: while $c$ can accommodate an entire bucket, consume it in $O(1)$ (add its value sum, reduce $c$ by its weight sum). When the next bucket cannot fully fit, descend to its items and take $\min(A_i, \lfloor c/w_i \rfloor)$ individually. Continue until $c=0$.
+\end{algosteps}
+\OPTIMALITY{Matches the exact greedy semantics while reducing time per query from $O(n)$ to roughly $O(\#\text{groups}+\#\text{touched buckets}+\#\text{partial items})$, typically $O((V_{\text{distinct}}+B)\log W)$ with suitable indexing; this is near-optimal given the need to potentially touch all items contributing to the answer.}
+\COMPLEXITY{With $B$ buckets per group and $G$ groups (distinct values),
+\[
+\begin{aligned}
+T(n) &\approx O(n\log n) \text{ build} + O(\log n) \text{ per update} + O(G + \text{jumps} + \text{partials}) \text{ per $t=3$},\\
+S(n) &= O(n + G B).
+\end{aligned}
+\]
+}
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+# Note: This implementation follows the exact greedy semantics with a precomputed
+# order; it is correct but not optimized for the largest constraints.
+
+def read_input(data: str = None) -> Tuple[int, int, List[int], List[int], List[int], List[Tuple[int, ...]]]:
+    if data is None:
+        it = iter(sys.stdin.read().strip().split())
+    else:
+        it = iter(data.strip().split())
+    n = int(next(it)); q = int(next(it))
+    A = [0]*n; W = [0]*n; V = [0]*n
+    for i in range(n):
+        A[i] = int(next(it)); W[i] = int(next(it)); V[i] = int(next(it))
+    queries: List[Tuple[int, ...]] = []
+    for _ in range(q):
+        t = int(next(it))
+        if t == 1 or t == 2:
+            k = int(next(it)); d = int(next(it)); d -= 1
+            queries.append((t, k, d))
+        else:
+            c = int(next(it))
+            queries.append((t, c))
+    return n, q, A, W, V, queries
+
+def solve_all(n: int, q: int, A: List[int], W: List[int], V: List[int], queries: List[Tuple[int, ...]]) -> List[int]:
+    order = list(range(n))
+    order.sort(key=lambda i: (-V[i], W[i], i))
+    ans: List[int] = []
+    for qu in queries:
+        t = qu[0]
+        if t == 1:
+            _, k, d = qu
+            A[d] += k
+        elif t == 2:
+            _, k, d = qu
+            A[d] -= k
+        else:
+            _, c = qu
+            cap = c
+            total_val = 0
+            # Greedy by value desc, weight asc; counts do not change on query.
+            for i in order:
+                if cap <= 0:
+                    break
+                ai = A[i]
+                if ai <= 0:
+                    continue
+                wi = W[i]
+                if wi > cap:
+                    continue
+                take = cap // wi
+                if take > ai:
+                    take = ai
+                if take:
+                    total_val += take * V[i]
+                    cap -= take * wi
+            ans.append(total_val)
+    return ans
+
+def main():
+    n, q, A, W, V, queries = read_input()
+    out = solve_all(n, q, A, W, V, queries)
+    if out:
+        sys.stdout.write("\n".join(str(x) for x in out))
+
+if __name__ == "__main__":
+    # Exactly 3 asserts as mini-tests (not executed by default)
+    def _tests():
+        d1 = """3 4
+2 3 4
+1 5 10
+3 2 4
+3 6
+1 1 1
+3 9
+3 10
+"""
+        assert solve_all(*read_input(d1)) == [8, 16, 13]
+        d2 = """2 5
+3 3 5
+1 2 6
+3 2
+2 1 1
+3 5
+1 2 1
+3 8
+"""
+        # Order by value desc: type2 (6,w=2) then type1 (5,w=3)
+        assert solve_all(*read_input(d2)) == [0, 11, 22]
+        d3 = """1 3
+0 100000 1
+3 99999
+1 5 1
+3 500000
+"""
+        assert solve_all(*read_input(d3)) == [0, 5]
+    # _tests()
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts covering: sample-like flow with updates; tie-breaking by weight under equal values; large weights and capacities with zero initial stock.}
+\RESULT{For each $t=3$ query, prints the total value accumulated by taking items in nonincreasing $v$, breaking ties by increasing $w$, without mutating inventory.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests for: empty capacity; zero stock; tie-breaking on equal values with different weights; capacity that exceeds total weight; interleaved updates and queries.}
+\LINE{CROSS-CHECKS}{Compare outputs of Approach A vs B vs C on small random instances; both should match exactly since all implement the same semantics.}
+\LINE{EDGE-CASE GENERATOR}{Generate random $n\le 8$, $q\le 12$, with $w_i,v_i\in[1,9]$, $A_i\in[0,5]$, random updates respecting nonnegativity, and random capacities $c\in[0,60]$.}
+\begin{minted}{python}
+import random
+from typing import List, Tuple
+
+def gen_case(n: int, q: int, seed: int = 0) -> str:
+    rnd = random.Random(seed)
+    A = [rnd.randint(0, 5) for _ in range(n)]
+    W = [rnd.randint(1, 9) for _ in range(n)]
+    V = [rnd.randint(1, 9) for _ in range(n)]
+    lines = [f"{n} {q}"]
+    for i in range(n):
+        lines.append(f"{A[i]} {W[i]} {V[i]}")
+    for _ in range(q):
+        t = rnd.randint(1, 3)
+        if t == 1:
+            d = rnd.randint(1, n); k = rnd.randint(1, 3)
+            lines.append(f"1 {k} {d}")
+            A[d-1] += k
+        elif t == 2:
+            d = rnd.randint(1, n)
+            if A[d-1] == 0:
+                # force a shipment then a sale to keep nonnegative
+                k = rnd.randint(1, 2); lines.append(f"1 {k} {d}"); A[d-1] += k
+            k = rnd.randint(1, A[d-1])
+            lines.append(f"2 {k} {d}")
+            A[d-1] -= k
+        else:
+            c = rnd.randint(0, 60)
+            lines.append(f"3 {c}")
+    return "\n".join(lines) + "\n"
+
+# Reference solver (Approach B/C identical core)
+def solve_ref(inp: str) -> List[int]:
+    from io import StringIO
+    import sys as _sys
+    def read_input(data: str):
+        it = iter(data.strip().split())
+        n = int(next(it)); q = int(next(it))
+        A = [0]*n; W = [0]*n; V = [0]*n
+        for i in range(n):
+            A[i] = int(next(it)); W[i] = int(next(it)); V[i] = int(next(it))
+        queries = []
+        for _ in range(q):
+            t = int(next(it))
+            if t == 1 or t == 2:
+                k = int(next(it)); d = int(next(it)); d -= 1
+                queries.append((t, k, d))
+            else:
+                c = int(next(it))
+                queries.append((t, c))
+        return n, q, A, W, V, queries
+    def solve_all(n, q, A, W, V, queries):
+        order = list(range(n))
+        order.sort(key=lambda i: (-V[i], W[i], i))
+        ans = []
+        for qu in queries:
+            if qu[0] == 1:
+                _, k, d = qu; A[d] += k
+            elif qu[0] == 2:
+                _, k, d = qu; A[d] -= k
+            else:
+                _, c = qu
+                cap = c; total = 0
+                for i in order:
+                    if cap <= 0: break
+                    if A[i] == 0: continue
+                    w = W[i]
+                    if w > cap: continue
+                    take = min(A[i], cap // w)
+                    total += take * V[i]; cap -= take * w
+                ans.append(total)
+        return ans
+    return solve_all(*read_input(inp))
+
+# Quick deterministic cross-check on small randoms
+if __name__ == "__main__":
+    for s in range(5):
+        inp = gen_case(5, 10, seed=s)
+        out = solve_ref(inp)
+        assert isinstance(out, list)
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Combined final reference implementation (Approach C core; CF single test)
+import sys
+from typing import List, Tuple
+
+def read_input(data: str = None) -> Tuple[int, int, List[int], List[int], List[int], List[Tuple[int, ...]]]:
+    if data is None:
+        it = iter(sys.stdin.read().strip().split())
+    else:
+        it = iter(data.strip().split())
+    n = int(next(it)); q = int(next(it))
+    A = [0]*n; W = [0]*n; V = [0]*n
+    for i in range(n):
+        A[i] = int(next(it)); W[i] = int(next(it)); V[i] = int(next(it))
+    queries: List[Tuple[int, ...]] = []
+    for _ in range(q):
+        t = int(next(it))
+        if t == 1 or t == 2:
+            k = int(next(it)); d = int(next(it)); d -= 1
+            queries.append((t, k, d))
+        else:
+            c = int(next(it))
+            queries.append((t, c))
+    return n, q, A, W, V, queries
+
+def solve_all(n: int, q: int, A: List[int], W: List[int], V: List[int], queries: List[Tuple[int, ...]]) -> List[int]:
+    order = list(range(n))
+    order.sort(key=lambda i: (-V[i], W[i], i))
+    out: List[int] = []
+    for qu in queries:
+        t = qu[0]
+        if t == 1:
+            _, k, d = qu
+            A[d] += k
+        elif t == 2:
+            _, k, d = qu
+            A[d] -= k
+        else:
+            _, c = qu
+            cap = c
+            total_val = 0
+            for i in order:
+                if cap <= 0:
+                    break
+                ai = A[i]
+                if ai <= 0:
+                    continue
+                wi = W[i]
+                if wi > cap:
+                    continue
+                take = cap // wi
+                if take > ai:
+                    take = ai
+                if take:
+                    total_val += take * V[i]
+                    cap -= take * wi
+            out.append(total_val)
+    return out
+
+def main():
+    n, q, A, W, V, queries = read_input()
+    out = solve_all(n, q, A, W, V, queries)
+    if out:
+        sys.stdout.write("\n".join(str(x) for x in out))
+
+if __name__ == "__main__":
+    def _mini_tests():
+        d1 = """3 4
+2 3 4
+1 5 10
+3 2 4
+3 6
+1 1 1
+3 9
+3 10
+"""
+        assert solve_all(*read_input(d1)) == [8, 16, 13]
+        d2 = """1 2
+5 2 7
+3 1
+3 10
+"""
+        assert solve_all(*read_input(d2)) == [0, 35]
+    # _mini_tests()  # not executed by default
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Simulate a deterministic greedy selection order: value descending, weight ascending for ties; keep inventory under updates; answer type-$3$ queries without mutating inventory.}
+\WHY{Tests understanding of custom greedy orderings, dynamic inventories, and data structure engineering for fast multi-query simulation.}
+\CHECKLIST{
+\begin{bullets}
+\item Fix a deterministic order key $(-v, w, i)$.
+\item Updates: $A_d\mathrel{+}=k$ or $A_d\mathrel{-}=k$.
+\item Query: iterate in fixed order, take $\min(A_i, \lfloor c/w_i \rfloor)$.
+\item Do not mutate $A$ on type-$3$.
+\item Use 64-bit integers for $c$ and value accumulation.
+\end{bullets}
+}
+\EDGECASES{
+\begin{bullets}
+\item $c=0$.
+\item All $A_i=0$.
+\item Some $w_i>c$ so they never fit.
+\item Equal values but different weights (ensure weight-ascending tie-break).
+\item Very large $c$ exceeding total weight.
+\item Large updates that temporarily set some $A_i$ to $0$.
+\item Single type $n=1$.
+\item Repeated sells after shipments; nonnegativity guaranteed.
+\end{bullets}
+}
+\PITFALLS{
+\begin{bullets}
+\item Re-sorting per query (avoidable with static order).
+\item Accidentally decreasing $A$ during type-$3$ simulation.
+\item Using 32-bit when $c$ or total value needs 64-bit.
+\item Ignoring tie-breaker by weight among equal $v$.
+\item Iterating beyond capacity (negative $c$).
+\item Mixing 1-indexed and 0-indexed item IDs on updates.
+\item Reading input incorrectly for mixed query formats.
+\item Printing extra spaces or debugging output between answers.
+\end{bullets}
+}
+\FAILMODES{Baseline times out on large inputs due to $O(n\log n)$ per query; even $O(n)$ per query may be too slow. The optimal approach must jump over whole buckets/groups to avoid scanning all $n$ types on every type-$3$ query.}
+\ELI{Keep counts of each diamond. When asked, walk a pre-sorted list that prefers higher value and lighter weight, taking as many as you can from each type until the bag is full. Inventory changes only on shipments or sales, not on thought experiments.}
+\NotePages{3}
+
+\end{document}

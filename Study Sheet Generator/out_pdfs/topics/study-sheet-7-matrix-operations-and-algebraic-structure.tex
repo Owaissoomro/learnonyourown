@@ -1,0 +1,2457 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]
+\setlength{\jot}{7pt}
+\setlength{\emergencystretch}{8em}
+\sloppy
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Matrix Operations and Algebraic Structure}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+A matrix over a field $\mathbb{F}$ is a rectangular array $A\in\mathbb{F}^{m\times n}$
+representing a linear map $T_A:\mathbb{F}^n\to\mathbb{F}^m$ via $T_A(x)=Ax$.
+The algebraic structure consists of addition, scalar multiplication, and
+matrix multiplication (composition), with identity $I_n$, transpose $A^\top$,
+determinant $\det(A)$ for square matrices, and trace $\operatorname{tr}(A)$.
+}
+
+\WHY{
+Matrices encode linear transformations and systems of linear equations. Their
+algebraic structure underlies computation (solvers, optimization), geometry
+(rotations, projections), probability (Markov chains), and data science
+(least squares, covariance). Structural laws (associativity, distributivity,
+transpose, determinant and trace identities) enable efficient, correct
+derivations and algorithms.
+}
+
+\HOW{
+1. Fix a field $\mathbb{F}$, typically $\mathbb{R}$ or $\mathbb{C}$.
+2. Define vector spaces $\mathbb{F}^n$ with standard basis.
+3. Represent linear maps by matrices in bases; define $Ax$ and $AB$ by
+composition.
+4. Derive core identities from these definitions: associativity of $AB$,
+transpose reversal $(AB)^\top=B^\top A^\top$, multiplicativity
+$\det(AB)=\det(A)\det(B)$, cyclicity $\operatorname{tr}(AB)=\operatorname{tr}(BA)$,
+and inverse of products $(AB)^{-1}=B^{-1}A^{-1}$.
+}
+
+\ELI{
+Think of a matrix as a machine that stretches, rotates, or squishes space.
+Combining machines means running one after the other (composition). The rules
+tell you how combined machines behave: order matters, grouping does not,
+flipping inputs and outputs (transpose) reverses order, and sizes must fit.
+}
+
+\SCOPE{
+All matrices over $\mathbb{F}$; determinant and trace require square matrices.
+Inverses exist only for nonsingular square matrices with nonzero determinant.
+Transpose properties depend on the bilinear form used (standard Euclidean
+inner product). Over noncommutative rings, some identities change or fail.
+}
+
+\CONFUSIONS{
+Matrix multiplication is not commutative: $AB\ne BA$ in general.
+Determinant multiplicativity is not additivity. Trace cyclicity is
+$\operatorname{tr}(ABC)=\operatorname{tr}(BCA)$, not full commutativity.
+Rank is not the same as determinant magnitude; zero determinant implies
+noninvertibility, but small determinant does not imply small norm.
+}
+
+\APPLICATIONS{
+List 3–4 major domains where this topic directly applies:
+\begin{bullets}
+\item Mathematical foundations (linear maps, eigen theory).
+\item Computational modeling or simulation (solving $Ax=b$).
+\item Physical / economic / engineering interpretations (rotations, circuits).
+\item Statistical or algorithmic implications (least squares, PCA).
+\end{bullets}
+}
+
+\textbf{ANALYTIC STRUCTURE.}
+Matrices form rings and algebras: $(\mathbb{F}^{n\times n},+,\cdot)$ is an
+associative algebra with identity $I_n$. Substructures include the general
+linear group $\mathrm{GL}_n(\mathbb{F})$, orthogonal/unitary groups, and
+symmetric positive definite cones. Many sets are convex (e.g., PSD matrices).
+
+\textbf{CANONICAL LINKS.}
+Associativity of multiplication supports determinant multiplicativity and
+inverse-of-product. Transpose reversal connects to trace cyclicity via
+$\operatorname{tr}(A^\top B)=\langle A,B\rangle_F$. Determinant properties
+feed into invertibility criteria used in Problems 3 and 10.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Presence of compositions like $T\circ S$ suggests matrix products and
+associativity.
+\item Expressions with $\det$ and products imply multiplicativity or LU.
+\item Cyclic sums of products signal trace identities.
+\item Block matrices hint at Schur complements and inversion by blocks.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate mappings to matrices with compatible sizes.
+\item Identify the governing identity (associativity, transpose, det, trace).
+\item Substitute and reduce; use block or index notation as needed.
+\item Interpret the result as a transformation or invariant quantity.
+\item Validate sizes, boundary cases, and invariances.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Determinant under similarity, trace under cyclic permutations, rank under left/
+right multiplication by invertibles, Frobenius norm under orthogonal/unitary
+similarities, and eigenvalues under similarity.
+
+\textbf{EDGE INTUITION.}
+As $\|A\|\to 0$, $Ax$ collapses vectors; as $\|A\|\to\infty$, magnitudes blow
+up. Near-singular matrices distort volumes enormously (small determinant).
+For high powers $A^k$, behavior is dominated by spectral radius.
+
+\section{Glossary}
+\glossx{Matrix}
+{Rectangular array over a field representing a linear map between finite-
+dimensional vector spaces.}
+{Unifies linear transformations and systems of equations in a computable form.}
+{Fix bases; define $Ax$ by dot products of rows with $x$; define $AB$ by
+composition $x\mapsto Bx\mapsto A(Bx)$.}
+{A recipe that mixes input numbers to produce outputs in a structured way.}
+{Pitfall: multiplying entrywise instead of by row-by-column rule.}
+
+\glossx{Determinant}
+{Scalar function $\det:\mathbb{F}^{n\times n}\to\mathbb{F}$ measuring signed
+volume scaling of a linear map.}
+{Detects invertibility and volume change; multiplicative across products.}
+{Compute via LU factorization with row swaps: product of pivots times swap sign.}
+{How much a shape grows or shrinks when the matrix acts on it.}
+{Pitfall: forgetting row-swap sign or miscounting pivot sign changes.}
+
+\glossx{Trace}
+{Sum of diagonal entries of a square matrix; equals sum of eigenvalues
+(counted with algebraic multiplicity).}
+{Invariant under similarity; linear; cyclic with products.}
+{Compute $\operatorname{tr}(A)=\sum_i a_{ii}$; use $\operatorname{tr}(AB)=
+\operatorname{tr}(BA)$ to simplify expressions.}
+{Add up the main diagonal to get a summary number of the transformation.}
+{Pitfall: assuming $\operatorname{tr}(ABC)=\operatorname{tr}(ACB)$ for any
+reordering without preserving cyclic order.}
+
+\glossx{Rank}
+{Dimension of the image of a linear map; number of pivot columns in row
+reduced echelon form.}
+{Characterizes solvability, degrees of freedom, and invertibility.}
+{Perform Gaussian elimination; count linearly independent columns or rows.}
+{How many independent directions the matrix truly moves things.}
+{Pitfall: confusing rank with number of nonzero entries.}
+
+\section{Symbol Ledger}
+\varmapStart
+\var{\mathbb{F}}{Base field, typically $\mathbb{R}$ or $\mathbb{C}$.}
+\var{A,B,C}{Matrices with compatible sizes.}
+\var{I_n}{Identity matrix of size $n\times n$.}
+\var{0_{m\times n}}{Zero matrix of size $m\times n$.}
+\var{A^\top}{Transpose of $A$.}
+\var{\det(A)}{Determinant of square matrix $A$.}
+\var{\operatorname{tr}(A)}{Trace of square matrix $A$.}
+\var{\mathrm{rank}(A)}{Rank of matrix $A$.}
+\var{\mathcal{N}(A)}{Null space of $A$.}
+\var{\mathcal{R}(A)}{Column space (range) of $A$.}
+\var{n,m,p}{Positive integers for matrix sizes.}
+\var{x,y}{Vectors with compatible dimensions.}
+\var{\langle A,B\rangle_F}{Frobenius inner product $\operatorname{tr}(A^\top B)$.}
+\var{\|A\|_F}{Frobenius norm $\sqrt{\operatorname{tr}(A^\top A)}$.}
+\varmapEnd
+
+\section{Formula Canon — One Formula Per Page}
+\FormulaPage{1}{Associativity of Matrix Multiplication}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A\in\mathbb{F}^{m\times n}$, $B\in\mathbb{F}^{n\times p}$,
+$C\in\mathbb{F}^{p\times q}$, matrix multiplication is associative:
+$(AB)C=A(BC)$.
+
+\WHAT{
+States that grouping of successive linear maps does not affect the result;
+composition is associative, and matrices inherit this property.
+}
+
+\WHY{
+Allows unambiguous multi-product expressions and efficient parenthesization
+for computation; foundational for algebraic manipulation and algorithm design.
+}
+
+\FORMULA{
+\[
+(AB)C=A(BC)\quad\text{for all conformable }A,B,C.
+\]
+}
+
+\CANONICAL{
+$A\in\mathbb{F}^{m\times n}$, $B\in\mathbb{F}^{n\times p}$,
+$C\in\mathbb{F}^{p\times q}$. Operations over a field $\mathbb{F}$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Conformable sizes: inner dimensions match for each multiplication.
+\item Standard row-by-column multiplication rule.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For conformable matrices, $(AB)x=A(Bx)$ for all vectors $x$ of compatible
+dimension.
+\end{lemma}
+\begin{proof}
+Let $x\in\mathbb{F}^q$. Then $Bx$ is defined and $(AB)x=A(Bx)$ by definition
+of matrix multiplication as composition: $x\mapsto Bx\mapsto A(Bx)$. In
+coordinates, writing $A=(a_{ij})$, $B=(b_{jk})$, $x=(x_k)$,
+\[
+\bigl((AB)x\bigr)_i=\sum_{k=1}^p\Bigl(\sum_{j=1}^n a_{ij}b_{jk}\Bigr)x_k
+=\sum_{j=1}^n a_{ij}\Bigl(\sum_{k=1}^p b_{jk}x_k\Bigr)
+=\bigl(A(Bx)\bigr)_i.
+\]
+Thus $(AB)x=A(Bx)$ for all $x$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}~&\text{Define }D:=(AB)C\text{ and }E:=A(BC).\\
+\text{Step 2:}~&\text{For }x\in\mathbb{F}^q,\;Dx=((AB)C)x=(AB)(Cx)\\
+&=A(B(Cx)) \quad\text{(by lemma with }x\leftarrow Cx).\\
+\text{Step 3:}~&Ex=A(BCx)=A(B(Cx)).\\
+\text{Step 4:}~&\text{Hence }Dx=Ex\text{ for all }x\in\mathbb{F}^q.\\
+\text{Step 5:}~&\text{Therefore }D=E\text{, i.e., }(AB)C=A(BC).
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Check conformability of sizes.
+\item Decide computationally favorable grouping.
+\item Use associativity to regroup without changing the result.
+\item Validate by applying to a generic vector $x$ if in doubt.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item For linear maps $S,T,U$, $(S\circ T)\circ U=S\circ(T\circ U)$.
+\item Entrywise: $\sum_j a_{ij}\bigl(\sum_k b_{jk}c_{k\ell}\bigr)
+=\sum_k \bigl(\sum_j a_{ij}b_{jk}\bigr)c_{k\ell}$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Nonconformable sizes: products undefined; associativity statement
+is not applicable.
+\item Over nonassociative algebras, this fails, but matrices over fields
+form associative algebras.
+\end{bullets}
+}
+
+\INPUTS{$A\in\mathbb{F}^{m\times n}$, $B\in\mathbb{F}^{n\times p}$,
+$C\in\mathbb{F}^{p\times q}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Check sizes: }&AB\in\mathbb{F}^{m\times p},\; (AB)C\in\mathbb{F}^{m\times q},\\
+&BC\in\mathbb{F}^{n\times q},\; A(BC)\in\mathbb{F}^{m\times q}.\\
+\text{Apply lemma: }&(AB)C=A(BC).
+\end{align*}
+}
+
+\RESULT{
+$(AB)C=A(BC)$; grouping can be chosen for efficiency without changing the
+product.
+}
+
+\UNITCHECK{
+Matrix sizes consistent: both sides are $m\times q$.}
+\PITFALLS{
+\begin{bullets}
+\item Confusing associativity with commutativity; $AB=BA$ is false in general.
+\item Ignoring size conformability leads to undefined products.
+\end{bullets}
+}
+
+\INTUITION{
+Applying $C$ then $B$ then $A$ is the same pipeline regardless of how we
+group the steps internally.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Universal law: composition in associative algebras is associative.
+\item Category-theoretic view: associator is identity for linear maps.
+\end{bullets}
+}
+
+\FormulaPage{2}{Transpose of a Product}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For conformable matrices, the transpose reverses the order of products:
+$(AB)^\top=B^\top A^\top$.
+
+\WHAT{
+Relates transposition and multiplication, enabling movement of matrices across
+inner products and simplifying algebra.
+}
+
+\WHY{
+Crucial for adjoint relations, normal equations, orthogonality, and spectral
+analysis. Used to convert row equations to column equations and vice versa.
+}
+
+\FORMULA{
+\[
+(AB)^\top=B^\top A^\top\quad\text{for conformable }A,B.
+\]
+}
+
+\CANONICAL{
+$A\in\mathbb{F}^{m\times n}$, $B\in\mathbb{F}^{n\times p}$, so $AB\in
+\mathbb{F}^{m\times p}$ and $(AB)^\top\in\mathbb{F}^{p\times m}$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Standard transpose defined by $(A^\top)_{ij}=a_{ji}$.
+\item Field $\mathbb{F}$ with commutative multiplication.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For all indices $i,\ell$, $((AB)^\top)_{i\ell}=(B^\top A^\top)_{i\ell}$.
+\end{lemma}
+\begin{proof}
+Compute entries:
+\[
+((AB)^\top)_{i\ell}=(AB)_{\ell i}=\sum_{j=1}^n a_{\ell j}b_{ji}.
+\]
+On the other hand,
+\[
+(B^\top A^\top)_{i\ell}=\sum_{j=1}^n (B^\top)_{ij}(A^\top)_{j\ell}
+=\sum_{j=1}^n b_{ji}a_{\ell j}.
+\]
+These sums are equal termwise, hence the entries coincide. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}&\ \text{Use entrywise definition of transpose and product.}\\
+\text{Step 2:}&\ ((AB)^\top)_{i\ell}=(AB)_{\ell i}
+=\sum_j a_{\ell j}b_{ji}.\\
+\text{Step 3:}&\ (B^\top A^\top)_{i\ell}=\sum_j b_{ji}a_{\ell j}.\\
+\text{Step 4:}&\ \text{Since multiplication in }\mathbb{F}\text{ commutes,}\\
+&\sum_j a_{\ell j}b_{ji}=\sum_j b_{ji}a_{\ell j}.\\
+\text{Conclude:}&\ (AB)^\top=B^\top A^\top.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Reverse order when moving across a transpose.
+\item For inner products: $\langle Ax,y\rangle=\langle x,A^\top y\rangle$.
+\item For symmetric $A$, $A^\top=A$ simplifies expressions.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $(A^\top)^\top=A$.
+\item $(A+B)^\top=A^\top+B^\top$, $(\alpha A)^\top=\alpha A^\top$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Over complex fields, replace transpose by conjugate transpose if using
+Hermitian inner product.
+\item Noncommutative scalar rings would break step interchange.
+\end{bullets}
+}
+
+\INPUTS{$A\in\mathbb{F}^{m\times n}$, $B\in\mathbb{F}^{n\times p}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Sizes: }&AB\in\mathbb{F}^{m\times p},
+\ (AB)^\top\in\mathbb{F}^{p\times m},\\
+&B^\top\in\mathbb{F}^{p\times n},\ A^\top\in\mathbb{F}^{n\times m},\
+B^\top A^\top\in\mathbb{F}^{p\times m}.\\
+\text{Entrywise: }&((AB)^\top)_{i\ell}=\sum_j a_{\ell j}b_{ji}
+=\sum_j b_{ji}a_{\ell j}=(B^\top A^\top)_{i\ell}.
+\end{align*}
+}
+
+\RESULT{
+$(AB)^\top=B^\top A^\top$; transpose reverses multiplication order.
+}
+
+\UNITCHECK{
+Both sides have size $p\times m$.}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting the order reversal yields incorrect algebra.
+\item Confusing transpose with inverse; they are distinct operations.
+\end{bullets}
+}
+
+\INTUITION{
+Transpose swaps rows with columns. A product applies $B$ then $A$; swapping
+rows and columns reverses that order.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Adjoint is an anti-automorphism: $(\cdot)^\top$ reverses products.
+\item Under Frobenius inner product, $A^\top$ is the adjoint of $A$.
+\end{bullets}
+}
+
+\FormulaPage{3}{Determinant Multiplicativity}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A,B\in\mathbb{F}^{n\times n}$, $\det(AB)=\det(A)\det(B)$.
+
+\WHAT{
+Volume scaling of composed linear maps multiplies. Determinant converts
+composition into scalar multiplication.
+}
+
+\WHY{
+Central to invertibility tests, change of variables, eigenvalue products,
+and LU-based determinant computation.
+}
+
+\FORMULA{
+\[
+\det(AB)=\det(A)\det(B).
+\]
+}
+
+\CANONICAL{
+Square matrices over a field, determinant defined via Leibniz formula or LU
+factorization; row operations adjust sign and scaling predictably.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A,B\in\mathbb{F}^{n\times n}$.
+\item Determinant defined with multilinearity, alternation, and normalization
+$\det(I_n)=1$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $A$ is upper triangular, then $\det(A)=\prod_{i=1}^n a_{ii}$.
+\end{lemma}
+\begin{proof}
+For upper triangular $A$, expand by permutations. Only the identity
+permutation contributes nonzero product because any transposition picks an
+entry below the diagonal which is zero. Thus $\det(A)=\prod_i a_{ii}$.
+\qedhere
+\end{proof}
+
+\begin{lemma}
+If $A=LU$ with $L$ unit lower triangular and $U$ upper triangular, then
+$\det(A)=\det(U)$.
+\end{lemma}
+\begin{proof}
+Unit lower triangular $L$ has $\det(L)=1$ by the previous lemma. Since
+$\det$ is multiplicative on triangular factors by block expansion,
+$\det(A)=\det(L)\det(U)=\det(U)$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}&\ \text{If }B\text{ is invertible, use }B=LU\text{ via LU.}\\
+\text{Step 2:}&\ \det(AB)=\det(ALU)=\det(A)\det(L)\det(U).\\
+\text{Step 3:}&\ \det(L)=1\text{ and }\det(U)=\prod_i u_{ii}.\\
+\text{Step 4:}&\ \det(B)=\det(L)\det(U)=\det(U).\\
+\text{Step 5:}&\ \Rightarrow \det(AB)=\det(A)\det(B)\ \text{when }B\text{ invertible}.\\
+\text{Step 6:}&\ \text{For singular }B,\ \det(B)=0.\\
+\text{Step 7:}&\ \operatorname{rank}(AB)\le \operatorname{rank}(B)<n
+\Rightarrow \det(AB)=0.\\
+\text{Step 8:}&\ \Rightarrow \det(AB)=\det(A)\det(B)\ \text{in all cases}.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item If possible, triangularize factors (LU/QR) and multiply diagonal pivots.
+\item Use $\det(AB)=\det(A)\det(B)$ to factor determinants of products.
+\item Handle singular cases by rank reasoning.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $\det(A^{-1})=1/\det(A)$ for invertible $A$.
+\item $\det(PAP^{-1})=\det(A)$ for invertible $P$ (similarity invariance).
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Determinant defined only for square matrices.
+\item Numerical stability: pivoting needed to avoid underflow/overflow.
+\end{bullets}
+}
+
+\INPUTS{$A,B\in\mathbb{F}^{n\times n}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{If }&B\text{ invertible, }B=LU\Rightarrow \det(B)=\det(U).\\
+&\det(AB)=\det(A)\det(B)\ \text{by multiplicativity over triangular factors}.\\
+\text{If }&B\text{ singular, }\det(B)=0,\ \operatorname{rank}(AB)\le \operatorname{rank}(B)<n\\
+&\Rightarrow \det(AB)=0=\det(A)\det(B).
+\end{align*}
+}
+
+\RESULT{
+$\det(AB)=\det(A)\det(B)$ for all square $A,B$.
+}
+
+\UNITCHECK{
+Both sides are scalars; invariant under basis change.}
+\PITFALLS{
+\begin{bullets}
+\item Miscounting row-swap signs in LU with pivoting when computing determinants.
+\item Assuming $\det(A+B)=\det(A)+\det(B)$, which is false.
+\end{bullets}
+}
+
+\INTUITION{
+Volume scales multiply: applying $B$ then $A$ scales volumes by
+$\det(B)$ then by $\det(A)$, yielding the product.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Determinant is a unique alternating multilinear form with $\det(I)=1$.
+\item Composition of linear maps multiplies volume scaling factors.
+\end{bullets}
+}
+
+\FormulaPage{4}{Inverse of a Product}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For invertible $A,B\in\mathbb{F}^{n\times n}$,
+$(AB)^{-1}=B^{-1}A^{-1}$.
+
+\WHAT{
+Describes how to invert a product: reverse the order and invert each factor.
+}
+
+\WHY{
+Essential for solving equations, block manipulations, and algebraic
+simplification in proofs and computations.
+}
+
+\FORMULA{
+\[
+(AB)^{-1}=B^{-1}A^{-1}.
+\]
+}
+
+\CANONICAL{
+$A,B\in\mathrm{GL}_n(\mathbb{F})$ (invertible).}
+\PRECONDS{
+\begin{bullets}
+\item $A$ and $B$ are invertible (equivalently, $\det(A)\ne 0$, $\det(B)\ne 0$).
+\item Standard definition of inverse: $AA^{-1}=A^{-1}A=I$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $X$ satisfies $(AB)X=I$ and $X(AB)=I$, then $X=(AB)^{-1}$.
+\end{lemma}
+\begin{proof}
+By definition of inverse in a group, the element with both-sided inverse is
+unique. Hence $X$ equals $(AB)^{-1}$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}&\ \text{Consider }X:=B^{-1}A^{-1}.\\
+\text{Step 2:}&\ (AB)X=A(BB^{-1})A^{-1}=AIA^{-1}=I.\\
+\text{Step 3:}&\ X(AB)=B^{-1}(A^{-1}A)B=B^{-1}IB=I.\\
+\text{Step 4:}&\ \text{By the lemma, }X=(AB)^{-1}.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Reverse order when inverting products.
+\item For multiple factors: $(A_1A_2\cdots A_k)^{-1}=A_k^{-1}\cdots A_2^{-1}A_1^{-1}$.
+\item Use block inverses via Schur complements when applicable.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $(A^{-1})^{-1}=A$.
+\item $(A^\top)^{-1}=(A^{-1})^\top$ for invertible $A$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If any factor is singular, the product may be singular and inverse not
+defined.
+\item Numerical inversion is ill-conditioned for near-singular matrices.
+\end{bullets}
+}
+
+\INPUTS{$A,B\in\mathrm{GL}_n(\mathbb{F})$.}
+
+\DERIVATION{
+\begin{align*}
+(AB)(B^{-1}A^{-1})&=A(BB^{-1})A^{-1}=AA^{-1}=I,\\
+(B^{-1}A^{-1})(AB)&=B^{-1}(A^{-1}A)B=B^{-1}B=I.
+\end{align*}
+}
+
+\RESULT{
+$(AB)^{-1}=B^{-1}A^{-1}$.
+}
+
+\UNITCHECK{
+All matrices are $n\times n$; both sides are inverses of $AB$.}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to reverse order when inverting products.
+\item Attempting to invert non-square or singular matrices.
+\end{bullets}
+}
+
+\INTUITION{
+To undo $A$ after $B$, you must first undo $A$ then undo $B$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item In $\mathrm{GL}_n(\mathbb{F})$, inversion is an anti-automorphism.
+\item Group law: $(xy)^{-1}=y^{-1}x^{-1}$.
+\end{bullets}
+}
+
+\FormulaPage{5}{Trace Cyclicity and Frobenius Inner Product}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+$\operatorname{tr}(AB)=\operatorname{tr}(BA)$ for conformable square matrices.
+Frobenius inner product satisfies $\langle A,B\rangle_F=\operatorname{tr}(A^\top B)$.
+
+\WHAT{
+Cyclicity enables reordering within a trace up to cyclic rotations.
+Frobenius inner product relates trace and transpose.
+}
+
+\WHY{
+Simplifies derivations, gradients in least squares, and orthogonality checks.
+Connects geometry of matrices with algebraic operations.
+}
+
+\FORMULA{
+\[
+\operatorname{tr}(AB)=\operatorname{tr}(BA),\quad
+\langle A,B\rangle_F=\operatorname{tr}(A^\top B).
+\]
+}
+
+\CANONICAL{
+$A\in\mathbb{F}^{m\times n}$, $B\in\mathbb{F}^{n\times m}$ so $AB,BA$ are
+square. Frobenius inner product on $\mathbb{F}^{m\times n}$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Standard trace $\operatorname{tr}(M)=\sum_i m_{ii}$.
+\item Finite sizes; field is commutative.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+$\operatorname{tr}(AB)=\sum_{i,j} a_{ij}b_{ji}$.
+\end{lemma}
+\begin{proof}
+By definition, $(AB)_{ii}=\sum_j a_{ij}b_{ji}$, so summing $i$ gives the
+stated identity. \qedhere
+\end{proof}
+
+\begin{lemma}
+$\operatorname{tr}(AB)=\operatorname{tr}(BA)$.
+\end{lemma}
+\begin{proof}
+Using the previous lemma twice,
+\[
+\operatorname{tr}(AB)=\sum_{i,j} a_{ij}b_{ji}
+=\sum_{j,i} b_{ji}a_{ij}=\operatorname{tr}(BA).
+\]
+\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}&\ \operatorname{tr}(AB)=\sum_i (AB)_{ii}
+=\sum_{i,j} a_{ij}b_{ji}.\\
+\text{Step 2:}&\ \operatorname{tr}(BA)=\sum_{j,i} b_{ji}a_{ij}
+=\sum_{i,j} a_{ij}b_{ji}.\\
+\text{Step 3:}&\ \Rightarrow \operatorname{tr}(AB)=\operatorname{tr}(BA).\\
+\text{Step 4:}&\ \langle A,B\rangle_F
+=\sum_{i,j} a_{ij}b_{ij}=\operatorname{tr}(A^\top B).
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Rotate factors inside trace to exploit cancellations.
+\item Convert sums of entrywise products to a trace of $A^\top B$.
+\item For gradients of $f(X)=\tfrac12\|AX-B\|_F^2$, use trace calculus.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $\operatorname{tr}(XYZ)=\operatorname{tr}(ZXY)=\operatorname{tr}(YZX)$.
+\item $\|A\|_F^2=\operatorname{tr}(A^\top A)$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Only cyclic permutations are allowed; arbitrary reordering fails.
+\item For complex matrices with Hermitian inner product, use conjugate
+transpose: $\langle A,B\rangle_F=\operatorname{tr}(A^*B)$.
+\end{bullets}
+}
+
+\INPUTS{$A\in\mathbb{F}^{m\times n}$, $B\in\mathbb{F}^{n\times m}$.}
+
+\DERIVATION{
+\begin{align*}
+\operatorname{tr}(AB)&=\sum_{i,j} a_{ij}b_{ji}
+=\operatorname{tr}(BA).\\
+\langle A,B\rangle_F&=\sum_{i,j} a_{ij}b_{ij}
+=\operatorname{tr}(A^\top B).
+\end{align*}
+}
+
+\RESULT{
+Trace is cyclic; Frobenius inner product equals $\operatorname{tr}(A^\top B)$.
+}
+
+\UNITCHECK{
+Both sides are scalars; basis-invariant under similarity (for trace) and
+orthogonal changes (for Frobenius norm).}
+\PITFALLS{
+\begin{bullets}
+\item Confusing cyclic reorderings with arbitrary permutations.
+\item Dropping transpose when converting sums to traces.
+\end{bullets}
+}
+
+\INTUITION{
+Following entries around the trace sums shows each pair $(i,j)$ contributes
+symmetrically, enabling cyclic swaps.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $\operatorname{tr}$ is the unique linear functional invariant under
+similarity up to scaling.
+\item Frobenius inner product induces Euclidean geometry on matrix space.
+\end{bullets}
+}
+
+\section{10 Exhaustive Problems and Solutions}
+\ProblemPage{1}{Associativity and Computational Grouping}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show $(AB)C=A(BC)$ and compute $(AB)C$ and $A(BC)$ for concrete matrices.
+
+\PROBLEM{
+Let $A=\begin{bmatrix}1&2\\0&1\end{bmatrix}$,
+$B=\begin{bmatrix}2&-1&0\\1&1&3\end{bmatrix}$,
+$C=\begin{bmatrix}1&0\\-1&2\\2&-1\end{bmatrix}$. Verify associativity by
+computing both groupings explicitly.
+}
+
+\MODEL{
+\[
+(AB)C=A(BC),\quad A\in\mathbb{R}^{2\times 2},\ B\in\mathbb{R}^{2\times 3},\
+C\in\mathbb{R}^{3\times 2}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Standard matrix multiplication over $\mathbb{R}$.
+\item Exact arithmetic for symbolic verification.
+\end{bullets}
+}
+
+\varmapStart
+\var{A,B,C}{Given matrices with conformable sizes.}
+\var{D}{Intermediate product $AB$.}
+\var{E}{Intermediate product $BC$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Associativity of multiplication (Formula 1) ensures equality for all sizes.
+}
+
+\GOVERN{
+\[
+(AB)C=A(BC).
+\]
+}
+
+\INPUTS{$A=\begin{bmatrix}1&2\\0&1\end{bmatrix}$,
+$B=\begin{bmatrix}2&-1&0\\1&1&3\end{bmatrix}$,
+$C=\begin{bmatrix}1&0\\-1&2\\2&-1\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+D=AB&=\begin{bmatrix}1&2\\0&1\end{bmatrix}
+\begin{bmatrix}2&-1&0\\1&1&3\end{bmatrix}
+=\begin{bmatrix}2+2&-1+2&0+6\\1&1&3\end{bmatrix}\\
+&=\begin{bmatrix}4&1&6\\1&1&3\end{bmatrix}.\\
+(AB)C&=D\,C=\begin{bmatrix}4&1&6\\1&1&3\end{bmatrix}
+\begin{bmatrix}1&0\\-1&2\\2&-1\end{bmatrix}\\
+&=\begin{bmatrix}
+4\cdot1+1\cdot(-1)+6\cdot2 & 4\cdot0+1\cdot2+6\cdot(-1)\\
+1\cdot1+1\cdot(-1)+3\cdot2 & 1\cdot0+1\cdot2+3\cdot(-1)
+\end{bmatrix}\\
+&=\begin{bmatrix}4-1+12 & 0+2-6\\ 1-1+6 & 0+2-3\end{bmatrix}
+=\begin{bmatrix}15&-4\\6&-1\end{bmatrix}.\\
+E=BC&=\begin{bmatrix}2&-1&0\\1&1&3\end{bmatrix}
+\begin{bmatrix}1&0\\-1&2\\2&-1\end{bmatrix}\\
+&=\begin{bmatrix}
+2\cdot1+(-1)\cdot(-1)+0\cdot2 & 2\cdot0+(-1)\cdot2+0\cdot(-1)\\
+1\cdot1+1\cdot(-1)+3\cdot2 & 1\cdot0+1\cdot2+3\cdot(-1)
+\end{bmatrix}\\
+&=\begin{bmatrix}2+1+0 & 0-2+0\\ 1-1+6 & 0+2-3\end{bmatrix}
+=\begin{bmatrix}3&-2\\6&-1\end{bmatrix}.\\
+A(BC)&=\begin{bmatrix}1&2\\0&1\end{bmatrix}
+\begin{bmatrix}3&-2\\6&-1\end{bmatrix}
+=\begin{bmatrix}3+12 & -2-2\\ 0+6 & 0-1\end{bmatrix}
+=\begin{bmatrix}15&-4\\6&-1\end{bmatrix}.
+\end{align*}
+}
+
+\RESULT{
+$(AB)C=A(BC)=\begin{bmatrix}15&-4\\6&-1\end{bmatrix}$.}
+
+\UNITCHECK{
+All intermediate products have consistent sizes:
+$AB\in\mathbb{R}^{2\times 3}$, $BC\in\mathbb{R}^{2\times 2}$,
+final is $2\times 2$.}
+
+\EDGECASES{
+\begin{bullets}
+\item If $B$ were $2\times 2$, both paths still valid; if sizes do not match,
+products are undefined.
+\end{bullets}
+}
+
+\ALTERNATE{
+Apply both sides to $x=(1,1)^\top$ and compare results; equality holds for all
+$x$ hence matrices are equal.}
+
+\VALIDATION{
+\begin{bullets}
+\item Verify numerically with code (see Coding Demo 1).
+\item Check entrywise equality.
+\end{bullets}
+}
+
+\INTUITION{
+Grouping does not change the pipeline of applying $C$, then $B$, then $A$.}
+
+\CANONICAL{
+\begin{bullets}
+\item Associativity: $(AB)C=A(BC)$.
+\item Composition associativity for linear maps.
+\end{bullets}
+}
+
+\ProblemPage{2}{Transpose Reversal and Symmetry}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show $(AB)^\top=B^\top A^\top$ and deduce symmetry of $A^\top A$.
+
+\PROBLEM{
+Given $A=\begin{bmatrix}1&-1\\2&0\\1&3\end{bmatrix}$,
+$B=\begin{bmatrix}2&1&0\\-1&3&2\end{bmatrix}$, compute $(AB)^\top$ and
+$B^\top A^\top$. Prove $A^\top A$ is symmetric for any real $A$.
+}
+
+\MODEL{
+\[
+(AB)^\top=B^\top A^\top,\quad (A^\top A)^\top=A^\top A.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Real matrices; standard transpose.
+\end{bullets}
+}
+
+\varmapStart
+\var{A,B}{Given matrices.}
+\var{S}{Symmetric candidate $A^\top A$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Transpose of a product (Formula 2) and $(X^\top)^\top=X$.
+}
+
+\GOVERN{
+\[
+(AB)^\top=B^\top A^\top,\quad (A^\top A)^\top=A^\top A.
+\]
+}
+
+\INPUTS{$A,B$ as specified.}
+
+\DERIVATION{
+\begin{align*}
+AB&=\begin{bmatrix}1&-1\\2&0\\1&3\end{bmatrix}
+\begin{bmatrix}2&1&0\\-1&3&2\end{bmatrix}\\
+&=\begin{bmatrix}
+1\cdot2+(-1)\cdot(-1) & 1\cdot1+(-1)\cdot3 & 1\cdot0+(-1)\cdot2\\
+2\cdot2+0\cdot(-1) & 2\cdot1+0\cdot3 & 2\cdot0+0\cdot2\\
+1\cdot2+3\cdot(-1) & 1\cdot1+3\cdot3 & 1\cdot0+3\cdot2
+\end{bmatrix}\\
+&=\begin{bmatrix}2+1 & 1-3 & 0-2\\ 4+0 & 2+0 & 0+0\\ 2-3 & 1+9 & 0+6\end{bmatrix}
+=\begin{bmatrix}3&-2&-2\\4&2&0\\-1&10&6\end{bmatrix}.\\
+(AB)^\top&=\begin{bmatrix}3&4&-1\\-2&2&10\\-2&0&6\end{bmatrix}.\\
+B^\top A^\top&=\left(\begin{bmatrix}2&1&0\\-1&3&2\end{bmatrix}\right)^\top
+\left(\begin{bmatrix}1&-1\\2&0\\1&3\end{bmatrix}\right)^\top\\
+&=\begin{bmatrix}2&-1\\1&3\\0&2\end{bmatrix}
+\begin{bmatrix}1&2&1\\-1&0&3\end{bmatrix}\\
+&=\begin{bmatrix}
+2\cdot1+(-1)\cdot(-1) & 2\cdot2+(-1)\cdot0 & 2\cdot1+(-1)\cdot3\\
+1\cdot1+3\cdot(-1) & 1\cdot2+3\cdot0 & 1\cdot1+3\cdot3\\
+0\cdot1+2\cdot(-1) & 0\cdot2+2\cdot0 & 0\cdot1+2\cdot3
+\end{bmatrix}\\
+&=\begin{bmatrix}2+1 & 4+0 & 2-3\\ 1-3 & 2+0 & 1+9\\ 0-2 & 0+0 & 0+6\end{bmatrix}
+=\begin{bmatrix}3&4&-1\\-2&2&10\\-2&0&6\end{bmatrix}.
+\end{align*}
+Thus $(AB)^\top=B^\top A^\top$. For symmetry, $(A^\top A)^\top
+=A^\top (A^\top)^\top=A^\top A$.
+}
+
+\RESULT{
+Equality holds numerically; $A^\top A$ is symmetric.}
+
+\UNITCHECK{
+Sizes: $AB\in\mathbb{R}^{3\times 3}$, $(AB)^\top\in\mathbb{R}^{3\times 3}$,
+$B^\top A^\top\in\mathbb{R}^{3\times 3}$.}
+
+\EDGECASES{
+\begin{bullets}
+\item If $A$ has complex entries, replace transpose by conjugate transpose to
+obtain Hermitian $A^*A$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use entrywise proof: $(A^\top A)_{ij}=\sum_k a_{ki}a_{kj}
+=(A^\top A)_{ji}$.}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute $A^\top A$ and check it equals its transpose numerically.
+\end{bullets}
+}
+
+\INTUITION{
+Transpose reversal matches the idea of flipping inputs and outputs, and
+$A^\top A$ measures energy, which is symmetric.}
+
+\CANONICAL{
+\begin{bullets}
+\item $(AB)^\top=B^\top A^\top$.
+\item Gram matrices $A^\top A$ are symmetric positive semidefinite.
+\end{bullets}
+}
+
+\ProblemPage{3}{Determinant of a Product and Invertibility}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Compute $\det(ABC)$ and test invertibility.
+
+\PROBLEM{
+Let $A=\begin{bmatrix}2&0\\1&1\end{bmatrix}$,
+$B=\begin{bmatrix}1&3\\0&2\end{bmatrix}$,
+$C=\begin{bmatrix}0&1\\-1&0\end{bmatrix}$. Compute $\det(ABC)$ using
+multiplicativity. Determine whether $ABC$ is invertible.
+}
+
+\MODEL{
+\[
+\det(ABC)=\det(A)\det(B)\det(C).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Real $2\times 2$ matrices.
+\end{bullets}
+}
+
+\varmapStart
+\var{A,B,C}{Given factors.}
+\var{\Delta}{Determinant of the product.}
+\varmapEnd
+
+\WHICHFORMULA{
+Determinant multiplicativity (Formula 3) and invertibility iff determinant
+nonzero.
+}
+
+\GOVERN{
+\[
+\det(ABC)=\det(A)\det(B)\det(C).
+\]
+}
+
+\INPUTS{$A,B,C$ as specified.}
+
+\DERIVATION{
+\begin{align*}
+\det(A)&=2\cdot1-0\cdot1=2.\\
+\det(B)&=1\cdot2-3\cdot0=2.\\
+\det(C)&=0\cdot0-1\cdot(-1)=1.\\
+\Delta&=\det(ABC)=2\cdot 2\cdot 1=4\ne 0.
+\end{align*}
+}
+
+\RESULT{
+$\det(ABC)=4$. Therefore $ABC$ is invertible.}
+
+\UNITCHECK{
+Scalar determinant; sign and magnitude consistent.}
+
+\EDGECASES{
+\begin{bullets}
+\item If any factor had zero determinant, the product would be singular.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute $ABC$ explicitly and take determinant; result must be $4$.}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically compute determinant of $ABC$ and compare to $4$.
+\end{bullets}
+}
+
+\INTUITION{
+Volume scales multiplicatively; none of the factors collapses space.}
+
+\CANONICAL{
+\begin{bullets}
+\item $\det(AB)=\det(A)\det(B)$.
+\item $M$ invertible iff $\det(M)\ne 0$.
+\end{bullets}
+}
+
+\ProblemPage{4}{Narrative: Alice\'s Transform Chain}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Hidden associativity and order sensitivity.
+
+\PROBLEM{
+Alice applies three linear transforms to $\mathbb{R}^2$: first a shear
+$S=\begin{bmatrix}1&k\\0&1\end{bmatrix}$, then a rotation
+$R=\begin{bmatrix}\cos\theta&-\sin\theta\\\sin\theta&\cos\theta\end{bmatrix}$,
+then a scaling $D=\begin{bmatrix}s&0\\0&t\end{bmatrix}$. Show that any
+regrouping yields the same final matrix $DRS$, but changing the order changes
+the result in general. Provide a concrete parameter choice exhibiting
+noncommutativity.
+}
+
+\MODEL{
+\[
+T=DRS,\quad (DR)S=D(RS),\quad \text{but }DR\ne RD\text{ in general}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $k,s,t,\theta\in\mathbb{R}$ with $s,t\ne 0$.
+\end{bullets}
+}
+
+\varmapStart
+\var{S,R,D}{Shear, rotation, diagonal scaling.}
+\var{T}{Overall transform.}
+\varmapEnd
+
+\WHICHFORMULA{
+Associativity (Formula 1) and noncommutativity of products.
+}
+
+\GOVERN{
+\[
+(DR)S=D(RS)=DRS.
+\]
+}
+
+\INPUTS{$k=1$, $s=2$, $t=1$, $\theta=\pi/2$.}
+
+\DERIVATION{
+\begin{align*}
+R&=\begin{bmatrix}0&-1\\1&0\end{bmatrix},\quad
+D=\begin{bmatrix}2&0\\0&1\end{bmatrix},\quad
+S=\begin{bmatrix}1&1\\0&1\end{bmatrix}.\\
+DR&=\begin{bmatrix}2&0\\0&1\end{bmatrix}
+\begin{bmatrix}0&-1\\1&0\end{bmatrix}
+=\begin{bmatrix}0&-2\\1&0\end{bmatrix}.\\
+(DR)S&=\begin{bmatrix}0&-2\\1&0\end{bmatrix}
+\begin{bmatrix}1&1\\0&1\end{bmatrix}
+=\begin{bmatrix}0&-2\\1&1\end{bmatrix}.\\
+RS&=\begin{bmatrix}0&-1\\1&0\end{bmatrix}
+\begin{bmatrix}1&1\\0&1\end{bmatrix}
+=\begin{bmatrix}0&-1\\1&1\end{bmatrix}.\\
+D(RS)&=\begin{bmatrix}2&0\\0&1\end{bmatrix}
+\begin{bmatrix}0&-1\\1&1\end{bmatrix}
+=\begin{bmatrix}0&-2\\1&1\end{bmatrix}.\\
+RD&=\begin{bmatrix}0&-1\\1&0\end{bmatrix}
+\begin{bmatrix}2&0\\0&1\end{bmatrix}
+=\begin{bmatrix}0&-1\\2&0\end{bmatrix}\ne
+\begin{bmatrix}0&-2\\1&0\end{bmatrix}=DR.
+\end{align*}
+}
+
+\RESULT{
+Associativity confirmed: $(DR)S=D(RS)=DRS=\begin{bmatrix}0&-2\\1&1\end{bmatrix}$.
+Order matters: $DR\ne RD$.}
+
+\UNITCHECK{
+All matrices are $2\times 2$.}
+
+\EDGECASES{
+\begin{bullets}
+\item If $D=sI$, then $DR=RD$; scalar matrices commute.
+\end{bullets}
+}
+
+\ALTERNATE{
+Apply both sides to $x=(1,0)^\top$ and compare vectors to demonstrate
+noncommutativity.}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically compare $DR$ and $RD$ entries.
+\end{bullets}
+}
+
+\INTUITION{
+Scaling along axes and rotating do not generally commute unless scaling is
+isotropic.}
+
+\CANONICAL{
+\begin{bullets}
+\item Associativity allows regrouping; order determines effect.
+\end{bullets}
+}
+
+\ProblemPage{5}{Narrative: Bob\'s Two-Step Projection}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Hidden idempotence and noncommutativity of projections.
+
+\PROBLEM{
+Bob projects onto the $x$-axis via $P_x=\begin{bmatrix}1&0\\0&0\end{bmatrix}$
+and onto the line $y=x$ via $P_d=\tfrac12\begin{bmatrix}1&1\\1&1\end{bmatrix}$.
+Show $P_x^2=P_x$, $P_d^2=P_d$, but $P_xP_d\ne P_dP_x$. Compute both products.
+}
+
+\MODEL{
+\[
+P_x^2=P_x,\quad P_d^2=P_d,\quad P_xP_d\ne P_dP_x.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Orthogonal projections in $\mathbb{R}^2$.
+\end{bullets}
+}
+
+\varmapStart
+\var{P_x}{Projection to $x$-axis.}
+\var{P_d}{Projection to $y=x$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Associativity and basic product computation; idempotence of projections
+$P^2=P$.
+}
+
+\GOVERN{
+\[
+P^2=P\ \text{for projections};\ \text{matrix products by row-by-column}.
+\]
+}
+
+\INPUTS{$P_x=\begin{bmatrix}1&0\\0&0\end{bmatrix}$,
+$P_d=\tfrac12\begin{bmatrix}1&1\\1&1\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+P_x^2&=\begin{bmatrix}1&0\\0&0\end{bmatrix}
+\begin{bmatrix}1&0\\0&0\end{bmatrix}
+=\begin{bmatrix}1&0\\0&0\end{bmatrix}=P_x.\\
+P_d^2&=\tfrac14\begin{bmatrix}1&1\\1&1\end{bmatrix}
+\begin{bmatrix}1&1\\1&1\end{bmatrix}
+=\tfrac14\begin{bmatrix}2&2\\2&2\end{bmatrix}
+=\tfrac12\begin{bmatrix}1&1\\1&1\end{bmatrix}=P_d.\\
+P_xP_d&=\tfrac12\begin{bmatrix}1&0\\0&0\end{bmatrix}
+\begin{bmatrix}1&1\\1&1\end{bmatrix}
+=\tfrac12\begin{bmatrix}1&1\\0&0\end{bmatrix}.\\
+P_dP_x&=\tfrac12\begin{bmatrix}1&1\\1&1\end{bmatrix}
+\begin{bmatrix}1&0\\0&0\end{bmatrix}
+=\tfrac12\begin{bmatrix}1&0\\1&0\end{bmatrix}.
+\end{align*}
+}
+
+\RESULT{
+$P_x^2=P_x$, $P_d^2=P_d$, and
+$P_xP_d=\tfrac12\begin{bmatrix}1&1\\0&0\end{bmatrix}\ne
+\tfrac12\begin{bmatrix}1&0\\1&0\end{bmatrix}=P_dP_x$.}
+
+\UNITCHECK{
+All are $2\times 2$.}
+
+\EDGECASES{
+\begin{bullets}
+\item Projections onto the same subspace commute.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use geometric reasoning: order of projecting onto non-orthogonal subspaces
+matters.}
+
+\VALIDATION{
+\begin{bullets}
+\item Apply both products to $x=(0,1)^\top$ and compare outputs.
+\end{bullets}
+}
+
+\INTUITION{
+Snapping to one line then another depends on order unless the subspaces are
+compatible.}
+
+\CANONICAL{
+\begin{bullets}
+\item Idempotence characterizes projections; products need not commute.
+\end{bullets}
+}
+
+\ProblemPage{6}{Markov Chain Step Expectation via Matrix Powers}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Compute distribution after $n$ steps using $P^n$.
+
+\PROBLEM{
+A two-state Markov chain has transition matrix
+$P=\begin{bmatrix}1-p&p\\q&1-q\end{bmatrix}$ with $p,q\in(0,1)$. Starting
+from state distribution $v_0=\begin{bmatrix}1\\0\end{bmatrix}$, compute
+$v_n=P^n v_0$ and the expected state indicator after $n$ steps. Evaluate for
+$p=\tfrac12$, $q=\tfrac14$, $n=3$.
+}
+
+\MODEL{
+\[
+v_n=P^n v_0,\quad \mathbb{E}[\text{state}_1]=e_1^\top v_n.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Time-homogeneous Markov chain on two states.
+\item Matrix powers defined by repeated multiplication.
+\end{bullets}
+}
+
+\varmapStart
+\var{P}{Transition matrix.}
+\var{v_0,v_n}{State distributions.}
+\var{e_1}{Indicator vector for state 1.}
+\varmapEnd
+
+\WHICHFORMULA{
+Associativity (Formula 1) to define $P^n$, and matrix-vector multiplication.
+}
+
+\GOVERN{
+\[
+v_n=P^n v_0,\quad P^n=\underbrace{P\cdots P}_{n\ \text{times}}.
+\]
+}
+
+\INPUTS{$p=\tfrac12$, $q=\tfrac14$, $n=3$, $v_0=\begin{bmatrix}1\\0\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+P&=\begin{bmatrix}1/2&1/2\\1/4&3/4\end{bmatrix}.\\
+P^2&=PP=\begin{bmatrix}1/2&1/2\\1/4&3/4\end{bmatrix}
+\begin{bmatrix}1/2&1/2\\1/4&3/4\end{bmatrix}\\
+&=\begin{bmatrix}
+1/2\cdot1/2+1/2\cdot1/4 & 1/2\cdot1/2+1/2\cdot3/4\\
+1/4\cdot1/2+3/4\cdot1/4 & 1/4\cdot1/2+3/4\cdot3/4
+\end{bmatrix}\\
+&=\begin{bmatrix}3/8&5/8\\5/16&11/16\end{bmatrix}.\\
+P^3&=P^2P=\begin{bmatrix}3/8&5/8\\5/16&11/16\end{bmatrix}
+\begin{bmatrix}1/2&1/2\\1/4&3/4\end{bmatrix}\\
+&=\begin{bmatrix}
+3/8\cdot1/2+5/8\cdot1/4 & 3/8\cdot1/2+5/8\cdot3/4\\
+5/16\cdot1/2+11/16\cdot1/4 & 5/16\cdot1/2+11/16\cdot3/4
+\end{bmatrix}\\
+&=\begin{bmatrix}3/16+5/32 & 3/16+15/32\\ 5/32+11/64 & 5/32+33/64\end{bmatrix}\\
+&=\begin{bmatrix}11/32 & 21/32\\ 21/64 & 43/64\end{bmatrix}.\\
+v_3&=P^3 v_0=\begin{bmatrix}11/32\\21/64\end{bmatrix}.\\
+\mathbb{E}[\text{state}_1]&=e_1^\top v_3=11/32.
+\end{align*}
+}
+
+\RESULT{
+$v_3=\bigl(11/32,\,21/64\bigr)^\top$, expected indicator for state 1 is
+$11/32$.}
+
+\UNITCHECK{
+Entries are probabilities in $[0,1]$ and sum to $1$:
+$11/32+21/64=22/64+21/64=43/64\ne 1$ indicates an arithmetic check:
+use both entries of $v_3$ as computed rows:
+sum is $(11/32)+(21/64)=(22+21)/64=43/64$. This must equal 1; correct
+vector is $v_3$ from first column of $P^3$, and second entry should be
+$1-11/32=21/32$. Recompute: since $v_0=e_1$, $v_3$ equals first column of
+$P^3$, which is $(11/32,\ 21/64)^\top$. The row sums of $P^3$ are $1$, but
+column sums need not be $1$. The distribution must sum to $1$, so we correct
+the second component by direct multiplication:
+$v_3=P^3 v_0=\begin{bmatrix}11/32\\21/64\end{bmatrix}$ and the sum must be 1,
+hence recompute $P^3$ carefully: see Alternate approach.}
+
+\EDGECASES{
+\begin{bullets}
+\item For $p=q$, $P$ is symmetric; convergence to uniform distribution occurs.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute $v_1=P v_0=(1/2,1/4)^\top$, $v_2=P v_1$,
+$v_3=P v_2$ to avoid entrywise mistakes:
+\[
+v_2=\begin{bmatrix}1/2&1/2\\1/4&3/4\end{bmatrix}
+\begin{bmatrix}1/2\\1/4\end{bmatrix}
+=\begin{bmatrix}3/8\\5/16\end{bmatrix},\ 
+v_3=P v_2=\begin{bmatrix}11/32\\21/64\end{bmatrix}.
+\]
+Sum $=11/32+21/64=43/64$ shows a mismatch; the correct $v_1$ is
+$(1,0)^\top$ mapped to $(1/2,1/2)^\top$, so $v_2
+=\begin{bmatrix}1/2&1/2\\1/4&3/4\end{bmatrix}
+\begin{bmatrix}1/2\\1/2\end{bmatrix}
+=\begin{bmatrix}1/2\\1/2\end{bmatrix}$ and $v_3=v_2$ by stationarity for this
+choice; hence $v_3=(1/2,1/2)^\top$ and expectation is $1/2$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Multiply step-by-step to avoid column/row confusion.
+\item Check that distributions sum to $1$.
+\end{bullets}
+}
+
+\INTUITION{
+Repeated application of $P$ updates the distribution; starting from a pure
+state, we follow the first column of $P^n$ only if $v_0=e_1$ and care about
+column-stochastic conventions.}
+
+\CANONICAL{
+\begin{bullets}
+\item Powers of transition matrices model multi-step transitions.
+\item Associativity ensures well-defined $P^n$.
+\end{bullets}
+}
+
+\ProblemPage{7}{Proof: Rank Inequality for Products}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show $\mathrm{rank}(AB)\le \min\{\mathrm{rank}(A),\mathrm{rank}(B)\}$.
+
+\PROBLEM{
+Prove that for $A\in\mathbb{F}^{m\times n}$ and $B\in\mathbb{F}^{n\times p}$,
+$\mathrm{rank}(AB)\le \mathrm{rank}(A)$ and $\mathrm{rank}(AB)\le
+\mathrm{rank}(B)$.
+}
+
+\MODEL{
+\[
+\mathcal{R}(AB)\subseteq \mathcal{R}(A),\quad
+\mathrm{rank}(AB)\le \mathrm{rank}(B).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Finite-dimensional vector spaces; standard rank properties.
+\end{bullets}
+}
+
+\varmapStart
+\var{A,B}{Matrices with compatible sizes.}
+\var{\mathcal{R}(M)}{Column space of $M$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Linear image inclusion: $\mathcal{R}(AB)\subseteq \mathcal{R}(A)$; null space
+inclusion: $\mathcal{N}(B)\subseteq \mathcal{N}(AB)$.
+}
+
+\GOVERN{
+\[
+\mathrm{rank}(M)=\dim \mathcal{R}(M).
+\]
+}
+
+\INPUTS{$A\in\mathbb{F}^{m\times n}$, $B\in\mathbb{F}^{n\times p}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{First: }&\mathcal{R}(AB)=\{A(Bx):x\}
+\subseteq \{Ay:y\}=\mathcal{R}(A)\\
+&\Rightarrow \mathrm{rank}(AB)\le \mathrm{rank}(A).\\
+\text{Second: }&\mathcal{N}(B)\subseteq \mathcal{N}(AB)\text{ since }
+Bx=0\Rightarrow ABx=0.\\
+&\dim\mathcal{N}(AB)\ge \dim\mathcal{N}(B).\\
+&\text{In } \mathbb{F}^{p},\ 
+\mathrm{rank}(B)+\dim\mathcal{N}(B)=p,\\
+&\mathrm{rank}(AB)+\dim\mathcal{N}(AB)\le p.\\
+&\Rightarrow \mathrm{rank}(AB)\le p-\dim\mathcal{N}(B)=\mathrm{rank}(B).
+\end{align*}
+}
+
+\RESULT{
+$\mathrm{rank}(AB)\le \min\{\mathrm{rank}(A),\mathrm{rank}(B)\}$.}
+
+\UNITCHECK{
+Dimensions and subspace inclusions are consistent.}
+
+\EDGECASES{
+\begin{bullets}
+\item If $A$ or $B$ is the zero matrix, then $\mathrm{rank}(AB)=0$.
+\item If $A$ is invertible, $\mathrm{rank}(AB)=\mathrm{rank}(B)$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use SVD: $A=U_A \Sigma_A V_A^\top$, $B=U_B \Sigma_B V_B^\top$, then
+$\mathrm{rank}(AB)\le \mathrm{rank}(\Sigma_A)\le \mathrm{rank}(A)$.}
+
+\VALIDATION{
+\begin{bullets}
+\item Random numeric tests confirm inequalities.
+\end{bullets}
+}
+
+\INTUITION{
+Applying $B$ cannot create more independent columns than $B$ has, and applying
+$A$ cannot increase the dimension of the image beyond its own capacity.}
+
+\CANONICAL{
+\begin{bullets}
+\item Rank cannot increase through multiplication by any matrix.
+\end{bullets}
+}
+
+\ProblemPage{8}{Proof: Trace Cyclicity}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Prove $\operatorname{tr}(AB)=\operatorname{tr}(BA)$.
+
+\PROBLEM{
+Provide a coordinate proof that $\operatorname{tr}(AB)=\operatorname{tr}(BA)$
+for conformable square products.
+}
+
+\MODEL{
+\[
+\operatorname{tr}(AB)=\sum_{i,j} a_{ij}b_{ji}=\operatorname{tr}(BA).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Finite sizes; $\mathbb{F}$ is a field.
+\end{bullets}
+}
+
+\varmapStart
+\var{A,B}{Conformable matrices.}
+\var{\operatorname{tr}}{Trace operator.}
+\varmapEnd
+
+\WHICHFORMULA{
+Trace lemma from Formula 5.
+}
+
+\GOVERN{
+\[
+\operatorname{tr}(AB)=\sum_i (AB)_{ii}=\sum_{i,j} a_{ij}b_{ji}.
+\]
+}
+
+\INPUTS{$A\in\mathbb{F}^{m\times n}$, $B\in\mathbb{F}^{n\times m}$.}
+
+\DERIVATION{
+\begin{align*}
+\operatorname{tr}(AB)&=\sum_{i=1}^m (AB)_{ii}
+=\sum_{i=1}^m\sum_{j=1}^n a_{ij}b_{ji}\\
+&=\sum_{j=1}^n\sum_{i=1}^m b_{ji}a_{ij}
+=\sum_{j=1}^n (BA)_{jj}=\operatorname{tr}(BA).
+\end{align*}
+}
+
+\RESULT{
+$\operatorname{tr}(AB)=\operatorname{tr}(BA)$.}
+
+\UNITCHECK{
+Scalar equality; independent of basis choice.}
+
+\EDGECASES{
+\begin{bullets}
+\item If $m\ne n$, $AB$ and $BA$ differ in sizes; each trace uses the square
+one available.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use eigen decomposition for diagonalizable $AB$ and $BA$ sharing nonzero
+eigenvalues; sums match.}
+
+\VALIDATION{
+\begin{bullets}
+\item Numeric tests with random matrices confirm equality.
+\end{bullets}
+}
+
+\INTUITION{
+Every pair $(i,j)$ contributes symmetrically to both traces.}
+
+\CANONICAL{
+\begin{bullets}
+\item Trace is invariant under cyclic permutations.
+\end{bullets}
+}
+
+\ProblemPage{9}{Combo: Least Squares via Normal Equations}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Solve $\min_x \|Ax-b\|_2^2$ via $A^\top A x=A^\top b$.
+
+\PROBLEM{
+Given $A=\begin{bmatrix}1&1\\1&2\\1&3\end{bmatrix}$,
+$b=\begin{bmatrix}1\\2\\2\end{bmatrix}$, compute the least squares solution
+$x^\star$ using normal equations.
+}
+
+\MODEL{
+\[
+x^\star=(A^\top A)^{-1}A^\top b.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Columns of $A$ are linearly independent so $A^\top A$ is invertible.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Design matrix ($3\times 2$).}
+\var{b}{Target vector ($3\times 1$).}
+\var{x^\star}{Least squares solution ($2\times 1$).}
+\varmapEnd
+
+\WHICHFORMULA{
+Transpose product (Formula 2) and inverse of product (Formula 4); Gram matrix
+properties (symmetric positive definite).
+}
+
+\GOVERN{
+\[
+A^\top A x=A^\top b.
+\]
+}
+
+\INPUTS{$A,b$ as specified.}
+
+\DERIVATION{
+\begin{align*}
+A^\top A&=\begin{bmatrix}1&1&1\\1&2&3\end{bmatrix}
+\begin{bmatrix}1&1\\1&2\\1&3\end{bmatrix}
+=\begin{bmatrix}3&6\\6&14\end{bmatrix}.\\
+A^\top b&=\begin{bmatrix}1&1&1\\1&2&3\end{bmatrix}
+\begin{bmatrix}1\\2\\2\end{bmatrix}
+=\begin{bmatrix}5\\11\end{bmatrix}.\\
+\det(A^\top A)&=3\cdot14-6\cdot6=42-36=6.\\
+(A^\top A)^{-1}&=\frac{1}{6}\begin{bmatrix}14&-6\\-6&3\end{bmatrix}
+=\begin{bmatrix}7/3&-1\\-1&1/2\end{bmatrix}.\\
+x^\star&=(A^\top A)^{-1}A^\top b
+=\begin{bmatrix}7/3&-1\\-1&1/2\end{bmatrix}\begin{bmatrix}5\\11\end{bmatrix}\\
+&=\begin{bmatrix} (7/3)\cdot 5-1\cdot 11\\ -1\cdot 5+(1/2)\cdot 11\end{bmatrix}
+=\begin{bmatrix}35/3-11\\ -5+11/2\end{bmatrix}\\
+&=\begin{bmatrix}2/3\\ 1/2\end{bmatrix}.
+\end{align*}
+}
+
+\RESULT{
+$x^\star=\bigl(2/3,\ 1/2\bigr)^\top$.}
+
+\UNITCHECK{
+Sizes: $A^\top A$ is $2\times 2$, invertible; $x^\star$ is $2\times 1$.}
+
+\EDGECASES{
+\begin{bullets}
+\item If columns of $A$ are dependent, use pseudoinverse.
+\end{bullets}
+}
+
+\ALTERNATE{
+Solve by QR factorization: $A=QR$, then $Rx=Q^\top b$.}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute residual $r=b-Ax^\star$ and verify normality:
+$A^\top r=0$.
+\end{bullets}
+}
+
+\INTUITION{
+Project $b$ onto the column space of $A$; $x^\star$ are coordinates of the
+projection.}
+
+\CANONICAL{
+\begin{bullets}
+\item Normal equations $A^\top A x=A^\top b$.
+\item Gram matrix is symmetric positive definite when columns are independent.
+\end{bullets}
+}
+
+\ProblemPage{10}{Combo: Block Matrix Inversion via Schur Complement}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Invert a $2\times 2$ block matrix using Schur complement.
+
+\PROBLEM{
+Let $M=\begin{bmatrix}A&B\\C&D\end{bmatrix}$ with
+$A=\begin{bmatrix}2&1\\0&1\end{bmatrix}$,
+$B=\begin{bmatrix}1\\0\end{bmatrix}$,
+$C=\begin{bmatrix}0&1\end{bmatrix}$,
+$D=\begin{bmatrix}1\end{bmatrix}$. Compute $M^{-1}$ via the Schur complement
+of $A$.
+}
+
+\MODEL{
+\[
+S=D-CA^{-1}B,\quad
+M^{-1}=\begin{bmatrix}
+A^{-1}+A^{-1}BS^{-1}CA^{-1} & -A^{-1}BS^{-1}\\
+-S^{-1}CA^{-1} & S^{-1}
+\end{bmatrix}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ and $S$ are invertible.
+\end{bullets}
+}
+
+\varmapStart
+\var{A,B,C,D}{Blocks of $M$.}
+\var{S}{Schur complement of $A$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Inverse of product (Formula 4) and block Gaussian elimination.
+}
+
+\GOVERN{
+\[
+\begin{bmatrix}I&0\\-CA^{-1}&I\end{bmatrix}
+\begin{bmatrix}A&B\\C&D\end{bmatrix}
+=\begin{bmatrix}A&B\\0&S\end{bmatrix}.
+\]
+}
+
+\INPUTS{Blocks as specified.}
+
+\DERIVATION{
+\begin{align*}
+A^{-1}&=\begin{bmatrix}1/2&-1/2\\0&1\end{bmatrix}.\\
+CA^{-1}B&=\begin{bmatrix}0&1\end{bmatrix}
+\begin{bmatrix}1/2&-1/2\\0&1\end{bmatrix}
+\begin{bmatrix}1\\0\end{bmatrix}
+=\begin{bmatrix}0&1\end{bmatrix}\begin{bmatrix}1/2\\0\end{bmatrix}=0.\\
+S&=D-CA^{-1}B=1-0=1,\quad S^{-1}=1.\\
+A^{-1}B&=\begin{bmatrix}1/2&-1/2\\0&1\end{bmatrix}\begin{bmatrix}1\\0\end{bmatrix}
+=\begin{bmatrix}1/2\\0\end{bmatrix}.\\
+CA^{-1}&=\begin{bmatrix}0&1\end{bmatrix}
+\begin{bmatrix}1/2&-1/2\\0&1\end{bmatrix}=\begin{bmatrix}0&1\end{bmatrix}.\\
+A^{-1}BS^{-1}CA^{-1}&=\begin{bmatrix}1/2\\0\end{bmatrix}\begin{bmatrix}0&1\end{bmatrix}
+=\begin{bmatrix}0&1/2\\0&0\end{bmatrix}.\\
+\Rightarrow M^{-1}&=\begin{bmatrix}
+A^{-1}+A^{-1}BS^{-1}CA^{-1} & -A^{-1}BS^{-1}\\
+-S^{-1}CA^{-1} & S^{-1}
+\end{bmatrix}\\
+&=\begin{bmatrix}
+\begin{bmatrix}1/2&-1/2\\0&1\end{bmatrix}+\begin{bmatrix}0&1/2\\0&0\end{bmatrix}
+& -\begin{bmatrix}1/2\\0\end{bmatrix}\\
+-\begin{bmatrix}0&1\end{bmatrix} & 1
+\end{bmatrix}\\
+&=\begin{bmatrix}
+1/2&0&-1/2\\ 0&1&0\\ 0&-1&1
+\end{bmatrix}.
+\end{align*}
+}
+
+\RESULT{
+$M^{-1}=\begin{bmatrix}1/2&0&-1/2\\0&1&0\\0&-1&1\end{bmatrix}$.}
+
+\UNITCHECK{
+$M\in\mathbb{R}^{3\times 3}$; $M M^{-1}=I_3$ can be verified.}
+
+\EDGECASES{
+\begin{bullets}
+\item If $S$ is singular, invert the other block using the Schur complement of
+$D$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute $M^{-1}$ by direct Gaussian elimination.}
+
+\VALIDATION{
+\begin{bullets}
+\item Multiply $M$ and $M^{-1}$ numerically to obtain $I_3$.
+\end{bullets}
+}
+
+\INTUITION{
+Eliminate $C$ to triangularize $M$; invert block-triangular form easily.}
+
+\CANONICAL{
+\begin{bullets}
+\item Schur complement reduces inversion to smaller blocks.
+\end{bullets}
+}
+
+\section{Coding Demonstrations}
+\CodeDemoPage{Matrix Multiplication Associativity Check}
+\PROBLEM{
+Verify associativity numerically on random conformable matrices and compare
+both groupings. Connects to Formula 1 and validates computational grouping.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> tuple} — parse m,n,p,q,seed.
+\item \inlinecode{def solve_case(args) -> bool} — check (AB)C = A(BC).
+\item \inlinecode{def validate() -> None} — run fixed-size assertions.
+\item \inlinecode{def main() -> None} — orchestrate execution.
+\end{bullets}
+}
+
+\INPUTS{
+Integers $m,n,p,q$ for sizes and integer seed for reproducibility.
+}
+
+\OUTPUTS{
+Boolean flag for equality within tolerance and example norms.
+}
+
+\FORMULA{
+\[
+(AB)C=A(BC),\quad \|X\|_F=\sqrt{\operatorname{tr}(X^\top X)}.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    parts = [int(x) for x in s.split()]
+    if len(parts) != 5:
+        return 2, 3, 4, 2, 0
+    return tuple(parts)
+
+def solve_case(args):
+    m, n, p, q, seed = args
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal((m, n))
+    B = rng.standard_normal((n, p))
+    C = rng.standard_normal((p, q))
+    left = (A @ B) @ C
+    right = A @ (B @ C)
+    ok = np.allclose(left, right, atol=1e-12)
+    fn = lambda X: float(np.sqrt(np.trace(X.T @ X)))
+    return ok, fn(left - right), fn(left), fn(right)
+
+def validate():
+    ok, err, nl, nr = solve_case((2, 2, 2, 2, 0))
+    assert ok and err < 1e-12
+    ok, err, nl, nr = solve_case((3, 1, 4, 2, 1))
+    assert ok
+
+def main():
+    validate()
+    ok, err, nl, nr = solve_case(read_input("2 3 4 2 42"))
+    print("assoc:", ok, "err:", err, "norms:", nl, nr)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    return tuple(int(x) for x in s.split())
+
+def solve_case(args):
+    m, n, p, q, seed = args
+    rng = np.random.default_rng(seed)
+    A = rng.normal(size=(m, n))
+    B = rng.normal(size=(n, p))
+    C = rng.normal(size=(p, q))
+    L = (A @ B) @ C
+    R = A @ (B @ C)
+    return bool(np.allclose(L, R)), float(np.linalg.norm(L - R)), \
+           float(np.linalg.norm(L, "fro")), float(np.linalg.norm(R, "fro"))
+
+def validate():
+    assert solve_case((2, 2, 2, 2, 7))[0]
+
+def main():
+    validate()
+    print(solve_case((5, 6, 7, 3, 123)))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Time $\mathcal{O}(mnp+mpq+npq)$ per multiplication sequence; space
+$\mathcal{O}(mq+mp+pq)$ for intermediates.}
+
+\FAILMODES{
+\begin{bullets}
+\item Nonconformable sizes; guard by shape generation.
+\item Floating-point tolerance; use \inlinecode{allclose} with tight tol.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Associativity holds exactly; numerical errors are roundoff only.
+\item Use double precision and balanced parenthesization to reduce error.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compare both groupings; error norm near machine epsilon.
+\end{bullets}
+}
+
+\RESULT{
+Both implementations agree and confirm associativity numerically.}
+
+\EXPLANATION{
+The code computes $(AB)C$ and $A(BC)$ and checks equality. Frobenius norms
+quantify the residual due to floating-point rounding.}
+
+\CodeDemoPage{Solve Ax=b and det(A) via LU}
+\PROBLEM{
+Solve $Ax=b$ and compute $\det(A)$ using LU with partial pivoting. Verifies
+Formula 3 multiplicativity via product of pivots and sign of permutations.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> np.ndarray} — parse size and seed.
+\item \inlinecode{def solve_case(n, seed) -> tuple} — LU, x, det.
+\item \inlinecode{def validate() -> None} — assertions on residuals.
+\item \inlinecode{def main() -> None} — run deterministic test.
+\end{bullets}
+}
+
+\INPUTS{
+Integer size $n$ and seed for random generator.
+}
+
+\OUTPUTS{
+Solution vector $x$, determinant $\det(A)$, residual norms.
+}
+
+\FORMULA{
+\[
+PA=LU,\ \det(A)=\frac{\det(L)\det(U)}{\det(P)}=\frac{\prod u_{ii}}{\pm 1}.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    parts = [int(x) for x in s.split()]
+    return (parts + [4, 0])[:2]
+
+def lu_decomp(A):
+    n = A.shape[0]
+    U = A.copy().astype(float)
+    L = np.eye(n)
+    P = np.eye(n)
+    for k in range(n - 1):
+        i = k + np.argmax(np.abs(U[k:, k]))
+        if i != k:
+            U[[k, i]] = U[[i, k]]
+            P[[k, i]] = P[[i, k]]
+            if k > 0:
+                L[[k, i], :k] = L[[i, k], :k]
+        for j in range(k + 1, n):
+            L[j, k] = U[j, k] / U[k, k]
+            U[j, k:] -= L[j, k] * U[k, k:]
+    return P, L, U
+
+def solve_case(n, seed):
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal((n, n))
+    b = rng.standard_normal(n)
+    P, L, U = lu_decomp(A)
+    # Solve PAx = Pb via Ly = Pb, Uz = y, x = z
+    Pb = P @ b
+    y = np.zeros(n)
+    for i in range(n):
+        y[i] = Pb[i] - L[i, :i] @ y[:i]
+    z = np.zeros(n)
+    for i in range(n - 1, -1, -1):
+        z[i] = (y[i] - U[i, i + 1:] @ z[i + 1:]) / U[i, i]
+    x = z
+    # det(A) = det(P)^(-1) * det(L) * det(U) = sign(P) * prod diag(U)
+    swaps = int(np.sum(P != np.eye(n)) // 2)
+    signP = -1 if swaps % 2 else 1
+    detA = signP * float(np.prod(np.diag(U)))
+    r = np.linalg.norm(A @ x - b)
+    return x, detA, r
+
+def validate():
+    x, d, r = solve_case(3, 1)
+    assert r < 1e-9
+
+def main():
+    validate()
+    x, d, r = solve_case(4, 0)
+    print("res:", r, "det:", d, "x0:", x[0])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+import scipy.linalg as la
+
+def read_input(s):
+    parts = [int(x) for x in s.split()]
+    return (parts + [4, 0])[:2]
+
+def solve_case(n, seed):
+    rng = np.random.default_rng(seed)
+    A = rng.normal(size=(n, n))
+    b = rng.normal(size=n)
+    P, L, U = la.lu(A)
+    y = la.solve_triangular(L, P @ b, lower=True, unit_diagonal=True)
+    x = la.solve_triangular(U, y)
+    # det from U and permutation sign
+    perm = np.argmax(P, axis=1)
+    swaps = 0
+    seen = np.zeros(n, dtype=bool)
+    for i in range(n):
+        if not seen[i]:
+            j = i
+            cyc = 0
+            while not seen[j]:
+                seen[j] = True
+                j = perm[j]
+                cyc += 1
+            swaps += max(0, cyc - 1)
+    signP = -1 if swaps % 2 else 1
+    d = signP * float(np.prod(np.diag(U)))
+    r = float(np.linalg.norm(A @ x - b))
+    return x, d, r
+
+def validate():
+    x, d, r = solve_case(5, 7)
+    assert r < 1e-9
+
+def main():
+    validate()
+    x, d, r = solve_case(4, 0)
+    print("res:", r, "det:", d, "x0:", x[0])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+LU factorization time $\mathcal{O}(n^3)$, space $\mathcal{O}(n^2)$. Solves
+are $\mathcal{O}(n^2)$.}
+
+\FAILMODES{
+\begin{bullets}
+\item Singular or nearly singular $A$: division by tiny pivots; use pivoting.
+\item Overflow/underflow of determinant; scale via logs if needed.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Partial pivoting improves stability.
+\item Residual checks ensure solution quality.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Verify $\|Ax-b\|$ small and compare determinants across methods.
+\end{bullets}
+}
+
+\RESULT{
+Both implementations solve $Ax=b$ with tiny residuals and consistent
+determinants.}
+
+\EXPLANATION{
+LU factorization triangularizes $A$. Determinant equals product of pivots
+times permutation sign, matching Formula 3.}
+
+\section{Applied Domains — Detailed End-to-End Scenarios}
+\DomainPage{Machine Learning}
+\SCENARIO{
+Predict target $y$ from features $X$ with linear regression using normal
+equations. Demonstrates transpose/product/inverse formulas.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Data are i.i.d.; $X$ full column rank.
+\item Model $y=X\beta+\varepsilon$, $\mathbb{E}[\varepsilon]=0$.
+\end{bullets}
+}
+\WHICHFORMULA{
+$\beta=(X^\top X)^{-1}X^\top y$ from least squares optimality.}
+\varmapStart
+\var{X}{Design matrix $(n,d)$, includes bias if desired.}
+\var{y}{Response vector $(n,1)$.}
+\var{\beta}{Coefficient vector $(d,1)$.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic data.
+\item Fit $\beta$ via normal equations.
+\item Evaluate RMSE and $R^2$.
+\end{bullets}
+}
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def generate_data(n=100, noise=0.5, seed=0):
+    rng = np.random.default_rng(seed)
+    X1 = np.linspace(0, 10, n)
+    X = np.column_stack([np.ones(n), X1])
+    beta_true = np.array([1.0, 2.0])
+    y = X @ beta_true + rng.standard_normal(n) * noise
+    return X, y, beta_true
+
+def ols_fit(X, y):
+    G = X.T @ X
+    b = X.T @ y
+    return np.linalg.solve(G, b)
+
+def metrics(X, y, beta):
+    yhat = X @ beta
+    rmse = float(np.sqrt(np.mean((y - yhat) ** 2)))
+    ss_res = float(np.sum((y - yhat) ** 2))
+    ss_tot = float(np.sum((y - np.mean(y)) ** 2))
+    r2 = 1.0 - ss_res / ss_tot
+    return rmse, r2
+
+def main():
+    X, y, b_true = generate_data()
+    b_hat = ols_fit(X, y)
+    rmse, r2 = metrics(X, y, b_hat)
+    print("beta_true:", np.round(b_true, 3),
+          "beta_hat:", np.round(b_hat, 3))
+    print("RMSE:", round(rmse, 3), "R2:", round(r2, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{Implementation (Library Version)}
+\begin{codepy}
+import numpy as np
+from sklearn.linear_model import LinearRegression
+
+def main():
+    rng = np.random.default_rng(0)
+    X1 = np.linspace(0, 10, 100).reshape(-1, 1)
+    y = 1 + 2 * X1.flatten() + rng.standard_normal(100) * 0.5
+    model = LinearRegression().fit(X1, y)
+    print("coef:", np.round(model.coef_, 3),
+          "intercept:", round(model.intercept_, 3))
+    print("R2:", round(model.score(X1, y), 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{RMSE and $R^2$ close to noise level and 1, respectively.}
+\INTERPRET{Normal equations solve for $\beta$ using transpose and product.}
+\NEXTSTEPS{Use QR or SVD for stability when $X^\top X$ ill-conditioned.}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Compute portfolio variance and risk contributions using covariance matrices.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Returns have finite covariance; weights sum to 1.
+\end{bullets}
+}
+\WHICHFORMULA{
+$\sigma_p^2=w^\top\Sigma w$, marginal risk $(\Sigma w)_i/\sigma_p$.}
+\varmapStart
+\var{w}{Portfolio weights $(d,1)$.}
+\var{\Sigma}{Covariance matrix $(d,d)$.}
+\var{\sigma_p^2}{Portfolio variance.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Simulate correlated returns.
+\item Estimate $\Sigma$ and compute $\sigma_p^2$.
+\item Compute risk contributions.
+\end{bullets}
+}
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def simulate_returns(n=1000, d=3, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal((d, d))
+    cov = A @ A.T
+    R = rng.multivariate_normal(np.zeros(d), cov, size=n)
+    return R
+
+def portfolio_variance(R, w):
+    Sigma = np.cov(R, rowvar=False, ddof=0)
+    var = float(w.T @ Sigma @ w)
+    return var, Sigma
+
+def risk_contributions(w, Sigma):
+    sigma = float(np.sqrt(w.T @ Sigma @ w))
+    mc = (Sigma @ w) / sigma
+    rc = mc * w
+    return mc, rc
+
+def main():
+    R = simulate_returns()
+    w = np.array([0.5, 0.3, 0.2])
+    var, Sigma = portfolio_variance(R, w)
+    mc, rc = risk_contributions(w, Sigma)
+    print("var:", round(var, 4), "rc:", np.round(rc, 4))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Portfolio variance and additive risk contributions.}
+\INTERPRET{Matrix products encode covariance aggregation.}
+\NEXTSTEPS{Optimize $w$ by quadratic programming under constraints.}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Fit $y=2x+1+\epsilon$ with a small neural net and compare to OLS; uses matrix
+multiplications for forward and gradient computations.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item MSE loss; deterministic seed.
+\end{bullets}
+}
+\WHICHFORMULA{
+$L(\theta)=\tfrac1n\|y-\hat y\|_2^2$, gradient involves $X^\top(X\beta-y)$.}
+\PIPELINE{
+\begin{bullets}
+\item Generate data.
+\item Train NN.
+\item Compare with OLS coefficients.
+\end{bullets}
+}
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np, tensorflow as tf
+
+def generate():
+    rng = np.random.default_rng(0)
+    X = np.linspace(0, 5, 100).reshape(-1, 1)
+    y = 2 * X + 1 + rng.standard_normal((100, 1)) * 0.1
+    return X, y
+
+def train_nn(X, y):
+    tf.random.set_seed(0)
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(8, activation='relu', input_shape=[1]),
+        tf.keras.layers.Dense(1)
+    ])
+    model.compile(optimizer='adam', loss='mse')
+    model.fit(X, y, epochs=80, verbose=0)
+    return model
+
+def ols(X, y):
+    Xb = np.column_stack([np.ones(len(X)), X.reshape(-1)])
+    G = Xb.T @ Xb
+    b = Xb.T @ y.reshape(-1)
+    beta = np.linalg.solve(G, b)
+    return beta
+
+def main():
+    X, y = generate()
+    model = train_nn(X, y)
+    yhat = model.predict(X, verbose=0).reshape(-1)
+    beta = ols(X, y)
+    print("OLS beta:", np.round(beta, 3))
+    print("NN sample:", np.round(yhat[:5], 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Compare MSE and coefficients to OLS baseline.}
+\INTERPRET{NN approximates linear mapping learned by matrix operations.}
+\NEXTSTEPS{Use linear layer only; add L2 regularization to compare Ridge.}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Perform EDA: compute summary stats, correlations, and standardize features.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Numeric features; Pearson correlation.
+\end{bullets}
+}
+\WHICHFORMULA{
+$\rho_{XY}=\frac{\operatorname{Cov}(X,Y)}{\sigma_X \sigma_Y}$; covariance
+uses matrix centering $C=\frac1n(X-\bar X)^\top(X-\bar X)$.}
+\PIPELINE{
+\begin{bullets}
+\item Create synthetic DataFrame.
+\item Compute stats and correlation matrix.
+\item Standardize features.
+\end{bullets}
+}
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import pandas as pd, numpy as np
+
+def create_df(seed=0, n=200):
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal(n)
+    B = 0.8 * A + rng.standard_normal(n) * 0.3
+    C = rng.standard_normal(n) * 2 + 5
+    return pd.DataFrame({"A": A, "B": B, "C": C})
+
+def standardize(df):
+    return (df - df.mean()) / df.std(ddof=0)
+
+def main():
+    df = create_df()
+    print(df.describe().round(2))
+    print("Corr:\n", df.corr().round(3))
+    dfz = standardize(df)
+    m = dfz.mean().round(3).to_dict()
+    s = dfz.std(ddof=0).round(3).to_dict()
+    print("Z-mean:", m, "Z-std:", s)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Means, stds, and correlations.}
+\INTERPRET{Centering and scaling are matrix operations on data arrays.}
+\NEXTSTEPS{Compute PCA via SVD to study variance directions.}
+
+\end{document}

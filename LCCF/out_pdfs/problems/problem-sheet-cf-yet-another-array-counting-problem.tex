@@ -1,0 +1,968 @@
+% !TeX program = xelatex
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Yet Another Array Counting Problem}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1748/E}}
+\LINE{DIFFICULTY / RATING}{2300}
+\STATEMENT{The position of the leftmost maximum on the segment $[l; r]$ of array $x = [x_1, x_2, \ldots, x_n]$ is the smallest integer $i$ such that $l \le i \le r$ and $x_i = \max(x_l, x_{l+1}, \ldots, x_r)$.
+
+You are given an array $a = [a_1, a_2, \ldots, a_n]$ of length $n$. Find the number of integer arrays $b = [b_1, b_2, \ldots, b_n]$ of length $n$ that satisfy the following conditions:
+\begin{bullets}
+\item $1 \le b_i \le m$ for all $1 \le i \le n$;
+\item for all pairs of integers $1 \le l \le r \le n$, the position of the leftmost maximum on the segment $[l; r]$ of the array $b$ is equal to the position of the leftmost maximum on the segment $[l; r]$ of the array $a$.
+\end{bullets}
+Since the answer might be very large, print its remainder modulo $10^9+7$.
+
+Input: Each test contains multiple test cases. The first line contains a single integer $t$ ($1 \le t \le 10^3$) — the number of test cases.
+
+The first line of each test case contains two integers $n$ and $m$ ($2 \le n,m \le 2 \cdot 10^5$, $n \cdot m \le 10^6$).
+
+The second line of each test case contains $n$ integers $a_1,a_2,\ldots,a_n$ ($1 \le a_i \le m$) — the array $a$.
+
+It is guaranteed that the sum of $n \cdot m$ over all test cases does not exceed $10^6$.
+
+Output: For each test case print one integer — the number of arrays $b$ that satisfy the conditions from the statement, modulo $10^9+7$.
+
+Note: In the first test case, the following $8$ arrays satisfy the conditions from the statement:
+\begin{itemize}
+\item $[1,2,1]$;
+\item $[1,2,2]$;
+\item $[1,3,1]$;
+\item $[1,3,2]$;
+\item $[1,3,3]$;
+\item $[2,3,1]$;
+\item $[2,3,2]$;
+\item $[2,3,3]$.
+\end{itemize}
+In the second test case, the following $5$ arrays satisfy the conditions from the statement:
+\begin{itemize}
+\item $[1,1,1,1]$;
+\item $[2,1,1,1]$;
+\item $[2,2,1,1]$;
+\item $[2,2,2,1]$;
+\item $[2,2,2,2]$.
+\end{itemize}}
+\BREAKDOWN{The leftmost-maximum operator over all subarrays is exactly the range-maximum-query (RMQ) with leftmost tie-breaking. This RMQ is encoded by the max-Cartesian tree of $a$ (with ties parented to the left). Count $b$-labelings on the same tree that preserve edge inequalities: strict when $a$ decreases, non-strict when $a$ ties.}
+\ELI{Build the max-heap Cartesian tree of $a$; then count how many ways to assign $b$-values in $[1..m]$ so that along each parent$\to$child edge, $b$ does not increase, and it strictly decreases if $a$ strictly decreases.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Multiple test cases. For each test:
+\begin{bullets}
+\item Integers $n,m$ with $2 \le n,m \le 2\cdot 10^5$ and $n\cdot m \le 10^6$.
+\item Array $a_1,\ldots,a_n$ with $1 \le a_i \le m$.
+\end{bullets}}
+\OUTPUTS{For each test case, a single integer: the count of arrays $b$ satisfying the RMQ-equality condition, modulo $10^9+7$.}
+\SAMPLES{
+Example 1:
+\begin{tcolorbox}
+Input\\
+\texttt{1}\\
+\texttt{2 3}\\
+\texttt{1 2}\\
+Output\\
+\texttt{3}
+\end{tcolorbox}
+Explanation: We need $b_1<b_2$ with $b_i\in[1..3]$, giving $(1,2),(1,3),(2,3)$.
+
+Example 2:
+\begin{tcolorbox}
+Input\\
+\texttt{1}\\
+\texttt{3 3}\\
+\texttt{1 1 1}\\
+Output\\
+\texttt{10}
+\end{tcolorbox}
+Explanation: We need $b_1 \ge b_2 \ge b_3$; the count is $\binom{3+3-1}{3}=10$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $T$ be the max-Cartesian tree of $a$ built with comparator $(a_i, -i)$ (leftmost tie). For each edge $(p\to c)$ in $T$, define a constraint type $s_{pc}\in\{0,1\}$ where $s_{pc}=1$ if $a_p>a_c$ and $s_{pc}=0$ if $a_p=a_c$. Count labelings $b:V(T)\to\{1,2,\ldots,m\}$ such that $b_p \ge b_c + s_{pc}$ for all edges $(p\to c)$.}
+\varmapStart
+\var{n}{array length}
+\var{m}{maximum allowed label}
+\var{a_i}{input array values}
+\var{T}{max-Cartesian tree of $a$ with leftmost ties}
+\var{s_{pc}}{edge strictness: $1$ if strict, $0$ if non-strict}
+\var{b_i}{assigned labels to count}
+\var{f_u(v)}{number of valid labelings in subtree of node $u$ given $b_u=v$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+f_u(v) &= \prod_{c \in \text{children}(u)} \left(\sum_{t=1}^{\max(0,\,v-s_{uc})} f_c(t)\right), \quad v\in\{1,\ldots,m\}, \\
+\text{Ans} &= \sum_{v=1}^m f_{\text{root}}(v) \pmod{10^9+7}.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item The leftmost RMQ of any array equals the RMQ on its Cartesian tree with ties resolved to the left.
+\item Preserving edge-wise (non-)strict inequalities on $b$ along $T$ is necessary and sufficient to preserve all RMQ answers.
+\item $T$ is a binary tree; each node has at most two children.
+\end{bullets}}
+\INVARIANTS{
+\begin{bullets}
+\item Along any root-to-leaf path, $b$ is non-increasing and strictly drops exactly where $a$ strictly drops.
+\item Any subarray corresponds to a connected interval in the inorder traversal, whose RMQ is the highest node (by $b$ with leftmost ties), which matches the highest by $a$.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Dynamic programming on the Cartesian tree: for each node $u$ and value $v$, compute $f_u(v)$ by enumerating allowed child labels. Use naive summation per $v$ and child, leading to $O(n m^2)$ time.}
+\ASSUMPTIONS{We can build the max-Cartesian tree with leftmost ties in $O(n)$ using a monotone stack.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build the max-Cartesian tree $T$ of $a$ with leftmost tie-breaking using a stack with strict $<$ pops.
+\item For each node $u$ in postorder, compute $f_u(v)$ for $v=1..m$:
+      for each child $c$, add $\sum_{t=1}^{v-s_{uc}} f_c(t)$ as a multiplicative factor.
+\item Answer is $\sum_{v=1}^m f_{\text{root}}(v) \bmod 10^9+7$.
+\end{algosteps}
+\COMPLEXITY{
+\[
+\begin{aligned}
+T(n) &= O(n) \text{ (tree)} + \sum_{u} O\big(m \cdot \sum_{c\in\text{ch}(u)} (v\text{-loop summations})\big) \\
+     &= O(n m^2) \text{ in the worst case}, \\
+S(n) &= O(n + n m).
+\end{aligned}
+\]
+}
+\CORRECTNESS{Edge constraints exactly encode when RMQ must strictly decrease (when $a$ does) or may tie (when $a$ ties). The subtree DP multiplies independent choices for children given $b_u=v$. Summing at the root aggregates all feasible root labels.}
+\EDGECASES{
+\begin{bullets}
+\item All $a$ equal $\Rightarrow$ non-increasing chains only.
+\item Strictly increasing $a$ $\Rightarrow$ a right-leaning chain; the constraints enforce strictly decreasing $b$ along the chain.
+\item $m=1$ only feasible if no strict edges exist.
+\end{bullets}}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+
+MOD = 1_000_000_007
+
+def build_cartesian_tree(a):
+    n = len(a)
+    parent = [-1] * n
+    children = [[] for _ in range(n)]
+    st = []
+    for i in range(n):
+        last = -1
+        # Strictly pop smaller elements; equal values stay (leftmost tie)
+        while st and a[st[-1]] < a[i]:
+            last = st.pop()
+        if st:
+            parent[i] = st[-1]
+        if last != -1:
+            parent[last] = i
+        st.append(i)
+    root = -1
+    for i in range(n):
+        if parent[i] != -1:
+            # edge strictness: 1 if a[parent]>a[child], else 0
+            s = 1 if a[parent[i]] > a[i] else 0
+            children[parent[i]].append((i, s))
+        else:
+            root = i
+    return root, children
+
+def solve_case_baseline(n, m, a):
+    root, children = build_cartesian_tree(a)
+    order = []
+    st = [root]
+    while st:
+        u = st.pop()
+        order.append(u)
+        for v, _ in children[u]:
+            st.append(v)
+    order.reverse()  # postorder
+
+    dp = [None] * n  # dp[u] -> list length m+1 (1..m)
+    for u in order:
+        ways = [0] * (m + 1)
+        for val in range(1, m + 1):
+            prod = 1
+            for v, s in children[u]:
+                # naive sum up to val - s
+                upto = val - s
+                if upto <= 0:
+                    prod = 0
+                    break
+                subtotal = 0
+                for t in range(1, upto + 1):
+                    subtotal += dp[v][t]
+                    if subtotal >= MOD:
+                        subtotal -= MOD
+                prod = (prod * (subtotal % MOD)) % MOD
+                if prod == 0:
+                    break
+            ways[val] = prod
+        dp[u] = ways
+    ans = sum(dp[root][1:]) % MOD
+    return ans
+
+def read_input(data):
+    it = iter(data.strip().split())
+    try:
+        t = int(next(it))
+    except StopIteration:
+        return []
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        a = [int(next(it)) for _ in range(n)]
+        tests.append((n, m, a))
+    return tests
+
+def solve_all_baseline(tests):
+    out = []
+    for n, m, a in tests:
+        out.append(str(solve_case_baseline(n, m, a)))
+    return "\n".join(out)
+
+def main():
+    data = sys.stdin.read()
+    if not data.strip():
+        # Self-checks (tiny)
+        assert solve_case_baseline(1, 5, [3]) == 5
+        assert solve_case_baseline(2, 3, [1, 2]) == 3  # need b1<b2
+        assert solve_case_baseline(2, 3, [2, 2]) == 6  # b1>=b2
+        assert solve_case_baseline(3, 3, [1, 1, 1]) == 10
+        print("OK")
+        return
+    tests = read_input(data)
+    print(solve_all_baseline(tests))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Tiny asserts:
+\begin{bullets}
+\item $n=1$: answer $=m$.
+\item $a=[1,2], m=3$: answer $=3$.
+\item $a=[2,2], m=3$: answer $=6$.
+\item $a=[1,1,1], m=3$: answer $=10$.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Replace the inner summations $\sum_{t=1}^{v-s} f_c(t)$ with prefix sums per child to reduce DP from $O(n m^2)$ to $O(n m)$.}
+\ASSUMPTIONS{Precompute per child $F_c(x)=\sum_{t=1}^x f_c(t)$ for all $x$. For a node $u$ and label $v$, each child's contribution is simply $F_c(v-s_{uc})$ with $F_c(x)=0$ when $x\le 0$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build the Cartesian tree as before.
+\item Postorder traverse. For each node $u$:
+\begin{bullets}
+\item If leaf: $f_u(v)=1$ for all $v$.
+\item Else: for $v=1..m$, compute $f_u(v)=\prod_{c} F_c(v-s_{uc})$, where $F_c$ are child prefix sums.
+\item Build $F_u$ from $f_u$ for parent's use.
+\end{bullets}
+\item Sum $f_{\text{root}}(v)$ over $v=1..m$.
+\end{algosteps}
+\COMPLEXITY{
+\[
+\begin{aligned}
+T(n) &= O(n) \text{ (tree)} + O(n m) \text{ (DP with prefix sums)},\\
+S(n) &= O(n + n m) \text{ (can be reduced by freeing child buffers).}
+\end{aligned}
+\]
+}
+\CORRECTNESS{Prefix sums are algebraically identical to the inner sums. Since siblings are separated by the parent in inorder, enforcing only edge constraints suffices to preserve all RMQs.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+
+MOD = 1_000_000_007
+
+def build_cartesian_tree(a):
+    n = len(a)
+    parent = [-1] * n
+    children = [[] for _ in range(n)]
+    st = []
+    for i in range(n):
+        last = -1
+        while st and a[st[-1]] < a[i]:
+            last = st.pop()
+        if st:
+            parent[i] = st[-1]
+        if last != -1:
+            parent[last] = i
+        st.append(i)
+    root = -1
+    for i in range(n):
+        if parent[i] != -1:
+            s = 1 if a[parent[i]] > a[i] else 0
+            children[parent[i]].append((i, s))
+        else:
+            root = i
+    return root, children
+
+def solve_case_fast(n, m, a):
+    root, children = build_cartesian_tree(a)
+    # Postorder
+    order = []
+    st = [root]
+    while st:
+        u = st.pop()
+        order.append(u)
+        for v, _ in children[u]:
+            st.append(v)
+    order.reverse()
+
+    dp = [None] * n
+    pref = [None] * n
+    for u in order:
+        ways = [0] * (m + 1)
+        if not children[u]:
+            # Leaf
+            for v in range(1, m + 1):
+                ways[v] = 1
+        else:
+            # Precompute child prefixes
+            child_pref = []
+            for vtx, _ in children[u]:
+                cp = [0] * (m + 1)
+                run = 0
+                cv = dp[vtx]
+                for x in range(1, m + 1):
+                    run += cv[x]
+                    if run >= MOD:
+                        run -= MOD
+                    cp[x] = run
+                child_pref.append(cp)
+            # Combine
+            for v in range(1, m + 1):
+                prod = 1
+                for (idx, (vtx, s)) in enumerate(children[u]):
+                    upto = v - s
+                    if upto <= 0:
+                        prod = 0
+                        break
+                    prod = (prod * child_pref[idx][upto]) % MOD
+                    if prod == 0:
+                        break
+                ways[v] = prod
+        dp[u] = ways
+        # build prefix for potential reuse at parent; keep only dp, prefix constructed on demand
+    ans = sum(dp[root][1:]) % MOD
+    return ans
+
+def read_input(data):
+    it = iter(data.strip().split())
+    try:
+        t = int(next(it))
+    except StopIteration:
+        return []
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        a = [int(next(it)) for _ in range(n)]
+        tests.append((n, m, a))
+    return tests
+
+def solve_all_fast(tests):
+    out = []
+    for n, m, a in tests:
+        out.append(str(solve_case_fast(n, m, a)))
+    return "\n".join(out)
+
+def main():
+    data = sys.stdin.read()
+    if not data.strip():
+        # Self-checks
+        assert solve_case_fast(1, 5, [3]) == 5
+        assert solve_case_fast(2, 3, [1, 2]) == 3
+        assert solve_case_fast(2, 3, [2, 2]) == 6
+        assert solve_case_fast(3, 3, [1, 1, 1]) == 10
+        print("OK")
+        return
+    tests = read_input(data)
+    print(solve_all_fast(tests))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Edge checks:
+\begin{bullets}
+\item All equal $a$: matches stars-and-bars count for weakly decreasing $b$.
+\item Chain constraints (strictly increasing $a$): counts strictly decreasing $b$ sequences.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Tree DP with prefix sums in $O(n m)$ time using the max-Cartesian tree. This is optimal up to constant factors given the input guarantee $n\cdot m \le 10^6$.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Cartesian tree constructed with strict-pop stack yields leftmost tie parentage (previous greater-or-equal).
+\item Each node has at most two children; combining child contributions is $O(m)$ with prefix sums.
+\end{bullets}}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build the max-Cartesian tree of $a$ with leftmost ties via monotone stack with strict $<$ pops.
+\item Do a postorder traversal to process children before parent.
+\item For each node $u$, compute $f_u(v)$ for $v=1..m$ by multiplying children's prefix sums evaluated at $v-s_{uc}$; sum at the root.
+\end{algosteps}
+\OPTIMALITY{Any algorithm must, in the worst case, inspect $\Theta(n m)$ DP states or comparable amount of information, as the answer is a polynomial in $m$ determined by all edge constraints and levels $1..m$. Under $n\cdot m \le 10^6$, the proposed method is tight.}
+\COMPLEXITY{
+\[
+\begin{aligned}
+T(n) &= O(n) + O(n m), \\
+S(n) &= O(n + m) \text{ working memory with streaming prefixes; } O(n m) \text{ if storing all DP arrays.}
+\end{aligned}
+\]
+}
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+
+MOD = 1_000_000_007
+
+def build_cartesian_tree(a):
+    n = len(a)
+    parent = [-1] * n
+    children = [[] for _ in range(n)]
+    st = []
+    for i in range(n):
+        last = -1
+        # Strictly pop smaller; equal stays to ensure leftmost tie
+        while st and a[st[-1]] < a[i]:
+            last = st.pop()
+        if st:
+            parent[i] = st[-1]
+        if last != -1:
+            parent[last] = i
+        st.append(i)
+    root = -1
+    for i in range(n):
+        if parent[i] != -1:
+            s = 1 if a[parent[i]] > a[i] else 0
+            children[parent[i]].append((i, s))
+        else:
+            root = i
+    return root, children
+
+def solve_case(n, m, a):
+    root, children = build_cartesian_tree(a)
+    # Postorder
+    order = []
+    st = [root]
+    while st:
+        u = st.pop()
+        order.append(u)
+        for v, _ in children[u]:
+            st.append(v)
+    order.reverse()
+
+    dp = [None] * n
+    for u in order:
+        ways = [0] * (m + 1)
+        if not children[u]:
+            for v in range(1, m + 1):
+                ways[v] = 1
+        else:
+            # Precompute prefixes for each child once
+            child_pref = []
+            for vtx, _ in children[u]:
+                pref = [0] * (m + 1)
+                run = 0
+                arr = dp[vtx]
+                for x in range(1, m + 1):
+                    run += arr[x]
+                    if run >= MOD:
+                        run -= MOD
+                    pref[x] = run
+                child_pref.append(pref)
+            # Combine child contributions
+            for v in range(1, m + 1):
+                prod = 1
+                for (idx, (vtx, s)) in enumerate(children[u]):
+                    upto = v - s
+                    if upto <= 0:
+                        prod = 0
+                        break
+                    prod = (prod * child_pref[idx][upto]) % MOD
+                    if prod == 0:
+                        break
+                ways[v] = prod
+        dp[u] = ways
+    ans = sum(dp[root][1:]) % MOD
+    return ans
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return []
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        a = [int(next(it)) for _ in range(n)]
+        tests.append((n, m, a))
+    return tests
+
+def solve_all():
+    tests = read_input()
+    if not tests:
+        # Self-tests on tiny cases
+        assert solve_case(1, 5, [3]) == 5
+        assert solve_case(2, 3, [1, 2]) == 3
+        assert solve_case(2, 3, [2, 2]) == 6
+        assert solve_case(3, 3, [1, 1, 1]) == 10
+        print("OK")
+        return
+    out_lines = []
+    for n, m, a in tests:
+        out_lines.append(str(solve_case(n, m, a)))
+    sys.stdout.write("\n".join(out_lines))
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Exactly three checks:
+\begin{bullets}
+\item $n=1, m=5, a=[3] \Rightarrow 5$.
+\item $n=2, m=3, a=[1,2] \Rightarrow 3$.
+\item $n=3, m=3, a=[1,1,1] \Rightarrow 10$.
+\end{bullets}}
+\RESULT{Counts the number of $b\in[1..m]^n$ that preserve the leftmost RMQ index for every subarray, modulo $10^9+7$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Verify edge families: all equal $a$ (weakly decreasing $b$), strictly increasing $a$ (strictly decreasing $b$), strictly decreasing $a$ (root at position $1$), mixed equalities forming both strict and non-strict edges.}
+\LINE{CROSS-CHECKS}{Compare Baseline vs Improved vs Final on random tiny instances ($n\le 8$, $m\le 4$), ensuring identical outputs.}
+\LINE{EDGE-CASE GENERATOR}{Generate arrays with runs of equals and with alternating up/down to stress both strict and non-strict edges.}
+\begin{minted}{python}
+import random
+
+MOD = 1_000_000_007
+
+# Hook the three solvers from above if copied into one file; here we restate the fast solver for reference.
+def build_cartesian_tree(a):
+    n = len(a)
+    parent = [-1] * n
+    children = [[] for _ in range(n)]
+    st = []
+    for i in range(n):
+        last = -1
+        while st and a[st[-1]] < a[i]:
+            last = st.pop()
+        if st:
+            parent[i] = st[-1]
+        if last != -1:
+            parent[last] = i
+        st.append(i)
+    root = -1
+    for i in range(n):
+        if parent[i] != -1:
+            s = 1 if a[parent[i]] > a[i] else 0
+            children[parent[i]].append((i, s))
+        else:
+            root = i
+    return root, children
+
+def solve_case_fast(n, m, a):
+    root, children = build_cartesian_tree(a)
+    order = []
+    st = [root]
+    while st:
+        u = st.pop()
+        order.append(u)
+        for v, _ in children[u]:
+            st.append(v)
+    order.reverse()
+    dp = [None] * n
+    for u in order:
+        ways = [0] * (m + 1)
+        if not children[u]:
+            for v in range(1, m + 1):
+                ways[v] = 1
+        else:
+            child_pref = []
+            for vtx, _ in children[u]:
+                pref = [0] * (m + 1)
+                run = 0
+                arr = dp[vtx]
+                for x in range(1, m + 1):
+                    run += arr[x]
+                    if run >= MOD:
+                        run -= MOD
+                    pref[x] = run
+                child_pref.append(pref)
+            for v in range(1, m + 1):
+                prod = 1
+                for (idx, (vtx, s)) in enumerate(children[u]):
+                    upto = v - s
+                    if upto <= 0:
+                        prod = 0
+                        break
+                    prod = (prod * child_pref[idx][upto]) % MOD
+                    if prod == 0:
+                        break
+                ways[v] = prod
+        dp[u] = ways
+    return sum(dp[root][1:]) % MOD
+
+def brute_count(n, m, a):
+    # Exponential brute for tiny n,m: check all b and compare RMQ leftmost positions
+    def rmq_left_idx(arr, l, r):
+        best = arr[l]; pos = l
+        for i in range(l+1, r+1):
+            if arr[i] > best:
+                best = arr[i]; pos = i
+        return pos
+    # Precompute a's RMQ indices for all intervals
+    A = [0]*n
+    rmqa = [[0]*n for _ in range(n)]
+    for l in range(n):
+        best = a[l]; pos = l
+        for r in range(l, n):
+            if a[r] > best:
+                best = a[r]; pos = r
+            rmqa[l][r] = pos
+    ans = 0
+    b = [1]*n
+    def rec(i):
+        nonlocal ans
+        if i == n:
+            # check
+            ok = True
+            for l in range(n):
+                best = b[l]; pos = l
+                for r in range(l, n):
+                    if b[r] > best:
+                        best = b[r]; pos = r
+                    if rmqa[l][r] != pos:
+                        ok = False
+                        break
+                if not ok:
+                    break
+            if ok:
+                ans += 1
+            return
+        for v in range(1, m+1):
+            b[i] = v
+            rec(i+1)
+    rec(0)
+    return ans % MOD
+
+def self_check():
+    random.seed(0)
+    for n in range(1, 6):
+        for m in range(1, 5):
+            for _ in range(50):
+                a = [random.randint(1, m) for _ in range(n)]
+                if n * m > 12:  # avoid too slow brute
+                    continue
+                brute = brute_count(n, m, a)
+                fast = solve_case_fast(n, m, a)
+                assert brute == fast, (n, m, a, brute, fast)
+    print("All cross-checks passed.")
+
+if __name__ == "__main__":
+    self_check()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+
+MOD = 1_000_000_007
+
+def build_cartesian_tree(a):
+    n = len(a)
+    parent = [-1] * n
+    children = [[] for _ in range(n)]
+    st = []
+    for i in range(n):
+        last = -1
+        # Strict pop -> enforces previous greater-or-equal (leftmost tie)
+        while st and a[st[-1]] < a[i]:
+            last = st.pop()
+        if st:
+            parent[i] = st[-1]
+        if last != -1:
+            parent[last] = i
+        st.append(i)
+    root = -1
+    for i in range(n):
+        if parent[i] != -1:
+            s = 1 if a[parent[i]] > a[i] else 0
+            children[parent[i]].append((i, s))
+        else:
+            root = i
+    return root, children
+
+def solve_case(n, m, a):
+    root, children = build_cartesian_tree(a)
+    # Postorder list
+    order = []
+    st = [root]
+    while st:
+        u = st.pop()
+        order.append(u)
+        for v, _ in children[u]:
+            st.append(v)
+    order.reverse()
+    dp = [None] * n
+    for u in order:
+        ways = [0] * (m + 1)
+        if not children[u]:
+            for v in range(1, m + 1):
+                ways[v] = 1
+        else:
+            child_pref = []
+            for vtx, _ in children[u]:
+                pref = [0] * (m + 1)
+                run = 0
+                arr = dp[vtx]
+                for x in range(1, m + 1):
+                    run += arr[x]
+                    if run >= MOD:
+                        run -= MOD
+                    pref[x] = run
+                child_pref.append(pref)
+            for v in range(1, m + 1):
+                prod = 1
+                for (idx, (vtx, s)) in enumerate(children[u]):
+                    upto = v - s
+                    if upto <= 0:
+                        prod = 0
+                        break
+                    prod = (prod * child_pref[idx][upto]) % MOD
+                    if prod == 0:
+                        break
+                ways[v] = prod
+        dp[u] = ways
+    return sum(dp[root][1:]) % MOD
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return []
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        a = [int(next(it)) for _ in range(n)]
+        tests.append((n, m, a))
+    return tests
+
+def solve_all():
+    tests = read_input()
+    if not tests:
+        # Asserts
+        assert solve_case(1, 5, [3]) == 5
+        assert solve_case(2, 3, [1, 2]) == 3
+        assert solve_case(2, 3, [2, 2]) == 6
+        print("OK")
+        return
+    out = []
+    for n, m, a in tests:
+        out.append(str(solve_case(n, m, a)))
+    print("\n".join(out))
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Count labelings on the max-Cartesian tree that are non-increasing along edges and strictly decreasing exactly when $a$ decreases.}
+\WHY{Cartesian trees compactly encode RMQ with tie-breaking; many interview/contest problems reduce RMQ-preservation to monotone labelings on trees.}
+\CHECKLIST{
+\begin{bullets}
+\item Build the correct Cartesian tree: strict-pop for leftmost tie.
+\item Mark edge strictness: $s=1$ iff $a_{\text{parent}}>a_{\text{child}}$.
+\item Postorder DP; leaves $\to$ ones.
+\item Use prefix sums to get $O(n m)$.
+\item Sum root distribution; mod $10^9+7$.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item All $a$ equal $\Rightarrow$ weakly decreasing $b$ chain.
+\item $m=1$: only valid if no strict edge exists.
+\item Long equal runs in $a$ form right chains; ensure ties handled to the left.
+\item Zig-zag arrays: both strict and non-strict edges present.
+\item Small $n$ (1 or 2): verify counts match simple combinatorics.
+\item Large $m$ with small $n$: DP arrays should still be $O(n m)$.
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Using $\le$ instead of $<$ in the stack pop flips tie direction (breaks leftmost rule).
+\item Forgetting to handle $v-s\le 0$ as zero contribution.
+\item Off-by-one in prefix sums (index $0$ should be $0$).
+\item Recursion depth if using recursive DFS on large $n$.
+\item Integer overflow if implementing in languages without automatic bigints; always mod.
+\item Not freeing or reusing buffers can increase memory; but $n\cdot m \le 10^6$ makes it safe.
+\end{bullets}}
+\FAILMODES{
+\begin{bullets}
+\item Pairwise-order enforcement across all indices is too strong and can undercount; only tree-edge constraints are required.
+\item Building a rightmost-tie tree changes RMQ answers for equal values; must be leftmost.
+\end{bullets}}
+\ELI{Turn the array into a max-heap-shaped binary tree that captures where maximums live in every segment. Then assign numbers to nodes from $1$ to $m$ so that numbers never increase from parent to child, and they drop by at least $1$ exactly where the original array dropped. Count all such assignments.}
+\NotePages{3}
+
+\end{document}

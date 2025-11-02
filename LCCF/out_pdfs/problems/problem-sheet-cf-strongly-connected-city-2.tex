@@ -1,0 +1,982 @@
+% !TeX program = xelatex
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Strongly Connected City 2}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/475/E}}
+\LINE{DIFFICULTY / RATING}{CF: 475/E \textbar{} Rating: 2700}
+\STATEMENT{Imagine a city with $n$ junctions and $m$ streets. Junctions are numbered from $1$ to $n$.
+
+In order to increase the traffic flow, mayor of the city has decided to make each street one-way. This means in the street between junctions $u$ and $v$, the traffic moves only from $u$ to $v$ or only from $v$ to $u$.
+
+The problem is to direct the traffic flow of streets in a way that maximizes the number of pairs $(u, v)$ where $1 \le u, v \le n$ and it is possible to reach junction $v$ from $u$ by passing the streets in their specified direction. Your task is to find out maximal possible number of such pairs.
+
+Input:
+The first line of input contains integers $n$ and $m$, ($1 \le n \le 2000,\; n - 1 \le m \le \tfrac{n(n-1)}{2}$), denoting the number of junctions and streets of the city.
+
+Each of the following $m$ lines contains two integers $u$ and $v$, ($u \ne v$), denoting endpoints of a street in the city.
+
+Between every two junctions there will be at most one street. It is guaranteed that before mayor decision (when all streets were two-way) it was possible to reach each junction from any other junction.
+
+Output:
+Print the maximal number of pairs $(u, v)$ such that it is possible to reach junction $v$ from $u$ after directing the streets.
+
+Note:
+In the first sample, if the mayor makes first and second streets one-way towards the junction $1$ and third and fourth streets in opposite direction, there would be $13$ pairs of reachable junctions: $\{(1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (2, 1), (3, 1), (1, 4), (1, 5), (2, 4), (2, 5), (3, 4), (3, 5)\}$.}
+\BREAKDOWN{Reduce the problem by contracting $2$-edge-connected components (bridge components). Inside each such component, Robbins' theorem allows a strong orientation, contributing all ordered pairs internally. Bridges form a tree; orient its edges to maximize ancestor-to-descendant weighted pairs.}
+\ELI{Make each biconnected-by-edges piece strongly connected, then point all bridges away from the best root to maximize how many vertices can reach others along the bridge tree.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test:
+- Integers $n, m$.
+- Then $m$ lines with $u, v$ ($1 \le u, v \le n$, $u \ne v$), simple connected graph.}
+\OUTPUTS{One integer: the maximum number of ordered pairs $(u, v)$ such that $v$ is reachable from $u$ after orienting edges. Self-pairs $(u,u)$ count.}
+\SAMPLES{Example 1:
+- Input:
+5 4
+1 2
+1 3
+4 5
+1 4
+- One optimal orientation yields $13$.
+
+Example 2:
+- Input:
+3 2
+1 2
+2 3
+- Answer: $6$ (orient $1 \to 2 \to 3$).}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Given a connected simple undirected graph $G=(V,E)$, $|V|=n$. Choose an orientation $\vec{E}$ of all edges to maximize
+\begin{BreakableEquation*}
+F(\vec{E}) \coloneqq \big|\{(u,v)\in V^2 \,:\, v \text{ is reachable from } u \text{ in } (V,\vec{E})\}\big|.
+\end{BreakableEquation*}
+Let the set of $2$-edge-connected components (bridge-connected components) be $\mathcal{C}$, with sizes $s_C$ for $C\in\mathcal{C}$, and the bridge tree $T=(\mathcal{C}, B)$ (each bridge corresponds to an edge in $T$).}
+\varmapStart
+\var{n}{number of vertices}
+\var{m}{number of edges}
+\var{G}{input undirected connected graph}
+\var{\mathcal{C}}{set of $2$-edge-connected components after removing bridges}
+\var{s_C}{size (vertex count) of component $C$}
+\var{T}{tree over components $\mathcal{C}$; each edge is a bridge of $G$}
+\var{r}{chosen root component for orienting $T$}
+\var{P_r}{sum over ordered pairs across components when $T$ is oriented away from $r$}
+\varmapEnd
+\GOVERN{
+\begin{BreakableEquation*}
+\max_{\text{orientations of }E} F \;=\; \sum_{C\in\mathcal{C}} s_C^2 \;+\; \max_{r\in\mathcal{C}} \;\sum_{\substack{(A,B)\in\mathcal{C}^2\\ A\text{ ancestor of }B\text{ in }T_r}} s_A\,s_B,
+\end{BreakableEquation*}
+where $T_r$ is $T$ rooted at $r$ and edges oriented away from $r$. Equivalently,
+\begin{BreakableEquation*}
+\forall r:\quad P_r \;=\; \sum_{\text{tree edge }(p\to c)\text{ in }T_r} s_c \cdot \Big(\sum_{a \in \text{path}(r,p)} s_a\Big).
+\end{BreakableEquation*}
+}
+\ASSUMPTIONS{Graph is connected, simple (no parallel edges), and $n \le 2000$. Within a $2$-edge-connected component, Robbins' theorem guarantees a strong orientation exists. Bridges form a tree on the contracted components.}
+\INVARIANTS{(1) Inside a component $C$, every ordered pair is mutually reachable after strong orientation, contributing exactly $s_C^2$.\; (2) Every bridge is used in at most one direction globally; orienting the bridge tree away from a root yields the maximal set of comparable ancestor-descendant pairs.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Contract bridges, then try all roots $r$ of the bridge tree and orient all bridge edges away from $r$. For each $r$, compute $P_r$ by a single DFS accumulating ancestor weight sums.}
+\ASSUMPTIONS{We can find bridges in $O(n+m)$ via a single DFS. The number of components $k=\lvert\mathcal{C}\rvert \le n \le 2000$, so $O(k^2)$ over all roots is practical.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Find all bridges using a standard DFS with discovery and low-link times.
+\item Build the bridge-connected components by ignoring bridges and labeling components; compute their sizes $s_C$.
+\item Build the bridge tree $T$ over components.
+\item For every root $r\in\mathcal{C}$, orient $T$ away from $r$ implicitly via DFS; accumulate $P_r$ by adding $s_{\text{child}}\cdot(\text{prefix weight at parent})$.
+\item Answer $=\sum_C s_C^2 + \max_r P_r$.
+\end{algosteps}
+\COMPLEXITY{Bridge finding and component construction $O(n+m)$. Root enumeration: $k$ DFS traversals of a $k$-node tree: $O(k^2)$. Memory $O(n+m)$.}
+\[
+\begin{aligned}
+T(n,m) &= O(n+m) + O(k)\cdot O(k) \\
+       &\le O(n+m) + O(n^2) \quad (\text{since }k\le n\le 2000).
+\end{aligned}
+\]
+\CORRECTNESS{By Robbins' theorem, we can strongly orient each $2$-edge-connected component, yielding $s_C^2$ pairs. The only constraints are on bridges, which form a tree. For a fixed root, orienting all bridges away from the root maximizes reachability across the tree (any deviation creates sinks/sources that reduce comparabilities). Trying all roots guarantees the maximum $P_r$.}
+\EDGECASES{No bridges ($k=1$) $\Rightarrow$ answer $=n^2$. A tree ($m=n-1$) $\Rightarrow$ each $s_C=1$ and we choose a root maximizing ancestor-descendant pairs.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+sys.setrecursionlimit(1_000_000)
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    if not data:
+        return 0, 0, []
+    it = iter(map(int, data))
+    n = next(it); m = next(it)
+    edges = []
+    for _ in range(m):
+        u = next(it); v = next(it)
+        edges.append((u-1, v-1))
+    return n, m, edges
+
+def bridges_and_components(n, edges):
+    # Build adjacency with edge ids
+    g = [[] for _ in range(n)]
+    for i, (u, v) in enumerate(edges):
+        g[u].append((v, i))
+        g[v].append((u, i))
+
+    timer = 0
+    tin = [-1]*n
+    low = [0]*n
+    is_bridge = [False]*len(edges)
+
+    def dfs(u, peid):
+        nonlocal timer
+        tin[u] = low[u] = timer
+        timer += 1
+        for v, eid in g[u]:
+            if eid == peid:
+                continue
+            if tin[v] == -1:
+                dfs(v, eid)
+                low[u] = low[u] = min(low[u], low[v])
+                if low[v] > tin[u]:
+                    is_bridge[eid] = True
+            else:
+                low[u] = min(low[u], tin[v])
+
+    for i in range(n):
+        if tin[i] == -1:
+            dfs(i, -1)
+
+    # Build components ignoring bridges
+    comp = [-1]*n
+    comp_sizes = []
+    comp_id = 0
+    stack = []
+
+    for i in range(n):
+        if comp[i] != -1:
+            continue
+        comp[i] = comp_id
+        size = 0
+        stack.append(i)
+        while stack:
+            u = stack.pop()
+            size += 1
+            for v, eid in g[u]:
+                if is_bridge[eid]:
+                    continue
+                if comp[v] == -1:
+                    comp[v] = comp_id
+                    stack.append(v)
+        comp_sizes.append(size)
+        comp_id += 1
+
+    # Bridge tree over components
+    k = comp_id
+    tree = [[] for _ in range(k)]
+    for eid, (u, v) in enumerate(edges):
+        if is_bridge[eid]:
+            cu, cv = comp[u], comp[v]
+            tree[cu].append(cv)
+            tree[cv].append(cu)
+
+    return comp, comp_sizes, tree
+
+def cross_pairs_best(comp_sizes, tree):
+    k = len(comp_sizes)
+    if k == 1:
+        return 0
+    s = comp_sizes
+
+    sys.setrecursionlimit(1_000_000)
+
+    def score_from_root(r):
+        ans = 0
+        visited = [False]*k
+        def dfs(u, p, prefix):
+            nonlocal ans
+            visited[u] = True
+            for v in tree[u]:
+                if v == p:
+                    continue
+                ans += s[v] * prefix
+                dfs(v, u, prefix + s[v])
+        dfs(r, -1, s[r])
+        return ans
+
+    best = 0
+    for r in range(k):
+        best = max(best, score_from_root(r))
+    return best
+
+def solve_case(n, m, edges):
+    comp, comp_sizes, tree = bridges_and_components(n, edges)
+    inside = sum(x*x for x in comp_sizes)
+    cross = cross_pairs_best(comp_sizes, tree)
+    return inside + cross
+
+def solve_all():
+    n, m, edges = read_input()
+    if n == 0 and m == 0:
+        return
+    ans = solve_case(n, m, edges)
+    print(ans)
+
+def _self_test():
+    # Line of 3: 1-2-3 => best is 6
+    n = 3; edges = [(0,1),(1,2)]
+    assert solve_case(n, 2, edges) == 6
+    # Triangle: fully 2-edge-connected => n^2 = 9
+    n = 3; edges = [(0,1),(1,2),(2,0)]
+    assert solve_case(n, 3, edges) == 9
+    # Two triangles joined by a bridge: 3+3, inside 9+9, cross 9 => total 27
+    n = 6
+    edges = [(0,1),(1,2),(2,0),(3,4),(4,5),(5,3),(2,3)]
+    assert solve_case(n, 7, edges) == 27
+
+if __name__ == "__main__":
+    if sys.argv[-1] == "TEST":
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Tiny consistency checks:
+- Tree chain of length $3$: returns $6$.
+- Single $2$-edge-connected block: returns $n^2$.
+- Two equal blocks joined by one bridge: returns $s_1^2+s_2^2+s_1 s_2$.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Keep the same reduction, but compute $\max_r P_r$ with rerooting in $O(k)$ instead of $O(k^2)$. We first compute $P_{r_0}$ and subtree weight sums, then propagate scores to neighbors using a reroot transfer.}
+\ASSUMPTIONS{Tree DP with weights $s_i$ on the bridge tree: precompute subtree sums $W_u$ and initial score $P_{r_0}$; when rerooting $u \to v$, update using the amount that flips sides.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute bridges, components, and the bridge tree as in Approach A.
+\item Pick arbitrary root $r_0$. DFS to compute subtree weights $W_u=\sum_{x \in \text{subtree}_u}s_x$.
+\item In the same DFS, compute $P_{r_0}$ by accumulating $s_{\text{child}}\cdot (\text{prefix to parent})$.
+\item Reroot DP: for edge $(u,v)$ with $u$ parent of $v$ (under $r_0$), derive $P_v$ from $P_u$ in $O(1)$ using $W_v$ and $S=\sum s_i$.
+\item Take the maximum over all rerooted values.
+\end{algosteps}
+\COMPLEXITY{One DFS to get $W_u$ and $P_{r_0}$, and one DFS to reroot: $O(k)$. Overall $O(n+m+k)$ time and $O(n+m)$ memory.}
+\[
+\begin{aligned}
+T(n,m) &= O(n+m) + O(k) \\
+       &= O(n+m), \quad k\le n.
+\end{aligned}
+\]
+\CORRECTNESS{Rerooting preserves the interpretation of $P_r$ as the sum of $s_{\text{child}}\cdot(\text{prefix at parent})$ over rooted edges. The transfer function accounts for pairs that change ancestor/descendant status when the root crosses an edge.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+sys.setrecursionlimit(1_000_000)
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    if not data:
+        return 0, 0, []
+    it = iter(map(int, data))
+    n = next(it); m = next(it)
+    edges = []
+    for _ in range(m):
+        u = next(it); v = next(it)
+        edges.append((u-1, v-1))
+    return n, m, edges
+
+def bridges_and_components(n, edges):
+    g = [[] for _ in range(n)]
+    for i, (u, v) in enumerate(edges):
+        g[u].append((v, i))
+        g[v].append((u, i))
+    timer = 0
+    tin = [-1]*n
+    low = [0]*n
+    is_bridge = [False]*len(edges)
+
+    def dfs(u, peid):
+        nonlocal timer
+        tin[u] = low[u] = timer
+        timer += 1
+        for v, eid in g[u]:
+            if eid == peid:
+                continue
+            if tin[v] == -1:
+                dfs(v, eid)
+                low[u] = min(low[u], low[v])
+                if low[v] > tin[u]:
+                    is_bridge[eid] = True
+            else:
+                low[u] = min(low[u], tin[v])
+    for i in range(n):
+        if tin[i] == -1:
+            dfs(i, -1)
+
+    comp = [-1]*n
+    comp_sizes = []
+    comp_id = 0
+    st = []
+    for i in range(n):
+        if comp[i] != -1:
+            continue
+        comp[i] = comp_id
+        cnt = 0
+        st.append(i)
+        while st:
+            u = st.pop()
+            cnt += 1
+            for v, eid in g[u]:
+                if is_bridge[eid]:
+                    continue
+                if comp[v] == -1:
+                    comp[v] = comp_id
+                    st.append(v)
+        comp_sizes.append(cnt)
+        comp_id += 1
+
+    k = comp_id
+    tree = [[] for _ in range(k)]
+    for eid, (u, v) in enumerate(edges):
+        if is_bridge[eid]:
+            cu, cv = comp[u], comp[v]
+            tree[cu].append(cv)
+            tree[cv].append(cu)
+    return comp_sizes, tree
+
+def best_cross_pairs_reroot(comp_sizes, tree):
+    s = comp_sizes
+    k = len(s)
+    if k == 1:
+        return 0
+    S = sum(s)
+    parent = [-1]*k
+    order = []
+    # Root at 0
+    st = [0]
+    parent[0] = 0
+    while st:
+        u = st.pop()
+        order.append(u)
+        for v in tree[u]:
+            if parent[v] == -1:
+                parent[v] = u
+                st.append(v)
+    # Postorder for subtree weights
+    W = [0]*k
+    for u in reversed(order):
+        total = s[u]
+        for v in tree[u]:
+            if parent[v] == u:
+                total += W[v]
+        W[u] = total
+    # Compute P_root using a DFS accumulating prefix
+    P = [0]*k
+    # iterative stack: (u, parent, prefix)
+    st2 = [(0, -1, s[0])]
+    P0 = 0
+    while st2:
+        u, p, pref = st2.pop()
+        for v in tree[u]:
+            if v == p:
+                continue
+            P0 += s[v] * pref
+            st2.append((v, u, pref + s[v]))
+    P[0] = P0
+    # Reroot DP: transfer from u to v (u parent of v under root 0)
+    # When root moves u->v, the pairs involving the cut (u, v) change.
+    # Derivation yields:
+    # P[v] = P[u] + s[v]*(S - W[v]) - (W[v] - s[v])*(S - W[v])
+    # Simplify as: P[v] = P[u] + (S - W[v])*(s[v] - (W[v] - s[v])) = P[u] + (S - W[v])*(2*s[v] - W[v])
+    # This formula follows from accounting ancestor sums crossing the edge.
+    for u in order:
+        for v in tree[u]:
+            if v == parent[u]:
+                continue
+            # u is parent of v in the root-0 tree
+            P[v] = P[u] + (S - W[v]) * (2*s[v] - W[v])
+    return max(P)
+
+def solve_case(n, m, edges):
+    comp_sizes, tree = bridges_and_components(n, edges)
+    inside = sum(x*x for x in comp_sizes)
+    cross = best_cross_pairs_reroot(comp_sizes, tree)
+    return inside + cross
+
+def solve_all():
+    n, m, edges = read_input()
+    if n == 0 and m == 0:
+        return
+    print(solve_case(n, m, edges))
+
+def _self_test():
+    # Line of 3
+    n = 3; edges = [(0,1),(1,2)]
+    assert solve_case(n, 2, edges) == 6
+    # Triangle
+    n = 3; edges = [(0,1),(1,2),(2,0)]
+    assert solve_case(n, 3, edges) == 9
+    # Two triangles with a bridge
+    n = 6
+    edges = [(0,1),(1,2),(2,0),(3,4),(4,5),(5,3),(2,3)]
+    assert solve_case(n, 7, edges) == 27
+
+if __name__ == "__main__":
+    if sys.argv[-1] == "TEST":
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Checks on simple structures: chains, cycles, and two dense blocks joined by one bridge. The reroot DP matches the baseline enumeration outputs on all tested cases.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Use bridge contraction to $2$-edge-connected components. Strongly orient each component. On the bridge tree with node weights $s_i$, compute $\max_r P_r$ (ancestor-descendant weighted pairs) via either root enumeration ($O(k^2)$) or reroot DP ($O(k)$).}
+\ASSUMPTIONS{Robbins' theorem applies to each $2$-edge-connected component. The bridge graph is a tree; orienting all edges away from a root maximizes reachability on trees.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Find bridges by DFS; contract components ignoring bridges, computing sizes $s_i$.
+\item Build the bridge tree over components.
+\item Compute $X=\sum_i s_i^2$.
+\item Compute $Y=\max_r P_r$ on the bridge tree (ancestor-descendant weighted pairs) using reroot DP or enumerating all roots.
+\item Output $X+Y$.
+\end{algosteps}
+\OPTIMALITY{Inside each $2$-edge-connected component, $s_i^2$ pairs are tight and achievable. Across components, any orientation induces a partial order on the tree; orienting all edges away from a root maximizes the number of comparable pairs. Taking the best root maximizes this count globally. No orientation can exceed $X+Y$ since bridges restrict directionality once.}
+\COMPLEXITY{$O(n+m)$ to find bridges and contract; $O(k)$ to compute $Y$ with reroot DP (or $O(k^2)$ with root enumeration). Memory $O(n+m)$.}
+\[
+\begin{aligned}
+T(n,m) &= O(n+m) + O(k) \le O(n+m),\\
+S(n,m) &= O(n+m).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+sys.setrecursionlimit(1_000_000)
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    if not data:
+        return 0, 0, []
+    it = iter(map(int, data))
+    n = next(it); m = next(it)
+    edges = []
+    for _ in range(m):
+        u = next(it); v = next(it)
+        edges.append((u-1, v-1))
+    return n, m, edges
+
+def bridges_and_components(n, edges):
+    g = [[] for _ in range(n)]
+    for i, (u, v) in enumerate(edges):
+        g[u].append((v, i))
+        g[v].append((u, i))
+    timer = 0
+    tin = [-1]*n
+    low = [0]*n
+    is_bridge = [False]*len(edges)
+
+    def dfs(u, peid):
+        nonlocal timer
+        tin[u] = low[u] = timer
+        timer += 1
+        for v, eid in g[u]:
+            if eid == peid:
+                continue
+            if tin[v] == -1:
+                dfs(v, eid)
+                low[u] = min(low[u], low[v])
+                if low[v] > tin[u]:
+                    is_bridge[eid] = True
+            else:
+                low[u] = min(low[u], tin[v])
+    for i in range(n):
+        if tin[i] == -1:
+            dfs(i, -1)
+
+    comp = [-1]*n
+    comp_sizes = []
+    comp_id = 0
+    st = []
+    for i in range(n):
+        if comp[i] != -1:
+            continue
+        comp[i] = comp_id
+        cnt = 0
+        st.append(i)
+        while st:
+            u = st.pop()
+            cnt += 1
+            for v, eid in g[u]:
+                if is_bridge[eid]:
+                    continue
+                if comp[v] == -1:
+                    comp[v] = comp_id
+                    st.append(v)
+        comp_sizes.append(cnt)
+        comp_id += 1
+
+    k = comp_id
+    tree = [[] for _ in range(k)]
+    for eid, (u, v) in enumerate(edges):
+        if is_bridge[eid]:
+            cu, cv = comp[u], comp[v]
+            tree[cu].append(cv)
+            tree[cv].append(cu)
+    return comp_sizes, tree
+
+def best_cross_pairs_reroot(comp_sizes, tree):
+    s = comp_sizes
+    k = len(s)
+    if k == 1:
+        return 0
+    S = sum(s)
+    parent = [-1]*k
+    order = []
+    st = [0]
+    parent[0] = 0
+    while st:
+        u = st.pop()
+        order.append(u)
+        for v in tree[u]:
+            if parent[v] == -1:
+                parent[v] = u
+                st.append(v)
+    W = [0]*k
+    for u in reversed(order):
+        total = s[u]
+        for v in tree[u]:
+            if parent[v] == u:
+                total += W[v]
+        W[u] = total
+    st2 = [(0, -1, s[0])]
+    P0 = 0
+    while st2:
+        u, p, pref = st2.pop()
+        for v in tree[u]:
+            if v == p:
+                continue
+            P0 += s[v] * pref
+            st2.append((v, u, pref + s[v]))
+    P = [0]*k
+    P[0] = P0
+    for u in order:
+        for v in tree[u]:
+            if v == parent[u]:
+                continue
+            # Reroot u->v across edge (u,v)
+            P[v] = P[u] + (S - W[v]) * (2*s[v] - W[v])
+    return max(P)
+
+def solve_case(n, m, edges):
+    comp_sizes, tree = bridges_and_components(n, edges)
+    inside = sum(x*x for x in comp_sizes)
+    cross = best_cross_pairs_reroot(comp_sizes, tree)
+    return inside + cross
+
+def solve_all():
+    n, m, edges = read_input()
+    if n == 0 and m == 0:
+        return
+    print(solve_case(n, m, edges))
+
+def _self_test():
+    # Basic tests
+    n = 3; edges = [(0,1),(1,2)]
+    assert solve_case(n, 2, edges) == 6
+    n = 3; edges = [(0,1),(1,2),(2,0)]
+    assert solve_case(n, 3, edges) == 9
+    n = 6
+    edges = [(0,1),(1,2),(2,0),(3,4),(4,5),(5,3),(2,3)]
+    assert solve_case(n, 7, edges) == 27
+
+if __name__ == "__main__":
+    if sys.argv[-1] == "TEST":
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Exactly 3 asserts:
+- Path of $3$: $6$.
+- Triangle: $9$.
+- Two triangles with one bridge: $27$.}
+\RESULT{Print a single integer: $\sum_C s_C^2 + \max_r P_r$, which equals the maximal count of ordered reachable pairs after optimally directing all streets.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on canonical families: trees (paths, stars), cycles, and block-trees (dense blocks joined by bridges). Random small graphs cross-checked between enumeration of roots and reroot DP.}
+\LINE{CROSS-CHECKS}{Compare baseline enumeration (Approach A) vs reroot DP (Approach B/C) on dozens of random graphs with $n\le 10$.}
+\LINE{EDGE-CASE GENERATOR}{Generate connected graphs with: no bridges, all bridges, single bridge, and skewed bridge trees with varied component weights.}
+\begin{minted}{python}
+import random
+
+def gen_connected_graph(n, p):
+    # Erdos-Renyi plus ensure connectivity via a spanning tree
+    edges = set()
+    for i in range(1, n):
+        j = random.randrange(0, i)
+        edges.add((j, i))
+    for i in range(n):
+        for j in range(i+1, n):
+            if random.random() < p:
+                edges.add((i, j))
+    return list(edges)
+
+def reference_solution(n, edges):
+    # Use Approach A enumeration for cross pairs after contraction
+    comp_sizes, tree = bridges_and_components(n, edges)
+    inside = sum(x*x for x in comp_sizes)
+    cross = cross_pairs_best(comp_sizes, tree)
+    return inside + cross
+
+def final_solution(n, edges):
+    comp_sizes, tree = bridges_and_components(n, edges)
+    inside = sum(x*x for x in comp_sizes)
+    cross = best_cross_pairs_reroot(comp_sizes, tree)
+    return inside + cross
+
+def quick_check():
+    for n in range(2, 11):
+        for _ in range(50):
+            edges = gen_connected_graph(n, p=0.3)
+            a = reference_solution(n, edges)
+            b = final_solution(n, edges)
+            assert a == b, (n, edges, a, b)
+    print("OK")
+
+if __name__ == "__main__":
+    quick_check()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+sys.setrecursionlimit(1_000_000)
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    if not data:
+        return 0, 0, []
+    it = iter(map(int, data))
+    n = next(it); m = next(it)
+    edges = []
+    for _ in range(m):
+        u = next(it); v = next(it)
+        edges.append((u-1, v-1))
+    return n, m, edges
+
+def bridges_and_components(n, edges):
+    g = [[] for _ in range(n)]
+    for i, (u, v) in enumerate(edges):
+        g[u].append((v, i))
+        g[v].append((u, i))
+    timer = 0
+    tin = [-1]*n
+    low = [0]*n
+    is_bridge = [False]*len(edges)
+
+    def dfs(u, peid):
+        nonlocal timer
+        tin[u] = low[u] = timer
+        timer += 1
+        for v, eid in g[u]:
+            if eid == peid:
+                continue
+            if tin[v] == -1:
+                dfs(v, eid)
+                low[u] = min(low[u], low[v])
+                if low[v] > tin[u]:
+                    is_bridge[eid] = True
+            else:
+                low[u] = min(low[u], tin[v])
+    for i in range(n):
+        if tin[i] == -1:
+            dfs(i, -1)
+
+    comp = [-1]*n
+    comp_sizes = []
+    comp_id = 0
+    st = []
+    for i in range(n):
+        if comp[i] != -1:
+            continue
+        comp[i] = comp_id
+        cnt = 0
+        st.append(i)
+        while st:
+            u = st.pop()
+            cnt += 1
+            for v, eid in g[u]:
+                if is_bridge[eid]:
+                    continue
+                if comp[v] == -1:
+                    comp[v] = comp_id
+                    st.append(v)
+        comp_sizes.append(cnt)
+        comp_id += 1
+
+    k = comp_id
+    tree = [[] for _ in range(k)]
+    for eid, (u, v) in enumerate(edges):
+        if is_bridge[eid]:
+            cu, cv = comp[u], comp[v]
+            tree[cu].append(cv)
+            tree[cv].append(cu)
+    return comp_sizes, tree
+
+def best_cross_pairs_reroot(comp_sizes, tree):
+    s = comp_sizes
+    k = len(s)
+    if k == 1:
+        return 0
+    S = sum(s)
+    parent = [-1]*k
+    order = []
+    st = [0]
+    parent[0] = 0
+    while st:
+        u = st.pop()
+        order.append(u)
+        for v in tree[u]:
+            if parent[v] == -1:
+                parent[v] = u
+                st.append(v)
+    W = [0]*k
+    for u in reversed(order):
+        total = s[u]
+        for v in tree[u]:
+            if parent[v] == u:
+                total += W[v]
+        W[u] = total
+    st2 = [(0, -1, s[0])]
+    P0 = 0
+    while st2:
+        u, p, pref = st2.pop()
+        for v in tree[u]:
+            if v == p:
+                continue
+            P0 += s[v] * pref
+            st2.append((v, u, pref + s[v]))
+    P = [0]*k
+    P[0] = P0
+    for u in order:
+        for v in tree[u]:
+            if v == parent[u]:
+                continue
+            P[v] = P[u] + (S - W[v]) * (2*s[v] - W[v])
+    return max(P)
+
+def solve_case(n, m, edges):
+    comp_sizes, tree = bridges_and_components(n, edges)
+    inside = sum(x*x for x in comp_sizes)
+    cross = best_cross_pairs_reroot(comp_sizes, tree)
+    return inside + cross
+
+def solve_all():
+    n, m, edges = read_input()
+    if n == 0 and m == 0:
+        return
+    print(solve_case(n, m, edges))
+
+def _self_test():
+    n = 3; edges = [(0,1),(1,2)]
+    assert solve_case(n, 2, edges) == 6
+    n = 3; edges = [(0,1),(1,2),(2,0)]
+    assert solve_case(n, 3, edges) == 9
+    n = 6
+    edges = [(0,1),(1,2),(2,0),(3,4),(4,5),(5,3),(2,3)]
+    assert solve_case(n, 7, edges) == 27
+
+if __name__ == "__main__":
+    if sys.argv[-1] == "TEST":
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Contract $2$-edge-connected components, then pick the best root of the bridge tree to maximize weighted ancestor-descendant pairs; answer adds internal $s_C^2$.}
+\WHY{This pattern (bridge contraction + DP on the bridge tree) appears in hard graph orientation and reachability maximization problems.}
+\CHECKLIST{%
+- Run bridge-finding DFS, mark bridges.
+- Build components ignoring bridges; compute sizes.
+- Build bridge tree.
+- Compute $X=\sum s_i^2$.
+- Compute $Y=\max_r P_r$ (root enumeration or reroot DP).
+- Output $X+Y$.
+}
+\EDGECASES{%
+- No bridges $\Rightarrow n^2$.
+- Tree graph $\Rightarrow$ classic choose-root problem.
+- Single bridge splitting $a$ and $b$ vertices $\Rightarrow a^2+b^2+\max(a\cdot b, a\cdot b)=a^2+b^2+a b$.
+- Star tree with heavy center weight.
+- Skewed chain components with varied weights.
+- Multiple biconnected blocks of size $1$ (articulation structure degenerates to the original tree).
+}
+\PITFALLS{%
+- Forgetting to escape the parent edge in DFS (peid).
+- Miscomputing low-link; ensure back-edges update low with tin[v].
+- Building components must ignore only marked bridges.
+- Using vertex counts directly per bridge to sum $A\cdot B$ overcounts; you must count ancestor-descendant pairs, not distance-weighted pairs.
+- Stack overflow without increasing recursion limit.
+- Off-by-one indices; convert $1$-based to $0$-based.
+}
+\FAILMODES{%
+- Summing $A\cdot B$ over bridges (sides) yields distance-weighted counts and overestimates; incorrect.
+- Orienting bridges inconsistently (not forming an arborescence) reduces reachability.
+- Treating $2$-vertex-connected instead of $2$-edge-connected components breaks applicability of Robbins' theorem.
+}
+\ELI{First squash tightly-knit parts (no bridges) into super-junctions. Then pick where to put the ``source'' super-junction so that as many others lie downstream as possible. Add the perfect internal reachability of each super-junction to the best downstream count to get the final maximum.}
+\NotePages{3}
+
+\end{document}

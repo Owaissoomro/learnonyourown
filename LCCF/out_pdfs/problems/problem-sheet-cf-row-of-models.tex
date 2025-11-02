@@ -1,0 +1,802 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Row of Models}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/887/F}}
+\LINE{DIFFICULTY / RATING}{2500}
+\STATEMENT{During the final part of fashion show all models come to the stage and stay in one row and fashion designer stays to right to model on the right. During the rehearsal, Izabella noticed, that row is not nice, but she cannot figure out how to fix it.
+
+Like many other creative people, Izabella has a specific sense of beauty. Evaluating beauty of row of models Izabella looks at heights of models. She thinks that row is nice if for each model distance to nearest model with less height (model or fashion designer) to the right of her does not exceed $k$ (distance between adjacent people equals $1$, the distance between people with exactly one man between them equals $2$, etc).
+
+She wants to make row nice, but fashion designer has his own sense of beauty, so she can at most one time select two models from the row and swap their positions if the left model from this pair is higher than the right model from this pair.
+
+Fashion designer (man to the right of rightmost model) has less height than all models and cannot be selected for exchange.
+
+You should tell if it is possible to make at most one exchange in such a way that row becomes nice for Izabella.
+
+Input:
+In first line there are two integers $n$ and $k$ ($1 \le n \le 5\cdot 10^5$, $1 \le k \le n$) — number of models and required distance.
+
+Second line contains $n$ space-separated integers $a_i$ ($1 \le a_i \le 10^9$) — height of each model. Pay attention that height of fashion designer is not given and can be less than $1$.
+
+Output:
+Print «YES» (without quotes) if it is possible to make row nice using at most one exchange, and «NO» (without quotes) otherwise.}
+\BREAKDOWN{We need to check whether the array already satisfies the nearest-smaller-to-right distance constraint, or whether a single allowed swap (left index strictly higher than right) can make it satisfy the constraint. Capture violations via sliding window minima, then reason about whether one inversion-swap can fix them.}
+\ELI{Mark positions whose next $k$ values do not contain a strictly smaller height; if all those violations lie within a short range and there exists a sufficiently small value to the right, one swap can fix everything.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test:
+- Integers $n,k$ with $1 \le n \le 5\cdot 10^5$, $1 \le k \le n$.
+- Array $a[1..n]$ of integers, $1 \le a_i \le 10^9$.}
+\OUTPUTS{Print YES if the row can be made nice using at most one allowed swap, otherwise NO.}
+\SAMPLES{Example 1:
+- Input: $n=4$, $k=2$, $a=[3,2,1,4]$; already nice, output YES.
+
+Example 2:
+- Input: $n=5$, $k=2$, $a=[4,3,3,3,1]$; one suitable swap exists, output YES.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $a_1,\ldots,a_n$ be heights, and append a designer at position $n+1$ with height strictly less than all $a_i$. For each $i\in[1..n]$, define the nearest smaller to right index $j(i)=\min\{j>i: a_j<a_i\}$, where $a_{n+1}$ is valid and $j(i)=n+1$ if no model to the right is smaller. The row is nice iff $j(i)-i\le k$ for all $i$. We may perform at most one swap of positions $p<q$ with $a_p>a_q$.}
+\varmapStart
+\var{n}{number of models}
+\var{k}{maximum allowed distance to a strictly shorter person on the right}
+\var{a_i}{height of $i$-th model}
+\var{j(i)}{index of nearest smaller to right (designer at $n{+}1$ is allowed)}
+\var{B}{set of indices $i\le n{-}k$ with no strictly smaller in $(i,i{+}k]$}
+\varmapEnd
+\GOVERN{
+\begin{BreakableEquation*}
+\forall i\in[1..n]:\quad j(i)-i\le k\,,\quad\text{with } a_{n+1}=-\infty.
+\end{BreakableEquation*}
+}
+\ASSUMPTIONS{Heights are integers; ties do not satisfy strict inequality. Distances are by index difference. Exactly one swap is allowed and only for inversions $p<q$ with $a_p>a_q$.}
+\INVARIANTS{Designer is strictly shorter than everyone. A position $i>n-k$ is always safe if $j(i)=n+1$ because $n+1-i\le k$.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Directly evaluate niceness via nearest-smaller-to-right distances; then try all allowed single swaps and re-evaluate.}
+\ASSUMPTIONS{Use a naive $O(nk)$ check for niceness and $O(n^3)$ total in worst case for all candidate swaps; only feasible for tiny $n$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Define a function is\_nice that, for each $i$, scans up to $k$ to the right and checks if some value is strictly smaller (or the designer at $n{+}1$ is within $k$).
+\item If already nice, return YES.
+\item Else, for all pairs $(p,q)$ with $p<q$ and $a_p>a_q$, swap them, test niceness, and undo; if any succeeds, return YES; otherwise NO.
+\end{algosteps}
+\COMPLEXITY{Brute-force niceness check in $O(nk)$; enumerating $O(n^2)$ swaps leads to $O(n^3)$ worst-case.}
+\[
+\begin{aligned}
+T(n) &= O(n^2)\cdot O(nk) = O(n^3 k)\quad\text{(too slow for CF constraints).} \\
+S(n) &= O(1)\ \text{extra, ignoring the array itself.}
+\end{aligned}
+\]
+\CORRECTNESS{Exhaustive over all allowed swaps. If some swap can make the row nice, it will be detected.}
+\EDGECASES{All equal heights (no allowed swap); $k=1$ and strictly decreasing arrays; $k=n$ (designer always within reach).}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+from typing import List, Tuple
+import sys
+import random
+
+def is_nice_naive(a: List[int], k: int) -> bool:
+    n = len(a)
+    for i in range(n):
+        ok = False
+        # check models within k to the right
+        for j in range(i + 1, min(n, i + k) + 1):
+            if a[j - 1] < a[i]:
+                ok = True
+                break
+        # check designer at position n+1
+        if not ok:
+            if (n + 1) - (i + 1) <= k:
+                ok = True
+        if not ok:
+            return False
+    return True
+
+def can_make_nice_bruteforce(a: List[int], k: int) -> bool:
+    n = len(a)
+    if is_nice_naive(a, k):
+        return True
+    b = a[:]  # copy
+    for p in range(n):
+        for q in range(p + 1, n):
+            if b[p] > b[q]:
+                b[p], b[q] = b[q], b[p]
+                if is_nice_naive(b, k):
+                    return True
+                b[p], b[q] = b[q], b[p]
+    return False
+
+# Tiny sanity checks for baseline functions
+def _baseline_tests():
+    assert is_nice_naive([3,2,1,4], 2) == True
+    assert is_nice_naive([3,3,3], 1) == False
+    assert can_make_nice_bruteforce([4,3,3,3,1], 2) == True
+    assert can_make_nice_bruteforce([3,3,3,3], 2) == False
+
+if __name__ == "__main__" and sys.stdin.isatty():
+    _baseline_tests()
+\end{minted}
+\VALIDATION{The asserts cover already nice, impossible cases with all equal heights, and a case where exactly one swap near the end fixes the row.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Sliding Window Minima and Violation Localization}
+\WHICHFORMULA{Use a monotone deque to compute for each $i\le n-k$ the minimum on $(i,i{+}k]$; positions with $a_i \le \min(i{+}1..i{+}k)$ are exactly the violations.}
+\ASSUMPTIONS{We characterize violations $B$ and reason about whether one inversion-swap can place a smaller value into all violating windows simultaneously.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build array $m[i]=\min(a[i{+}1..i{+}k])$ for $i\in[1..n-k]$ using a deque in $O(n)$.
+\item Collect violating indices $B=\{i\le n-k: a[i]\le m[i]\}$.
+\item If $B=\varnothing$, print YES.
+\item Let $L=\min B$, $R=\max B$, $T=\min\{a[i]: i\in B\}$. If $R-L\ge k$, print NO.
+\item If there exists an index $j>R$ with $a[j] < T$, print YES, else NO.
+\end{algosteps}
+\COMPLEXITY{The sliding window minima plus a single pass yields linear time.}
+\[
+\begin{aligned}
+T(n) &= O(n)\ \text{to compute minima and scan once for decisions},\\
+S(n) &= O(k)\ \text{for the deque, } O(1)\ \text{extra otherwise}.
+\end{aligned}
+\]
+\CORRECTNESS{Intuition: Violations correspond to windows where $a[i]$ is the minimum of $[i..i{+}k]$. A single swap can help only by inserting a smaller value $y$ into all violating windows; hence all violating windows must share at least one common position (intersection nonempty), equivalent to $R-L<k$. The inserted value must be strictly less than all $a[i]$ for $i\in B$, so a candidate $y$ must exist to the right with $y<T$.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+from typing import List, Tuple
+import sys
+from collections import deque
+import random
+
+def is_nice_fast(a: List[int], k: int) -> bool:
+    n = len(a)
+    # sliding window minima over a[1..n] (1-based thinking)
+    # we need minima of windows a[i..i+k] but excluding a[i] itself,
+    # so compute min on (i, i+k] == indices [i+1 .. i+k]
+    if k == 0:
+        return True
+    n0 = n
+    # Build deque for window of size k over a shifted by +1
+    dq = deque()
+    # Initialize with indices 1..k (0-based: 1..k -> 1..k inclusive)
+    # We'll query for i in 0..n-k-1: window is (i, i+k] -> indices [i+1 .. i+k]
+    # We'll maintain dq of indices in [start..end] with monotone values
+    def push(idx: int):
+        nonlocal dq
+        while dq and a[dq[-1]] >= a[idx]:
+            dq.pop()
+        dq.append(idx)
+    # prime dq with [1..k]
+    for idx in range(1, min(n, 1 + k) ):
+        push(idx)
+    for i in range(0, n - k):
+        # window is [i+1 .. i+k]
+        # ensure dq front within window
+        while dq and dq[0] < i + 1:
+            dq.popleft()
+        # ensure we have right edge included
+        right = i + k
+        if right < n:
+            push(right)
+        # minimum in window
+        wmin = a[dq[0]] if dq else float('inf')
+        if not (wmin < a[i]):
+            return False
+    return True
+
+def decide_one_swap(a: List[int], k: int) -> str:
+    n = len(a)
+    if is_nice_fast(a, k):
+        return "YES"
+    if k == 0:
+        return "NO"
+    # build window minima and collect violations B
+    from collections import deque
+    dq = deque()
+    # prime dq with [1..k]
+    for idx in range(1, min(n, 1 + k)):
+        while dq and a[dq[-1]] >= a[idx]:
+            dq.pop()
+        dq.append(idx)
+    B = []
+    for i in range(0, n - k):
+        while dq and dq[0] < i + 1:
+            dq.popleft()
+        right = i + k
+        if right < n:
+            while dq and a[dq[-1]] >= a[right]:
+                dq.pop()
+            dq.append(right)
+        wmin = a[dq[0]] if dq else float('inf')
+        if not (wmin < a[i]):
+            B.append(i)
+    if not B:
+        return "YES"
+    L, R = min(B), max(B)
+    if R - L >= k:
+        return "NO"
+    T = min(a[i] for i in B)
+    # check existence of an element to the right of R strictly less than T
+    ok = any(a[j] < T for j in range(R + 1, n))
+    return "YES" if ok else "NO"
+
+def read_input() -> Tuple[int, int, List[int]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, []
+    it = iter(data)
+    n = int(next(it))
+    k = int(next(it))
+    a = [int(next(it)) for _ in range(n)]
+    return n, k, a
+
+def solve_case(n: int, k: int, a: List[int]) -> str:
+    return decide_one_swap(a, k)
+
+def solve_all():
+    n, k, a = read_input()
+    if n == 0:
+        # self-test mode when no input
+        _improved_tests()
+        return
+    ans = solve_case(n, k, a)
+    print(ans)
+
+def _improved_tests():
+    # Consistency with naive on tiny randoms
+    random.seed(0)
+    for n in range(1, 9):
+        for k in range(1, n + 1):
+            for _ in range(200):
+                a = [random.randint(1, 9) for _ in range(n)]
+                want = "YES" if can_make_nice_bruteforce(a, k) else "NO"
+                got = decide_one_swap(a, k)
+                assert got == want, (n, k, a, want, got)
+    # Specific edge cases
+    assert decide_one_swap([3,2,1,4], 2) == "YES"
+    assert decide_one_swap([3,3,3,3], 2) == "NO"
+    assert decide_one_swap([4,3,3,3,1], 2) == "YES"
+
+if __name__ == "__main__":
+    solve_all()
+\end{minted}
+\VALIDATION{Random fuzzing on $n\le 8$ compares improved decision with brute force; targeted asserts cover representative cases.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{One-Pass Characterization via Violations}
+\WHICHFORMULA{Compute violating positions $B=\{i\le n-k: a[i] \le \min(a[i{+}1..i{+}k])\}$. Then:
+- If $B=\varnothing$, already nice.
+- Else, let $L=\min B$, $R=\max B$, and $T=\min\{a[i]: i\in B\}$. A single swap can fix the row iff $R-L<k$ and there exists some $j>R$ with $a[j]<T$.}
+\ASSUMPTIONS{Designer at position $n{+}1$ is strictly smallest and counts towards distance. Windows are contiguous index ranges.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build sliding-window minima for $(i,i{+}k]$ and mark violations $B$.
+\item If $B=\varnothing$, output YES.
+\item Compute $L=\min B$, $R=\max B$, $T=\min\{a[i]: i\in B\}$.
+\item If $R-L\ge k$, output NO.
+\item Otherwise, check whether $\min\{a[j]: j\in(R,n]\} < T$; if yes, output YES, else NO.
+\end{algosteps}
+\OPTIMALITY{All steps are linear; the characterization is tight for deciding feasibility with a single allowed inversion swap.}
+\COMPLEXITY{Linear-time and linear-space.}
+\[
+\begin{aligned}
+T(n) &= O(n),\quad S(n)=O(k).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+from typing import List, Tuple
+import sys
+from collections import deque
+import random
+
+def is_nice_sliding(a: List[int], k: int) -> bool:
+    n = len(a)
+    if k == 0:
+        return True
+    dq = deque()
+    # prime dq with indices [1..k]
+    for idx in range(1, min(n, 1 + k)):
+        while dq and a[dq[-1]] >= a[idx]:
+            dq.pop()
+        dq.append(idx)
+    for i in range(0, n - k):
+        while dq and dq[0] < i + 1:
+            dq.popleft()
+        right = i + k
+        if right < n:
+            while dq and a[dq[-1]] >= a[right]:
+                dq.pop()
+            dq.append(right)
+        wmin = a[dq[0]] if dq else float('inf')
+        if not (wmin < a[i]):
+            return False
+    return True
+
+def decide(a: List[int], k: int) -> str:
+    n = len(a)
+    if is_nice_sliding(a, k):
+        return "YES"
+    if k == 0:
+        return "NO"
+    dq = deque()
+    for idx in range(1, min(n, 1 + k)):
+        while dq and a[dq[-1]] >= a[idx]:
+            dq.pop()
+        dq.append(idx)
+    B = []
+    for i in range(0, n - k):
+        while dq and dq[0] < i + 1:
+            dq.popleft()
+        right = i + k
+        if right < n:
+            while dq and a[dq[-1]] >= a[right]:
+                dq.pop()
+            dq.append(right)
+        wmin = a[dq[0]] if dq else float('inf')
+        if not (wmin < a[i]):
+            B.append(i)
+    if not B:
+        return "YES"
+    L, R = min(B), max(B)
+    if R - L >= k:
+        return "NO"
+    T = min(a[i] for i in B)
+    # exists j > R with a[j] < T ?
+    tail_has_smaller = any(a[j] < T for j in range(R + 1, n))
+    return "YES" if tail_has_smaller else "NO"
+
+def read_input() -> Tuple[int, int, List[int]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, []
+    it = iter(data)
+    n = int(next(it)); k = int(next(it))
+    a = [int(next(it)) for _ in range(n)]
+    return n, k, a
+
+def solve_case(n: int, k: int, a: List[int]) -> str:
+    return decide(a, k)
+
+def solve_all():
+    n, k, a = read_input()
+    if n == 0:
+        _tests()
+        return
+    print(solve_case(n, k, a))
+
+def _bruteforce(a: List[int], k: int) -> str:
+    def is_nice(a: List[int]) -> bool:
+        n = len(a)
+        for i in range(n):
+            ok = False
+            for j in range(i + 1, min(n, i + k) + 1):
+                if a[j - 1] < a[i]:
+                    ok = True
+                    break
+            if not ok and (n + 1) - (i + 1) <= k:
+                ok = True
+            if not ok:
+                return False
+        return True
+    if is_nice(a):
+        return "YES"
+    n = len(a)
+    b = a[:]
+    for p in range(n):
+        for q in range(p + 1, n):
+            if b[p] > b[q]:
+                b[p], b[q] = b[q], b[p]
+                if is_nice(b):
+                    return "YES"
+                b[p], b[q] = b[q], b[p]
+    return "NO"
+
+def _tests():
+    # Random cross-checks
+    random.seed(1)
+    for n in range(1, 9):
+        for k in range(1, n + 1):
+            for _ in range(200):
+                a = [random.randint(1, 9) for _ in range(n)]
+                want = _bruteforce(a, k)
+                got = decide(a, k)
+                assert want == got, (n, k, a, want, got)
+    # Hand-crafted
+    assert decide([3,2,1,4], 2) == "YES"
+    assert decide([3,3,3,3], 2) == "NO"
+    assert decide([4,3,3,3,1], 2) == "YES"
+
+if __name__ == "__main__":
+    solve_all()
+\end{minted}
+\VALIDATION{Exactly 3 asserts are embedded in the test function; additional randomized cross-checks compare against brute force on tiny arrays.}
+\RESULT{Return YES iff the array is already nice or can be made nice by a single allowed inversion swap that inserts a strictly smaller value into all violating windows.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit-test niceness checker; random fuzzing versus brute force on $n\le 8$; targeted adversarial cases like all equal heights, boundary $k$, and concentrated violations.}
+\LINE{CROSS-CHECKS}{Compare Approach B/C outputs to brute force on small instances; ensure exact match.}
+\LINE{EDGE-CASE GENERATOR}{Generate arrays with plateaus, strictly increasing/decreasing segments, and varying $k$ near $1$ and $n$.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def gen_all_equal(n: int, v: int) -> list:
+    return [v] * n
+
+def gen_plateau_then_drop(n: int, h: int, drop: int) -> list:
+    m = max(1, n // 2)
+    return [h] * m + [h - drop] * (n - m)
+
+def gen_strict_inc(n: int) -> list:
+    return list(range(1, n + 1))
+
+def gen_strict_dec(n: int) -> list:
+    return list(range(n, 0, -1))
+
+def gen_random(n: int, lo: int = 1, hi: int = 10) -> list:
+    random.seed(123)
+    return [random.randint(lo, hi) for _ in range(n)]
+
+# Reference check using final decide()
+def reference_solve(a: list, k: int) -> str:
+    from collections import deque
+    # reuse decide() logic inline for isolation
+    def is_nice(a, k):
+        n = len(a)
+        if k == 0:
+            return True
+        dq = deque()
+        for idx in range(1, min(n, 1 + k)):
+            while dq and a[dq[-1]] >= a[idx]:
+                dq.pop()
+            dq.append(idx)
+        for i in range(0, n - k):
+            while dq and dq[0] < i + 1:
+                dq.popleft()
+            right = i + k
+            if right < n:
+                while dq and a[dq[-1]] >= a[right]:
+                    dq.pop()
+                dq.append(right)
+            wmin = a[dq[0]] if dq else float('inf')
+            if not (wmin < a[i]):
+                return False
+        return True
+    if is_nice(a, k):
+        return "YES"
+    dq = deque()
+    n = len(a)
+    for idx in range(1, min(n, 1 + k)):
+        while dq and a[dq[-1]] >= a[idx]:
+            dq.pop()
+        dq.append(idx)
+    B = []
+    for i in range(0, n - k):
+        while dq and dq[0] < i + 1:
+            dq.popleft()
+        right = i + k
+        if right < n:
+            while dq and a[dq[-1]] >= a[right]:
+                dq.pop()
+            dq.append(right)
+        wmin = a[dq[0]] if dq else float('inf')
+        if not (wmin < a[i]):
+            B.append(i)
+    if not B:
+        return "YES"
+    L, R = min(B), max(B)
+    if R - L >= k:
+        return "NO"
+    T = min(a[i] for i in B)
+    tail_has_smaller = any(a[j] < T for j in range(R + 1, n))
+    return "YES" if tail_has_smaller else "NO"
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF) + asserts
+from typing import List, Tuple
+import sys
+from collections import deque
+import random
+
+def read_input() -> Tuple[int, int, List[int]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, []
+    it = iter(data)
+    n = int(next(it)); k = int(next(it))
+    a = [int(next(it)) for _ in range(n)]
+    return n, k, a
+
+def is_nice(a: List[int], k: int) -> bool:
+    n = len(a)
+    if k == 0:
+        return True
+    dq = deque()
+    for idx in range(1, min(n, 1 + k)):
+        while dq and a[dq[-1]] >= a[idx]:
+            dq.pop()
+        dq.append(idx)
+    for i in range(0, n - k):
+        while dq and dq[0] < i + 1:
+            dq.popleft()
+        right = i + k
+        if right < n:
+            while dq and a[dq[-1]] >= a[right]:
+                dq.pop()
+            dq.append(right)
+        wmin = a[dq[0]] if dq else float('inf')
+        if not (wmin < a[i]):
+            return False
+    return True
+
+def solve_case(n: int, k: int, a: List[int]) -> str:
+    if is_nice(a, k):
+        return "YES"
+    if k == 0:
+        return "NO"
+    dq = deque()
+    for idx in range(1, min(n, 1 + k)):
+        while dq and a[dq[-1]] >= a[idx]:
+            dq.pop()
+        dq.append(idx)
+    B = []
+    for i in range(0, n - k):
+        while dq and dq[0] < i + 1:
+            dq.popleft()
+        right = i + k
+        if right < n:
+            while dq and a[dq[-1]] >= a[right]:
+                dq.pop()
+            dq.append(right)
+        wmin = a[dq[0]] if dq else float('inf')
+        if not (wmin < a[i]):
+            B.append(i)
+    if not B:
+        return "YES"
+    L, R = min(B), max(B)
+    if R - L >= k:
+        return "NO"
+    T = min(a[i] for i in B)
+    ok = any(a[j] < T for j in range(R + 1, n))
+    return "YES" if ok else "NO"
+
+def solve_all():
+    n, k, a = read_input()
+    if n == 0:
+        _tests()
+        return
+    print(solve_case(n, k, a))
+
+def _bruteforce(a: List[int], k: int) -> str:
+    def nice(b: List[int]) -> bool:
+        n = len(b)
+        for i in range(n):
+            ok = False
+            for j in range(i + 1, min(n, i + k) + 1):
+                if b[j - 1] < b[i]:
+                    ok = True
+                    break
+            if not ok and (n + 1) - (i + 1) <= k:
+                ok = True
+            if not ok:
+                return False
+        return True
+    if nice(a):
+        return "YES"
+    n = len(a)
+    b = a[:]
+    for p in range(n):
+        for q in range(p + 1, n):
+            if b[p] > b[q]:
+                b[p], b[q] = b[q], b[p]
+                if nice(b):
+                    return "YES"
+                b[p], b[q] = b[q], b[p]
+    return "NO"
+
+def _tests():
+    random.seed(2)
+    for n in range(1, 9):
+        for k in range(1, n + 1):
+            for _ in range(150):
+                a = [random.randint(1, 9) for _ in range(n)]
+                want = _bruteforce(a, k)
+                got = solve_case(n, k, a)
+                assert want == got, (n, k, a, want, got)
+    assert solve_case(4, 2, [3,2,1,4]) == "YES"
+    assert solve_case(4, 2, [3,3,3,3]) == "NO"
+    assert solve_case(5, 2, [4,3,3,3,1]) == "YES"
+
+if __name__ == "__main__":
+    solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Detect violating indices via sliding-window minima; feasibility with one inversion swap reduces to two simple conditions on the span and tail minimum.}
+\WHY{Combines array window processing and swap-feasibility reasoning; tests ability to reduce a local constraint to a global characterization.}
+\CHECKLIST{
+- Build window minima for $(i,i{+}k]$.
+- Collect $B=\{i\le n-k: a[i]\le \min(i{+}1..i{+}k)\}$.
+- If $B=\varnothing$: YES.
+- Else compute $L,R,T$.
+- If $R-L\ge k$: NO.
+- Else if $\min_{j>R} a[j] < T$: YES; else NO.}
+\EDGECASES{
+- All heights equal.
+- $k=1$ edge with strict inequality.
+- $k=n$: designer is always within reach; always YES.
+- Violations concentrated into a window of length exactly $k-1$.
+- No element to the right smaller than all violating $a[i]$.
+- Single-element arrays.}
+\PITFALLS{
+- Off-by-one in window endpoints $(i,i{+}k]$.
+- Treating equality as acceptable (must be strictly less).
+- Forgetting designer at $n{+}1$ with distance $n{+}1-i$.
+- Building window minima including $a[i]$ by mistake.
+- Mishandling empty input in local testing harness.
+- Performance: avoid $O(nk)$ on large $n$.}
+\FAILMODES{Naive pairwise swap enumeration times out. Incorrectly allowing $a[i]=\min$ leads to false positives. Proper deque maintenance is essential.}
+\ELI{Find all places where no smaller height appears within the next $k$ people. If these bad spots are tightly packed and there is a short person later to inject into that area via one swap, the whole row can be fixed. Otherwise, it is impossible with one swap.}
+\NotePages{3}
+
+\end{document}

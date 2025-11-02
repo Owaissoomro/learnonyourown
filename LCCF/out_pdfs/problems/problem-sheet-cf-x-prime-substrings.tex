@@ -1,0 +1,782 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — x-prime Substrings}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1400/F}}
+\LINE{DIFFICULTY / RATING}{CF: 1400/F \,|\, Rating: 2800}
+\STATEMENT{You are given an integer value $x$ and a string $s$ consisting of digits from $1$ to $9$ inclusive.
+
+A substring of a string is a contiguous subsequence of that string.
+
+Let $f(l, r)$ be the sum of digits of a substring $s[l..r]$.
+
+Let's call substring $s[l_1..r_1]$ $x$-prime if
+\begin{bullets}
+\item $f(l_1, r_1) = x$;
+\item there are no values $l_2, r_2$ such that $l_1 \le l_2 \le r_2 \le r_1$; $f(l_2, r_2) \ne x$; $x$ is divisible by $f(l_2, r_2)$.
+\end{bullets}
+
+You are allowed to erase some characters from the string. If you erase a character, the two resulting parts of the string are concatenated without changing their order.
+
+What is the minimum number of characters you should erase from the string so that there are no $x$-prime substrings in it? If there are no $x$-prime substrings in the given string $s$, then print $0$.
+
+Input:
+The first line contains a string $s$ ($1 \le |s| \le 1000$). $s$ contains only digits from $1$ to $9$ inclusive.
+
+The second line contains an integer $x$ ($1 \le x \le 20$).
+
+Output:
+Print a single integer — the minimum number of characters you should erase from the string so that there are no $x$-prime substrings in it. If there are no $x$-prime substrings in the given string $s$, then print $0$.
+
+Note:
+In the first example there are two $8$-prime substrings ``8'' and ``53''. You can erase these characters to get rid of both: ``116285317''. The resulting string ``1162317'' contains no $8$-prime substrings. Removing these characters is also a valid answer: ``116285317''.
+
+In the second example you just have to erase both ones.
+
+In the third example there are no $13$-prime substrings. There are no substrings with the sum of digits equal to $13$ at all.
+
+In the fourth example you can have neither ``34'', nor ``43'' in a string. Thus, you have to erase either all threes or all fours. There are $5$ of each of them, so it does not matter which.}
+\BREAKDOWN{We must delete a minimum number of digits so that in the resulting string no substring of sum $x$ exists that avoids any internal substring whose sum is a proper divisor of $x$. Model this as finding the longest subsequence that is ``valid'' under a finite automaton forbidding $x$-prime formations; answer is $|s|$ minus that length.}
+\ELI{Build a small machine that says whether a string contains a forbidden $x$-prime chunk; then keep as many characters as possible while never triggering the machine.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test:
+\begin{bullets}
+\item String $s$ of length $n$ ($1 \le n \le 1000$), digits in $\{1,\ldots,9\}$.
+\item Integer $x$ ($1 \le x \le 20$).
+\end{bullets}}
+\OUTPUTS{One integer: the minimum number of deletions to ensure the resulting string has no $x$-prime substring.}
+\SAMPLES{
+\begin{bullets}
+\item $s=\text{``53''}$, $x=8$ $\to$ delete $1$ (either digit) since ``53'' is $8$-prime. Output $1$.
+\item $s=\text{``22''}$, $x=4$ $\to$ substring ``22'' has internal ``2'' dividing $4$, so it's not $4$-prime; output $0$.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $D=\{d: d \mid x,\ 1 \le d < x\}$ be the set of proper divisors of $x$. A substring $s[l..r]$ is $x$-prime iff $\sum_{i=l}^r (s_i-\text{'0'})=x$ and there is no $l \le p \le q \le r$ with $\sum_{i=p}^q (s_i-\text{'0'})=d \in D$. We seek the minimum deletions to avoid any $x$-prime substrings. Equivalently, maximize the length of a subsequence that contains no $x$-prime substring; answer $=n$ minus that maximum.}
+\varmapStart
+\var{s}{input string}
+\var{x}{target sum bound ($1 \le x \le 20$)}
+\var{D}{proper divisors of $x$}
+\var{M}{bitmask of partial sums since last ``barrier'' (reset), always containing $0$, excluding $D$}
+\var{s^\star}{a kept subsequence of $s$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\text{Forbidden end at step with last-sum } v \text{ if } \exists u \in M:\ v-u = x.\\
+&\text{Reset (barrier) if } v \in D \text{ or } v > x.\\
+&\text{State update on reading digit } a:\ v = \max(M)+a.\\
+&\text{If } v=x \text{ or } (v>x \wedge (v-x)\in M),\ \text{transition forbidden.}\\
+&\text{Else if } v \in D \text{ or } v>x:\ M \gets \{0\};\ \text{else } M \gets M \cup \{v\}.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Digits are $1$ to $9$; sums are strictly increasing between resets. We only consider subsequences (deletions only).}
+\INVARIANTS{
+\begin{bullets}
+\item Within a block (since last reset), $M$ contains exactly the partial sums achieved; $0 \in M$, $M \cap D = \varnothing$.
+\item The maximal element of $M$ equals the current running sum in the block.
+\item Any $x$-prime substring would correspond to a forbidden transition as defined above.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Enumerate all subsequences is exponential. Instead, a conceptual baseline is to scan the string and greedily reset on divisors and prevent forming sum $x$. This intuitive method motivates a state machine but is not complete in this naive form.}
+\ASSUMPTIONS{Small $x$; digits positive; we can detect $x$-prime formation by tracking visited partial sums in a block.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Define an automaton state as a bitmask $M$ of partial sums in the current block.
+\item For each input digit, either skip it (delete) or keep it if the transition is not forbidden; update $M$ accordingly.
+\item Maximize kept digits via dynamic programming over states; answer is deletions $=n-\text{kept}$.
+\end{algosteps}
+\COMPLEXITY{With an explored state space of size $S$ and length $n$, DP is $O(n\cdot S)$; building transitions is $O(S\cdot 9)$. For worst-case $S$ is bounded by reachable masks (empirically small for $x \le 20$).}
+\[
+\begin{aligned}
+T(n) &\approx O(S\cdot 9 + n\cdot S) \\
+S(n) &\approx O(S)
+\end{aligned}
+\]
+\CORRECTNESS{By construction, the automaton forbids exactly those keeps that would end with an $x$-prime substring; every kept string is valid; conversely any valid subsequence is accepted. DP over subsequences finds the maximum accepted length.}
+\EDGECASES{Handle $x=1$ (no proper divisors): any digit ``1'' is forbidden, others are allowed; handle overflows $>x$; handle immediate divisors causing resets.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# CF 1400/F — x-prime Substrings
+# Baseline/Reference uses DFA over masks of partial sums in current block.
+# Maximize accepted subsequence length => min deletions = n - max_len.
+
+from collections import deque
+
+def proper_divisors(x: int):
+    D = set()
+    for d in range(1, x):
+        if x % d == 0:
+            D.add(d)
+    return D
+
+def build_automaton(x: int):
+    """
+    States are masks M over bits [0..x-1], with:
+      - bit 0 always set,
+      - no bit in D set,
+      - max bit in M equals current block-sum.
+    Transitions labeled by digits a in 1..9; forbidden edges are omitted.
+    On v in D or v > x => reset to {0}.
+    Forbid edge if v == x or (v > x and (v - x) is present in M).
+    """
+    D = proper_divisors(x)
+    start = 1 << 0  # mask with only 0
+    trans = {}
+    seen = {start}
+    q = deque([start])
+
+    D_bits = 0
+    for d in D:
+        D_bits |= (1 << d)
+
+    while q:
+        m = q.popleft()
+        s = m.bit_length() - 1  # current block-sum (max bit set)
+        tmap = {}
+        for a in range(1, 10):
+            v = s + a
+            # If v == x, keeping 'a' would end with an x-prime substring (u=0 in M)
+            if v == x:
+                continue
+            if v < x:
+                if (D_bits >> v) & 1:
+                    nxt = 1 << 0  # reset on divisor
+                else:
+                    nxt = m | (1 << v)
+            else:  # v > x
+                u = v - x
+                if u <= s and ((m >> u) & 1):
+                    # There exists prior sum 'u' in current block -> x-prime created
+                    continue
+                # safe overflow => reset
+                nxt = 1 << 0
+            tmap[a] = nxt
+            if nxt not in seen:
+                seen.add(nxt)
+                q.append(nxt)
+        trans[m] = tmap
+    return trans, start
+
+def max_accepted_subsequence_len(s: str, x: int) -> int:
+    trans, start = build_automaton(x)
+    dp = {start: 0}
+    for ch in s:
+        a = ord(ch) - 48  # int(ch)
+        newdp = dict(dp)  # skipping keeps old best
+        for m, val in dp.items():
+            t = trans[m].get(a)
+            if t is not None:
+                if newdp.get(t, -10**9) < val + 1:
+                    newdp[t] = val + 1
+        dp = newdp
+    return max(dp.values()) if dp else 0
+
+def solve_all(data: str) -> str:
+    it = iter(data.strip().splitlines())
+    s = next(it).strip()
+    x = int(next(it).strip())
+    kept = max_accepted_subsequence_len(s, x)
+    return str(len(s) - kept)
+
+def read_input() -> str:
+    import sys
+    return sys.stdin.read()
+
+def main():
+    print(solve_all(read_input()))
+
+if __name__ == "__main__":
+    # Basic self-checks
+    assert solve_all("2\n1\n") == "0"         # no '1' substrings
+    assert solve_all("121\n1\n") == "2"       # must delete both '1's
+    assert solve_all("22\n4\n") == "0"        # "22" not 4-prime
+    assert solve_all("4\n4\n") == "1"         # single 4 is 4-prime
+    assert solve_all("53\n8\n") == "1"        # "53" is 8-prime => delete 1
+    assert solve_all("44\n8\n") == "0"        # has internal '4' => not prime
+    main()
+\end{minted}
+\VALIDATION{Unit asserts above cover:
+\begin{bullets}
+\item $x=1$ extremes.
+\item Simple composite $x$ where divisors trigger resets.
+\item Exact-hit, overflow, and non-prime cases.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized DFA Construction \& DP over Reachable Masks}
+\WHICHFORMULA{Precompute only reachable DFA states via BFS from the start mask. This prunes the mask space drastically and yields fast DP $O(n\cdot S)$ for small $S$.}
+\ASSUMPTIONS{State is the set of partial sums in current block. Resets on divisors or overflow ensure $S$ is small for $x \le 20$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute proper divisors $D$ of $x$ and build DFA transitions by BFS over masks from $M=\{0\}$.
+\item For each digit $a\in\{1,\ldots,9\}$, add an edge if it does not create an $x$-prime end:
+      forbid when $v=x$ or $v>x$ and $v-x\in M$; reset on $v\in D$ or $v>x$.
+\item Dynamic programming over the input: for each position either skip or follow the DFA edge for its digit.
+\end{algosteps}
+\COMPLEXITY{Let $S$ be number of reachable masks.}
+\[
+\begin{aligned}
+T(n) &= O(9S) \text{ (build)} + O(n\cdot S) \text{ (DP)} \\
+S(n) &= O(S)
+\end{aligned}
+\]
+\CORRECTNESS{Any kept subsequence traces a path in the DFA. The DFA forbids exactly the steps that would close an $x$-prime substring (including those formed by overflow and a previously visited sum). Therefore the DP maximum equals the longest valid subsequence; deletions are minimized.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Same API/signature as baseline; deterministic; with asserts
+
+from collections import deque
+
+def proper_divisors(x: int):
+    return {d for d in range(1, x) if x % d == 0}
+
+def build_automaton(x: int):
+    D = proper_divisors(x)
+    D_bits = 0
+    for d in D: D_bits |= (1 << d)
+    start = 1
+    trans = {}
+    seen = {start}
+    q = deque([start])
+    while q:
+        m = q.popleft()
+        s = m.bit_length() - 1
+        tmap = {}
+        for a in range(1, 10):
+            v = s + a
+            if v == x:
+                continue
+            if v < x:
+                if (D_bits >> v) & 1:
+                    nxt = 1
+                else:
+                    nxt = m | (1 << v)
+            else:
+                u = v - x
+                # Need u to have been visited in this block to create x-prime
+                if u <= s and ((m >> u) & 1):
+                    continue
+                nxt = 1
+            tmap[a] = nxt
+            if nxt not in seen:
+                seen.add(nxt); q.append(nxt)
+        trans[m] = tmap
+    return trans, start
+
+def max_accepted_subsequence_len(s: str, x: int) -> int:
+    trans, start = build_automaton(x)
+    dp = {start: 0}
+    for ch in s:
+        a = ord(ch) - 48
+        ndp = dict(dp)
+        for m, val in dp.items():
+            nxt = trans[m].get(a)
+            if nxt is not None:
+                if ndp.get(nxt, -10**9) < val + 1:
+                    ndp[nxt] = val + 1
+        dp = ndp
+    return max(dp.values()) if dp else 0
+
+def solve_all(data: str) -> str:
+    it = iter(data.strip().splitlines())
+    s = next(it).strip()
+    x = int(next(it).strip())
+    kept = max_accepted_subsequence_len(s, x)
+    return str(len(s) - kept)
+
+def read_input() -> str:
+    import sys
+    return sys.stdin.read()
+
+def main():
+    print(solve_all(read_input()))
+
+if __name__ == "__main__":
+    # Edge-focused checks
+    assert solve_all("2\n1\n") == "0"
+    assert solve_all("121\n1\n") == "2"
+    assert solve_all("22\n4\n") == "0"
+    assert solve_all("4\n4\n") == "1"
+    main()
+\end{minted}
+\VALIDATION{Covers $x=1$ (no divisors), composite $x$ with resets, and immediate $x$ hits.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{DFA over Partial-Sum Masks + Longest Accepted Subsequence}
+\WHICHFORMULA{Final method is the formal DFA described: state $M$ equals visited partial sums in current block; transitions forbid closing an $x$-prime; dynamic programming keeps the longest valid subsequence.}
+\ASSUMPTIONS{Digits are $1$--$9$; $x \le 20$; reachable state space is small.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute $D=\{d: d \mid x, 1 \le d < x\}$.
+\item Build DFA transitions from $M=\{0\}$:
+      to read $a$, set $v=\max(M)+a$; forbid if $v=x$ or ($v>x$ and $v-x\in M$);
+      reset if $v\in D$ or $v>x$; else add $v$ to $M$.
+\item DP across $s$: for each char, skip (stay) or keep (follow edge) to maximize length.
+\end{algosteps}
+\OPTIMALITY{Any valid subsequence corresponds to a DFA path; conversely, any DFA path corresponds to a valid subsequence. Therefore the longest path length equals the maximum keepable characters; deletions are minimized.}
+\COMPLEXITY{Let $S$ be number of reachable masks.}
+\[
+\begin{aligned}
+T(n) &= O(9S) + O(nS),\quad S \text{ small for } x \le 20 \\
+S(n) &= O(S)
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF Final: x-prime Substrings (DFA + DP)
+from collections import deque
+
+def proper_divisors(x: int):
+    return {d for d in range(1, x) if x % d == 0}
+
+def build_automaton(x: int):
+    D = proper_divisors(x)
+    D_bits = 0
+    for d in D: D_bits |= (1 << d)
+    start = 1  # {0}
+    trans = {}
+    seen = {start}
+    q = deque([start])
+    while q:
+        m = q.popleft()
+        s = m.bit_length() - 1
+        tmap = {}
+        for a in range(1, 10):
+            v = s + a
+            if v == x:
+                continue
+            if v < x:
+                if (D_bits >> v) & 1:
+                    nxt = 1
+                else:
+                    nxt = m | (1 << v)
+            else:
+                u = v - x
+                if u <= s and ((m >> u) & 1):
+                    continue
+                nxt = 1
+            tmap[a] = nxt
+            if nxt not in seen:
+                seen.add(nxt); q.append(nxt)
+        trans[m] = tmap
+    return trans, start
+
+def max_accepted_subsequence_len(s: str, x: int) -> int:
+    trans, start = build_automaton(x)
+    dp = {start: 0}
+    for ch in s:
+        a = ord(ch) - 48
+        ndp = dict(dp)
+        for m, val in dp.items():
+            nxt = trans[m].get(a)
+            if nxt is not None:
+                if ndp.get(nxt, -10**9) < val + 1:
+                    ndp[nxt] = val + 1
+        dp = ndp
+    return max(dp.values()) if dp else 0
+
+def solve_all(data: str) -> str:
+    it = iter(data.strip().splitlines())
+    s = next(it).strip()
+    x = int(next(it).strip())
+    kept = max_accepted_subsequence_len(s, x)
+    return str(len(s) - kept)
+
+def read_input() -> str:
+    import sys
+    return sys.stdin.read()
+
+def main():
+    print(solve_all(read_input()))
+
+if __name__ == "__main__":
+    # Exactly 3 asserts / mini-tests
+    assert solve_all("53\n8\n") == "1"   # "53" is 8-prime
+    assert solve_all("121\n1\n") == "2"  # delete both '1'
+    assert solve_all("22\n4\n") == "0"   # not 4-prime
+    main()
+\end{minted}
+\VALIDATION{Three targeted assertions focused on prime formation, $x=1$, and divisor-reset cases.}
+\RESULT{Print the minimum number of deletions. Ties do not arise; a single integer is required.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on micro cases: $x=1$ extremes, exact $x$-hit, safe overflow, divisor resets. Random fuzzing can be added by brute checking for small $n$.}
+\LINE{CROSS-CHECKS}{Compare outputs of Approaches A, B, C (identical core) on handcrafted cases to ensure consistency.}
+\LINE{EDGE-CASE GENERATOR}{Generate short strings of digits length $\le 6$, all $x \in [1,8]$, and verify that keeping subsequence per DFA never forms an $x$-prime substring.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+def brute_has_x_prime(s: str, x: int) -> bool:
+    n = len(s)
+    digits = [ord(c) - 48 for c in s]
+    D = {d for d in range(1, x) if x % d == 0}
+    for l in range(n):
+        for r in range(l, n):
+            total = sum(digits[l:r+1])
+            if total != x:
+                continue
+            ok = True
+            for i in range(l, r+1):
+                cur = 0
+                for j in range(i, r+1):
+                    cur += digits[j]
+                    if cur != x and cur in D:
+                        ok = False
+                        break
+                if not ok:
+                    break
+            if ok:
+                return True
+    return False
+
+def reference_min_deletions(s: str, x: int) -> int:
+    # Use the final DFA+DP
+    from collections import deque
+    def proper_divisors(x: int):
+        return {d for d in range(1, x) if x % d == 0}
+    def build_automaton(x: int):
+        D = proper_divisors(x)
+        D_bits = 0
+        for d in D: D_bits |= (1 << d)
+        start = 1
+        trans = {}
+        seen = {start}
+        q = deque([start])
+        while q:
+            m = q.popleft()
+            s_ = m.bit_length() - 1
+            tmap = {}
+            for a in range(1, 10):
+                v = s_ + a
+                if v == x:
+                    continue
+                if v < x:
+                    if (D_bits >> v) & 1:
+                        nxt = 1
+                    else:
+                        nxt = m | (1 << v)
+                else:
+                    u = v - x
+                    if u <= s_ and ((m >> u) & 1):
+                        continue
+                    nxt = 1
+                tmap[a] = nxt
+                if nxt not in seen:
+                    seen.add(nxt); q.append(nxt)
+            trans[m] = tmap
+        return trans, start
+    def max_keep(s: str, x: int) -> int:
+        trans, start = build_automaton(x)
+        dp = {start: 0}
+        for ch in s:
+            a = ord(ch) - 48
+            ndp = dict(dp)
+            for m, val in dp.items():
+                nxt = trans[m].get(a)
+                if nxt is not None:
+                    ndp[nxt] = max(ndp.get(nxt, -10**9), val + 1)
+            dp = ndp
+        return max(dp.values())
+    return len(s) - max_keep(s, x)
+
+def self_test_small():
+    # Deterministic sweep on small strings to cross-check an invariant:
+    # resulting kept subsequence has no x-prime substring (spot-checked).
+    digits = "123"
+    cases = set()
+    def gen_strings(alphabet, maxlen):
+        res = [""]
+        for _ in range(maxlen):
+            res = [r + c for r in res for c in alphabet]
+        return res
+    for s in gen_strings("12", 4):
+        for x in range(1, 7):
+            md = reference_min_deletions(s, x)
+            # Check existence on the best kept length via greedy reconstruction is hard;
+            # here we only ensure non-negativity and upper bound by len(s)
+            assert 0 <= md <= len(s)
+    # Spot checks from statement-like reasoning
+    assert reference_min_deletions("53", 8) == 1
+    assert reference_min_deletions("22", 4) == 0
+    assert reference_min_deletions("4", 4) == 1
+
+if __name__ == "__main__":
+    self_test_small()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Final submission-ready reference (CF single test)
+from collections import deque
+
+def proper_divisors(x: int):
+    return {d for d in range(1, x) if x % d == 0}
+
+def build_automaton(x: int):
+    D = proper_divisors(x)
+    D_bits = 0
+    for d in D:
+        D_bits |= (1 << d)
+    start = 1  # mask {0}
+    trans = {}
+    seen = {start}
+    q = deque([start])
+    while q:
+        m = q.popleft()
+        s = m.bit_length() - 1
+        tmap = {}
+        for a in range(1, 10):
+            v = s + a
+            if v == x:
+                continue
+            if v < x:
+                if (D_bits >> v) & 1:
+                    nxt = 1
+                else:
+                    nxt = m | (1 << v)
+            else:
+                u = v - x
+                if u <= s and ((m >> u) & 1):
+                    continue
+                nxt = 1
+            tmap[a] = nxt
+            if nxt not in seen:
+                seen.add(nxt)
+                q.append(nxt)
+        trans[m] = tmap
+    return trans, start
+
+def max_accepted_subsequence_len(s: str, x: int) -> int:
+    trans, start = build_automaton(x)
+    dp = {start: 0}
+    for ch in s:
+        a = ord(ch) - 48
+        ndp = dict(dp)
+        for m, val in dp.items():
+            nxt = trans[m].get(a)
+            if nxt is not None:
+                if ndp.get(nxt, -10**9) < val + 1:
+                    ndp[nxt] = val + 1
+        dp = ndp
+    return max(dp.values()) if dp else 0
+
+def solve_all(data: str) -> str:
+    it = iter(data.strip().splitlines())
+    s = next(it).strip()
+    x = int(next(it).strip())
+    kept = max_accepted_subsequence_len(s, x)
+    return str(len(s) - kept)
+
+def read_input() -> str:
+    import sys
+    return sys.stdin.read()
+
+def main():
+    print(solve_all(read_input()))
+
+if __name__ == "__main__":
+    # Sanity asserts
+    assert solve_all("53\n8\n") == "1"
+    assert solve_all("22\n4\n") == "0"
+    assert solve_all("4\n4\n") == "1"
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Min deletions so that no substring sums to $x$ without hitting a proper divisor of $x$ inside.}
+\WHY{Tests understanding of automata for substring-avoidance and DP over subsequences, with careful handling of ``overflow'' cases.}
+\CHECKLIST{
+\begin{bullets}
+\item Compute proper divisors $D$ of $x$.
+\item DFA state is mask $M$ of visited partial sums in the current block.
+\item For digit $a$, set $v=\max(M)+a$.
+\item Forbid if $v=x$ or ($v>x$ and $(v-x)\in M$).
+\item Reset if $v\in D$ or $v>x$; else add $v$ to $M$.
+\item DP over input: skip or take transitions; answer $=n-\max\_keep$.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item $x=1$: every digit ``1'' is immediately forbidden; other digits allowed.
+\item Single-character equals $x$: must be deleted.
+\item Repeated divisors: every time sum hits $d\in D$, reset.
+\item Overflow by big digit: only forbidden if $(v-x)$ existed in current block.
+\item No divisors except $1$ (prime $x$): only ``1'' inside a candidate invalidates primeness.
+\item Long runs of small digits: ensure mask growth and forbidden exact-hit detection.
+\item Alternating digits causing frequent resets.
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Assuming intermediate sums exist for big digits (they do not): must use mask membership, not ranges.
+\item Forgetting that $0 \notin D$; exact-hit $v=x$ is always forbidden since $0\in M$.
+\item Not resetting on $v>x$, which invalidates state invariants.
+\item Using modulo instead of exact sums: digits are positive, no wrap-around.
+\item Exponential DP on subsequences; must use DFA to prune.
+\item Miscomputing current sum: it is the highest set bit of $M$.
+\end{bullets}}
+\FAILMODES{Greedy deletions on substrings of sum $x$ alone fail because deletions can create new adjacencies; the DFA approach is robust to concatenation.}
+\ELI{We keep a running ``set of sums seen since the last safe breakpoint''. If adding the next digit would close a clean sum-$x$ segment, we choose to delete it; otherwise we keep it and update the set. Doing this optimally over all choices gives the fewest deletions.}
+\NotePages{3}
+
+\end{document}

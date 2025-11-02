@@ -1,0 +1,866 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Red-Blue Matrix}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1606/D}}
+\LINE{DIFFICULTY / RATING}{2400}
+\STATEMENT{You are given a matrix, consisting of $n$ rows and $m$ columns. The $j$-th cell of the $i$-th row contains an integer $a_{ij}$.
+
+First, you have to color each row of the matrix either red or blue in such a way that at least one row is colored red and at least one row is colored blue.
+
+Then, you have to choose an integer $k$ ($1 \le k < m$) and cut the colored matrix in such a way that the first $k$ columns become a separate matrix (the left matrix) and the last $m-k$ columns become a separate matrix (the right matrix).
+
+The coloring and the cut are called perfect if two properties hold:
+\begin{bullets}
+\item every red cell in the left matrix contains an integer greater than every blue cell in the left matrix;
+\item every blue cell in the right matrix contains an integer greater than every red cell in the right matrix.
+\end{bullets}
+
+Find any perfect coloring and cut, or report that there are none.
+
+Input:
+The first line contains a single integer $t$ ($1 \le t \le 1000$) — the number of testcases.
+
+Then the descriptions of $t$ testcases follow.
+
+The first line of each testcase contains two integers $n$ and $m$ ($2 \le n, m \le 5 \cdot 10^5$; $n \cdot m \le 10^6$) — the number of rows and the number of columns in the matrix, respectively.
+
+The $i$-th of the next $n$ lines contains $m$ integers $a_{i1}, a_{i2}, \dots, a_{im}$ ($1 \le a_{ij} \le 10^6$).
+
+The sum of $n \cdot m$ over all testcases does not exceed $10^6$.
+
+Output:
+For each testcase print an answer. If there are no perfect colorings and cuts in the matrix, then print ``NO''.
+
+Otherwise, first, print ``YES''. Then a string, consisting of $n$ characters: the $i$-th character should be `R' if the $i$-th row is colored red and `B' if it is colored blue. The string should contain at least one `R' and at least one `B'. Finally, print an integer $k$ ($1 \le k < m$) — the number of columns from the left that are cut.}
+\BREAKDOWN{Partition rows into two color groups and pick a split column $k$ so that left-side red values dominate left-side blue values, and right-side blue values dominate right-side red values. Use per-row prefix/suffix extrema and a sort by the $k$-th column to test a feasible prefix/suffix split among rows.}
+\ELI{Sort rows by the last column of the left part and find a place to split rows into blue then red so that left blues are small, left reds are big, right blues are big, right reds are small.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Multiple testcases. For each: integers $n, m$ with $2 \le n, m$, $n \cdot m \le 10^6$ overall. Then an $n \times m$ integer matrix with $1 \le a_{ij} \le 10^6$.}
+\OUTPUTS{For each testcase: either print NO; or print YES, then a coloring string of length $n$ over \{R, B\} with both letters present, and an integer $k$ with $1 \le k < m$.}
+\SAMPLES{Example 1:
+\begin{align*}
+\text{Input:} &\quad 1\\
+&\quad 2~2\\
+&\quad 2~1\\
+&\quad 1~2\\
+\text{Output:} &\quad \text{YES}\\
+&\quad \text{RB}\\
+&\quad 1
+\end{align*}
+Example 2:
+\begin{align*}
+\text{Input:} &\quad 1\\
+&\quad 2~2\\
+&\quad 1~1\\
+&\quad 1~1\\
+\text{Output:} &\quad \text{NO}
+\end{align*}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Given matrix $A \in \mathbb{Z}^{n \times m}$, find $k \in \{1,\ldots,m-1\}$ and a partition of row indices $[n] = B \sqcup R$ with $B,R \ne \varnothing$ such that:
+\[
+\min_{i \in R,~1 \le j \le k} A_{ij} \;>\; \max_{i \in B,~1 \le j \le k} A_{ij}
+\quad\text{and}\quad
+\min_{i \in B,~k+1 \le j \le m} A_{ij} \;>\; \max_{i \in R,~k+1 \le j \le m} A_{ij}.
+\]%
+}
+\varmapStart
+\var{A_{ij}}{value in row $i$, column $j$}
+\var{k}{left/right column split, $1 \le k < m$}
+\var{B,R}{index sets of blue and red rows}
+\var{L^{\min}_i(k)}{$\min_{1 \le j \le k} A_{ij}$}
+\var{L^{\max}_i(k)}{$\max_{1 \le j \le k} A_{ij}$}
+\var{R^{\min}_i(k)}{$\min_{k+1 \le j \le m} A_{ij}$}
+\var{R^{\max}_i(k)}{$\max_{k+1 \le j \le m} A_{ij}$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+\min_{i \in R} L^{\min}_i(k) &> \max_{i \in B} L^{\max}_i(k),\\
+\min_{i \in B} R^{\min}_i(k) &> \max_{i \in R} R^{\max}_i(k).
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Indices are 1-based for columns in the math. All values are integers. At least two rows and two columns.}
+\INVARIANTS{
+\begin{bullets}
+\item For fixed $k$, sorting rows by $A_{i,k}$ allows searching a prefix/suffix split among rows.
+\item Monotonicity: expanding left part increases $L^{\max}_i$ and decreases $L^{\min}_i$ per row.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{For each $k$, sort rows by the $k$-th column (last of the left block), then check whether some prefix as blue and suffix as red satisfies the two strict inequalities via per-row prefix/suffix extrema.}
+\ASSUMPTIONS{Compute per-row right-side suffix minima and maxima once. Maintain per-row left-side minima and maxima incrementally as $k$ grows.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute for each row $i$ arrays of $R^{\min}_i(j)$ and $R^{\max}_i(j)$ for all starts $j$ (suffix over columns).
+\item For $k=1$ to $m-1$: update $L^{\min}_i, L^{\max}_i$ for all rows with column $k$; sort row indices by $A_{i,k}$.
+\item Over this order, build prefix over rows of $L^{\max}$ and $R^{\min}$ (blues), and suffix-over-rows of $L^{\min}$ and $R^{\max}$ (reds). Scan for a split position that satisfies both inequalities.
+\end{algosteps}
+\COMPLEXITY{Let $n_k=n$. With $\sum n\cdot m \le 10^6$:
+\[
+\begin{aligned}
+T(n) &\approx \sum_{k=1}^{m-1} \bigl(n \log n + n\bigr) + O(nm) \\
+     &= O\bigl(n m \log n + n m\bigr),\\
+S(n) &= O(n + nm) \text{ (matrix + suffix extrema)}.
+\end{aligned}
+\]
+}
+\CORRECTNESS{Sorting by the last left column preserves a feasible total order where a valid coloring, if it exists for that $k$, can be realized as a contiguous blue prefix followed by a red suffix. The prefix/suffix extrema exactly encode the two required strict separations.}
+\EDGECASES{All equal rows (NO); $n=2$ minimal; $m=2$ minimal; ties on $A_{i,k}$ are handled by strict inequalities on aggregated extrema.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys, io
+from array import array
+
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.buffer.read()
+    it = iter(data.split())
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        rows = []
+        for _ in range(n):
+            row = array('i', [int(next(it)) for __ in range(m)])
+            rows.append(row)
+        tests.append((n, m, rows))
+    return tests
+
+def solve_case(n, m, rows):
+    INF = 10**9
+    # Precompute per-row suffix min/max for all starts j in [0..m]
+    sufMin = []
+    sufMax = []
+    for i in range(n):
+        smin = array('i', [0]) * (m + 1)
+        smax = array('i', [0]) * (m + 1)
+        smin[m] = INF
+        smax[m] = -1
+        row = rows[i]
+        # fill backwards
+        for j in range(m - 1, -1, -1):
+            v = row[j]
+            # min
+            mn = smin[j + 1]
+            if v < mn:
+                mn = v
+            smin[j] = mn
+            # max
+            mx = smax[j + 1]
+            if v > mx:
+                mx = v
+            smax[j] = mx
+        sufMin.append(smin)
+        sufMax.append(smax)
+
+    Lmin = [INF] * n
+    Lmax = [-1] * n
+
+    # Try each k (1..m-1); 0-based column index is k-1
+    idxs = list(range(n))
+    for k in range(1, m):
+        col = k - 1
+        # Update left-side prefix extrema with column col
+        for i in range(n):
+            v = rows[i][col]
+            if v < Lmin[i]:
+                Lmin[i] = v
+            if v > Lmax[i]:
+                Lmax[i] = v
+
+        # Sort rows by the k-th column (last of left block)
+        ord_rows = idxs[:]  # copy
+        ord_rows.sort(key=lambda i: rows[i][col])
+
+        # Prefix aggregates for blue (rows 0..r)
+        prefLmax = [0] * n
+        prefRmin = [0] * n
+        curLmax = -1
+        curRmin = INF
+        for r, i in enumerate(ord_rows):
+            lm = Lmax[i]
+            rm = sufMin[i][k]  # right starts at k
+            if lm > curLmax:
+                curLmax = lm
+            if rm < curRmin:
+                curRmin = rm
+            prefLmax[r] = curLmax
+            prefRmin[r] = curRmin
+
+        # Suffix aggregates for red (rows r+1..n-1), stored as "exclude r" values
+        suffLmin_ex = [INF] * n
+        suffRmax_ex = [-1] * n
+        curLmin = INF
+        curRmax = -1
+        for pos in range(n - 1, -1, -1):
+            i = ord_rows[pos]
+            suffLmin_ex[pos] = curLmin
+            suffRmax_ex[pos] = curRmax
+            li = Lmin[i]
+            ri = sufMax[i][k]
+            if li < curLmin:
+                curLmin = li
+            if ri > curRmax:
+                curRmax = ri
+
+        # Find split r so that blue = rows[0..r], red = rows[r+1..]
+        found = -1
+        for r in range(n - 1):
+            if prefLmax[r] < suffLmin_ex[r] and prefRmin[r] > suffRmax_ex[r]:
+                found = r
+                break
+        if found != -1:
+            colors = ['R'] * n
+            for pos in range(found + 1):
+                colors[ord_rows[pos]] = 'B'
+            return "YES", "".join(colors), k
+
+    return "NO", "", -1
+
+def solve_all(data=None):
+    tests = read_input(data)
+    out_lines = []
+    for (n, m, rows) in tests:
+        res, colors, k = solve_case(n, m, rows)
+        if res == "NO":
+            out_lines.append("NO")
+        else:
+            out_lines.append("YES")
+            out_lines.append(colors)
+            out_lines.append(str(k))
+    return "\n".join(out_lines)
+
+def main():
+    sys.setrecursionlimit(1 << 25)
+    ans = solve_all()
+    sys.stdout.write(ans)
+
+if __name__ == "__main__":
+    # Tiny asserts
+    # 1) Simple YES case
+    data = b"1\n2 2\n2 1\n1 2\n"
+    out = solve_all(data)
+    assert out.splitlines()[0] == "YES"
+    # 2) All equal -> NO
+    data = b"1\n2 2\n1 1\n1 1\n"
+    out = solve_all(data)
+    assert out.strip() == "NO"
+    # 3) Multiple tests mixed
+    data = b"2\n2 2\n2 1\n1 2\n2 2\n1 1\n1 1\n"
+    out = solve_all(data).splitlines()
+    assert out[0] == "YES" and out[-1] == "NO"
+    main()
+\end{minted}
+\VALIDATION{Validated on two tiny cases (YES/NO) and a mixed batch. The asserts focus on feasibility detection.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Maintain per-row left extrema incrementally across $k$ and reuse per-row right-side suffix extrema. This avoids recomputation and keeps the scan per $k$ linear aside from the single sort by column $k$.}
+\ASSUMPTIONS{Use array-based suffixes for memory efficiency; stable ordering by the $k$-th column is sufficient; strict inequalities enforce separation.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build per-row arrays for $R^{\min}_i(j)$ and $R^{\max}_i(j)$ for all $j$ using one backward pass.
+\item Keep $L^{\min}_i, L^{\max}_i$ in two arrays; for each $k$, update them with column $k$.
+\item Sort rows by $A_{i,k}$, build prefix/suffix aggregates once, and test a split.
+\end{algosteps}
+\COMPLEXITY{Beats naive recomputation by sharing work across $k$. Total is $O(nm\log n)$ time, $O(nm)$ space; with $\sum nm \le 10^6$, this is practical in Python using compact arrays.}
+\[
+\begin{aligned}
+T &\approx \sum_{k=1}^{m-1} (n \log n + n) + O(nm) \\
+  &= O(n m \log n).
+\end{aligned}
+\]
+\CORRECTNESS{For a fixed $k$, any valid coloring can be arranged so that blue rows precede red rows when sorting by $A_{i,k}$. Prefix/suffix aggregated extrema directly encode the two separation constraints.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys, io
+from array import array
+
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.buffer.read()
+    it = iter(data.split())
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        rows = []
+        for _ in range(n):
+            rows.append(array('i', [int(next(it)) for __ in range(m)]))
+        tests.append((n, m, rows))
+    return tests
+
+def solve_case(n, m, rows):
+    INF = 10**9
+    sufMin = []
+    sufMax = []
+    for i in range(n):
+        smin = array('i', [0]) * (m + 1)
+        smax = array('i', [0]) * (m + 1)
+        smin[m] = INF
+        smax[m] = -1
+        row = rows[i]
+        for j in range(m - 1, -1, -1):
+            v = row[j]
+            mn = smin[j + 1]
+            if v < mn: mn = v
+            smin[j] = mn
+            mx = smax[j + 1]
+            if v > mx: mx = v
+            smax[j] = mx
+        sufMin.append(smin)
+        sufMax.append(smax)
+
+    Lmin = [INF] * n
+    Lmax = [-1] * n
+    idxs = list(range(n))
+
+    for k in range(1, m):
+        col = k - 1
+        # Update left prefix extrema
+        for i in range(n):
+            v = rows[i][col]
+            if v < Lmin[i]: Lmin[i] = v
+            if v > Lmax[i]: Lmax[i] = v
+
+        ord_rows = idxs[:]
+        ord_rows.sort(key=lambda i: rows[i][col])
+
+        prefLmax = [0] * n
+        prefRmin = [0] * n
+        curLmax = -1
+        curRmin = INF
+        for r, i in enumerate(ord_rows):
+            lm = Lmax[i]
+            rm = sufMin[i][k]
+            if lm > curLmax: curLmax = lm
+            if rm < curRmin: curRmin = rm
+            prefLmax[r] = curLmax
+            prefRmin[r] = curRmin
+
+        suffLmin_ex = [INF] * n
+        suffRmax_ex = [-1] * n
+        curLmin = INF
+        curRmax = -1
+        for pos in range(n - 1, -1, -1):
+            i = ord_rows[pos]
+            suffLmin_ex[pos] = curLmin
+            suffRmax_ex[pos] = curRmax
+            li = Lmin[i]
+            ri = sufMax[i][k]
+            if li < curLmin: curLmin = li
+            if ri > curRmax: curRmax = ri
+
+        for r in range(n - 1):
+            if prefLmax[r] < suffLmin_ex[r] and prefRmin[r] > suffRmax_ex[r]:
+                colors = ['R'] * n
+                for pos in range(r + 1):
+                    colors[ord_rows[pos]] = 'B'
+                return "YES", "".join(colors), k
+
+    return "NO", "", -1
+
+def solve_all(data=None):
+    tests = read_input(data)
+    out = []
+    for n, m, rows in tests:
+        res, colors, k = solve_case(n, m, rows)
+        if res == "NO":
+            out.append("NO")
+        else:
+            out.append("YES"); out.append(colors); out.append(str(k))
+    return "\n".join(out)
+
+def main():
+    ans = solve_all()
+    sys.stdout.write(ans)
+
+if __name__ == "__main__":
+    # Edge checks
+    data = b"1\n2 2\n2 1\n1 2\n"
+    assert solve_all(data).splitlines()[0] == "YES"
+    data = b"1\n2 2\n1 1\n1 1\n"
+    assert solve_all(data).strip() == "NO"
+    main()
+\end{minted}
+\VALIDATION{Checked on small YES/NO cases; logic identical to baseline with streamlined state reuse.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Use the same $O(nm\log n)$ approach with per-row suffix extrema and incremental left extrema. This matches known solutions and fits $\sum nm \le 10^6$.}
+\ASSUMPTIONS{Strict inequalities; sorting by the $k$-th column suffices to test all feasible colorings for that $k$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute $R^{\min}_i(j)$, $R^{\max}_i(j)$ arrays per row via backward scan.
+\item For $k=1$ to $m-1$: update $L^{\min}_i, L^{\max}_i$; sort rows by $A_{i,k}$; scan prefix/suffix aggregates to find a valid split.
+\item If found, output colors and $k$; otherwise NO.
+\end{algosteps}
+\OPTIMALITY{Given the need to compare across rows, sorting per $k$ appears necessary in the worst case. With $\sum nm \le 10^6$, this is tight and practical.}
+\COMPLEXITY{As before; linear in matrix size times a logarithmic factor per column due to sorting.}
+\[
+\begin{aligned}
+T(n) &= O(n m \log n), \quad S(n) = O(n m).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from array import array
+
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.buffer.read()
+    it = iter(data.split())
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        rows = []
+        for _ in range(n):
+            rows.append(array('i', [int(next(it)) for __ in range(m)]))
+        tests.append((n, m, rows))
+    return tests
+
+def solve_case(n, m, rows):
+    INF = 10**9
+    # Suffix min/max per row for all starts j
+    sufMin = []
+    sufMax = []
+    for i in range(n):
+        smin = array('i', [0]) * (m + 1)
+        smax = array('i', [0]) * (m + 1)
+        smin[m] = INF
+        smax[m] = -1
+        row = rows[i]
+        for j in range(m - 1, -1, -1):
+            v = row[j]
+            mn = smin[j + 1]
+            if v < mn: mn = v
+            smin[j] = mn
+            mx = smax[j + 1]
+            if v > mx: mx = v
+            smax[j] = mx
+        sufMin.append(smin)
+        sufMax.append(smax)
+
+    Lmin = [INF] * n
+    Lmax = [-1] * n
+    idxs = list(range(n))
+
+    for k in range(1, m):
+        col = k - 1
+        # update left extrema
+        for i in range(n):
+            v = rows[i][col]
+            if v < Lmin[i]: Lmin[i] = v
+            if v > Lmax[i]: Lmax[i] = v
+
+        order = idxs[:]
+        order.sort(key=lambda i: rows[i][col])
+
+        prefLmax = [0] * n
+        prefRmin = [0] * n
+        curLmax = -1
+        curRmin = INF
+        for r, i in enumerate(order):
+            lm = Lmax[i]
+            rm = sufMin[i][k]
+            if lm > curLmax: curLmax = lm
+            if rm < curRmin: curRmin = rm
+            prefLmax[r] = curLmax
+            prefRmin[r] = curRmin
+
+        suffLmin_ex = [INF] * n
+        suffRmax_ex = [-1] * n
+        curLmin = INF
+        curRmax = -1
+        for pos in range(n - 1, -1, -1):
+            i = order[pos]
+            suffLmin_ex[pos] = curLmin
+            suffRmax_ex[pos] = curRmax
+            li = Lmin[i]
+            ri = sufMax[i][k]
+            if li < curLmin: curLmin = li
+            if ri > curRmax: curRmax = ri
+
+        for r in range(n - 1):
+            if prefLmax[r] < suffLmin_ex[r] and prefRmin[r] > suffRmax_ex[r]:
+                colors = ['R'] * n
+                for pos in range(r + 1):
+                    colors[order[pos]] = 'B'
+                return "YES", "".join(colors), k
+
+    return "NO", "", -1
+
+def solve_all(data=None):
+    tests = read_input(data)
+    out = []
+    for n, m, rows in tests:
+        res, colors, k = solve_case(n, m, rows)
+        if res == "NO":
+            out.append("NO")
+        else:
+            out.append("YES")
+            out.append(colors)
+            out.append(str(k))
+    return "\n".join(out)
+
+def main():
+    sys.setrecursionlimit(1 << 25)
+    sys.stdout.write(solve_all())
+
+if __name__ == "__main__":
+    # Exactly 3 asserts / I/O mini-tests
+    data = b"1\n2 2\n2 1\n1 2\n"
+    out = solve_all(data).splitlines()
+    assert out[0] == "YES" and set(out[1]) == set("RB") and out[2] == "1"
+    data = b"1\n2 2\n1 1\n1 1\n"
+    assert solve_all(data).strip() == "NO"
+    data = b"2\n2 2\n2 1\n1 2\n2 2\n1 1\n1 1\n"
+    o = solve_all(data).splitlines()
+    assert o[0] == "YES" and o[-1] == "NO"
+    main()
+\end{minted}
+\VALIDATION{Three asserts covering a YES, a NO, and a mixed multi-test.}
+\RESULT{Outputs either NO or a valid coloring string (with both R and B) and a split $k$ satisfying both strict separation constraints.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests for trivial YES/NO; randomized small matrices with brute verification offline; stress variation over $k$ and tie-heavy columns.}
+\LINE{CROSS-CHECKS}{Compare feasibility returned by Approach A/B/C on tiny instances. They are identical methods with organizational differences, so outputs must match.}
+\LINE{EDGE-CASE GENERATOR}{Generate matrices with identical rows, strictly increasing rows, and shuffled columns to test separation failures and successes.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def gen_equal(n, m, val=5):
+    return [[val]*m for _ in range(n)]
+
+def gen_diag(n, m):
+    # Increasing along rows and columns
+    return [[i*m + j + 1 for j in range(m)] for i in range(n)]
+
+def gen_two_rows_swap():
+    return [[2,1],[1,2]]
+
+def brute_check(rows, colors, k):
+    n = len(rows); m = len(rows[0])
+    B = [i for i,c in enumerate(colors) if c=='B']
+    R = [i for i,c in enumerate(colors) if c=='R']
+    if not B or not R: return False
+    leftB = max(rows[i][j] for i in B for j in range(k))
+    leftR = min(rows[i][j] for i in R for j in range(k))
+    rightB = min(rows[i][j] for i in B for j in range(k,m))
+    rightR = max(rows[i][j] for i in R for j in range(k,m))
+    return leftR > leftB and rightB > rightR
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+from array import array
+
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.buffer.read()
+    it = iter(data.split())
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        rows = []
+        for _ in range(n):
+            rows.append(array('i', [int(next(it)) for __ in range(m)]))
+        tests.append((n, m, rows))
+    return tests
+
+def solve_case(n, m, rows):
+    INF = 10**9
+    sufMin = []
+    sufMax = []
+    for i in range(n):
+        smin = array('i', [0]) * (m + 1)
+        smax = array('i', [0]) * (m + 1)
+        smin[m] = INF
+        smax[m] = -1
+        row = rows[i]
+        for j in range(m - 1, -1, -1):
+            v = row[j]
+            mn = smin[j + 1]
+            if v < mn: mn = v
+            smin[j] = mn
+            mx = smax[j + 1]
+            if v > mx: mx = v
+            smax[j] = mx
+        sufMin.append(smin)
+        sufMax.append(smax)
+
+    Lmin = [INF] * n
+    Lmax = [-1] * n
+    idxs = list(range(n))
+
+    for k in range(1, m):
+        col = k - 1
+        for i in range(n):
+            v = rows[i][col]
+            if v < Lmin[i]: Lmin[i] = v
+            if v > Lmax[i]: Lmax[i] = v
+
+        order = idxs[:]
+        order.sort(key=lambda i: rows[i][col])
+
+        prefLmax = [0] * n
+        prefRmin = [0] * n
+        curLmax = -1
+        curRmin = 10**9
+        for r, i in enumerate(order):
+            lm = Lmax[i]
+            rm = sufMin[i][k]
+            if lm > curLmax: curLmax = lm
+            if rm < curRmin: curRmin = rm
+            prefLmax[r] = curLmax
+            prefRmin[r] = curRmin
+
+        suffLmin_ex = [10**9] * n
+        suffRmax_ex = [-1] * n
+        curLmin = 10**9
+        curRmax = -1
+        for pos in range(n - 1, -1, -1):
+            i = order[pos]
+            suffLmin_ex[pos] = curLmin
+            suffRmax_ex[pos] = curRmax
+            li = Lmin[i]
+            ri = sufMax[i][k]
+            if li < curLmin: curLmin = li
+            if ri > curRmax: curRmax = ri
+
+        for r in range(n - 1):
+            if prefLmax[r] < suffLmin_ex[r] and prefRmin[r] > suffRmax_ex[r]:
+                colors = ['R'] * n
+                for pos in range(r + 1):
+                    colors[order[pos]] = 'B'
+                return "YES", "".join(colors), k
+
+    return "NO", "", -1
+
+def solve_all(data=None):
+    tests = read_input(data)
+    out = []
+    for n, m, rows in tests:
+        res, colors, k = solve_case(n, m, rows)
+        if res == "NO":
+            out.append("NO")
+        else:
+            out.append("YES"); out.append(colors); out.append(str(k))
+    return "\n".join(out)
+
+def main():
+    sys.setrecursionlimit(1 << 25)
+    sys.stdout.write(solve_all())
+
+if __name__ == "__main__":
+    # Smoke tests
+    data = b"1\n2 2\n2 1\n1 2\n"
+    o = solve_all(data).splitlines()
+    assert o[0] == "YES" and set(o[1]) == set("RB") and o[2] == "1"
+    data = b"1\n2 2\n1 1\n1 1\n"
+    assert solve_all(data).strip() == "NO"
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Sort by the last left column and scan for a row split where left blues are strictly below left reds and right blues are strictly above right reds.}
+\WHY{This pattern (two-sided strict separation) appears in matrix partitioning and competitive programming problems; mastering prefix/suffix extrema is key.}
+\CHECKLIST{
+\begin{bullets}
+\item Precompute right-side suffix min/max per row.
+\item Maintain left-side min/max incrementally with $k$.
+\item For each $k$, sort rows by $A_{i,k}$.
+\item Build prefix (blue) and suffix-excluding (red) aggregates.
+\item Find split $r$ with both strict inequalities; output colors and $k$.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item All entries equal (NO).
+\item $n=2$, $m=2$ minimal boundaries.
+\item Many ties in the $k$-th column.
+\item Extremely skewed $n$ vs. $m$ (but with $nm \le 10^6$).
+\item Rows with identical prefixes or suffixes.
+\item Right side empty is disallowed ($k<m$).
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting strict inequalities ($>$), not $\ge$.
+\item Off-by-one in mapping $k$ (1-based) to 0-based indices.
+\item Using the wrong sorting column (must be the $k$-th, last of left).
+\item Recomputing prefix/suffix per row per $k$ (too slow).
+\item Memory blow-up from Python ints; use array('i') for suffixes.
+\item Not ensuring both colors appear.
+\end{bullets}}
+\FAILMODES{Brute forcing all colorings or all $2^n$ partitions is infeasible. Sorting per $k$ and linear scans avoid exponential blow-up.}
+\ELI{We try each possible left width $k$, sort rows by that last left column, and look for a point to split rows so that blues are always smaller on the left and bigger on the right than reds. If we find such a split, we are done.}
+\NotePages{3}
+
+\end{document}

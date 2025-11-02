@@ -1,0 +1,2358 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]
+\setlength{\jot}{7pt}
+\setlength{\emergencystretch}{8em}
+\sloppy
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Conditioning of Linear Systems}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+
+\WHAT{
+A linear system is $Ax=b$ with $A\in\mathbb{C}^{n\times n}$ invertible,
+$x,b\in\mathbb{C}^n$. Fix a submultiplicative operator norm $\|\cdot\|$.
+The condition number of $A$ is $\kappa(A)=\|A\|\,\|A^{-1}\|$. It quantifies
+worst-case relative amplification of input perturbations to output when
+solving $Ax=b$. Forward error is $\|x-\hat x\|/\|x\|$; backward error in $b$
+is $\|\delta b\|/\|b\|$; matrix perturbation is $\Delta A$.
+}
+
+\WHY{
+Conditioning governs sensitivity: it bounds how data and coefficient errors
+affect solutions. It separates problem difficulty (conditioning) from solver
+accuracy (stability). In analysis, it links to singular values; in practice,
+it informs scaling and preconditioning strategies to make problems solvable
+with finite precision.
+}
+
+\HOW{
+1. Choose a norm and define operator norm of $A$ and $A^{-1}$. 
+2. Relate $\kappa(A)$ to relative error bounds using norm inequalities.
+3. Use SVD to interpret $\kappa_2(A)=\sigma_{\max}/\sigma_{\min}$.
+4. Derive perturbation bounds for $b$-only and $(A,b)$-perturbations via
+resolvent/Neumann-series arguments.
+}
+
+\ELI{
+Think of $A$ as a machine that stretches space. The condition number is
+the ratio of the biggest stretch to the smallest. If that ratio is huge,
+tiny input wobbles can become big output changes when you run the machine
+backwards to solve $Ax=b$.
+}
+
+\SCOPE{
+Assumes $A$ is nonsingular. For the $2$-norm, SVD gives exact values.
+For singular or nearly singular $A$, $\kappa(A)$ is infinite or very large.
+Bounds depend on chosen norm; results hold for any induced operator norm.
+}
+
+\CONFUSIONS{
+Conditioning vs. stability: conditioning is a property of the problem ($A$),
+while stability is a property of an algorithm. Small residual does not
+necessarily imply small forward error unless conditioning is moderate.
+Scaling changes conditioning in a norm-dependent way.
+}
+
+\APPLICATIONS{
+\begin{bullets}
+\item Mathematical foundations: perturbation theory for inverses and linear maps.
+\item Computational modeling: sensitivity of discretized PDE linear solves.
+\item Physical/engineering: parameter inference sensitivity and error bars.
+\item Statistical/algorithmic: normal equations vs. QR, feature scaling effects.
+\end{bullets}
+}
+
+\textbf{ANALYTIC STRUCTURE.}
+$A\mapsto \kappa(A)$ is multiplicative under scaling by nonzero scalars,
+unitarily invariant under orthogonal/unitary similarity in the $2$-norm,
+and lower bounded by $1$. It reflects anisotropy of $A$.
+
+\textbf{CANONICAL LINKS.}
+Core links: operator norms, SVD, Neumann series, perturbation of inverses,
+and residual-error relations. SVD gives $\kappa_2$; Neumann series yields
+matrix-perturbation error bounds.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Keywords: sensitivity, perturbation, inverse, residual, precondition.
+\item Structures: nearly dependent columns/rows; tiny singular values.
+\item Patterns: normal equations, diagonal scaling, Vandermonde matrices.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate data and errors to $\Delta A$ and $\delta b$.
+\item Identify norm and compute/estimate $\kappa(A)$.
+\item Apply the appropriate perturbation bound.
+\item Interpret via SVD or geometry; validate with residuals/limits.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+For the 2-norm, $\kappa_2$ is invariant under orthogonal changes of basis
+(left/right). Scaling by $\alpha\neq0$ leaves $\kappa$ unchanged.
+
+\textbf{EDGE INTUITION.}
+As $\sigma_{\min}\to 0$, $\kappa_2\to\infty$ and the problem becomes
+ill-conditioned: forward error can explode even for tiny backward error.
+For well-conditioned systems, forward and backward errors are comparable.
+
+\clearpage
+\section{Glossary}
+
+\glossx{Condition Number}
+{For invertible $A$, $\kappa(A)=\|A\|\,\|A^{-1}\|$.}
+{Measures worst-case relative sensitivity of $x=A^{-1}b$ to perturbations.}
+{Compute $\|A\|$ and $\|A^{-1}\|$ in a chosen induced norm; in 2-norm,
+$\kappa_2=\sigma_{\max}/\sigma_{\min}$.}
+{A rubber sheet stretched most in one direction and least in another:
+ratio of those stretches.}
+{Pitfall: quoting $\kappa_2$ when analysis used $\infty$-norm; norms differ.}
+
+\glossx{Forward vs. Backward Error}
+{Forward: $\|x-\hat x\|/\|x\|$. Backward: smallest $\|\delta b\|/\|b\|$
+or $\|\Delta A\|/\|A\|$ making $\hat x$ exact.}
+{Relates algorithm output to exact solution vs. perturbed problem.}
+{Derive $\delta x=A^{-1}\delta b$ or resolvent with $\Delta A$;
+bound with $\kappa(A)$.}
+{Forward is about the answer; backward is about how much input you'd tweak
+to make the answer exact.}
+{Pitfall: small residual $\|b-A\hat x\|$ does not imply small forward error
+if $\kappa(A)$ is large.}
+
+\glossx{Preconditioning}
+{Transforming $Ax=b$ to $M^{-1}Ax=M^{-1}b$ to reduce $\kappa(M^{-1}A)$.}
+{Improves sensitivity and iterative convergence.}
+{Choose $M\approx A$ that is easy to apply/invert; analyze $\kappa$.}
+{Like choosing better units so the numbers are not wildly different.}
+{Pitfall: a poor $M$ can worsen $\kappa$ or be too expensive to apply.}
+
+\glossx{Singular Values}
+{Nonnegative square roots of eigenvalues of $A^\ast A$.}
+{Provide geometric scaling and exact $\kappa_2$ via extremes.}
+{Compute via SVD $A=U\Sigma V^\ast$; then $\|A\|_2=\sigma_{\max}$.}
+{Stack of stretching factors; the smallest controls near-singularity.}
+{Pitfall: confusing eigenvalues with singular values for nonnormal $A$.}
+
+\clearpage
+\section{Symbol Ledger}
+\varmapStart
+\var{A\in\mathbb{C}^{n\times n}}{Coefficient matrix; assumed invertible.}
+\var{x,b\in\mathbb{C}^n}{Exact solution and right-hand side.}
+\var{\hat x}{Computed/perturbed solution.}
+\var{\delta x}{Forward error vector, $\hat x-x$.}
+\var{\delta b}{Perturbation in right-hand side.}
+\var{\Delta A}{Perturbation in matrix.}
+\var{\|\cdot\|}{Induced operator/vector norm (submultiplicative).}
+\var{\kappa(A)}{Condition number $\|A\|\,\|A^{-1}\|$.}
+\var{\sigma_{\max},\sigma_{\min}}{Extreme singular values of $A$.}
+\var{\kappa_2(A)}{Condition number in the 2-norm.}
+\var{U,\Sigma,V}{SVD factors: $A=U\Sigma V^\ast$.}
+\var{M}{Preconditioner matrix, invertible.}
+\var{r}{Residual $r=b-A\hat x$.}
+\var{\epsilon}{A small positive parameter.}
+\varmapEnd
+
+\clearpage
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{Condition Number and Basic Properties}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For an invertible matrix $A$ in an induced operator norm $\|\cdot\|$,
+the condition number is $\kappa(A)=\|A\|\,\|A^{-1}\|$, with $\kappa(A)\ge 1$,
+$\kappa(\alpha A)=\kappa(A)$ for $\alpha\neq 0$.
+
+\WHAT{
+Quantifies worst-case relative sensitivity of the linear solve to perturbations
+in the data, in the chosen norm.
+}
+
+\WHY{
+It upper-bounds relative forward error by relative backward error times
+$\kappa(A)$ and characterizes near-singularity via large values.
+}
+
+\FORMULA{
+\[
+\kappa(A)=\|A\|\,\|A^{-1}\|,\quad \kappa(A)\ge 1,\quad
+\kappa(\alpha A)=\kappa(A)\ (\alpha\neq 0).
+\]
+}
+
+\CANONICAL{
+$A$ is square and invertible; $\|\cdot\|$ is any induced operator norm from
+a vector norm, hence submultiplicative and consistent.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A$ is nonsingular.
+\item $\|\cdot\|$ is induced: $\|A\|=\sup_{x\ne0}\frac{\|Ax\|}{\|x\|}$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For invertible $A$, $\|A^{-1}\|=\left(\inf_{\|x\|=1}\|Ax\|\right)^{-1}$, and
+$\|Ax\|\ge \|x\|/\|A^{-1}\|$ for all $x$.
+\end{lemma}
+\begin{proof}
+By definition and change of variables $y=Ax$,
+\[
+\|A^{-1}\|=\sup_{y\ne 0}\frac{\|A^{-1}y\|}{\|y\|}
+=\sup_{x\ne 0}\frac{\|x\|}{\|Ax\|}
+=\left(\inf_{x\ne 0}\frac{\|Ax\|}{\|x\|}\right)^{-1}.
+\]
+Setting $\|x\|=1$ yields the first identity. The inequality follows by
+rearranging $\|A^{-1}\|\ge \|x\|/\|Ax\|$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Nonnegativity: }& \|A\|\ge \|A^{-1}\|^{-1} \text{ by Lemma, hence }
+\kappa(A)=\|A\|\|A^{-1}\|\ge 1.\\
+\text{Scaling: }& \kappa(\alpha A)=\|\alpha A\|\,\|(\alpha A)^{-1}\|
+=|\alpha|\,\|A\|\,|\alpha|^{-1}\,\|A^{-1}\|=\kappa(A).
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Fix a norm; compute or bound $\|A\|$ and $\|A^{-1}\|$.
+\item Use SVD for the 2-norm or comparison inequalities for other norms.
+\item Check invariances (scaling, orthogonal transforms) to simplify.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $\kappa(A)=\sup_{\|x\|=1}\|A\|\,\|A^{-1}\|
+=\frac{\sup_{\|x\|=1}\|Ax\|}{\inf_{\|x\|=1}\|Ax\|}$.
+\item In 2-norm, $\kappa_2(A)=\sigma_{\max}(A)/\sigma_{\min}(A)$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item $\kappa(A)=1$ iff $A$ is an isometry up to scaling in the chosen norm
+(precisely: for 2-norm, $A=\alpha Q$ with unitary $Q$).
+\item If $A$ is singular then $\kappa(A)=\infty$.
+\end{bullets}
+}
+
+\INPUTS{$A=\begin{bmatrix}1&0\\0&\epsilon\end{bmatrix}$ with $\epsilon=10^{-2}$.}
+
+\DERIVATION{
+\begin{align*}
+\|A\|_2&=\sigma_{\max}(A)=1,\quad
+\|A^{-1}\|_2=\sigma_{\max}(A^{-1})=\frac{1}{\epsilon}=100.\\
+\kappa_2(A)&=\|A\|_2\|A^{-1}\|_2=100.
+\end{align*}
+}
+
+\RESULT{
+For $A=\mathrm{diag}(1,10^{-2})$, $\kappa_2(A)=100$ (moderately ill-conditioned).
+}
+
+\UNITCHECK{
+Dimensionless ratio; invariant under scaling $A\mapsto \alpha A$.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Using entrywise max norm for vectors but 2-norm for matrices breaks
+consistency; use induced pairs.
+\item Misreading $\kappa(A)$ as an error estimate; it is only an upper bound
+multiplier, not necessarily attained.
+\end{bullets}
+}
+
+\INTUITION{
+$\kappa$ compares the largest and smallest output sizes $\,\|Ax\|\,$ for unit
+inputs: the more anisotropic $A$ is, the larger $\kappa$ gets.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Universal invariant: $\kappa(A)=\frac{\sup_{\|x\|=1}\|Ax\|}
+{\inf_{\|x\|=1}\|Ax\|}$.
+\item For 2-norm, singular values give the same ratio exactly.
+\end{bullets}
+}
+
+\FormulaPage{2}{Forward Error Bound for Perturbed Right-Hand Side}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $Ax=b$ and $\hat x$ solving $A\hat x=b+\delta b$,
+the relative forward error is bounded by
+$\frac{\|\hat x-x\|}{\|x\|}\le \kappa(A)\frac{\|\delta b\|}{\|b\|}$.
+
+\WHAT{
+Quantifies sensitivity to perturbations in $b$ alone.
+}
+
+\WHY{
+Separates problem sensitivity ($\kappa(A)$) from data noise magnitude
+($\|\delta b\|/\|b\|$); fundamental for uncertainty quantification.
+}
+
+\FORMULA{
+\[
+\frac{\|\delta x\|}{\|x\|}\le \kappa(A)\,\frac{\|\delta b\|}{\|b\|},\quad
+\delta x=\hat x-x.
+\]
+}
+
+\CANONICAL{
+Valid for any induced operator norm; requires $b\ne 0$ so the ratio is defined.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A$ invertible, $\delta b$ arbitrary, $b\ne 0$.
+\item Induced norm, submultiplicative.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For any $A$ and vectors $x$, $\|Ax\|\le \|A\|\,\|x\|$, and if $b=Ax$,
+then $\|x\|\ge \|b\|/\|A\|$.
+\end{lemma}
+\begin{proof}
+The first inequality is the definition of induced norm. For the second,
+rearrange $\|b\|=\|Ax\|\le \|A\|\,\|x\|$ to get the bound on $\|x\|$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\hat x&=A^{-1}(b+\delta b)=x+A^{-1}\delta b,\quad \delta x=A^{-1}\delta b.\\
+\|\delta x\|&\le \|A^{-1}\|\,\|\delta b\|.\\
+\frac{\|\delta x\|}{\|x\|}&\le \|A^{-1}\|\,\|\delta b\|\,\frac{1}{\|x\|}
+\le \|A^{-1}\|\,\|\delta b\|\,\frac{\|A\|}{\|b\|}
+=\kappa(A)\,\frac{\|\delta b\|}{\|b\|},
+\end{align*}
+using the lemma with $b=Ax$. 
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute/estimate $\kappa(A)$.
+\item Evaluate $\|\delta b\|/\|b\|$ in the same norm.
+\item Multiply to upper-bound the forward error.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Equality holds if $\delta b$ aligns with a right singular vector
+for $\sigma_{\max}$ and $x$ aligns with that for $\sigma_{\min}$ in 2-norm.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $b=0$, the ratio is undefined; analyze absolute error instead.
+\item As $\kappa(A)\to\infty$, the bound becomes vacuous.
+\end{bullets}
+}
+
+\INPUTS{$A=\begin{bmatrix}1&0\\0&10^{-2}\end{bmatrix}$,
+$b=\begin{bmatrix}1\\1\end{bmatrix}$,
+$\delta b=\begin{bmatrix}10^{-4}\\-10^{-4}\end{bmatrix}$, 2-norm.}
+
+\DERIVATION{
+\begin{align*}
+x&=A^{-1}b=\begin{bmatrix}1\\10^{2}\end{bmatrix},\quad
+\hat x=A^{-1}(b+\delta b)
+=\begin{bmatrix}1+10^{-4}\\10^{2}(1-10^{-4})\end{bmatrix}.\\
+\delta x&=\hat x-x=\begin{bmatrix}10^{-4}\\-10^{-2}\end{bmatrix}.\\
+\text{Compute }&\frac{\|\delta x\|_2}{\|x\|_2}
+=\frac{\sqrt{10^{-8}+10^{-4}}}{\sqrt{1+10^{4}}}
+\approx \frac{10^{-2}}{10^{2}}=10^{-4}.\\
+\kappa_2(A)&=100,\quad \frac{\|\delta b\|_2}{\|b\|_2}
+=\frac{\sqrt{2}\cdot 10^{-4}}{\sqrt{2}}\approx 10^{-4}.\\
+\text{Bound }&\kappa_2(A)\frac{\|\delta b\|_2}{\|b\|_2}=100\cdot 10^{-4}=10^{-2},
+\text{ which exceeds }10^{-4}\text{ as required.}
+\end{align*}
+}
+
+\RESULT{
+Observed relative forward error $\approx 10^{-4}$; bound gives $10^{-2}$.
+}
+
+\UNITCHECK{
+All ratios are dimensionless and use consistent norms (2-norm).
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Mixing norms between $\kappa$ and residual ratios invalidates the bound.
+\item Using $x$ very small in norm can make the ratio unstable to roundoff.
+\end{bullets}
+}
+
+\INTUITION{
+Solve map is $A^{-1}$. Perturbations in $b$ are amplified by $\|A^{-1}\|$,
+and comparing to $\|x\|$ via $\|b\|\le \|A\|\,\|x\|$ yields the $\kappa$ factor.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Forward error $\le$ condition number $\times$ backward error in $b$.
+\end{bullets}
+}
+
+\FormulaPage{3}{Joint $(A,b)$ Perturbation Bound via Neumann Series}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $(A+\Delta A)(x+\delta x)=b+\delta b$ with $A$ invertible and
+$\|A^{-1}\|\|\Delta A\|<1$,
+\[
+\frac{\|\delta x\|}{\|x\|}\le
+\frac{\kappa(A)}{1-\kappa(A)\frac{\|\Delta A\|}{\|A\|}}
+\left(\frac{\|\Delta A\|}{\|A\|}+\frac{\|\delta b\|}{\|b\|}\right).
+\]
+
+\WHAT{
+A robust first-order-style bound when both matrix and right-hand side are
+perturbed, assuming small relative matrix perturbation.
+}
+
+\WHY{
+Captures combined effects and the geometric series amplification due to
+coupling $\Delta A\,\delta x$.
+}
+
+\FORMULA{
+\[
+\delta x=
+(I+A^{-1}\Delta A)^{-1}A^{-1}(\delta b-\Delta A\,x),
+\]
+\[
+\frac{\|\delta x\|}{\|x\|}\le
+\frac{\|A^{-1}\|}{1-\|A^{-1}\|\,\|\Delta A\|}
+\left(\frac{\|\delta b\|}{\|x\|}+\|\Delta A\|\right).
+\]
+Converted to relative $(b,A)$ form yields the display above.
+}
+
+\CANONICAL{
+Any induced norm; $A$ nonsingular; smallness condition
+$\|A^{-1}\|\|\Delta A\|<1$ ensures the inverse exists and series converges.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A$ invertible; $\|A^{-1}\|\|\Delta A\|<1$.
+\item $b\ne 0$ to form $\|\delta b\|/\|b\|$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $\|E\|<1$ in an induced norm, then $(I+E)^{-1}$ exists and
+$\|(I+E)^{-1}\|\le \frac{1}{1-\|E\|}$.
+\end{lemma}
+\begin{proof}
+Neumann series: $(I+E)^{-1}=\sum_{k=0}^\infty (-E)^k$. The series converges
+absolutely and $\|(I+E)^{-1}\|\le \sum_{k=0}^\infty \|E\|^k
+=\frac{1}{1-\|E\|}$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+(A+\Delta A)(x+\delta x)&=b+\delta b,\quad Ax=b.\\
+A\delta x+\Delta A\,x+\Delta A\,\delta x&=\delta b.\\
+(I+A^{-1}\Delta A)\delta x&=A^{-1}(\delta b-\Delta A\,x).\\
+\delta x&=(I+E)^{-1}A^{-1}(\delta b-\Delta A\,x),\ E=A^{-1}\Delta A.\\
+\|\delta x\|&\le \|(I+E)^{-1}\|\,\|A^{-1}\|
+\left(\|\delta b\|+\|\Delta A\|\,\|x\|\right).\\
+\frac{\|\delta x\|}{\|x\|}&\le
+\frac{\|A^{-1}\|}{1-\|A^{-1}\|\,\|\Delta A\|}
+\left(\frac{\|\delta b\|}{\|x\|}+\|\Delta A\|\right).\\
+\text{Use }&\|x\|\ge \|b\|/\|A\|\Rightarrow \frac{\|\delta b\|}{\|x\|}
+\le \|A\|\frac{\|\delta b\|}{\|b\|},\\
+\text{and }&\|\Delta A\|=\|A\|\frac{\|\Delta A\|}{\|A\|}.\\
+\Rightarrow\ \frac{\|\delta x\|}{\|x\|}&\le
+\frac{\|A^{-1}\|\,\|A\|}{1-\|A^{-1}\|\,\|\Delta A\|}
+\left(\frac{\|\delta b\|}{\|b\|}+\frac{\|\Delta A\|}{\|A\|}\right).\\
+\text{Finally }&\|A^{-1}\|\,\|\Delta A\|
+=\kappa(A)\frac{\|\Delta A\|}{\|A\|}.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute/estimate $\kappa(A)$ and relative sizes
+$\|\Delta A\|/\|A\|$, $\|\delta b\|/\|b\|$.
+\item Check the smallness condition; if violated, expect large errors.
+\item Apply the bound; consider preconditioning to reduce $\kappa$.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item For $\Delta A=0$, reduces to the $b$-only bound.
+\item For $\delta b=0$, gives pure coefficient-sensitivity bound.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $\kappa(A)\frac{\|\Delta A\|}{\|A\|}\uparrow 1$, the bound
+blows up; the perturbed system may be singular.
+\end{bullets}
+}
+
+\INPUTS{$A=\begin{bmatrix}1&1\\1&1+\epsilon\end{bmatrix}$ with
+$\epsilon=10^{-3}$, $b=\begin{bmatrix}2\\2+\epsilon\end{bmatrix}$,
+$\Delta A=\begin{bmatrix}0&0\\0&10^{-4}\end{bmatrix}$,
+$\delta b=\begin{bmatrix}0\\10^{-4}\end{bmatrix}$, 2-norm.}
+
+\DERIVATION{
+\begin{align*}
+\text{For small }\epsilon,&\ \kappa_2(A)\approx \frac{2+\epsilon}{\epsilon}
+\approx 2000.\\
+\frac{\|\Delta A\|_2}{\|A\|_2}&\approx \frac{10^{-4}}{2}\approx 5\cdot10^{-5}.\\
+\frac{\|\delta b\|_2}{\|b\|_2}&\approx \frac{10^{-4}}{2}\approx 5\cdot10^{-5}.\\
+\text{Denominator }&1-\kappa\frac{\|\Delta A\|}{\|A\|}
+\approx 1-2000\cdot 5\cdot10^{-5}=0.9.\\
+\text{Bound }&\frac{\|\delta x\|}{\|x\|}\lesssim
+\frac{2000}{0.9}(10^{-4})\approx 0.222\%.
+\end{align*}
+}
+
+\RESULT{
+Predicted relative forward error $\lesssim 2.22\times 10^{-3}$.
+}
+
+\UNITCHECK{
+All quantities are ratios in the same norm and hence dimensionless.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Ignoring the $(I+A^{-1}\Delta A)^{-1}$ factor leads to underestimation.
+\item Using the approximation $\kappa\frac{\|\Delta A\|}{\|A\|}\ll 1$
+beyond its validity can mislead.
+\end{bullets}
+}
+
+\INTUITION{
+Matrix perturbation both shifts the map and changes the effective inverse.
+The Neumann series accounts for repeated feedback of the perturbation.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $(A,b)$-perturbation bound with geometric-series amplification factor.
+\end{bullets}
+}
+
+\FormulaPage{4}{SVD Characterization: $\kappa_2(A)=\sigma_{\max}/\sigma_{\min}$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For invertible $A$ with SVD $A=U\Sigma V^\ast$,
+$\|A\|_2=\sigma_{\max}(A)$ and $\|A^{-1}\|_2=1/\sigma_{\min}(A)$, hence
+$\kappa_2(A)=\sigma_{\max}(A)/\sigma_{\min}(A)$.
+
+\WHAT{
+Exact expression for the 2-norm condition number via singular values.
+}
+
+\WHY{
+Enables geometric interpretation and precise computation; reveals invariance
+under orthogonal/unitary transformations.
+}
+
+\FORMULA{
+\[
+\kappa_2(A)=\frac{\sigma_{\max}(A)}{\sigma_{\min}(A)}.
+\]
+}
+
+\CANONICAL{
+$A$ invertible, SVD exists; the 2-norm is unitarily invariant.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A\in\mathbb{C}^{n\times n}$, $\det A\ne 0$.
+\item Singular values $\sigma_1\ge\cdots\ge\sigma_n>0$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For any $A$, $\|A\|_2=\sigma_{\max}(A)$.
+\end{lemma}
+\begin{proof}
+Let $A=U\Sigma V^\ast$. Then $\|A\|_2
+=\sup_{\|x\|_2=1}\|U\Sigma V^\ast x\|_2
+=\sup_{\|y\|_2=1}\|\Sigma y\|_2=\sigma_{\max}$ by unitary invariance and
+diagonal dominance of $\Sigma$. \qedhere
+\end{proof}
+\begin{lemma}
+If $A$ invertible, $\|A^{-1}\|_2=1/\sigma_{\min}(A)$.
+\end{lemma}
+\begin{proof}
+$A^{-1}=V\Sigma^{-1}U^\ast$; by the previous lemma,
+$\|A^{-1}\|_2=\|\Sigma^{-1}\|_2=\max_i \sigma_i^{-1}=1/\sigma_{\min}$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\kappa_2(A)&=\|A\|_2\,\|A^{-1}\|_2
+=\sigma_{\max}(A)\cdot \frac{1}{\sigma_{\min}(A)}.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute SVD; read off $\sigma_{\max}$ and $\sigma_{\min}$.
+\item Use invariances to simplify (e.g., orthogonal scalings).
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item For SPD $A$, $\kappa_2(A)=\lambda_{\max}(A)/\lambda_{\min}(A)$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $\sigma_{\min}\to 0$, $\kappa_2\to\infty$.
+\item Orthogonal/unitary premultiplication/postmultiplication leave
+$\kappa_2$ unchanged.
+\end{bullets}
+}
+
+\INPUTS{$A=\begin{bmatrix}1&1\\1&1+\epsilon\end{bmatrix}$, $\epsilon=10^{-3}$.}
+
+\DERIVATION{
+\begin{align*}
+A^\top A&=\begin{bmatrix}2&2+\epsilon\\2+\epsilon&2+2\epsilon+\epsilon^2\end{bmatrix}.\\
+\lambda_{\max/\min}(A^\top A)&=
+\frac{\operatorname{tr}\pm\sqrt{\operatorname{tr}^2-4\det}}{2}.\\
+\operatorname{tr}&=4+2\epsilon+\epsilon^2\approx 4.002001.\\
+\det&=(2)(2+2\epsilon+\epsilon^2)-(2+\epsilon)^2=\epsilon^2\approx 10^{-6}.\\
+\sigma_{\max/\min}&=\sqrt{\lambda_{\max/\min}}
+\approx \sqrt{4.002001},\ \sqrt{10^{-6}}.\\
+\kappa_2(A)&\approx \frac{\sqrt{4.002001}}{10^{-3}}\approx 2001.
+\end{align*}
+}
+
+\RESULT{
+$\kappa_2(A)\approx 2001$ for $\epsilon=10^{-3}$.
+}
+
+\UNITCHECK{
+Dimensionless; consistent use of 2-norm and SVD.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item For nonnormal $A$, eigenvalues do not control $\kappa_2$; use SVD.
+\item Squaring via normal equations squares $\kappa_2$; avoid when possible.
+\end{bullets}
+}
+
+\INTUITION{
+SVD orthogonally rotates to principal axes where $A$ scales by singular values;
+$\kappa_2$ is the max-to-min scaling ratio.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Unitarily invariant characterization of conditioning in 2-norm.
+\end{bullets}
+}
+
+\clearpage
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{Compute and Interpret Condition Numbers}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given matrices, compute $\kappa_2$ and use it to bound forward error for a
+perturbed right-hand side.
+
+\PROBLEM{
+Let $A_1=\mathrm{diag}(1,10^{-3})$ and
+$A_2=\begin{bmatrix}1&1\\1&1.001\end{bmatrix}$. For
+$b=\begin{bmatrix}1\\1\end{bmatrix}$ and
+$\delta b=\begin{bmatrix}10^{-4}\\-10^{-4}\end{bmatrix}$, compute
+$\kappa_2(A_i)$ and the bound on $\|\delta x\|/\|x\|$.
+}
+
+\MODEL{
+\[
+\kappa_2(A)=\frac{\sigma_{\max}(A)}{\sigma_{\min}(A)},\quad
+\frac{\|\delta x\|}{\|x\|}\le \kappa_2(A)\frac{\|\delta b\|}{\|b\|}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Use 2-norm throughout.
+\item $A_i$ invertible; $b\ne 0$.
+\end{bullets}
+}
+
+\varmapStart
+\var{A_i}{Given matrices.}
+\var{b,\delta b}{Right-hand side and its perturbation.}
+\var{x}{Exact solution $A_i^{-1}b$.}
+\var{\delta x}{Forward error $A_i^{-1}\delta b$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Use SVD characterization of $\kappa_2$ and the $b$-only forward error bound.
+}
+
+\GOVERN{
+\[
+\kappa_2(A)=\sigma_{\max}/\sigma_{\min},\quad
+\frac{\|\delta x\|}{\|x\|}\le \kappa_2(A)\frac{\|\delta b\|}{\|b\|}.
+\]
+}
+
+\INPUTS{$A_1,A_2,b,\delta b$ as stated.}
+
+\DERIVATION{
+\begin{align*}
+\text{Case }A_1:&\ \sigma_{\max}=1,\ \sigma_{\min}=10^{-3},\
+\kappa_2(A_1)=10^{3}.\\
+&\ \frac{\|\delta b\|_2}{\|b\|_2}=\frac{\sqrt{2}\cdot 10^{-4}}{\sqrt{2}}=10^{-4}.\\
+&\ \Rightarrow \frac{\|\delta x\|}{\|x\|}\le 10^{3}\cdot 10^{-4}=0.1\%.\\
+\text{Case }A_2:&\
+\kappa_2(A_2)\approx \frac{\sqrt{4.002001}}{10^{-3}}\approx 2001.\\
+&\ \Rightarrow \frac{\|\delta x\|}{\|x\|}\le 2001\cdot 10^{-4}\approx 0.2001.
+\end{align*}
+}
+
+\RESULT{
+$A_1$ is moderately ill-conditioned ($10^3$), $A_2$ very ill-conditioned
+($\approx 2001$). The same $\delta b$ leads to orders of magnitude different
+error bounds.
+}
+
+\UNITCHECK{
+Ratios are unitless; consistent norm usage.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $\delta b=0$, the bound gives 0 as expected.
+\item If $b\to 0$, the ratio $\|\delta b\|/\|b\|$ explodes.
+\end{bullets}
+}
+
+\ALTERNATE{
+Estimate $\kappa_\infty$ via row sums and compare; qualitative conclusions
+are similar though values differ.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Directly compute $\delta x=A^{-1}\delta b$ and the ratio numerically.
+\item Confirm inequality holds and is typically not tight.
+\end{bullets}
+}
+
+\INTUITION{
+$A_2$ nearly collapses along one direction; inverting it amplifies noise.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Forward error bound scales with $\kappa_2$ times data noise.
+\end{bullets}
+}
+
+\ProblemPage{2}{Invariance and Scaling Effects}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show invariance of $\kappa_2$ under orthogonal transformations and
+scaling invariance.
+
+\PROBLEM{
+Prove $\kappa_2(Q_1AQ_2)=\kappa_2(A)$ for orthogonal $Q_1,Q_2$ and
+$\kappa(\alpha A)=\kappa(A)$ for $\alpha\ne 0$. Illustrate with a numeric
+example.
+}
+
+\MODEL{
+\[
+A=U\Sigma V^\top,\quad \kappa_2(A)=\sigma_{\max}/\sigma_{\min}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $Q_1,Q_2$ orthogonal: $Q_i^\top Q_i=I$.
+\item $A$ invertible.
+\end{bullets}
+}
+
+\varmapStart
+\var{Q_1,Q_2}{Orthogonal matrices.}
+\var{\alpha}{Nonzero scalar.}
+\varmapEnd
+
+\WHICHFORMULA{
+Use SVD invariance and Formula 4 for $\kappa_2$; Formula 1 for scaling.
+}
+
+\GOVERN{
+\[
+\kappa_2(Q_1AQ_2)=\frac{\sigma_{\max}(Q_1AQ_2)}{\sigma_{\min}(Q_1AQ_2)}.
+\]
+}
+
+\INPUTS{$A=\begin{bmatrix}3&0\\0&1\end{bmatrix}$,
+$Q_1=\begin{bmatrix}0&1\\1&0\end{bmatrix}$, $Q_2=Q_1$, $\alpha=5$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Proof: }&Q_1AQ_2=(Q_1U)\Sigma(V^\top Q_2),\ \text{an SVD with same }\Sigma.\\
+&\Rightarrow \sigma_{\max},\sigma_{\min}\ \text{unchanged}\Rightarrow
+\kappa_2\ \text{unchanged}.\\
+\text{Scaling: }&\kappa(\alpha A)=\|\alpha A\|\|(\alpha A)^{-1}\|
+=|\alpha|\|A\|\cdot |\alpha|^{-1}\|A^{-1}\|=\kappa(A).\\
+\text{Numeric: }&\kappa_2(A)=3,\ \kappa_2(Q_1AQ_2)=3,\
+\kappa_2(\alpha A)=3.
+\end{align*}
+}
+
+\RESULT{
+Orthogonal similarity and nonzero scalar scaling leave $\kappa$ unchanged.
+}
+
+\UNITCHECK{
+Unitless invariants; orthogonal matrices preserve 2-norm.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item Non-orthogonal $Q$ can change $\kappa_2$.
+\item $\alpha=0$ destroys invertibility; $\kappa$ undefined/infinite.
+\end{bullets}
+}
+
+\ALTERNATE{
+View via Rayleigh quotients of $A^\top A$ to see invariance under orthogonals.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute $\sigma$ numerically before and after transforms.
+\end{bullets}
+}
+
+\INTUITION{
+Rotations/reflections merely reorient axes but do not change stretches.
+Scaling multiplies all stretches equally in $A$ and $A^{-1}$, canceling.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $\kappa_2$ is unitarily invariant; $\kappa$ is scale-invariant.
+\end{bullets}
+}
+
+\ProblemPage{3}{Vandermonde Sensitivity}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Estimate $\kappa_2$ of a $3\times 3$ Vandermonde matrix and bound error.
+
+\PROBLEM{
+Let $A$ be the Vandermonde matrix for nodes $x=\{0,1,1.1\}$ with columns
+$[1,x,x^2]$. Compute $\kappa_2(A)$ and bound the sensitivity to
+$\delta b$ with $\|\delta b\|_2/\|b\|_2=10^{-4}$.
+}
+
+\MODEL{
+\[
+A=\begin{bmatrix}1&0&0\\1&1&1\\1&1.1&1.21\end{bmatrix},\quad
+\kappa_2(A)=\sigma_{\max}/\sigma_{\min}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item 2-norm; $A$ is invertible (distinct nodes).
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Vandermonde matrix.}
+\var{\sigma_{\max/\min}}{Extreme singular values.}
+\varmapEnd
+
+\WHICHFORMULA{
+Use SVD-based $\kappa_2$ and forward error bound.
+}
+
+\GOVERN{
+\[
+\frac{\|\delta x\|}{\|x\|}\le \kappa_2(A)\frac{\|\delta b\|}{\|b\|}.
+\]
+}
+
+\INPUTS{$x=\{0,1,1.1\}$, $\|\delta b\|/\|b\|=10^{-4}$.}
+
+\DERIVATION{
+\begin{align*}
+A&=\begin{bmatrix}1&0&0\\1&1&1\\1&1.1&1.21\end{bmatrix}.\\
+\text{Numerically }&\sigma_{\max}\approx 2.322,\ \sigma_{\min}\approx 0.0304.\\
+\Rightarrow\ \kappa_2(A)&\approx 2.322/0.0304\approx 76.4.\\
+\text{Bound }&\frac{\|\delta x\|}{\|x\|}\lesssim 76.4\cdot 10^{-4}=0.764\%.
+\end{align*}
+}
+
+\RESULT{
+Moderate ill-conditioning with $\kappa_2\approx 76.4$; forward error bound
+$\approx 0.764\%$ for $10^{-4}$ relative $b$ noise.
+}
+
+\UNITCHECK{
+All quantities are dimensionless; 2-norm consistent.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item Nodes closer (e.g., $1$ and $1.01$) cause much larger $\kappa_2$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use column scaling to reduce $\kappa_2$ by normalizing $x$ range to $[-1,1]$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute SVD numerically and verify the ratio.
+\end{bullets}
+}
+
+\INTUITION{
+Nearly collinear columns from close nodes create near-dependencies.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Polynomial interpolation matrices are often ill-conditioned;
+scaling helps.
+\end{bullets}
+}
+
+\ProblemPage{4}{Narrative: Alice and the Bad Units}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Rescale columns to improve conditioning.
+
+\PROBLEM{
+Alice solves $Ax=b$ where column 1 is in meters and column 2 in micrometers.
+$A=\begin{bmatrix}1&10^{6}\\0&1\end{bmatrix}$. She gets large errors. Show
+how scaling the second column by $10^{-6}$ improves $\kappa_2$ and bound the
+error reduction.
+}
+
+\MODEL{
+\[
+\tilde A=AS,\ S=\mathrm{diag}(1,10^{-6}),\ \tilde x=S^{-1}x.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item 2-norm measure; $b$ unchanged.
+\end{bullets}
+}
+
+\varmapStart
+\var{A,\tilde A}{Original and scaled matrices.}
+\var{S}{Column scaling.}
+\var{x,\tilde x}{Original and scaled solution coordinates.}
+\varmapEnd
+
+\WHICHFORMULA{
+Use $\kappa_2$ via SVD and forward error bound.
+}
+
+\GOVERN{
+\[
+\frac{\|\delta x\|}{\|x\|}\le \kappa_2(A)\frac{\|\delta b\|}{\|b\|},\quad
+\kappa_2(\tilde A)\ll \kappa_2(A).
+\]
+}
+
+\INPUTS{$A=\begin{bmatrix}1&10^{6}\\0&1\end{bmatrix}$, $S=\mathrm{diag}(1,10^{-6})$.}
+
+\DERIVATION{
+\begin{align*}
+\kappa_2(A)&\approx \frac{\sigma_{\max}(A)}{\sigma_{\min}(A)}
+\approx \frac{10^6+1}{1}\approx 10^6\ \text{(roughly)}.\\
+\tilde A&=AS=\begin{bmatrix}1&1\\0&1\end{bmatrix},\
+\kappa_2(\tilde A)\approx \frac{\sqrt{\phi^2}}{\sqrt{1/\phi^2}}\approx \phi^2,\\
+&\text{with }\phi=\frac{1+\sqrt{5}}{2}\Rightarrow \kappa_2(\tilde A)\approx 2.618.\\
+\text{Thus }&\text{error multiplier drops from }\sim 10^6\text{ to }\sim 2.6.
+\end{align*}
+}
+
+\RESULT{
+Appropriate unit scaling reduces $\kappa_2$ by about six orders of magnitude.
+}
+
+\UNITCHECK{
+Scaling columns changes variable units; solution coordinates rescale by $S^{-1}$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item Over-scaling can hurt if it unbalances other columns.
+\end{bullets}
+}
+
+\ALTERNATE{
+Row scaling or equilibration seeks to balance both rows and columns.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute SVD of $A$ and $\tilde A$ numerically to confirm.
+\end{bullets}
+}
+
+\INTUITION{
+Make columns comparable so the map stretches space more uniformly.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Column scaling improves conditioning by balancing magnitudes.
+\end{bullets}
+}
+
+\ProblemPage{5}{Narrative: Bob Uses Normal Equations}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Normal equations square the condition number in 2-norm.
+
+\PROBLEM{
+Bob solves least squares via $(A^\top A)\beta=A^\top y$. Show that
+$\kappa_2(A^\top A)=\kappa_2(A)^2$ and quantify error amplification vs.
+QR-based solve for a tall $A$ with $\kappa_2(A)=100$.
+}
+
+\MODEL{
+\[
+\kappa_2(A^\top A)=\frac{\lambda_{\max}(A^\top A)}{\lambda_{\min}(A^\top A)}
+=\left(\frac{\sigma_{\max}}{\sigma_{\min}}\right)^2.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Full-column-rank $A$; 2-norm.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Design matrix.}
+\var{\beta}{Least-squares coefficients.}
+\var{y}{Observations.}
+\varmapEnd
+
+\WHICHFORMULA{
+Use SVD characterization: eigenvalues of $A^\top A$ are $\sigma_i^2$.
+}
+
+\GOVERN{
+\[
+\kappa_2(A^\top A)=\left(\frac{\sigma_{\max}}{\sigma_{\min}}\right)^2.
+\]
+}
+
+\INPUTS{$\kappa_2(A)=100$, $\|\delta b\|/\|b\|=10^{-4}$.}
+
+\DERIVATION{
+\begin{align*}
+\kappa_2(A^\top A)&=\kappa_2(A)^2=10^4.\\
+\text{Forward error bound via normal eqs: }&
+\le 10^4\cdot 10^{-4}=1.\\
+\text{Via QR/LS solve using }\kappa_2(A):&\ \le 100\cdot 10^{-4}=0.01.
+\end{align*}
+}
+
+\RESULT{
+Normal equations can amplify noise by $\kappa^2$, yielding $100\times$
+larger error bounds than QR for the same data noise.
+}
+
+\UNITCHECK{
+Dimensionless; same 2-norm applied consistently.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $\kappa_2(A)\gg 1$, squaring can render the problem numerically
+intractable in normal equations.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use SVD or QR to avoid squaring $\kappa_2$ and to obtain stable solutions.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute $\sigma$ numerically; square the ratio and compare to
+$\kappa_2(A^\top A)$.
+\end{bullets}
+}
+
+\INTUITION{
+Squaring stretches extremes further; anisotropy doubles in exponent.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Avoid normal equations when conditioning matters.
+\end{bullets}
+}
+
+\ProblemPage{6}{Expectation with a Coin-Flip Ill-Conditioning}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Randomly selected $\epsilon$ controls conditioning and error bounds.
+
+\PROBLEM{
+Flip a fair coin: Heads sets $\epsilon=10^{-2}$; Tails sets $\epsilon=10^{-4}$.
+Let $A_\epsilon=\begin{bmatrix}1&1\\1&1+\epsilon\end{bmatrix}$, $b=[2,2+\epsilon]^\top$,
+and $\|\delta b\|/\|b\|=10^{-4}$. Compute $\mathbb{E}[\kappa_2(A_\epsilon)]$ and
+the expected bound on $\|\delta x\|/\|x\|$.
+}
+
+\MODEL{
+\[
+\kappa_2(A_\epsilon)\approx \frac{2+\epsilon}{\epsilon}\approx \frac{2}{\epsilon}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Small $\epsilon$ approximation; 2-norm.
+\end{bullets}
+}
+
+\varmapStart
+\var{\epsilon}{Small positive parameter chosen by coin.}
+\var{A_\epsilon}{Perturbed rank-1 matrix.}
+\varmapEnd
+
+\WHICHFORMULA{
+Use Formula 4 for $\kappa_2$; use forward error bound of Formula 2.
+}
+
+\GOVERN{
+\[
+\mathbb{E}[\kappa_2]\approx \tfrac12\left(\tfrac{2}{10^{-2}}+\tfrac{2}{10^{-4}}
+\right).
+\]
+}
+
+\INPUTS{$\epsilon\in\{10^{-2},10^{-4}\}$ with equal probability.}
+
+\DERIVATION{
+\begin{align*}
+\kappa_2(10^{-2})&\approx 200,\quad \kappa_2(10^{-4})\approx 20000.\\
+\mathbb{E}[\kappa_2]&\approx \tfrac12(200+20000)=10100.\\
+\mathbb{E}[\text{bound}]&\approx \tfrac12(200\cdot 10^{-4}+20000\cdot 10^{-4})\\
+&=\tfrac12(0.02+2)=1.01.
+\end{align*}
+}
+
+\RESULT{
+Expected $\kappa_2\approx 1.01\times 10^{4}$; expected forward error bound
+$\approx 1.01$.
+}
+
+\UNITCHECK{
+Unitless expectations over unitless ratios.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $\epsilon$ can be $0$, $\kappa_2$ becomes infinite with nonzero
+probability.
+\end{bullets}
+}
+
+\ALTERNATE{
+Condition on the outcome and report bounds per case; expectation is then
+a weighted average.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Verify numerically with SVD for both $\epsilon$ values.
+\end{bullets}
+}
+
+\INTUITION{
+Rare but extreme ill-conditioning can dominate expected sensitivity.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Sensitivity distributions can be heavy-tailed due to $\epsilon^{-1}$.
+\end{bullets}
+}
+
+\ProblemPage{7}{Proof: Lower Bound via Residual}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+The relative residual lower-bounds the relative forward error scaled by
+$1/\kappa(A)$.
+
+\PROBLEM{
+Let $r=b-A\hat x=A(x-\hat x)=A\,\delta x$. Prove
+$\frac{\|\delta x\|}{\|x\|}\ge \frac{1}{\kappa(A)}\frac{\|r\|}{\|b\|}$.
+}
+
+\MODEL{
+\[
+\|r\|=\|A\delta x\|\le \|A\|\,\|\delta x\|,\quad
+\|b\|=\|Ax\|\le \|A\|\,\|x\|.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ invertible; induced norm.
+\end{bullets}
+}
+
+\varmapStart
+\var{r}{Residual.}
+\var{\delta x}{Forward error.}
+\varmapEnd
+
+\WHICHFORMULA{
+Use norm inequalities and definition of $\kappa(A)=\|A\|\,\|A^{-1}\|$.
+}
+
+\GOVERN{
+\[
+\frac{\|r\|}{\|b\|}\le \frac{\|A\|\,\|\delta x\|}{\|b\|}
+\le \frac{\|A\|\,\|\delta x\|}{\|A\|^{-1}\|x\|}=\kappa(A)\frac{\|\delta x\|}{\|x\|}.
+\]
+}
+
+\INPUTS{Not applicable beyond $A$, $x$, $\hat x$.}
+
+\DERIVATION{
+\begin{align*}
+\frac{\|r\|}{\|b\|}&=\frac{\|A\delta x\|}{\|Ax\|}
+\le \frac{\|A\|\,\|\delta x\|}{\|Ax\|}.\\
+\text{By Lemma (Formula 1)}&\ \|Ax\|\ge \|x\|/\|A^{-1}\|.\\
+\Rightarrow\ \frac{\|r\|}{\|b\|}&\le \|A\|\,\|\delta x\|\cdot
+\frac{\|A^{-1}\|}{\|x\|}=\kappa(A)\frac{\|\delta x\|}{\|x\|}.\\
+\Rightarrow\ \frac{\|\delta x\|}{\|x\|}&\ge \frac{1}{\kappa(A)}\frac{\|r\|}{\|b\|}.
+\end{align*}
+}
+
+\RESULT{
+$\frac{\|\delta x\|}{\|x\|}\ge \kappa(A)^{-1}\frac{\|r\|}{\|b\|}$.
+}
+
+\UNITCHECK{
+Ratios are dimensionless.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item The inequality can be very loose if $x$ aligns near the least-stretched
+direction.
+\end{bullets}
+}
+
+\ALTERNATE{
+In 2-norm, analyze via singular vector decompositions for tighter constants.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Construct cases where equality is approached by aligning directions.
+\end{bullets}
+}
+
+\INTUITION{
+Residual measures $A$ times the error; dividing by $\|b\|$ and scaling by
+$\kappa$ reveals minimal forward error compatible with the residual.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Residual is not a reliable forward-error indicator when $\kappa$ is large.
+\end{bullets}
+}
+
+\ProblemPage{8}{Proof: Characterization of $\kappa_2=1$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For 2-norm, $\kappa_2(A)=1$ iff $A=\alpha Q$ with $Q$ unitary and $\alpha>0$.
+
+\PROBLEM{
+Prove the iff statement.
+}
+
+\MODEL{
+\[
+\kappa_2(A)=\sigma_{\max}/\sigma_{\min}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ invertible; SVD exists.
+\end{bullets}
+}
+
+\varmapStart
+\var{U,\Sigma,V}{SVD factors.}
+\var{\alpha}{Positive scalar.}
+\varmapEnd
+
+\WHICHFORMULA{
+Use Formula 4 for $\kappa_2$ and SVD properties.
+}
+
+\GOVERN{
+\[
+A=U\Sigma V^\ast,\ \kappa_2=1\iff \Sigma=\alpha I.
+\]
+}
+
+\INPUTS{Not numeric; structural proof.}
+
+\DERIVATION{
+\begin{align*}
+(\Rightarrow)\ &\kappa_2(A)=1\Rightarrow \sigma_{\max}=\sigma_{\min}
+=\alpha>0.\\
+&\Rightarrow \Sigma=\alpha I\Rightarrow A=U(\alpha I)V^\ast=\alpha(UV^\ast).\\
+&UV^\ast\ \text{is unitary}\Rightarrow A=\alpha Q.\\
+(\Leftarrow)\ &A=\alpha Q,\ Q^\ast Q=I.\\
+&\Rightarrow \sigma_i(A)=\alpha\ \forall i\Rightarrow
+\kappa_2(A)=\alpha/\alpha=1.
+\end{align*}
+}
+
+\RESULT{
+$\kappa_2(A)=1$ iff $A$ is a scaled unitary/orthogonal matrix.
+}
+
+\UNITCHECK{
+Unitless statement; 2-norm specific.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item For other norms, the characterization differs (isometries in that norm).
+\end{bullets}
+}
+
+\ALTERNATE{
+Use the inequality $\|A\|_2\|A^{-1}\|_2\ge \|AA^{-1}\|_2=1$ with equality
+iff $A$ is scaled unitary.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Construct $A=\alpha Q$; compute SVD numerically to confirm all
+singular values equal $\alpha$.
+\end{bullets}
+}
+
+\INTUITION{
+Equal stretching in all directions means perfect conditioning ($\kappa=1$).
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Best-conditioned problems are scaled isometries.
+\end{bullets}
+}
+
+\ProblemPage{9}{Combo: Normal Equations Square $\kappa_2$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show $\kappa_2(A^\top A)=\kappa_2(A)^2$ with a numeric example.
+
+\PROBLEM{
+Take $A=\begin{bmatrix}1&0\\0&10^{-2}\\0&0\end{bmatrix}$ (tall). Compute
+$\kappa_2(A)$ and $\kappa_2(A^\top A)$.
+}
+
+\MODEL{
+\[
+\sigma_{\max}(A)=1,\ \sigma_{\min}(A)=10^{-2}\Rightarrow
+\kappa_2(A)=10^{2}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Full column rank; 2-norm.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Tall matrix (3x2).}
+\var{A^\top A}{Normal matrix (2x2 SPD).}
+\varmapEnd
+
+\WHICHFORMULA{
+Use $\sigma(A^\top A)=\sigma(A)^2$ and Formula 4.
+}
+
+\GOVERN{
+\[
+\kappa_2(A^\top A)=\frac{\sigma_{\max}(A)^2}{\sigma_{\min}(A)^2}
+=\kappa_2(A)^2.
+\]
+}
+
+\INPUTS{$A$ as above.}
+
+\DERIVATION{
+\begin{align*}
+\kappa_2(A)&=1/10^{-2}=100.\\
+A^\top A&=\begin{bmatrix}1&0\\0&(10^{-2})^2\end{bmatrix}
+=\mathrm{diag}(1,10^{-4}).\\
+\kappa_2(A^\top A)&=1/10^{-4}=10^{4}=\kappa_2(A)^2.
+\end{align*}
+}
+
+\RESULT{
+$\kappa_2$ squares under normal equations; here $100\mapsto 10\,000$.
+}
+
+\UNITCHECK{
+Unitless; SPD eigenvalues equal squared singular values.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $\sigma_{\min}$ is tiny, squaring can underflow in finite precision.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use QR-based least squares to avoid squaring $\kappa_2$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute SVD of $A$ numerically and confirm the squared relation.
+\end{bullets}
+}
+
+\INTUITION{
+Squaring accentuates anisotropy in the Gram matrix.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Avoid forming $A^\top A$ when possible.
+\end{bullets}
+}
+
+\ProblemPage{10}{Combo: Optimal Diagonal Scaling for 2x2 SPD}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Find diagonal $D$ minimizing $\kappa_2(DAD)$ for $A=\begin{bmatrix}a&c\\c&b\end{bmatrix}$,
+$A\succ 0$.
+
+\PROBLEM{
+Show that choosing $D=\mathrm{diag}(a^{-1/2},b^{-1/2})$ equalizes diagonal
+entries and yields
+$\kappa_2(DAD)=\frac{1+|\rho|}{1-|\rho|}$ with
+$\rho=\frac{c}{\sqrt{ab}}$, the correlation. Compute numerically for
+$a=1$, $b=10^{4}$, $c=10$.
+}
+
+\MODEL{
+\[
+DAD=\begin{bmatrix}1&\rho\\ \rho&1\end{bmatrix},\
+\kappa_2=\frac{1+|\rho|}{1-|\rho|}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ SPD; $|c|<\sqrt{ab}$.
+\end{bullets}
+}
+
+\varmapStart
+\var{D}{Diagonal scaling.}
+\var{\rho}{Correlation $c/\sqrt{ab}$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Use invariance of 2-norm under orthogonal transforms and eigenvalues of
+$2\times 2$ symmetric matrices.
+}
+
+\GOVERN{
+\[
+\lambda_{\pm}(DAD)=1\pm |\rho|,\quad \kappa_2=\frac{1+|\rho|}{1-|\rho|}.
+\]
+}
+
+\INPUTS{$a=1$, $b=10^{4}$, $c=10$.}
+
+\DERIVATION{
+\begin{align*}
+D&=\mathrm{diag}(1,10^{-2}),\ \rho=\frac{10}{\sqrt{10^{4}}}=0.1.\\
+\kappa_2(DAD)&=\frac{1+0.1}{1-0.1}=\frac{1.1}{0.9}\approx 1.222\ldots
+\end{align*}
+}
+
+\RESULT{
+Scaled system has $\kappa_2\approx 1.22$, a dramatic reduction from the
+unscaled $\kappa_2\approx 10^{4}$.
+}
+
+\UNITCHECK{
+Unitless; scaling makes diagonal entries unitless and comparable.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item As $|\rho|\to 1$, $\kappa_2\to\infty$; matrix approaches singularity.
+\end{bullets}
+}
+
+\ALTERNATE{
+Row/column equilibration generalizes to larger matrices (e.g., Ruge--St\"uben).
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute eigenvalues of $A$ and $DAD$ numerically to verify formulas.
+\end{bullets}
+}
+
+\INTUITION{
+Balance scales first; then conditioning depends on correlation only.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Diagonal scaling separates magnitude from correlation.
+\end{bullets}
+}
+
+\clearpage
+\section{Coding Demonstrations}
+
+\CodeDemoPage{Compute $\kappa_2$ and Verify Forward-Error Bound}
+\PROBLEM{
+Given $A$ and perturbation $\delta b$, compute $\kappa_2(A)$ and verify
+$\|\delta x\|/\|x\|\le \kappa_2(A)\,\|\delta b\|/\|b\|$.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> dict}
+\item \inlinecode{def solve_case(obj) -> dict}
+\item \inlinecode{def validate() -> None}
+\item \inlinecode{def main() -> None}
+\end{bullets}
+}
+
+\INPUTS{
+Matrix $A$ (2D list), vectors $b,\delta b$ (lists of floats).
+}
+
+\OUTPUTS{
+Dictionary with $\kappa_2$, ratios, and a boolean for inequality.
+}
+
+\FORMULA{
+\[
+\kappa_2(A)=\frac{\sigma_{\max}(A)}{\sigma_{\min}(A)},\quad
+\frac{\|\delta x\|}{\|x\|}\le \kappa_2(A)\frac{\|\delta b\|}{\|b\|}.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+# Deterministic, modular implementation; <=80 chars/line.
+# Power iteration for sigma_max and for A^{-1} via solves.
+import numpy as np
+
+def read_input(s):
+    vals = [float(x) for x in s.split()]
+    A = np.array(vals[:4], dtype=float).reshape(2, 2)
+    b = np.array(vals[4:6], dtype=float)
+    db = np.array(vals[6:8], dtype=float)
+    return {"A": A, "b": b, "db": db}
+
+def sigma_max(A, iters=100):
+    np.random.seed(0)
+    x = np.ones(A.shape[1])
+    for _ in range(iters):
+        x = A.T @ (A @ x)
+        x = x / np.linalg.norm(x)
+    num = np.linalg.norm(A @ x)
+    return num
+
+def sigma_min(A, iters=100):
+    # sigma_min = 1 / sigma_max(A^{-1}); use solves to apply A^{-1}
+    np.random.seed(0)
+    n = A.shape[1]
+    x = np.ones(n)
+    for _ in range(iters):
+        y = np.linalg.solve(A, x)
+        z = np.linalg.solve(A.T, y)
+        x = z / np.linalg.norm(z)
+    num = np.linalg.norm(np.linalg.solve(A, x))
+    return 1.0 / num
+
+def kappa2(A):
+    return sigma_max(A) / sigma_min(A)
+
+def solve_case(obj):
+    A, b, db = obj["A"], obj["b"], obj["db"]
+    x = np.linalg.solve(A, b)
+    dx = np.linalg.solve(A, db)
+    k = kappa2(A)
+    lhs = np.linalg.norm(dx) / np.linalg.norm(x)
+    rhs = k * (np.linalg.norm(db) / np.linalg.norm(b))
+    return {"kappa2": float(k), "lhs": float(lhs), "rhs": float(rhs),
+            "ok": bool(lhs <= rhs + 1e-10)}
+
+def validate():
+    s = "1 0 0 0.01 1 1 1e-4 -1e-4"
+    obj = read_input(s)
+    out = solve_case(obj)
+    assert out["ok"]
+    assert out["kappa2"] > 90 and out["kappa2"] < 110
+
+def main():
+    validate()
+    s = "1 0 0 0.01 1 1 1e-4 -1e-4"
+    obj = read_input(s)
+    out = solve_case(obj)
+    print("kappa2", round(out["kappa2"], 3))
+    print("lhs", out["lhs"], "rhs", out["rhs"], "ok", out["ok"])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+# Library version using SVD directly.
+import numpy as np
+
+def read_input(s):
+    vals = [float(x) for x in s.split()]
+    A = np.array(vals[:4], dtype=float).reshape(2, 2)
+    b = np.array(vals[4:6], dtype=float)
+    db = np.array(vals[6:8], dtype=float)
+    return {"A": A, "b": b, "db": db}
+
+def kappa2_lib(A):
+    s = np.linalg.svd(A, compute_uv=False)
+    return float(s[0] / s[-1])
+
+def solve_case(obj):
+    A, b, db = obj["A"], obj["b"], obj["db"]
+    x = np.linalg.solve(A, b)
+    dx = np.linalg.solve(A, db)
+    k = kappa2_lib(A)
+    lhs = np.linalg.norm(dx) / np.linalg.norm(x)
+    rhs = k * (np.linalg.norm(db) / np.linalg.norm(b))
+    return {"kappa2": float(k), "lhs": float(lhs), "rhs": float(rhs),
+            "ok": bool(lhs <= rhs + 1e-12)}
+
+def validate():
+    s = "1 0 0 0.01 1 1 1e-4 -1e-4"
+    obj = read_input(s)
+    out = solve_case(obj)
+    assert out["ok"]
+    assert abs(out["kappa2"] - 100.0) < 1e-9
+
+def main():
+    validate()
+    s = "1 0 0 0.01 1 1 1e-4 -1e-4"
+    obj = read_input(s)
+    out = solve_case(obj)
+    print("kappa2", out["kappa2"], "lhs", out["lhs"], "rhs", out["rhs"])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+From-scratch: power iterations $\mathcal{O}(n^2\cdot k)$ per sigma; solves
+$\mathcal{O}(n^3)$ pre-factorization (here tiny). Library: SVD
+$\mathcal{O}(n^3)$.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Nearly singular $A$ may cause large rounding errors; detect via
+tiny $\sigma_{\min}$.
+\item Zero $b$ leads to division by zero; guard in code.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Power iteration converges to dominant singular vector; for clustered
+singular values, convergence may slow.
+\item Use normalization each iteration to avoid overflow/underflow.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Cross-check from-scratch $\kappa_2$ vs. SVD.
+\item Assert inequality holds within small tolerance.
+\end{bullets}
+}
+
+\RESULT{
+Both implementations agree; the inequality is verified deterministically.
+}
+
+\EXPLANATION{
+The code computes $\kappa_2$ and direct forward error for $\delta b$, then
+checks the theoretical bound from Formula 2.
+}
+
+\EXTENSION{
+Vectorize to larger $n$; add computation of residual-based lower bound.
+}
+
+\CodeDemoPage{Preconditioning Reduces $\kappa_2$ and Error Amplification}
+\PROBLEM{
+Show Jacobi preconditioning $M=\mathrm{diag}(A)$ reduces $\kappa_2$ and the
+error bound for a sample SPD matrix.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def make_spd(n, s) -> A}
+\item \inlinecode{def jacobi(A) -> M}
+\item \inlinecode{def kappa2(A) -> float}
+\item \inlinecode{def experiment(A, b, db) -> dict}
+\end{bullets}
+}
+
+\INPUTS{
+SPD matrix $A$, $b$, and $\delta b$; fixed seed for reproducibility.
+}
+
+\OUTPUTS{
+$\kappa_2(A)$, $\kappa_2(M^{-1}A)$, and corresponding error bounds.
+}
+
+\FORMULA{
+\[
+\tilde A=M^{-1}A,\ \tilde b=M^{-1}b,\ 
+\kappa_2(\tilde A)=\frac{\sigma_{\max}(\tilde A)}{\sigma_{\min}(\tilde A)}.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+# Deterministic SPD generator; Jacobi preconditioner; power-based kappa2.
+import numpy as np
+
+def make_spd(n=5, s=10.0):
+    np.random.seed(0)
+    U = np.triu(np.random.randn(n, n))
+    A = U.T @ U
+    A += s * np.eye(n)
+    return A
+
+def jacobi(A):
+    return np.diag(np.diag(A))
+
+def sigma_max(A, iters=200):
+    x = np.ones(A.shape[1])
+    for _ in range(iters):
+        x = A.T @ (A @ x)
+        x = x / np.linalg.norm(x)
+    return np.linalg.norm(A @ x)
+
+def sigma_min(A, iters=200):
+    x = np.ones(A.shape[1])
+    for _ in range(iters):
+        y = np.linalg.solve(A, x)
+        z = np.linalg.solve(A.T, y)
+        x = z / np.linalg.norm(z)
+    return 1.0 / np.linalg.norm(np.linalg.solve(A, x))
+
+def kappa2_fs(A):
+    return sigma_max(A) / sigma_min(A)
+
+def experiment(A, b, db):
+    x = np.linalg.solve(A, b)
+    dx = np.linalg.solve(A, db)
+    k = kappa2_fs(A)
+    bound = k * (np.linalg.norm(db) / np.linalg.norm(b))
+    M = jacobi(A)
+    MinvA = np.linalg.solve(M, A)
+    xb = np.linalg.solve(MinvA, np.linalg.solve(M, b))
+    dxb = np.linalg.solve(MinvA, np.linalg.solve(M, db))
+    kp = kappa2_fs(MinvA)
+    bndp = kp * (np.linalg.norm(np.linalg.solve(M, db)) /
+                 np.linalg.norm(np.linalg.solve(M, b)))
+    return {"k": float(k), "kp": float(kp), "bound": float(bound),
+            "boundp": float(bndp), "lhs": float(np.linalg.norm(dx)/
+            np.linalg.norm(x)), "lhsp": float(np.linalg.norm(dxb)/
+            np.linalg.norm(xb))}
+
+def validate():
+    A = make_spd()
+    b = np.ones(A.shape[0])
+    db = 1e-6 * np.arange(1, A.shape[0]+1)
+    out = experiment(A, b, db)
+    assert out["kp"] <= out["k"] + 1e-6
+
+def main():
+    validate()
+    A = make_spd()
+    b = np.ones(A.shape[0])
+    db = 1e-6 * np.arange(1, A.shape[0]+1)
+    out = experiment(A, b, db)
+    print("k", round(out["k"], 2), "kp", round(out["kp"], 2))
+    print("bounds", out["bound"], out["boundp"])
+    print("lhs", out["lhs"], "lhsp", out["lhsp"])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+# Use numpy.linalg.svd for kappa2 and direct solves for preconditioning.
+import numpy as np
+
+def make_spd(n=5, s=10.0):
+    np.random.seed(0)
+    U = np.triu(np.random.randn(n, n))
+    A = U.T @ U
+    A += s * np.eye(n)
+    return A
+
+def jacobi(A):
+    return np.diag(np.diag(A))
+
+def kappa2_lib(A):
+    s = np.linalg.svd(A, compute_uv=False)
+    return float(s[0] / s[-1])
+
+def experiment(A, b, db):
+    x = np.linalg.solve(A, b)
+    dx = np.linalg.solve(A, db)
+    k = kappa2_lib(A)
+    bound = k * (np.linalg.norm(db) / np.linalg.norm(b))
+    M = jacobi(A)
+    MinvA = np.linalg.solve(M, A)
+    xb = np.linalg.solve(MinvA, np.linalg.solve(M, b))
+    dxb = np.linalg.solve(MinvA, np.linalg.solve(M, db))
+    kp = kappa2_lib(MinvA)
+    bndp = kp * (np.linalg.norm(np.linalg.solve(M, db)) /
+                 np.linalg.norm(np.linalg.solve(M, b)))
+    return {"k": float(k), "kp": float(kp), "bound": float(bound),
+            "boundp": float(bndp), "lhs": float(np.linalg.norm(dx)/
+            np.linalg.norm(x)), "lhsp": float(np.linalg.norm(dxb)/
+            np.linalg.norm(xb))}
+
+def validate():
+    A = make_spd()
+    b = np.ones(A.shape[0])
+    db = 1e-6 * np.arange(1, A.shape[0]+1)
+    out = experiment(A, b, db)
+    assert out["kp"] <= out["k"] + 1e-12
+
+def main():
+    validate()
+    A = make_spd()
+    b = np.ones(A.shape[0])
+    db = 1e-6 * np.arange(1, A.shape[0]+1)
+    out = experiment(A, b, db)
+    print("k", out["k"], "kp", out["kp"])
+    print("bounds", out["bound"], out["boundp"])
+    print("lhs", out["lhs"], "lhsp", out["lhsp"])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Time: $\mathcal{O}(n^3)$ for solves and SVD; space: $\mathcal{O}(n^2)$.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Zero diagonal entries in $A$ break Jacobi; ensure SPD with positive
+diagonal.
+\item If preconditioner is poor, $\kappa_2$ may not decrease.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Preconditioning can improve numerical stability by reducing anisotropy.
+\item Careful with forming $M^{-1}$ explicitly; use solves to avoid roundoff.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Assert $\kappa_2(M^{-1}A)\le \kappa_2(A)$ for the generated SPD $A$.
+\item Compare bounds and observed ratios before/after preconditioning.
+\end{bullets}
+}
+
+\RESULT{
+Jacobi reduces $\kappa_2$ and tightens the forward-error bound in this SPD
+example; observed ratios are consistent.
+}
+
+\EXPLANATION{
+Preconditioning balances the diagonal, making the effective map more isotropic
+and less sensitive according to Formula 4.
+}
+
+\clearpage
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Linear regression with poorly scaled features: analyze conditioning of the
+normal equations vs. standardized features and quantify error sensitivity.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Data are i.i.d.; model $y=X\beta+\varepsilon$ with $\mathbb{E}\varepsilon=0$.
+\item Use 2-norm; avoid forming $X^\top X$ when possible.
+\end{bullets}
+}
+\WHICHFORMULA{
+$\kappa_2(X^\top X)=\kappa_2(X)^2$ and forward-error bounds from Formula 2.
+}
+\varmapStart
+\var{X}{Design matrix $(n,d)$ with a bias column.}
+\var{y}{Response vector $(n)$.}
+\var{\beta}{Coefficients.}
+\var{Z}{Standardized features.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic data with one large-scale feature.
+\item Compute $\kappa_2(X)$ and of standardized $Z$.
+\item Compare error bounds for solving normal equations.
+\end{bullets}
+}
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def gen_data(n=200, s=1000.0):
+    np.random.seed(0)
+    x1 = np.linspace(0, 1, n)
+    x2 = s * np.linspace(0, 1, n)
+    X = np.column_stack([np.ones(n), x1, x2])
+    beta = np.array([1.0, 2.0, -0.5])
+    y = X @ beta + 0.01 * np.random.randn(n)
+    return X, y
+
+def standardize(X):
+    Xs = X.copy()
+    Xs[:, 1:] = (Xs[:, 1:] - Xs[:, 1:].mean(0)) / Xs[:, 1:].std(0)
+    return Xs
+
+def kappa2(A):
+    s = np.linalg.svd(A, compute_uv=False)
+    return float(s[0] / s[-1])
+
+def main():
+    X, y = gen_data()
+    Z = standardize(X)
+    print("kappa2(X):", round(kappa2(X), 2))
+    print("kappa2(Z):", round(kappa2(Z), 2))
+    print("kappa2(X^T X):", round(kappa2(X)**2, 2))
+    print("kappa2(Z^T Z):", round(kappa2(Z)**2, 2))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{Implementation (Library Version)}
+\begin{codepy}
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+
+def main():
+    np.random.seed(0)
+    n = 200
+    x1 = np.linspace(0, 1, n)
+    x2 = 1000.0 * np.linspace(0, 1, n)
+    X = np.column_stack([np.ones(n), x1, x2])
+    s = np.linalg.svd(X, compute_uv=False)
+    print("kappa2(X):", float(s[0]/s[-1]))
+    sc = StandardScaler(with_mean=True, with_std=True)
+    Z = X.copy()
+    Z[:,1:] = sc.fit_transform(Z[:,1:])
+    sz = np.linalg.svd(Z, compute_uv=False)
+    print("kappa2(Z):", float(sz[0]/sz[-1]))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Report $\kappa_2(X)$ and $\kappa_2(Z)$; squared for normal equations.}
+\INTERPRET{Standardization lowers $\kappa_2$, improving sensitivity and solver
+robustness.}
+\NEXTSTEPS{Use QR/SVD solvers and regularization; perform column equilibration.}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Portfolio optimization linear systems: sensitivity of solving $\Sigma w=\mu$
+to perturbations in expected returns $\mu$.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Covariance $\Sigma$ SPD; use 2-norm.
+\item $\mu$ perturbed by estimation noise $\delta \mu$.
+\end{bullets}
+}
+\WHICHFORMULA{
+Forward-error bound with $b$-only perturbations and $\kappa_2(\Sigma)$.
+}
+\varmapStart
+\var{\Sigma}{Covariance matrix $(d\times d)$.}
+\var{w}{Weights solving $\Sigma w=\mu$.}
+\var{\mu}{Expected returns.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Simulate SPD $\Sigma$ and $\mu$.
+\item Compute $\kappa_2(\Sigma)$; bound sensitivity of $w$.
+\item Compare with preconditioned system $D^{-1}\Sigma D^{-1}$.
+\end{bullets}
+}
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def make_spd(d=5, s=0.1):
+    np.random.seed(0)
+    A = np.random.randn(d, d)
+    S = A.T @ A + s * np.eye(d)
+    return S
+
+def kappa2(A):
+    s = np.linalg.svd(A, compute_uv=False)
+    return float(s[0] / s[-1])
+
+def main():
+    Sigma = make_spd(5, 0.1)
+    mu = np.linspace(0.01, 0.05, 5)
+    w = np.linalg.solve(Sigma, mu)
+    dmu = 1e-4 * np.ones_like(mu)
+    dw = np.linalg.solve(Sigma, dmu)
+    bound = kappa2(Sigma) * (np.linalg.norm(dmu) / np.linalg.norm(mu))
+    print("kappa2(Sigma):", round(kappa2(Sigma), 2))
+    print("lhs:", np.linalg.norm(dw) / np.linalg.norm(w))
+    print("rhs:", bound)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Report $\kappa_2(\Sigma)$ and forward-error bound vs. observed ratio.}
+\INTERPRET{Highly correlated assets lead to larger $\kappa_2$ and more sensitive
+weights.}
+\NEXTSTEPS{Shrinkage estimators to improve conditioning; factor models.}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Gradient descent on a quadratic loss $L(w)=\tfrac12\|Xw-y\|_2^2$; convergence
+rate depends on $\kappa_2(X)^2$ via the Hessian $X^\top X$.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Step size $\eta<2/\lambda_{\max}(X^\top X)$.
+\item Full-column-rank $X$.
+\end{bullets}
+}
+\WHICHFORMULA{
+$\kappa_2(X^\top X)=\kappa_2(X)^2$ controls the rate
+$(\frac{\kappa^2-1}{\kappa^2+1})^k$ for optimal $\eta$ in the 2D case.
+}
+\PIPELINE{
+\begin{bullets}
+\item Build $X$ with controllable $\kappa_2$.
+\item Run gradient descent; count iterations to a tolerance.
+\item Compare for scaled vs. unscaled $X$.
+\end{bullets}
+}
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+
+def make_X(n=200, kappa=100.0):
+    np.random.seed(0)
+    U, _ = np.linalg.qr(np.random.randn(n, 2))
+    V, _ = np.linalg.qr(np.random.randn(n, 2))
+    s1, s2 = 1.0, 1.0 / kappa
+    return U[:, :2] @ np.diag([s1, s2]) @ V[:, :2].T
+
+def gd(X, y, it=20000):
+    A = X.T @ X
+    L = np.linalg.eigvalsh(A).max()
+    eta = 1.9 / L
+    w = np.zeros(X.shape[1])
+    for k in range(it):
+        g = X.T @ (X @ w - y)
+        w -= eta * g
+        if np.linalg.norm(g) < 1e-6:
+            break
+    return w, k+1
+
+def main():
+    X = make_X()
+    beta = np.array([1.0, -0.3])
+    y = X @ beta
+    w, k = gd(X, y)
+    s = np.linalg.svd(X, compute_uv=False)
+    print("kappa2(X):", float(s[0]/s[-1]), "iters:", k)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Iterations to tolerance vs. $\kappa_2(X)$; larger $\kappa$ slows GD.}
+\INTERPRET{Ill-conditioning elongates level sets, causing zig-zag slow progress.}
+\NEXTSTEPS{Use preconditioning or normalization layers to reduce $\kappa$.}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Feature scaling and conditioning: assess how standardizing features reduces
+$\kappa_2$ of $X$ and improves stability of linear solves.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Numeric features only; 2-norm.
+\end{bullets}
+}
+\WHICHFORMULA{
+$\kappa_2$ via SVD and forward-error bounds for normal equations.
+}
+\PIPELINE{
+\begin{bullets}
+\item Create synthetic DataFrame with heterogeneous scales.
+\item Standardize features; compare $\kappa_2$ before/after.
+\item Solve normal equations and compare sensitivity.
+\end{bullets}
+}
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import pandas as pd, numpy as np
+
+def create_df(seed=0, n=300):
+    np.random.seed(seed)
+    A = 1e3 * np.random.randn(n)
+    B = 1e-2 * np.random.randn(n)
+    C = 10 + 5 * np.random.randn(n)
+    y = 3 + 2*A - B + 0.1*np.random.randn(n)
+    return pd.DataFrame({"A": A, "B": B, "C": C, "y": y})
+
+def standardize(df):
+    Z = df.copy()
+    cols = ["A", "B", "C"]
+    Z[cols] = (Z[cols] - Z[cols].mean())/Z[cols].std()
+    return Z
+
+def kappa2(X):
+    s = np.linalg.svd(X, compute_uv=False)
+    return float(s[0] / s[-1])
+
+def main():
+    df = create_df()
+    X = np.column_stack([np.ones(len(df)), df[["A", "B", "C"]].values])
+    Zdf = standardize(df)
+    Z = np.column_stack([np.ones(len(Zdf)), Zdf[["A","B","C"]].values])
+    print("kappa2(X):", round(kappa2(X), 2))
+    print("kappa2(Z):", round(kappa2(Z), 2))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{$\kappa_2$ reductions after standardization.}
+\INTERPRET{Standardization reduces anisotropy and improves numeric stability.}
+\NEXTSTEPS{Use whitening (PCA) to further condition the system.}
+
+\end{document}

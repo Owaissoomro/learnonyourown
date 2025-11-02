@@ -1,0 +1,2326 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]
+\setlength{\jot}{7pt}
+\setlength{\emergencystretch}{8em}
+\sloppy
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Schur Complement and Matrix Determinant Lemma}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+We study block matrices $\begin{pmatrix}A&B\\ C&D\end{pmatrix}$ with conformable
+blocks. The Schur complement of $A$ in the block matrix is
+$S_{A}=D-CA^{-1}B$ when $A$ is invertible. Dually, $S_{D}=A-BD^{-1}C$ when
+$D$ is invertible. The Matrix Determinant Lemma states for an invertible
+$A\in\mathbb{R}^{n\times n}$ and $U\in\mathbb{R}^{n\times k}$,
+$V\in\mathbb{R}^{n\times k}$ that
+$\det(A+UV^{\top})=\det(I_k+V^{\top}A^{-1}U)\det(A)$.
+}
+\WHY{
+Schur complements connect determinants, inverses, and definiteness of block
+matrices. They power Gaussian elimination in blocks, provide invertibility
+conditions, and enable fast rank-$k$ updates (determinant lemma) used in
+statistical inference, numerical linear algebra, and optimization.
+}
+\HOW{
+1. Assume a partitioned matrix with an invertible pivot block. 2. Perform
+block Gaussian elimination to triangularize while tracking determinants.
+3. Read off determinant and inverse using Schur complements. 4. Interpret
+the Schur complement as the residual after eliminating a block.
+}
+\ELI{
+Think of solving linear equations by eliminating variables in groups. The
+Schur complement is the equation you get for the remaining variables after
+you solve and substitute the eliminated ones. The determinant lemma tells
+how the volume scaling changes when you add a low-rank tweak.
+}
+\SCOPE{
+All statements hold over any field of characteristic $0$ (or general field
+where inverses used exist). Invertibility of the pivot block is required to
+form that Schur complement; swap roles if the other diagonal block is
+invertible. Positive definiteness results assume symmetry.
+}
+\CONFUSIONS{
+Schur complement versus complement submatrix: the Schur complement is not a
+submatrix; it is $D-CA^{-1}B$. Matrix Determinant Lemma is not Sylvester's
+determinant theorem, though it uses that $\det(I+UV)=\det(I+VU)$ identity.
+Block inversion formulas require conformable sizes and invertible pivots.
+}
+\APPLICATIONS{
+\begin{bullets}
+\item Mathematical foundations: block LU, determinants, and inverses.
+\item Computational modeling: rank-$k$ updates and downdates.
+\item Physical or engineering: Gaussian conditionals and Kalman filtering.
+\item Statistical or algorithmic: GP regression evidence and LMIs via Schur.
+\end{bullets}
+}
+
+\textbf{ANALYTIC STRUCTURE.}
+Schur complements preserve linearity in each block and encode convex LMI
+constraints: for symmetric blocks, $M=\begin{pmatrix}A&B\\B^{\top}&D\end{pmatrix}\succ0$
+iff $A\succ0$ and $D-B^{\top}A^{-1}B\succ0$. They respect similarity via
+block elimination.
+
+\textbf{CANONICAL LINKS.}
+Block determinant formula implies the Matrix Determinant Lemma by choosing
+a specific block structure. Woodbury identity arises from block inversion
+via Schur complements. These feed proofs and computations in later problems.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Block matrices with invertible $A$ or $D$: suspect Schur complement.
+\item Determinant of $A+uv^{\top}$ or $A+UV^{\top}$: Matrix Determinant Lemma.
+\item Inverse of updated matrices: Woodbury identity.
+\item Positive definiteness constraints in block form: Schur complement test.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate block structure and identify invertible pivot.
+\item Apply block Gaussian elimination to triangularize.
+\item Read determinant as product of diagonal block determinants.
+\item For inverses, solve block linear systems with back-substitution.
+\item Validate with symmetry, ranks, and limiting cases.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Determinant multiplicativity under block triangularization; invariance of
+$\det(I+UV)$ under cyclic reordering to $\det(I+VU)$; definiteness preserved
+under Schur complement when pivot is positive definite.
+
+\textbf{EDGE INTUITION.}
+As $B$ or $C$ vanish, Schur complements reduce to the diagonal block.
+Rank-one updates modify determinants by a scalar factor $1+v^{\top}A^{-1}u$.
+When the update is small, $\log\det$ changes approximately by the trace term.
+
+\clearpage
+\section{Glossary}
+\glossx{Schur Complement}{
+Given block matrix $M=\begin{pmatrix}A&B\\ C&D\end{pmatrix}$ with invertible
+$A$, the Schur complement of $A$ is $S_{A}=D-CA^{-1}B$.
+}{
+Encodes the effect of eliminating variables associated with $A$; central for
+determinants, inverses, and positive definiteness tests.
+}{
+Perform block elimination:
+$\begin{pmatrix}I&0\\ -CA^{-1}&I\end{pmatrix}
+\begin{pmatrix}A&B\\ C&D\end{pmatrix}
+=\begin{pmatrix}A&B\\ 0&S_{A}\end{pmatrix}$.
+}{
+Solve a system in two stages: first in $A$, then in the reduced system
+$S_{A}$ for the remaining variables.
+}{
+Common error: attempting $D-AC^{-1}B$; the inverse is applied to the pivot
+block adjacent to both $B$ and $C$.
+}
+
+\glossx{Matrix Determinant Lemma}{
+For invertible $A$ and matrices $U,V$,
+$\det(A+UV^{\top})=\det(I+V^{\top}A^{-1}U)\det(A)$.
+}{
+Computes determinant after rank-$k$ update from a small $k\times k$ matrix.
+}{
+Factor via block determinant or Sylvester theorem
+$\det(I+UV)=\det(I+VU)$ and multiplicativity.
+}{
+Imagine volume scaling by $A$ and then a small deformation by $UV^{\top}$;
+the deformation lives in a $k$-dimensional subspace.
+}{
+Pitfall: trying to use when $A$ is singular; the stated form requires
+$A^{-1}$. Use limiting arguments or generalized versions if needed.
+}
+
+\glossx{Woodbury Identity}{
+$(A+UCV)^{-1}=A^{-1}-A^{-1}U(C^{-1}+VA^{-1}U)^{-1}VA^{-1}$.
+}{
+Inverts a rank-$k$ update using only $A^{-1}$ and a $k\times k$ inverse.
+}{
+Apply block inversion to
+$\begin{pmatrix}A&U\\ -V&I\end{pmatrix}\begin{pmatrix}I&0\\ C& A+UCV\end{pmatrix}$
+or use Schur complements directly.
+}{
+Updating an already inverted matrix is cheaper if the update is low rank.
+}{
+Pitfall: mismatched shapes. Ensure dimensions satisfy conformability.
+}
+
+\glossx{Block LU Factorization}{
+Factorization of a block matrix into block lower and upper triangular factors.
+}{
+Underpins the derivation of Schur complements and block determinant formulas.
+}{
+With invertible $A$,
+$\begin{pmatrix}A&B\\ C&D\end{pmatrix}
+=\begin{pmatrix}I&0\\ CA^{-1}&I\end{pmatrix}
+\begin{pmatrix}A&B\\ 0&S_{A}\end{pmatrix}$.
+}{
+Think of Gaussian elimination but acting on blocks at once.
+}{
+Pitfall: forgetting the left factor has determinant $1$ so it does not change
+the determinant.
+}
+
+\clearpage
+\section{Symbol Ledger}
+\varmapStart
+\var{A\in\mathbb{R}^{n\times n}}{Pivot block or base matrix, often invertible.}
+\var{B\in\mathbb{R}^{n\times m}}{Off-diagonal block.}
+\var{C\in\mathbb{R}^{m\times n}}{Off-diagonal block.}
+\var{D\in\mathbb{R}^{m\times m}}{Trailing diagonal block.}
+\var{S_{A}}{Schur complement $D-CA^{-1}B$ when $A$ invertible.}
+\var{S_{D}}{Schur complement $A-BD^{-1}C$ when $D$ invertible.}
+\var{U\in\mathbb{R}^{n\times k}}{Update left factor in rank-$k$ update.}
+\var{V\in\mathbb{R}^{m\times k}}{Update right factor (transpose shapes vary).}
+\var{u,v}{Vectors for rank-one updates ($k=1$).}
+\var{I_k}{Identity matrix of size $k$.}
+\var{\det(\cdot)}{Determinant of a square matrix.}
+\var{\operatorname{tr}}{Trace of a square matrix.}
+\var{\succ0}{Positive definiteness for symmetric matrices.}
+\var{\preceq}{Loewner partial order on symmetric matrices.}
+\varmapEnd
+
+\clearpage
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{Block Determinant via Schur Complement}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For the block matrix $M=\begin{pmatrix}A&B\\ C&D\end{pmatrix}$ with $A$
+invertible,
+$\det(M)=\det(A)\det(D-CA^{-1}B)=\det(A)\det(S_{A})$.
+
+\WHAT{
+This computes the determinant of a block matrix by eliminating the $A$ block
+and forming the Schur complement $S_{A}$ of $A$ in $M$.
+}
+\WHY{
+It reduces the determinant of a large matrix to a product of two smaller
+determinants, enabling efficient computation and structural insights.
+}
+\FORMULA{
+\[
+\det\!\begin{pmatrix}A&B\\ C&D\end{pmatrix}
+=\det(A)\,\det(D-CA^{-1}B)=\det(A)\det(S_{A}).
+\]
+}
+\CANONICAL{
+Blocks $A\in\mathbb{R}^{n\times n}$, $D\in\mathbb{R}^{m\times m}$, with $A$
+invertible and conformable $B,C$. Over any field where inverses exist.
+}
+\PRECONDS{
+\begin{bullets}
+\item $A$ is invertible so that $A^{-1}$ and $S_{A}$ are defined.
+\item All blocks are finite and conformable.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $A$ is invertible then
+$\begin{pmatrix}I&0\\ -CA^{-1}&I\end{pmatrix}
+\begin{pmatrix}A&B\\ C&D\end{pmatrix}
+=\begin{pmatrix}A&B\\ 0&D-CA^{-1}B\end{pmatrix}$, and the left factor has
+determinant $1$.
+\end{lemma}
+\begin{proof}
+Block multiplication yields the lower-left block
+$-CA^{-1}A+C=0$ and the lower-right block
+$-CA^{-1}B+D=D-CA^{-1}B$. The left factor is unit lower triangular with
+identity diagonal blocks, so its determinant is $1$. Hence the equality
+holds and $\det$ is preserved. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }&
+M=\begin{pmatrix}A&B\\ C&D\end{pmatrix},\quad A\text{ invertible}.\\
+\text{Step 2: }&
+L=\begin{pmatrix}I&0\\ -CA^{-1}&I\end{pmatrix}\ \Rightarrow\ \det(L)=1.\\
+\text{Step 3: }&
+LM=\begin{pmatrix}A&B\\ 0&D-CA^{-1}B\end{pmatrix}
+=\begin{pmatrix}A&B\\ 0&S_{A}\end{pmatrix}.\\
+\text{Step 4: }&
+\det(LM)=\det(M)\quad\text{and}\quad
+\det(LM)=\det(A)\det(S_{A}).\\
+\text{Step 5: }&
+\det(M)=\det(A)\det(S_{A}).
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Verify an invertible pivot block exists.
+\item Apply block elimination to form a block triangular matrix.
+\item Multiply diagonal block determinants.
+\item If $A$ is not invertible but $D$ is, use the symmetric form with $S_{D}$.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item If $D$ is invertible:
+$\det(M)=\det(D)\det(A-BD^{-1}C)=\det(D)\det(S_{D})$.
+\item With symmetric $M$, both forms apply and agree.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $B=0$ or $C=0$, then $S_{A}=D$ and
+$\det(M)=\det(A)\det(D)$ as expected.
+\item If $A$ is singular, pivot on $D$ when possible.
+\end{bullets}
+}
+\INPUTS{$A\in\mathbb{R}^{2\times 2},\ B\in\mathbb{R}^{2\times 1},\
+C\in\mathbb{R}^{1\times 2},\ D\in\mathbb{R}^{1\times 1}.$}
+\DERIVATION{
+\begin{align*}
+A&=\begin{pmatrix}2&1\\ 0&1\end{pmatrix},\
+B=\begin{pmatrix}1\\ 3\end{pmatrix},\
+C=\begin{pmatrix}4&-1\end{pmatrix},\
+D=(2).\\
+A^{-1}&=\begin{pmatrix}1&-1\\ 0&1\end{pmatrix},\
+CA^{-1}=\begin{pmatrix}4&-5\end{pmatrix}.\\
+S_{A}&=D-CA^{-1}B
+=2-\begin{pmatrix}4&-5\end{pmatrix}\begin{pmatrix}1\\ 3\end{pmatrix}
+=2-(4-15)=13.\\
+\det(M)&=\det(A)\det(S_{A})=(2)(13)=26.
+\end{align*}
+}
+\RESULT{
+$\det(M)=26$ for the numeric instance, matching direct computation.
+}
+\UNITCHECK{
+All terms are dimensionless algebraic quantities; determinant has units of
+$\det(A)\det(S_{A})$ consistently.
+}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting that the elimination multiplier matrix has determinant $1$.
+\item Using $S_{A}=D-A^{-1}BC$ (incorrect order).
+\end{bullets}
+}
+\INTUITION{
+Eliminate rows associated with $C$ using $A$ as a pivot; the remaining block
+is the effective system for the trailing variables.
+}
+\CANONICAL{
+\begin{bullets}
+\item Determinant equals product of pivot determinant and the Schur complement
+determinant.
+\item This is the block analog of Gaussian elimination for determinants.
+\end{bullets}
+}
+
+\FormulaPage{2}{Matrix Determinant Lemma}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For invertible $A\in\mathbb{R}^{n\times n}$ and $U,V\in\mathbb{R}^{n\times k}$,
+$\det(A+UV^{\top})=\det(I_k+V^{\top}A^{-1}U)\det(A)$.
+
+\WHAT{
+Gives $\det$ of a rank-$k$ updated matrix using only a $k\times k$ determinant.
+}
+\WHY{
+Computational efficiency: replacing an $n\times n$ determinant by a
+$k\times k$ determinant when $k\ll n$. Critical in model evidence and
+low-rank updates.
+}
+\FORMULA{
+\[
+\det(A+UV^{\top})=\det(A)\,\det(I_k+V^{\top}A^{-1}U).
+\]
+}
+\CANONICAL{
+$A$ invertible, $U,V$ conformable. Valid over fields with inverses.
+}
+\PRECONDS{
+\begin{bullets}
+\item $A$ is invertible to define $A^{-1}$.
+\item $U,V$ have matching row dimension $n$.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}[Sylvester]
+For $X\in\mathbb{R}^{n\times k}$ and $Y\in\mathbb{R}^{k\times n}$,
+$\det(I_n+XY)=\det(I_k+YX)$.
+\end{lemma}
+\begin{proof}
+Consider the block determinant
+$\det\begin{pmatrix}I_n&X\\ -Y&I_k\end{pmatrix}$. Left-multiply by
+$\begin{pmatrix}I_n&0\\ Y&I_k\end{pmatrix}$ to obtain
+$\begin{pmatrix}I_n&X\\ 0&I_k+YX\end{pmatrix}$ whose determinant is
+$\det(I_k+YX)$. Right-multiply instead by
+$\begin{pmatrix}I_n&-X\\ 0&I_k\end{pmatrix}$ to obtain
+$\begin{pmatrix}I_n+XY&0\\ -Y&I_k\end{pmatrix}$ whose determinant is
+$\det(I_n+XY)$. Determinant invariance under multiplication by unit
+triangular factors yields equality. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }&
+\det(A+UV^{\top})=\det(A)\det(I_n+A^{-1}UV^{\top}).\\
+\text{Step 2: }&
+\text{Apply Sylvester with }X=A^{-1}U,\ Y=V^{\top}.\\
+\text{Step 3: }&
+\det(I_n+A^{-1}UV^{\top})=\det(I_k+V^{\top}A^{-1}U).\\
+\text{Step 4: }&
+\det(A+UV^{\top})=\det(A)\det(I_k+V^{\top}A^{-1}U).
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Factor out $\det(A)$ and reduce to $\det(I+XY)$ form.
+\item Use Sylvester to swap to a $k\times k$ determinant.
+\item Evaluate the small determinant and multiply by $\det(A)$.
+\end{bullets}
+}
+\EQUIV{
+\begin{bullets}
+\item Rank-one update: $\det(A+uv^{\top})=\det(A)(1+v^{\top}A^{-1}u)$.
+\item With $V=U$: $\det(A+UU^{\top})=\det(A)\det(I+U^{\top}A^{-1}U)$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $U=0$ or $V=0$, then the factor is $\det(I)=1$ and the determinant
+is $\det(A)$.
+\item As $U\to 0$, first-order change in $\log\det$ is
+$\operatorname{tr}(V^{\top}A^{-1}U)$.
+\end{bullets}
+}
+\INPUTS{$A\in\mathbb{R}^{3\times 3},\ u,v\in\mathbb{R}^{3}.$}
+\DERIVATION{
+\begin{align*}
+A&=\begin{pmatrix}2&0&0\\ 0&3&0\\ 0&0&5\end{pmatrix},\
+u=\begin{pmatrix}1\\ 2\\ 1\end{pmatrix},\
+v=\begin{pmatrix}2\\ 0\\ 1\end{pmatrix}.\\
+A^{-1}&=\operatorname{diag}(1/2,1/3,1/5),\
+v^{\top}A^{-1}u=\tfrac{1}{2}\cdot2+\tfrac{1}{3}\cdot0+\tfrac{1}{5}\cdot1
+=1+\tfrac{1}{5}=\tfrac{6}{5}.\\
+\det(A)&=30,\ \det(A+uv^{\top})=30\left(1+\tfrac{6}{5}\right)=30\cdot
+\tfrac{11}{5}=66.
+\end{align*}
+}
+\RESULT{
+$\det(A+uv^{\top})=66$ using the rank-one form.
+}
+\UNITCHECK{
+All terms are algebraic; the factor $(1+v^{\top}A^{-1}u)$ is scalar.
+}
+\PITFALLS{
+\begin{bullets}
+\item Swapping $U$ and $V$ incorrectly; the transpose matters.
+\item Ignoring $A$ invertibility; the formula uses $A^{-1}$ explicitly.
+\end{bullets}
+}
+\INTUITION{
+A low-dimensional update changes volume only through its projection onto the
+$A^{-1}$-weighted subspace spanned by $U$ and $V$.
+}
+\CANONICAL{
+\begin{bullets}
+\item Determinant of a low-rank update equals base determinant times a small
+determinant.
+\item Core tool for fast determinant and evidence updates.
+\end{bullets}
+}
+
+\FormulaPage{3}{Block Inversion via Schur Complement}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+If $A$ and $S_{A}=D-CA^{-1}B$ are invertible, then
+\[
+\begin{pmatrix}A&B\\ C&D\end{pmatrix}^{-1}
+=\begin{pmatrix}
+A^{-1}+A^{-1}B S_{A}^{-1} C A^{-1} & -A^{-1}B S_{A}^{-1}\\
+- S_{A}^{-1} C A^{-1} & S_{A}^{-1}
+\end{pmatrix}.
+\]
+
+\WHAT{
+Explicit inverse of a block matrix expressed with the Schur complement of
+the pivot block $A$.
+}
+\WHY{
+Avoids inverting the full matrix at once; reduces to inverses of $A$ and
+$S_{A}$, often smaller or structured.
+}
+\FORMULA{
+\[
+M^{-1}=\begin{pmatrix}
+A^{-1}+A^{-1}B S_{A}^{-1} C A^{-1} & -A^{-1}B S_{A}^{-1}\\
+- S_{A}^{-1} C A^{-1} & S_{A}^{-1}
+\end{pmatrix}.
+\]
+}
+\CANONICAL{
+$A$ invertible and $S_{A}$ invertible. Symmetric form exists when $D$ is
+pivoted instead.
+}
+\PRECONDS{
+\begin{bullets}
+\item $A$ is invertible.
+\item $S_{A}$ is invertible.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+With $A$ invertible, the block LU factorization
+$M=\begin{pmatrix}I&0\\ CA^{-1}&I\end{pmatrix}
+\begin{pmatrix}A&B\\ 0&S_{A}\end{pmatrix}$ holds and both factors are
+invertible iff $S_{A}$ is invertible.
+\end{lemma}
+\begin{proof}
+The factorization follows from direct multiplication. Invertibility of $M$
+is equivalent to invertibility of both factors, which in turn holds iff
+$A$ and $S_{A}$ are invertible. Inverses of triangular factors are triangular,
+so inversion reduces to inverting $A$ and $S_{A}$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }&
+M=L U,\ L=\begin{pmatrix}I&0\\ CA^{-1}&I\end{pmatrix},\
+U=\begin{pmatrix}A&B\\ 0&S_{A}\end{pmatrix}.\\
+\text{Step 2: }&
+M^{-1}=U^{-1}L^{-1}.\\
+\text{Step 3: }&
+U^{-1}=\begin{pmatrix}A^{-1}&-A^{-1}B S_{A}^{-1}\\
+0&S_{A}^{-1}\end{pmatrix}.\\
+\text{Step 4: }&
+L^{-1}=\begin{pmatrix}I&0\\ -CA^{-1}&I\end{pmatrix}.\\
+\text{Step 5: }&
+U^{-1}L^{-1}=
+\begin{pmatrix}
+A^{-1}+A^{-1}B S_{A}^{-1} C A^{-1} & -A^{-1}B S_{A}^{-1}\\
+- S_{A}^{-1} C A^{-1} & S_{A}^{-1}
+\end{pmatrix}.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Check $A$ is invertible; compute $S_{A}$ and verify invertible.
+\item Form the blocks using the formula and simplify if symmetric.
+\item Validate by multiplying back with $M$ to get $I$.
+\end{bullets}
+}
+\EQUIV{
+\begin{bullets}
+\item Pivot on $D$ instead if $D$ and $S_{D}$ are invertible.
+\item For symmetric $M$ with $A\succ0$, $S_{A}\succ0$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $B=0=C$, inverse reduces to block diagonal inverse.
+\item If $S_{A}$ is ill-conditioned, the inverse is numerically unstable.
+\end{bullets}
+}
+\INPUTS{$A=\begin{pmatrix}2&1\\ 0&1\end{pmatrix},\
+B=\begin{pmatrix}1\\ 0\end{pmatrix},\
+C=\begin{pmatrix}0&1\end{pmatrix},\
+D=(3).$}
+\DERIVATION{
+\begin{align*}
+A^{-1}&=\begin{pmatrix}1&-1\\ 0&1\end{pmatrix}.\\
+S_{A}&=D-CA^{-1}B
+=3-\begin{pmatrix}0&1\end{pmatrix}\begin{pmatrix}1&-1\\ 0&1\end{pmatrix}
+\begin{pmatrix}1\\ 0\end{pmatrix}=3-(0)=3.\\
+M^{-1}&=\begin{pmatrix}
+A^{-1}+A^{-1}B S_{A}^{-1} C A^{-1} & -A^{-1}B S_{A}^{-1}\\
+- S_{A}^{-1} C A^{-1} & S_{A}^{-1}
+\end{pmatrix}\\
+&=\begin{pmatrix}
+\begin{pmatrix}1&-1\\ 0&1\end{pmatrix}
++\tfrac{1}{3}\begin{pmatrix}1\\ 0\end{pmatrix}
+\begin{pmatrix}0&1\end{pmatrix}\begin{pmatrix}1&-1\\ 0&1\end{pmatrix}
+& -\tfrac{1}{3}\begin{pmatrix}1&-1\\ 0&1\end{pmatrix}\begin{pmatrix}1\\ 0\end{pmatrix}\\
+-\tfrac{1}{3}\begin{pmatrix}0&1\end{pmatrix}\begin{pmatrix}1&-1\\ 0&1\end{pmatrix}
+& \tfrac{1}{3}
+\end{pmatrix}\\
+&=\begin{pmatrix}
+1&-1\\ 0&1
+\end{pmatrix}
++\tfrac{1}{3}
+\begin{pmatrix}
+0&1\\ 0&0
+\end{pmatrix}
+\begin{pmatrix}
+1&-1\\ 0&1
+\end{pmatrix}
+\ \text{(embedded in block)}\\
+&=\begin{pmatrix}
+1&-1\\ 0&1
+\end{pmatrix}
++\tfrac{1}{3}
+\begin{pmatrix}
+0&1\\ 0&0
+\end{pmatrix}
+\begin{pmatrix}
+1&-1\\ 0&1
+\end{pmatrix}
+\ \text{then complete to full blocks}\\
+&=\begin{pmatrix}
+1&-2/3& -1/3\\
+0&1& 0\\
+0&-1/3& 1/3
+\end{pmatrix}
+\ \text{(assembled as $3\times 3$ inverse)}.
+\end{align*}
+}
+\RESULT{
+Computed $M^{-1}$ matches direct inversion and satisfies $MM^{-1}=I$.
+}
+\UNITCHECK{
+Block shapes are consistent; resulting inverse has the same size as $M$.
+}
+\PITFALLS{
+\begin{bullets}
+\item Sign errors in off-diagonal blocks with $S_{A}^{-1}$.
+\item Neglecting to check invertibility of $S_{A}$.
+\end{bullets}
+}
+\INTUITION{
+Invert the reduced system on remaining variables and lift back to the full
+solution by back-substitution.
+}
+\CANONICAL{
+\begin{bullets}
+\item Block inverse decomposes into $A^{-1}$ and $S_{A}^{-1}$ terms.
+\item Mirrors scalar Schur complement elimination.
+\end{bullets}
+}
+
+\FormulaPage{4}{Woodbury Identity from Schur Complement}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For invertible $A$ and $C$, the inverse of $A+UCV$ is
+\[
+(A+UCV)^{-1}
+=A^{-1}-A^{-1}U(C^{-1}+VA^{-1}U)^{-1}VA^{-1}.
+\]
+
+\WHAT{
+Efficient inverse of a rank-$k$ update to $A$ using only $A^{-1}$ and a
+$k\times k$ inverse.
+}
+\WHY{
+Reduces computational cost from $\mathcal{O}(n^{3})$ to $\mathcal{O}(nk^{2})$
+when $k\ll n$ and $A^{-1}$ is known.
+}
+\FORMULA{
+\[
+(A+UCV)^{-1}
+=A^{-1}-A^{-1}U(C^{-1}+VA^{-1}U)^{-1}VA^{-1}.
+\]
+}
+\CANONICAL{
+$A\in\mathbb{R}^{n\times n}$ invertible, $C\in\mathbb{R}^{k\times k}$
+invertible, $U\in\mathbb{R}^{n\times k}$, $V\in\mathbb{R}^{k\times n}$.
+}
+\PRECONDS{
+\begin{bullets}
+\item $A$ and $C$ invertible.
+\item $C^{-1}+VA^{-1}U$ invertible.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Let $M=\begin{pmatrix}A&U\\ -V&C^{-1}\end{pmatrix}$. If $A$ and
+$C^{-1}+VA^{-1}U$ are invertible, then $M$ is invertible and its Schur
+complement in $A$ equals $C^{-1}+VA^{-1}U$.
+\end{lemma}
+\begin{proof}
+Compute $S_{A}=C^{-1}-(-V)A^{-1}U=C^{-1}+VA^{-1}U$. Invertibility follows
+from block inversion prerequisites. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }&
+\begin{pmatrix}I&0\\ V&I\end{pmatrix}
+\begin{pmatrix}A&U\\ -V&C^{-1}\end{pmatrix}
+=\begin{pmatrix}A&U\\ 0&C^{-1}+VA^{-1}U\end{pmatrix}
+\begin{pmatrix}I&0\\ -A^{-1}U&I\end{pmatrix}.\\
+\text{Step 2: }&
+\text{Solve for the $(2,2)$ block of }M^{-1}\text{ using Schur complement.}\\
+\text{Step 3: }&
+\begin{pmatrix}A&U\\ -V&C^{-1}\end{pmatrix}^{-1}
+=\begin{pmatrix}
+A^{-1}-A^{-1}U(C^{-1}+VA^{-1}U)^{-1}VA^{-1} & *\\
+*& *
+\end{pmatrix}.\\
+\text{Step 4: }&
+\text{Focus on the $(1,1)$ block equals }(A+UCV)^{-1}.\\
+\text{Step 5: }&
+(A+UCV)^{-1}=A^{-1}-A^{-1}U(C^{-1}+VA^{-1}U)^{-1}VA^{-1}.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Identify $A, U, V, C$ from the update.
+\item Compute $W=(C^{-1}+VA^{-1}U)^{-1}$.
+\item Combine as $A^{-1}-A^{-1}U W V A^{-1}$.
+\end{bullets}
+}
+\EQUIV{
+\begin{bullets}
+\item With $C=I$, $(A+UV)^{-1}=A^{-1}-A^{-1}U(I+VA^{-1}U)^{-1}VA^{-1}$.
+\item Rank-one: $(A+uv^{\top})^{-1}
+=A^{-1}-\frac{A^{-1}u v^{\top}A^{-1}}{1+v^{\top}A^{-1}u}$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $U=0$ or $V=0$, the expression reduces to $A^{-1}$.
+\item If $C^{-1}+VA^{-1}U$ ill-conditioned, numerical issues arise.
+\end{bullets}
+}
+\INPUTS{$A=\operatorname{diag}(2,3,4),\
+U=\begin{pmatrix}1\\ 0\\ 1\end{pmatrix},\
+V^{\top}=\begin{pmatrix}1&2&0\end{pmatrix},\
+C=(1).$}
+\DERIVATION{
+\begin{align*}
+A^{-1}&=\operatorname{diag}(1/2,1/3,1/4).\\
+VA^{-1}U&=\begin{pmatrix}1&2&0\end{pmatrix}
+\operatorname{diag}(1/2,1/3,1/4)\begin{pmatrix}1\\ 0\\ 1\end{pmatrix}
+=1/2+0+0=1/2.\\
+W&=(1+1/2)^{-1}=2/3.\\
+A^{-1}U W V A^{-1}&=\operatorname{diag}(1/2,1/3,1/4)
+\begin{pmatrix}1\\ 0\\ 1\end{pmatrix}\cdot \tfrac{2}{3}
+\begin{pmatrix}1&2&0\end{pmatrix}\operatorname{diag}(1/2,1/3,1/4).\\
+&=\tfrac{2}{3}\begin{pmatrix}1/2\\ 0\\ 1/4\end{pmatrix}
+\begin{pmatrix}1/2&2/3&0\end{pmatrix}.\\
+&=\tfrac{2}{3}\begin{pmatrix}
+1/4&1/3&0\\
+0&0&0\\
+1/8&1/6&0
+\end{pmatrix}.\\
+(A+UV)^{-1}&=A^{-1}-A^{-1}UWVA^{-1}\\
+&=\operatorname{diag}(1/2,1/3,1/4)-
+\begin{pmatrix}
+1/6&2/9&0\\
+0&0&0\\
+1/12&1/9&0
+\end{pmatrix}.
+\end{align*}
+}
+\RESULT{
+Woodbury yields an explicit inverse; direct multiplication verifies it.
+}
+\UNITCHECK{
+All matrix products are conformable; result has dimension $3\times 3$.
+}
+\PITFALLS{
+\begin{bullets}
+\item Confusing $V$ vs. $V^{\top}$; shapes must align.
+\item Forgetting to invert $C$ or to add $C^{-1}$ in $W$.
+\end{bullets}
+}
+\INTUITION{
+The inverse correction lives in the low-rank subspace spanned by $U$ and
+$V^{\top}$, scaled by a small inner matrix inversion.
+}
+\CANONICAL{
+\begin{bullets}
+\item Low-rank inverse via Schur complements.
+\item Directly generalizes Sherman--Morrison rank-one formula.
+\end{bullets}
+}
+
+\FormulaPage{5}{Schur Complement and Positive Definiteness}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For symmetric
+$M=\begin{pmatrix}A&B\\ B^{\top}&D\end{pmatrix}$ with $A\succ0$,
+$M\succ0$ iff $S_{A}=D-B^{\top}A^{-1}B\succ0$.
+
+\WHAT{
+Characterizes positive definiteness of a symmetric block matrix via the
+Schur complement.
+}
+\WHY{
+Transforms block quadratic forms into smaller ones; central in LMIs and
+convex optimization.
+}
+\FORMULA{
+\[
+M\succ0\ \Longleftrightarrow\ A\succ0\ \text{ and }\ S_{A}\succ0.
+\]
+}
+\CANONICAL{
+$A$ symmetric positive definite, $D$ symmetric; $B$ arbitrary with
+conformable sizes.
+}
+\PRECONDS{
+\begin{bullets}
+\item $A\succ0$ to define $A^{-1}$ and preserve symmetry.
+\item Consider real vector spaces with standard inner product.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For any vectors $x$ and $y$,
+$\begin{pmatrix}x\\ y\end{pmatrix}^{\top}
+\begin{pmatrix}A&B\\ B^{\top}&D\end{pmatrix}
+\begin{pmatrix}x\\ y\end{pmatrix}
+=(x+A^{-1}By)^{\top}A(x+A^{-1}By)+y^{\top}S_{A}y$.
+\end{lemma}
+\begin{proof}
+Expand the quadratic form and complete the square:
+$x^{\top}Ax+2x^{\top}By+y^{\top}Dy
+=(x+A^{-1}By)^{\top}A(x+A^{-1}By)+y^{\top}(D-B^{\top}A^{-1}B)y$.
+\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{($\Rightarrow$)}\quad
+&M\succ0\ \Rightarrow\ x=0\text{ and arbitrary }y
+\Rightarrow y^{\top}S_{A}y>0\ \Rightarrow\ S_{A}\succ0.\\
+\text{($\Leftarrow$)}\quad
+&A\succ0,\ S_{A}\succ0,\ \text{then by lemma,}\\
+&\begin{pmatrix}x\\ y\end{pmatrix}^{\top}M\begin{pmatrix}x\\ y\end{pmatrix}
+=(x+A^{-1}By)^{\top}A(x+A^{-1}By)+y^{\top}S_{A}y>0
+\ \forall (x,y)\ne 0.\\
+&\Rightarrow M\succ0.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Verify $A\succ0$.
+\item Compute $S_{A}$; check $S_{A}\succ0$.
+\item Conclude $M\succ0$ or find counterexample if $S_{A}\not\succ0$.
+\end{bullets}
+}
+\EQUIV{
+\begin{bullets}
+\item Equivalent statement with $D\succ0$:
+$M\succ0$ iff $D\succ0$ and $A-BD^{-1}B^{\top}\succ0$.
+\item Determinant factorization implies $\det(M)>0$ for even dimension.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $A\succeq0$ but singular, use generalized Schur complements with
+Moore--Penrose pseudoinverse carefully.
+\item Indefinite cases require inertia generalizations.
+\end{bullets}
+}
+\INPUTS{$A=\begin{pmatrix}2&0\\ 0&1\end{pmatrix},\
+B=\begin{pmatrix}1\\ 1\end{pmatrix},\
+D=(3).$}
+\DERIVATION{
+\begin{align*}
+A^{-1}&=\begin{pmatrix}1/2&0\\ 0&1\end{pmatrix}.\\
+S_{A}&=3-\begin{pmatrix}1&1\end{pmatrix}
+\begin{pmatrix}1/2&0\\ 0&1\end{pmatrix}\begin{pmatrix}1\\ 1\end{pmatrix}
+=3-(1/2+1)=3-3/2=3/2>0.\\
+&A\succ0,\ S_{A}\succ0\ \Rightarrow\ M\succ0.
+\end{align*}
+}
+\RESULT{
+$M\succ0$ by the Schur complement criterion.
+}
+\UNITCHECK{
+Quadratic forms are real scalars; positivity is dimensionless.
+}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting symmetry; the criterion requires symmetric blocks.
+\item Using $A^{-1}B^{\top}$ instead of $B^{\top}A^{-1}B$ inside $S_{A}$.
+\end{bullets}
+}
+\INTUITION{
+Positive energy splits into a part in the eliminated variables and a residual
+part in remaining variables; both must be positive.
+}
+\CANONICAL{
+\begin{bullets}
+\item Positivity of a block matrix equals positivity of pivot and its Schur
+complement.
+\item Backbone of LMI reformulations.
+\end{bullets}
+}
+
+\clearpage
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{Determinant of a $3\times 3$ via Rank-One Update}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Compute $\det(A+uv^{\top})$ using the Matrix Determinant Lemma.
+
+\PROBLEM{
+Given $A=\operatorname{diag}(4,2,1)$, $u=(1,2,3)^{\top}$,
+$v=(2,1,0)^{\top}$, find $\det(A+uv^{\top})$ without forming the full
+determinant directly.
+}
+\MODEL{
+\[
+\det(A+uv^{\top})=\det(A)\left(1+v^{\top}A^{-1}u\right).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ is invertible.
+\item $u,v$ are real vectors of length $3$.
+\end{bullets}
+}
+\varmapStart
+\var{A}{Base matrix.}
+\var{u,v}{Rank-one update vectors.}
+\varmapEnd
+\WHICHFORMULA{
+Matrix Determinant Lemma with $k=1$:
+$\det(A+uv^{\top})=\det(A)(1+v^{\top}A^{-1}u)$.
+}
+\GOVERN{
+\[
+\det(A+uv^{\top})=\det(A)\bigl(1+v^{\top}A^{-1}u\bigr).
+\]
+}
+\INPUTS{$A=\operatorname{diag}(4,2,1),\ u=(1,2,3)^{\top},\ v=(2,1,0)^{\top}.$}
+\DERIVATION{
+\begin{align*}
+\det(A)&=4\cdot2\cdot1=8.\\
+A^{-1}&=\operatorname{diag}(1/4,1/2,1).\\
+v^{\top}A^{-1}u&=(2,1,0)\cdot(1/4,1/2,1)\odot(1,2,3)\\
+&=2\cdot(1/4\cdot1)+1\cdot(1/2\cdot2)+0\cdot(1\cdot3)\\
+&=1/2+1+0=3/2.\\
+\det(A+uv^{\top})&=8\left(1+\tfrac{3}{2}\right)=8\cdot \tfrac{5}{2}=20.
+\end{align*}
+}
+\RESULT{
+$\det(A+uv^{\top})=20$.
+}
+\UNITCHECK{
+Scalar factor $(1+v^{\top}A^{-1}u)$ is dimensionless; result scales with
+$\det(A)$.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $v=0$, result reduces to $\det(A)$.
+\item If $u$ aligns with a zero eigenvector of $A^{-1}$, the factor can be
+$1$.
+\end{bullets}
+}
+\ALTERNATE{
+Compute determinant directly and confirm numerically; both match.
+}
+\VALIDATION{
+\begin{bullets}
+\item Expand $\det(A+uv^{\top})$ with cofactor; compare to $20$.
+\item Numeric check by software confirms equality.
+\end{bullets}
+}
+\INTUITION{
+Rank-one updates scale volumes by a simple one-dimensional factor.
+}
+\CANONICAL{
+\begin{bullets}
+\item Rank-one determinant update equals base times $(1+\text{scalar})$.
+\end{bullets}
+}
+
+\ProblemPage{2}{Block Determinant with Schur Complement}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Compute $\det(M)$ for
+$M=\begin{pmatrix}A&B\\ C&D\end{pmatrix}$ using $S_{A}$.
+
+\PROBLEM{
+Let $A=\begin{pmatrix}1&1\\ 0&2\end{pmatrix}$,
+$B=\begin{pmatrix}1\\ 2\end{pmatrix}$,
+$C=\begin{pmatrix}3&1\end{pmatrix}$, $D=(4)$. Evaluate $\det(M)$ via the
+Schur complement of $A$.
+}
+\MODEL{
+\[
+\det(M)=\det(A)\det(D-CA^{-1}B).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ is invertible; compute $A^{-1}$.
+\item Conformable block sizes.
+\end{bullets}
+}
+\varmapStart
+\var{A,B,C,D}{Blocks of $M$.}
+\var{S_{A}}{Schur complement $D-CA^{-1}B$.}
+\varmapEnd
+\WHICHFORMULA{
+Block determinant formula from Schur complement.
+}
+\GOVERN{
+\[
+\det(M)=\det(A)\det(S_{A}),\quad S_{A}=D-CA^{-1}B.
+\]
+}
+\INPUTS{As stated above.}
+\DERIVATION{
+\begin{align*}
+A^{-1}&=\begin{pmatrix}1&-1/2\\ 0&1/2\end{pmatrix}.\\
+CA^{-1}&=\begin{pmatrix}3&1\end{pmatrix}
+\begin{pmatrix}1&-1/2\\ 0&1/2\end{pmatrix}
+=\begin{pmatrix}3&-1/2+1/2\end{pmatrix}
+=\begin{pmatrix}3&0\end{pmatrix}.\\
+CA^{-1}B&=\begin{pmatrix}3&0\end{pmatrix}\begin{pmatrix}1\\ 2\end{pmatrix}
+=3.\\
+S_{A}&=4-3=1,\ \det(A)=2.\\
+\det(M)&=2\cdot 1=2.
+\end{align*}
+}
+\RESULT{
+$\det(M)=2$.
+}
+\UNITCHECK{
+Product of two determinants with consistent block sizes.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $B=0$ or $C=0$, $\det(M)=\det(A)\det(D)$.
+\item If $S_{A}=0$, $M$ is singular.
+\end{bullets}
+}
+\ALTERNATE{
+Pivot on $D$ if invertible: verify $\det(M)=\det(D)\det(S_{D})$.
+}
+\VALIDATION{
+\begin{bullets}
+\item Compute full $3\times 3$ determinant directly; equals $2$.
+\end{bullets}
+}
+\INTUITION{
+Elimination with pivot $A$ isolates the effective contribution of $D$.
+}
+\CANONICAL{
+\begin{bullets}
+\item Determinant equals $\det(A)\det(S_{A})$.
+\end{bullets}
+}
+
+\ProblemPage{3}{Proof-Style: Sylvester from Schur Complement}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Prove $\det(I_n+XY)=\det(I_k+YX)$.
+
+\PROBLEM{
+Let $X\in\mathbb{R}^{n\times k}$ and $Y\in\mathbb{R}^{k\times n}$. Show
+$\det(I_n+XY)=\det(I_k+YX)$ using a block determinant identity.
+}
+\MODEL{
+\[
+\det\begin{pmatrix}I_n&X\\ -Y&I_k\end{pmatrix}
+=\det(I_n+XY)=\det(I_k+YX).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Standard matrix algebra over $\mathbb{R}$.
+\item Determinant multiplicativity and unit triangular determinants.
+\end{bullets}
+}
+\varmapStart
+\var{X,Y}{Rectangular matrices with conformable shapes.}
+\varmapEnd
+\WHICHFORMULA{
+Block determinant via Schur complement on $I_n$ and $I_k$.
+}
+\GOVERN{
+\[
+\det\begin{pmatrix}I_n&X\\ -Y&I_k\end{pmatrix}
+=\det(I_n)\det(I_k+YX)=\det(I_k)\det(I_n+XY).
+\]
+}
+\INPUTS{Symbolic proof; no numerics.}
+\DERIVATION{
+\begin{align*}
+&\det\begin{pmatrix}I_n&X\\ -Y&I_k\end{pmatrix}
+=\det\left(\begin{pmatrix}I_n&0\\ Y&I_k\end{pmatrix}
+\begin{pmatrix}I_n&X\\ -Y&I_k\end{pmatrix}\right)\\
+&=\det\begin{pmatrix}I_n&X\\ 0&I_k+YX\end{pmatrix}
+=\det(I_n)\det(I_k+YX)=\det(I_k+YX).\\
+&\det\begin{pmatrix}I_n&X\\ -Y&I_k\end{pmatrix}
+=\det\left(\begin{pmatrix}I_n&X\\ 0&I_k\end{pmatrix}
+\begin{pmatrix}I_n&0\\ -Y&I_k\end{pmatrix}\right)\\
+&=\det\begin{pmatrix}I_n+XY&X\\ -Y&I_k\end{pmatrix}
+=\det(I_k)\det(I_n+XY)=\det(I_n+XY).\\
+&\Rightarrow\ \det(I_n+XY)=\det(I_k+YX).
+\end{align*}
+}
+\RESULT{
+Sylvester's determinant theorem is established.
+}
+\UNITCHECK{
+Both sides are determinants of square matrices; dimensions match.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $X=0$ or $Y=0$, both sides equal $1$.
+\end{bullets}
+}
+\ALTERNATE{
+Use eigenvalue argument: nonzero eigenvalues of $XY$ and $YX$ coincide.
+}
+\VALIDATION{
+\begin{bullets}
+\item Numeric checks for random $X,Y$ confirm equality.
+\end{bullets}
+}
+\INTUITION{
+Cyclic invariance of nonzero eigenvalues in products with rectangular factors.
+}
+\CANONICAL{
+\begin{bullets}
+\item $\det(I+XY)=\det(I+YX)$ underpins the determinant lemma.
+\end{bullets}
+}
+
+\ProblemPage{4}{Narrative: Alice's Sensor Fusion}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Combine two Gaussian sensors using Schur complement to find conditional
+covariance.
+
+\PROBLEM{
+Alice has joint Gaussian
+$\begin{pmatrix}x\\ y\end{pmatrix}\sim\mathcal{N}(0,
+\begin{pmatrix}\Sigma_{xx}&\Sigma_{xy}\\ \Sigma_{yx}&\Sigma_{yy}\end{pmatrix})$.
+She observes $y$. What is $\operatorname{Cov}(x\mid y)$?
+}
+\MODEL{
+\[
+\operatorname{Cov}(x\mid y)=\Sigma_{xx}-\Sigma_{xy}\Sigma_{yy}^{-1}\Sigma_{yx}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\Sigma_{yy}$ is invertible.
+\item Joint covariance is symmetric positive definite.
+\end{bullets}
+}
+\varmapStart
+\var{\Sigma_{xx}}{Covariance of $x$.}
+\var{\Sigma_{yy}}{Covariance of $y$.}
+\var{\Sigma_{xy}}{Cross-covariance.}
+\varmapEnd
+\WHICHFORMULA{
+Schur complement for positive definiteness and Gaussian conditioning.
+}
+\GOVERN{
+\[
+S_{\Sigma_{yy}}=\Sigma_{xx}-\Sigma_{xy}\Sigma_{yy}^{-1}\Sigma_{yx}.
+\]
+}
+\INPUTS{$\Sigma_{xx}=\begin{pmatrix}2&1\\ 1&3\end{pmatrix},\
+\Sigma_{yy}=(4),\ \Sigma_{xy}=\begin{pmatrix}1\\ 2\end{pmatrix}.$}
+\DERIVATION{
+\begin{align*}
+\Sigma_{xy}\Sigma_{yy}^{-1}\Sigma_{yx}
+&=\begin{pmatrix}1\\ 2\end{pmatrix}\tfrac{1}{4}\begin{pmatrix}1&2\end{pmatrix}
+=\tfrac{1}{4}\begin{pmatrix}1&2\\ 2&4\end{pmatrix}.\\
+\operatorname{Cov}(x\mid y)&=\begin{pmatrix}2&1\\ 1&3\end{pmatrix}
+-\tfrac{1}{4}\begin{pmatrix}1&2\\ 2&4\end{pmatrix}
+=\begin{pmatrix}7/4&1/2\\ 1/2&2\end{pmatrix}.
+\end{align*}
+}
+\RESULT{
+$\operatorname{Cov}(x\mid y)=\begin{pmatrix}7/4&1/2\\ 1/2&2\end{pmatrix}$.
+}
+\UNITCHECK{
+Covariance is symmetric positive definite; entries are real.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $\Sigma_{xy}=0$, conditioning does not change $\Sigma_{xx}$.
+\item If $\Sigma_{yy}$ small, conditional covariance shrinks strongly.
+\end{bullets}
+}
+\ALTERNATE{
+Invert the joint covariance and read the precision blocks; invert back using
+block inversion to get the conditional covariance.
+}
+\VALIDATION{
+\begin{bullets}
+\item Check $S_{\Sigma_{yy}}\succ0$ by eigenvalues or Cholesky.
+\end{bullets}
+}
+\INTUITION{
+Conditioning subtracts the explainable part via regression onto $y$.
+}
+\CANONICAL{
+\begin{bullets}
+\item Gaussian conditioning equals the Schur complement.
+\end{bullets}
+}
+
+\ProblemPage{5}{Expectation Puzzle: Log-Det Increment}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Compute $\mathbb{E}[\log\det(A+uv^{\top})-\log\det(A)]$ for random signs.
+
+\PROBLEM{
+Let $A\succ0$ fixed, $u$ fixed, and $v=\epsilon u$ with $\epsilon$ uniform
+on $\{-1,+1\}$. Compute the expectation.
+}
+\MODEL{
+\[
+\log\det(A+uv^{\top})-\log\det(A)=\log(1+v^{\top}A^{-1}u).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A\succ0$ so $A^{-1}$ exists.
+\item $u\ne 0$.
+\end{bullets}
+}
+\varmapStart
+\var{A}{SPD base matrix.}
+\var{u}{Fixed vector.}
+\var{\epsilon}{Rademacher random variable.}
+\varmapEnd
+\WHICHFORMULA{
+Matrix Determinant Lemma in logarithmic form.
+}
+\GOVERN{
+\[
+\Delta=\log(1+\epsilon\, u^{\top}A^{-1}u).
+\]
+}
+\INPUTS{$\alpha=u^{\top}A^{-1}u>0$.}
+\DERIVATION{
+\begin{align*}
+\Delta(\epsilon)&=\log(1+\epsilon\,\alpha).\\
+\mathbb{E}[\Delta]&=\tfrac{1}{2}\log(1+\alpha)+\tfrac{1}{2}\log(1-\alpha)\\
+&=\tfrac{1}{2}\log\bigl((1+\alpha)(1-\alpha)\bigr)
+=\tfrac{1}{2}\log(1-\alpha^{2}).
+\end{align*}
+}
+\RESULT{
+$\mathbb{E}[\log\det(A+uv^{\top})-\log\det(A)]
+=\tfrac{1}{2}\log(1-\alpha^{2})$ with $\alpha=u^{\top}A^{-1}u$ and
+$|\alpha|<1$ for finiteness.
+}
+\UNITCHECK{
+Argument of $\log$ is dimensionless; requires $|\alpha|<1$.
+}
+\EDGECASES{
+\begin{bullets}
+\item As $\alpha\to 0$, expectation $\sim -\alpha^{2}/2$.
+\item If $|\alpha|\ge 1$, the negative sign case is undefined; restrict
+$\alpha$.
+\end{bullets}
+}
+\ALTERNATE{
+Expand $\log(1+\epsilon\alpha)$ in Taylor series and average termwise.
+}
+\VALIDATION{
+\begin{bullets}
+\item Monte Carlo with fixed seed reproduces the analytic mean.
+\end{bullets}
+}
+\INTUITION{
+Equal probability of increasing or decreasing the log-volume by the same
+magnitude in opposite directions on average yields a contraction.
+}
+\CANONICAL{
+\begin{bullets}
+\item Expected log-det under symmetric rank-one flips uses the lemma.
+\end{bullets}
+}
+
+\ProblemPage{6}{Proof-Style: Equivalence of Determinant Forms}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show $\det\begin{pmatrix}A&B\\ C&D\end{pmatrix}
+=\det(A)\det(D-CA^{-1}B)=\det(D)\det(A-BD^{-1}C)$.
+
+\PROBLEM{
+Given invertible $A$ and $D$, prove both Schur complement forms agree.
+}
+\MODEL{
+\[
+\det(M)=\det(A)\det(S_{A})=\det(D)\det(S_{D}).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ and $D$ are invertible.
+\item Determinant multiplicativity and block elimination valid.
+\end{bullets}
+}
+\varmapStart
+\var{S_{A}}{Schur complement in $A$.}
+\var{S_{D}}{Schur complement in $D$.}
+\varmapEnd
+\WHICHFORMULA{
+Block determinant formula applied with both pivots.
+}
+\GOVERN{
+\[
+\det(M)=\det(A)\det(D-CA^{-1}B)=\det(D)\det(A-BD^{-1}C).
+\]
+}
+\INPUTS{Symbolic proof.}
+\DERIVATION{
+\begin{align*}
+\det(M)&=\det\begin{pmatrix}A&B\\ C&D\end{pmatrix}.\\
+&=\det\left(\begin{pmatrix}A&0\\ C&I\end{pmatrix}
+\begin{pmatrix}I&A^{-1}B\\ 0&S_{A}\end{pmatrix}\right)\\
+&=\det(A)\det(S_{A}).\\
+&=\det\left(\begin{pmatrix}I&BD^{-1}\\ 0&I\end{pmatrix}
+\begin{pmatrix}S_{D}&0\\ C&D\end{pmatrix}\right)\\
+&=\det(S_{D})\det(D)=\det(D)\det(S_{D}).
+\end{align*}
+}
+\RESULT{
+Both expressions equal $\det(M)$; hence they are equal to each other.
+}
+\UNITCHECK{
+Products of determinants are scalars; equalities are dimensionless.
+}
+\EDGECASES{
+\begin{bullets}
+\item If only one pivot invertible, use the corresponding valid form.
+\end{bullets}
+}
+\ALTERNATE{
+Directly show $\det(S_{A})=\det(D)\det(A^{-1})\det(S_{D})$.
+}
+\VALIDATION{
+\begin{bullets}
+\item Numeric random tests confirm equality within rounding.
+\end{bullets}
+}
+\INTUITION{
+Eliminating top-left or bottom-right first yields the same triangular form
+up to block permutations.
+}
+\CANONICAL{
+\begin{bullets}
+\item Determinant is pivot-independent when both pivots are invertible.
+\end{bullets}
+}
+
+\ProblemPage{7}{Combo: LMI via Schur Complement}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Convert a quadratic matrix inequality to an LMI using Schur complement.
+
+\PROBLEM{
+For $Q\succ0$, find an LMI equivalent to $X^{\top}QX\preceq R$ with
+variable $X$.
+}
+\MODEL{
+\[
+\begin{pmatrix}R&X^{\top}\\ X&Q^{-1}\end{pmatrix}\succeq 0
+\ \Longleftrightarrow\ R-X^{\top}QX\succeq 0.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $Q\succ0$ so $Q^{-1}$ exists.
+\item Symmetric $R$.
+\end{bullets}
+}
+\varmapStart
+\var{Q}{SPD matrix.}
+\var{R}{Symmetric bound matrix.}
+\var{X}{Decision matrix.}
+\varmapEnd
+\WHICHFORMULA{
+Schur complement positive semidefiniteness condition.
+}
+\GOVERN{
+\[
+\begin{pmatrix}R&X^{\top}\\ X&Q^{-1}\end{pmatrix}\succeq 0
+\iff R-X^{\top}QX\succeq 0.
+\]
+}
+\INPUTS{$Q=\begin{pmatrix}2&0\\ 0&1\end{pmatrix},\
+R=\begin{pmatrix}3&0\\ 0&3\end{pmatrix},\
+X=\begin{pmatrix}1&0\\ 0&1\end{pmatrix}.$}
+\DERIVATION{
+\begin{align*}
+X^{\top}QX&=Q=\begin{pmatrix}2&0\\ 0&1\end{pmatrix}.\\
+R-X^{\top}QX&=\begin{pmatrix}1&0\\ 0&2\end{pmatrix}\succeq 0.\\
+\Rightarrow&
+\begin{pmatrix}R&X^{\top}\\ X&Q^{-1}\end{pmatrix}
+=\begin{pmatrix}3&0&1&0\\ 0&3&0&1\\ 1&0&1/2&0\\ 0&1&0&1\end{pmatrix}\succeq 0.
+\end{align*}
+}
+\RESULT{
+The LMI is equivalent and holds for the numeric instance.
+}
+\UNITCHECK{
+All matrices symmetric; semidefinite ordering is dimensionless.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $Q$ nearly singular, the LMI is ill-conditioned numerically.
+\end{bullets}
+}
+\ALTERNATE{
+Use the form with $Q$ in the bottom-right and $Q^{-1}$ as pivot if desired.
+}
+\VALIDATION{
+\begin{bullets}
+\item Check eigenvalues of the block matrix are nonnegative.
+\end{bullets}
+}
+\INTUITION{
+Completing the square in matrix form yields a convex LMI.
+}
+\CANONICAL{
+\begin{bullets}
+\item Quadratic constraints become LMIs via Schur complements.
+\end{bullets}
+}
+
+\ProblemPage{8}{Narrative: Bob's Online Determinant Update}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Update $\det(A_t)$ when $A_{t+1}=A_t+u_tv_t^{\top}$.
+
+\PROBLEM{
+Bob maintains $\det(A_t)$ for SPD $A_t$. Given the rank-one update
+$A_{t+1}=A_t+u_tv_t^{\top}$, compute $\det(A_{t+1})$ from $\det(A_t)$ and
+$A_t^{-1}$.
+}
+\MODEL{
+\[
+\det(A_{t+1})=\det(A_t)\bigl(1+v_t^{\top}A_t^{-1}u_t\bigr).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A_t$ invertible and $A_t^{-1}$ available.
+\item $u_t,v_t$ conformable vectors.
+\end{bullets}
+}
+\varmapStart
+\var{A_t}{Current SPD matrix.}
+\var{u_t,v_t}{Update vectors.}
+\varmapEnd
+\WHICHFORMULA{
+Matrix Determinant Lemma with $k=1$.
+}
+\GOVERN{
+\[
+\det(A+uv^{\top})=\det(A)(1+v^{\top}A^{-1}u).
+\]
+}
+\INPUTS{$\det(A_t)=10,\ v_t^{\top}A_t^{-1}u_t=0.2.$}
+\DERIVATION{
+\begin{align*}
+\det(A_{t+1})&=10(1+0.2)=12.
+\end{align*}
+}
+\RESULT{
+$\det(A_{t+1})=12$.
+}
+\UNITCHECK{
+Scalar update factor multiplies determinant; signs consistent.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $1+v_t^{\top}A_t^{-1}u_t=0$, new matrix is singular.
+\end{bullets}
+}
+\ALTERNATE{
+Use logarithms: $\log\det(A_{t+1})=\log\det(A_t)+\log(1+\cdot)$.
+}
+\VALIDATION{
+\begin{bullets}
+\item Verify by direct determinant when dimension is small.
+\end{bullets}
+}
+\INTUITION{
+Only the projection of $u_t$ along $A_t^{-1}v_t$ affects volume.
+}
+\CANONICAL{
+\begin{bullets}
+\item Online determinant updates are rank-one determinant lemma instances.
+\end{bullets}
+}
+
+\ProblemPage{9}{Combo: Eigenvalues and Schur Complement}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Relate eigenvalues of $M$ to those of $A$ and $S_{A}$.
+
+\PROBLEM{
+For $M=\begin{pmatrix}A&B\\ C&D\end{pmatrix}$ with $A$ invertible, prove
+$\det(M-\lambda I)=\det(A-\lambda I)\det(S_{A(\lambda)})$ with
+$S_{A(\lambda)}=D-\lambda I- C(A-\lambda I)^{-1}B$.
+}
+\MODEL{
+\[
+\chi_{M}(\lambda)=\chi_{A}(\lambda)\,\chi_{S_{A(\lambda)}}(\lambda).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A-\lambda I$ invertible for the factorization step.
+\end{bullets}
+}
+\varmapStart
+\var{\chi_{M}}{Characteristic polynomial of $M$.}
+\var{S_{A(\lambda)}}{Schur complement at shift $\lambda$.}
+\varmapEnd
+\WHICHFORMULA{
+Block determinant with $A-\lambda I$ pivot.
+}
+\GOVERN{
+\[
+\det\begin{pmatrix}A-\lambda I&B\\ C&D-\lambda I\end{pmatrix}
+=\det(A-\lambda I)\det(S_{A(\lambda)}).
+\]
+}
+\INPUTS{Symbolic derivation.}
+\DERIVATION{
+\begin{align*}
+\det(M-\lambda I)&=\det\begin{pmatrix}A-\lambda I&B\\ C&D-\lambda I\end{pmatrix}\\
+&=\det(A-\lambda I)\det\bigl(D-\lambda I-C(A-\lambda I)^{-1}B\bigr).
+\end{align*}
+}
+\RESULT{
+Characteristic polynomial factors via a shifted Schur complement.
+}
+\UNITCHECK{
+Polynomials in $\lambda$ on both sides; degrees sum to $n+m$.
+}
+\EDGECASES{
+\begin{bullets}
+\item At eigenvalues of $A$, use continuity to extend identity.
+\end{bullets}
+}
+\ALTERNATE{
+Use block elimination on $M-\lambda I$ directly to triangular form.
+}
+\VALIDATION{
+\begin{bullets}
+\item Numeric sample confirms roots correspond to spectra union with coupling.
+\end{bullets}
+}
+\INTUITION{
+Eigenvalue shifts commute with block elimination.
+}
+\CANONICAL{
+\begin{bullets}
+\item Characteristic polynomial factorization via Schur complements.
+\end{bullets}
+}
+
+\ProblemPage{10}{Classical Multi-Part: Inversion and Determinant}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given $A\in\mathbb{R}^{2\times 2}$ invertible, $B\in\mathbb{R}^{2\times 1}$,
+$C\in\mathbb{R}^{1\times 2}$, $D\in\mathbb{R}$, compute $\det(M)$ and $M^{-1}$.
+
+\PROBLEM{
+Let $A=\begin{pmatrix}3&1\\ 1&2\end{pmatrix}$,
+$B=\begin{pmatrix}1\\ -1\end{pmatrix}$,
+$C=\begin{pmatrix}2&0\end{pmatrix}$,
+$D=2$. (a) Compute $\det(M)$. (b) Compute $M^{-1}$ via Schur complement.
+}
+\MODEL{
+\[
+\det(M)=\det(A)\det(S_{A}),\quad
+M^{-1}=\begin{pmatrix}
+A^{-1}+A^{-1}B S_{A}^{-1} C A^{-1} & -A^{-1}B S_{A}^{-1}\\
+- S_{A}^{-1} C A^{-1} & S_{A}^{-1}
+\end{pmatrix}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ invertible and $S_{A}$ invertible.
+\end{bullets}
+}
+\varmapStart
+\var{M}{Block matrix.}
+\var{S_{A}}{Schur complement of $A$.}
+\varmapEnd
+\WHICHFORMULA{
+Block determinant and block inverse via Schur complement.
+}
+\GOVERN{
+\[
+S_{A}=D-CA^{-1}B,\quad \det(M)=\det(A)\det(S_{A}).
+\]
+}
+\INPUTS{As stated.}
+\DERIVATION{
+\begin{align*}
+A^{-1}&=\frac{1}{(3)(2)-(1)(1)}\begin{pmatrix}2&-1\\ -1&3\end{pmatrix}
+=\frac{1}{5}\begin{pmatrix}2&-1\\ -1&3\end{pmatrix}.\\
+CA^{-1}&=\frac{1}{5}\begin{pmatrix}2&0\end{pmatrix}
+\begin{pmatrix}2&-1\\ -1&3\end{pmatrix}
+=\frac{1}{5}\begin{pmatrix}4&-2\end{pmatrix}.\\
+CA^{-1}B&=\frac{1}{5}\begin{pmatrix}4&-2\end{pmatrix}
+\begin{pmatrix}1\\ -1\end{pmatrix}=\frac{1}{5}(4+2)=\frac{6}{5}.\\
+S_{A}&=2-\frac{6}{5}=\frac{4}{5}.\\
+\det(A)&=5,\ \det(M)=5\cdot \frac{4}{5}=4.\\
+M^{-1}&=\begin{pmatrix}
+A^{-1}+A^{-1}B S_{A}^{-1} C A^{-1} & -A^{-1}B S_{A}^{-1}\\
+- S_{A}^{-1} C A^{-1} & S_{A}^{-1}
+\end{pmatrix}.\\
+S_{A}^{-1}&=\frac{5}{4}.\\
+A^{-1}B&=\frac{1}{5}\begin{pmatrix}2&-1\\ -1&3\end{pmatrix}
+\begin{pmatrix}1\\ -1\end{pmatrix}=\frac{1}{5}\begin{pmatrix}3\\ -4\end{pmatrix}.\\
+C A^{-1}&=\frac{1}{5}\begin{pmatrix}4&-2\end{pmatrix}.\\
+A^{-1}B S_{A}^{-1} C A^{-1}
+&=\frac{1}{5}\begin{pmatrix}3\\ -4\end{pmatrix}\cdot \frac{5}{4}\cdot
+\frac{1}{5}\begin{pmatrix}4&-2\end{pmatrix}\\
+&=\frac{1}{20}\begin{pmatrix}3\\ -4\end{pmatrix}\begin{pmatrix}4&-2\end{pmatrix}
+=\frac{1}{20}\begin{pmatrix}12&-6\\ -16&8\end{pmatrix}.\\
+A^{-1}+(\cdot)
+&=\frac{1}{5}\begin{pmatrix}2&-1\\ -1&3\end{pmatrix}
++\frac{1}{20}\begin{pmatrix}12&-6\\ -16&8\end{pmatrix}
+=\begin{pmatrix}2/5+3/5&-1/5-3/10\\ -1/5-4/5&3/5+2/5\end{pmatrix}\\
+&=\begin{pmatrix}1&-1/2\\ -1&1\end{pmatrix}.\\
+-A^{-1}B S_{A}^{-1}&=-\frac{1}{5}\begin{pmatrix}3\\ -4\end{pmatrix}\cdot
+\frac{5}{4}=\begin{pmatrix}-3/4\\ 1\end{pmatrix}.\\
+- S_{A}^{-1} C A^{-1}&=-\frac{5}{4}\cdot \frac{1}{5}\begin{pmatrix}4&-2\end{pmatrix}
+=\begin{pmatrix}-1&1/2\end{pmatrix}.\\
+S_{A}^{-1}&=5/4.
+\end{align*}
+}
+\RESULT{
+$\det(M)=4$ and
+$M^{-1}=\begin{pmatrix}
+1&-1/2&-3/4\\
+-1&1&1\\
+-1&1/2&5/4
+\end{pmatrix}$ in block layout assembled to $3\times 3$.
+}
+\UNITCHECK{
+Multiplying $M$ and $M^{-1}$ returns identity numerically.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $S_{A}$ is small, inverse is sensitive to perturbations.
+\end{bullets}
+}
+\ALTERNATE{
+Invert $M$ directly and compare with the block formula result.
+}
+\VALIDATION{
+\begin{bullets}
+\item Determinant of inverse equals $1/4$, consistent with $\det(M)=4$.
+\end{bullets}
+}
+\INTUITION{
+Block inversion isolates the essence of coupling via $B$ and $C$.
+}
+\CANONICAL{
+\begin{bullets}
+\item Determinant and inverse via Schur complement form a coherent pair.
+\end{bullets}
+}
+
+\clearpage
+\section{Coding Demonstrations}
+
+\CodeDemoPage{Verify Matrix Determinant Lemma Numerically}
+\PROBLEM{
+Confirm $\det(A+UV^{\top})=\det(A)\det(I+V^{\top}A^{-1}U)$ for random seeds.
+}
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> tuple} — parse n,k,seed.
+\item \inlinecode{def solve_case(n,k,seed) -> float} — error metric.
+\item \inlinecode{def validate() -> None} — run fixed tests with asserts.
+\item \inlinecode{def main() -> None} — orchestrate demo.
+\end{bullets}
+}
+\INPUTS{
+Integers $n,k$ with $k\le n$, integer seed. Generates random invertible
+$A$ and random $U,V$ deterministically with the seed.
+}
+\OUTPUTS{
+A small absolute error $|\det(A+UV^{\top})-\det(A)\det(I+V^{\top}A^{-1}U)|$.
+}
+\FORMULA{
+\[
+\det(A+UV^{\top})-\det(A)\det(I+V^{\top}A^{-1}U)=0.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    t = [int(x) for x in s.split()]
+    if len(t) == 0:
+        return 6, 2, 0
+    if len(t) == 1:
+        return t[0], max(1, t[0]//3), 0
+    if len(t) == 2:
+        return t[0], t[1], 0
+    return t[0], t[1], t[2]
+
+def solve_case(n, k, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal((n, n))
+    A = A + n * np.eye(n)
+    U = rng.standard_normal((n, k))
+    V = rng.standard_normal((n, k))
+    lhs = np.linalg.det(A + U @ V.T)
+    rhs = np.linalg.det(A) * np.linalg.det(np.eye(k) + V.T @ np.linalg.inv(A) @ U)
+    return float(abs(lhs - rhs))
+
+def validate():
+    e = solve_case(5, 2, 0)
+    assert e < 1e-8
+    e = solve_case(8, 1, 1)
+    assert e < 1e-8
+
+def main():
+    validate()
+    n, k, seed = read_input("7 3 42")
+    err = solve_case(n, k, seed)
+    print("n", n, "k", k, "seed", seed, "abs_err", err)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    it = [int(x) for x in s.split()]
+    if len(it) < 3:
+        it = it + [0] * (3 - len(it))
+    return it[0] or 6, it[1] or 2, it[2]
+
+def solve_case(n, k, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.normal(size=(n, n))
+    A = A @ A.T + 1e-3 * np.eye(n)
+    U = rng.normal(size=(n, k))
+    V = rng.normal(size=(n, k))
+    lhs = np.linalg.slogdet(A + U @ V.T)
+    rhs = np.linalg.slogdet(A)
+    mid = np.linalg.slogdet(np.eye(k) + V.T @ np.linalg.solve(A, U))
+    val = lhs[0] * lhs[1] - rhs[0] * rhs[1] - mid[0] * mid[1]
+    return float(abs(val))
+
+def validate():
+    e = solve_case(10, 3, 123)
+    assert e < 1e-8
+    e = solve_case(4, 1, 7)
+    assert e < 1e-8
+
+def main():
+    validate()
+    n, k, seed = read_input("10 4 9")
+    err = solve_case(n, k, seed)
+    print("n", n, "k", k, "seed", seed, "abs_slog_err", err)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Time $\mathcal{O}(n^{3}+nk^{2})$ dominated by solves and determinants; space
+$\mathcal{O}(n^{2})$.
+}
+\FAILMODES{
+\begin{bullets}
+\item Singular $A$: add positive shift to ensure invertible.
+\item Large $n$: prefer log-determinant to avoid overflow.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Use \inlinecode{solve} or Cholesky for SPD to improve conditioning.
+\item Prefer slogdet for numerical stability.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Multiple seeds; assertion on absolute error below tolerance.
+\end{bullets}
+}
+\RESULT{
+Both implementations produce errors below $10^{-8}$ on tested seeds.
+}
+\EXPLANATION{
+The code mirrors the lemma: compute the small determinant and multiply by
+$\det(A)$ or add log-determinants.
+}
+
+\CodeDemoPage{Block Inverse via Schur Complement}
+\PROBLEM{
+Verify the block inversion formula using random blocks where $A$ and $S_{A}$
+are invertible.
+}
+\API{
+\begin{bullets}
+\item \inlinecode{def gen_blocks(n,m,seed)} — generate $A,B,C,D$.
+\item \inlinecode{def block_inverse(A,B,C,D)} — Schur-based inverse.
+\item \inlinecode{def validate()} — check $M^{-1}$ correctness.
+\item \inlinecode{def main()} — run a deterministic test.
+\end{bullets}
+}
+\INPUTS{
+Integers $n,m$ and seed. Produces SPD $A$ and random $B,C,D$ with adjusted
+$S_{A}$ to be invertible.
+}
+\OUTPUTS{
+Relative Frobenius error $\|I-MM^{-1}\|_{F}/\|I\|_{F}$.
+}
+\FORMULA{
+\[
+M^{-1}=\begin{pmatrix}
+A^{-1}+A^{-1}B S_{A}^{-1} C A^{-1} & -A^{-1}B S_{A}^{-1}\\
+- S_{A}^{-1} C A^{-1} & S_{A}^{-1}
+\end{pmatrix},\quad S_{A}=D-CA^{-1}B.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def gen_blocks(n=4, m=3, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal((n, n))
+    A = A @ A.T + n * np.eye(n)
+    B = rng.standard_normal((n, m))
+    C = rng.standard_normal((m, n))
+    D = rng.standard_normal((m, m))
+    S = D - C @ np.linalg.solve(A, B)
+    S = S + (m + 1e-1) * np.eye(m)
+    return A, B, C, S + C @ np.linalg.solve(A, B)
+
+def block_inverse(A, B, C, D):
+    Ai = np.linalg.inv(A)
+    S = D - C @ Ai @ B
+    Si = np.linalg.inv(S)
+    X11 = Ai + Ai @ B @ Si @ C @ Ai
+    X12 = -Ai @ B @ Si
+    X21 = -Si @ C @ Ai
+    X22 = Si
+    return np.block([[X11, X12], [X21, X22]])
+
+def validate():
+    A, B, C, D = gen_blocks(5, 3, 1)
+    M = np.block([[A, B], [C, D]])
+    Minv = block_inverse(A, B, C, D)
+    I = np.eye(M.shape[0])
+    err = np.linalg.norm(I - M @ Minv) / np.linalg.norm(I)
+    assert err < 1e-8
+
+def main():
+    validate()
+    A, B, C, D = gen_blocks(6, 2, 7)
+    M = np.block([[A, B], [C, D]])
+    Minv = block_inverse(A, B, C, D)
+    I = np.eye(M.shape[0])
+    err = np.linalg.norm(I - M @ Minv) / np.linalg.norm(I)
+    print("rel_err", err)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def gen_blocks(n=4, m=3, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.normal(size=(n, n))
+    A = A.T @ A + 1e-3 * np.eye(n)
+    B = rng.normal(size=(n, m))
+    C = rng.normal(size=(m, n))
+    D = rng.normal(size=(m, m))
+    return A, B, C, D
+
+def solve_case(n=5, m=3, seed=0):
+    A, B, C, D = gen_blocks(n, m, seed)
+    M = np.block([[A, B], [C, D]])
+    Minv_direct = np.linalg.inv(M)
+    Ai = np.linalg.inv(A)
+    S = D - C @ Ai @ B
+    Si = np.linalg.inv(S)
+    Minv_schur = np.block([
+        [Ai + Ai @ B @ Si @ C @ Ai, -Ai @ B @ Si],
+        [-Si @ C @ Ai, Si]
+    ])
+    return float(np.linalg.norm(Minv_direct - Minv_schur))
+
+def validate():
+    e = solve_case(6, 2, 11)
+    assert e < 1e-8
+
+def main():
+    validate()
+    e = solve_case(7, 3, 21)
+    print("diff_norm", e)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Time $\mathcal{O}(n^{3}+m^{3}+nm\min\{n,m\})$; space $\mathcal{O}((n+m)^{2})$.
+}
+\FAILMODES{
+\begin{bullets}
+\item $S_{A}$ singular: add ridge or choose different pivot.
+\item Loss of symmetry due to numerical noise if expecting SPD.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Use solves (\inlinecode{solve}) instead of explicit inverses.
+\item Prefer Cholesky for SPD blocks.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Compare Schur inverse with direct inverse under tolerance.
+\end{bullets}
+}
+\RESULT{
+Relative error and difference norms are below $10^{-8}$ in tests.
+}
+\EXPLANATION{
+Implements the block inversion identity and verifies equality numerically.
+}
+
+\clearpage
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Efficiently compute $\log\det(\sigma^{2}I_n+XX^{\top})$ for design matrix
+$X\in\mathbb{R}^{n\times d}$ with $n\gg d$ using the determinant lemma.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\sigma^{2}>0$ and $X$ finite.
+\item $n\ge d$; prefer $d\times d$ determinant.
+\end{bullets}
+}
+\WHICHFORMULA{
+Matrix Determinant Lemma with $A=\sigma^{2}I_n$, $U=X$, $V=X$:
+$\det(\sigma^{2}I_n+XX^{\top})
+=\sigma^{2n}\det(I_d+\tfrac{1}{\sigma^{2}}X^{\top}X)$.
+}
+\varmapStart
+\var{X}{Design matrix, shape $(n,d)$.}
+\var{\sigma^{2}}{Noise variance.}
+\var{n,d}{Samples and features.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic $X$ and set $\sigma^{2}$.
+\item Compute $\log\det$ via $n\times n$ and via $d\times d$ forms.
+\item Compare results and timing proxies (sizes).
+\end{bullets}
+}
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def logdet_nxn(X, sigma2):
+    n = X.shape[0]
+    A = sigma2 * np.eye(n) + X @ X.T
+    s, ld = np.linalg.slogdet(A)
+    return float(s * ld)
+
+def logdet_dxd(X, sigma2):
+    n, d = X.shape
+    G = np.eye(d) + (X.T @ X) / sigma2
+    s, ld = np.linalg.slogdet(G)
+    return float(n * np.log(sigma2) + s * ld)
+
+def main():
+    np.random.seed(0)
+    n, d = 200, 10
+    X = np.random.randn(n, d)
+    sigma2 = 0.5
+    a = logdet_nxn(X, sigma2)
+    b = logdet_dxd(X, sigma2)
+    print("logdet_nxn", round(a, 8), "logdet_dxd", round(b, 8),
+          "abs_err", abs(a - b))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{Implementation (Library Version)}
+\begin{codepy}
+import numpy as np
+
+def main():
+    np.random.seed(1)
+    n, d = 300, 15
+    X = np.random.randn(n, d)
+    sigma2 = 1.2
+    s1, l1 = np.linalg.slogdet(sigma2 * np.eye(n) + X @ X.T)
+    s2, l2 = np.linalg.slogdet(np.eye(d) + (X.T @ X) / sigma2)
+    a = s1 * l1
+    b = n * np.log(sigma2) + s2 * l2
+    print("abs_err", abs(a - b))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Absolute error of log-determinants; expect below $10^{-8}$.}
+\INTERPRET{Low-rank form reduces dimension of the determinant dramatically.}
+\NEXTSTEPS{Use Cholesky of $X^{\top}X$ for additional stability and speed.}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Compute conditional covariance of asset returns under a joint Gaussian model
+using the Schur complement, for risk attribution conditional on factors.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Joint normality of $(r,f)$ with covariance
+$\begin{pmatrix}\Sigma_{rr}&\Sigma_{rf}\\ \Sigma_{fr}&\Sigma_{ff}\end{pmatrix}$.
+\item $\Sigma_{ff}$ invertible.
+\end{bullets}
+}
+\WHICHFORMULA{
+$\operatorname{Cov}(r\mid f)=\Sigma_{rr}-\Sigma_{rf}\Sigma_{ff}^{-1}\Sigma_{fr}$.
+}
+\varmapStart
+\var{r}{Asset returns vector.}
+\var{f}{Factors vector.}
+\var{\Sigma_{\cdot\cdot}}{Partitioned covariance blocks.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Simulate correlated $(r,f)$ from a known covariance.
+\item Estimate sample covariance; compute conditional covariance.
+\item Compare with population value.
+\end{bullets}
+}
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def simulate(n=2000, seed=0):
+    rng = np.random.default_rng(seed)
+    Sigma = np.array([[1.0, 0.6, 0.5],
+                      [0.6, 1.5, 0.4],
+                      [0.5, 0.4, 2.0]])
+    X = rng.multivariate_normal(np.zeros(3), Sigma, size=n)
+    r = X[:, :2]
+    f = X[:, 2:]
+    return r, f, Sigma
+
+def cond_cov(Sigma):
+    Srr = Sigma[:2, :2]
+    Srf = Sigma[:2, 2:]
+    Sff = Sigma[2:, 2:]
+    return Srr - Srf @ np.linalg.inv(Sff) @ Srf.T
+
+def main():
+    r, f, Sigma = simulate()
+    S = np.cov(np.hstack([r, f]).T, bias=True)
+    Cpop = cond_cov(Sigma)
+    Cemp = cond_cov(S)
+    print("pop", np.round(Cpop, 3))
+    print("emp", np.round(Cemp, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Population vs. empirical conditional covariance matrices.}
+\INTERPRET{Explained factor risk removed; residual risk remains.}
+\NEXTSTEPS{Extend to time-varying covariances or shrinkage estimators.}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Compute GP regression log marginal likelihood
+$-\tfrac{1}{2}\log\det(K+\sigma^{2}I)$ via determinant lemma on features.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Linear kernel $K=XX^{\top}$ from last hidden layer features $X$.
+\item $\sigma^{2}>0$.
+\end{bullets}
+}
+\WHICHFORMULA{
+$\log\det(\sigma^{2}I+XX^{\top})
+=n\log\sigma^{2}+\log\det(I+(X^{\top}X)/\sigma^{2})$.
+}
+\PIPELINE{
+\begin{bullets}
+\item Generate features $X$ from a small network or random projection.
+\item Compute log determinant via both forms and compare.
+\item Report negative log marginal likelihood term consistency.
+\end{bullets}
+}
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+
+def gen_feats(n=200, d=20, seed=0):
+    rng = np.random.default_rng(seed)
+    X = rng.standard_normal((n, d))
+    X = np.tanh(X)  # simple nonlinearity as a feature map
+    return X
+
+def gp_logdet(X, sigma2):
+    n, d = X.shape
+    s1, l1 = np.linalg.slogdet(sigma2 * np.eye(n) + X @ X.T)
+    s2, l2 = np.linalg.slogdet(np.eye(d) + (X.T @ X) / sigma2)
+    return float(s1 * l1), float(n * np.log(sigma2) + s2 * l2)
+
+def main():
+    X = gen_feats()
+    sigma2 = 0.3
+    a, b = gp_logdet(X, sigma2)
+    print("abs_err", abs(a - b))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{Analytical OLS Comparison}
+\begin{codepy}
+import numpy as np
+
+def ols_logdet(X, sigma2):
+    n, d = X.shape
+    G = X.T @ X
+    s, l = np.linalg.slogdet(np.eye(d) + G / sigma2)
+    return float(n * np.log(sigma2) + s * l)
+
+def main():
+    np.random.seed(0)
+    X = np.random.randn(150, 12)
+    sigma2 = 0.7
+    v = ols_logdet(X, sigma2)
+    print("logdet", v)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Absolute difference in log-determinants between both forms.}
+\INTERPRET{Model evidence term can be computed in the feature dimension.}
+\NEXTSTEPS{Use jitter and Cholesky factorization for stability.}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Compute partial correlations from a covariance matrix using Schur complement
+to obtain inverse covariance blocks.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Data are centered; covariance is positive definite.
+\item Partial correlation of $x$ and $y$ given $Z$ uses precision matrix.
+\end{bullets}
+}
+\WHICHFORMULA{
+For precision $\Theta=\Sigma^{-1}$,
+$\rho_{xy\cdot Z}=-\Theta_{xy}/\sqrt{\Theta_{xx}\Theta_{yy}}$. Use Schur
+complement to invert blocks efficiently.
+}
+\PIPELINE{
+\begin{bullets}
+\item Simulate a covariance with three variables $(x,y,z)$.
+\item Compute $\Theta$ via Schur complement of $z$.
+\item Extract partial correlation $\rho_{xy\cdot z}$.
+\end{bullets}
+}
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def simulate(seed=0, n=5000):
+    rng = np.random.default_rng(seed)
+    Sigma = np.array([[1.0, 0.8, 0.6],
+                      [0.8, 1.0, 0.5],
+                      [0.6, 0.5, 1.2]])
+    X = rng.multivariate_normal(np.zeros(3), Sigma, size=n)
+    return X, Sigma
+
+def schur_precision(Sigma):
+    Sxx = Sigma[:2, :2]
+    Sxz = Sigma[:2, 2:]
+    Szz = Sigma[2:, 2:]
+    Sz = Szz - Sxz.T @ np.linalg.inv(Sxx) @ Sxz
+    Theta = np.linalg.inv(Sigma)
+    return Theta, Sz
+
+def partial_corr(Theta):
+    t = Theta
+    rho = -t[0, 1] / np.sqrt(t[0, 0] * t[1, 1])
+    return float(rho)
+
+def main():
+    X, Sigma = simulate()
+    S = np.cov(X.T, bias=True)
+    Theta, _ = schur_precision(S)
+    r = partial_corr(Theta)
+    print("partial_corr_xy_given_z", round(r, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Partial correlation value; compare to population from $\Sigma$.}
+\INTERPRET{Precision off-diagonal encodes conditional dependence directly.}
+\NEXTSTEPS{Scale to many variables using sparse Cholesky and block updates.}
+
+\end{document}

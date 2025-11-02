@@ -1,0 +1,2237 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]
+\setlength{\jot}{7pt}
+\setlength{\emergencystretch}{8em}
+\sloppy
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Trace Inequalities and Matrix AM-GM}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+We study trace inequalities and matrix arithmetic-geometric mean relations
+for real matrices. The ambient space is $\mathbb{R}^{m\times n}$ with the
+Frobenius inner product $\langle X,Y\rangle=\operatorname{Tr}(X^\top Y)$ and
+associated norm $\|X\|_F=\sqrt{\operatorname{Tr}(X^\top X)}$. For positive
+semidefinite (PSD) $A,B\in\mathbb{R}^{n\times n}$ we compare arithmetic and
+geometric quantities via $\operatorname{Tr}$, singular values $\sigma_i$, and
+eigenvalues $\lambda_i$.
+}
+\WHY{
+Trace inequalities control bilinear forms, stability of algorithms, and
+optimality conditions in convex optimization. Matrix AM-GM links additive and
+multiplicative spectra, yielding bounds for determinants, variances, and risk
+metrics. They are foundational in numerical linear algebra, statistics, and
+machine learning generalization bounds.
+}
+\HOW{
+1. Formalize matrices as a Hilbert space via Frobenius inner product.
+2. Use SVD/eigendecomposition to diagonalize structure and expose spectra.
+3. Apply scalar inequalities (Cauchy–Schwarz, Young, AM-GM, H\"older) to
+spectral data and lift back to matrices using unitary invariance and majorization.
+4. Derive canonical inequalities and characterize equality cases.
+}
+\ELI{
+Treat a matrix like a list of numbers with a geometric structure. The trace
+inner product is a dot product for matrices. Scalar inequalities about average
+and product become matrix statements when applied to eigenvalues or singular
+values, after rotating into a convenient basis.
+}
+\SCOPE{
+Real matrices with standard transpose; statements extend to complex with
+conjugate transpose. AM-GM statements typically require PSD. Singular-value
+based inequalities are basis-invariant. Edge cases include singular or zero
+matrices, where equalities simplify.
+}
+\CONFUSIONS{
+Trace vs. determinant: additive vs. multiplicative summaries. Frobenius norm
+vs. operator norm: sum of squares vs. maximal stretching. AM-GM on eigenvalues
+needs PSD (or normal/diagonalizable with nonnegative spectrum); it does not
+hold for arbitrary nonnormal matrices.
+}
+\APPLICATIONS{
+\begin{bullets}
+\item Bounding losses and regularizers in machine learning via nuclear norms.
+\item Covariance analysis and portfolio risk via PSD trace bounds.
+\item Preconditioning and convergence proofs using Young and H\"older bounds.
+\item Model comparison with determinant/trace tradeoffs in statistics.
+\end{bullets}
+}
+\textbf{ANALYTIC STRUCTURE.}
+Linear Hilbert space geometry with unitary invariance. Convexity of Schatten
+norms, majorization among spectra, monotonicity for PSD ordering.
+
+\textbf{CANONICAL LINKS.}
+Cauchy–Schwarz $\to$ Young (trace). Von Neumann trace inequality $\to$
+Schatten H\"older. Eigenvalue AM-GM $\to$ $\det^{1/n}\le \operatorname{Tr}/n$.
+Matrix AM-GM for PSD via Young with square roots.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Appearance of $\operatorname{Tr}(X^\top Y)$ suggests Frobenius tools.
+\item References to singular values imply von Neumann or Schatten norms.
+\item PSD pairs and square roots indicate matrix AM-GM patterns.
+\item Determinant vs. trace points to eigenvalue AM-GM.
+\end{bullets}
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate to SVD/eigendecomposition.
+\item Apply scalar inequality to diagonal entries.
+\item Reassemble via unitary invariance of trace and norms.
+\item Check equality conditions and limits.
+\end{bullets}
+\textbf{CONCEPTUAL INVARIANTS.}
+Trace under cyclic permutations; Frobenius norm under orthogonal transforms;
+singular values under unitary similarity; eigenvalues for symmetric matrices.
+
+\textbf{EDGE INTUITION.}
+As matrices shrink to zero, all inequalities tighten to equalities at zero.
+As spectra spread, AM-GM gaps widen. For nearly rank-one matrices, trace inner
+product aligns with top singular vectors.
+
+\clearpage
+\section{Glossary}
+\glossx{Trace}
+{Linear functional $\operatorname{Tr}(A)=\sum_i a_{ii}$ on square matrices.}
+{Cyclic invariance allows rearranging products within traces.}
+{Diagonalize when possible; use $\operatorname{Tr}(UV)=\operatorname{Tr}(VU)$.}
+{Add the diagonal entries; order does not matter for products due to cyclicity.}
+{Pitfall: $\operatorname{Tr}(AB)=\operatorname{Tr}(BA)$ but $AB\ne BA$.}
+
+\glossx{Frobenius inner product}
+{$\langle X,Y\rangle=\operatorname{Tr}(X^\top Y)$ with norm $\|X\|_F$.}
+{Turns $\mathbb{R}^{m\times n}$ into a Hilbert space.}
+{Vectorize or use orthonormal bases to apply Cauchy–Schwarz.}
+{Like dot product of flattened matrices.}
+{Pitfall: Do not confuse with operator norm $\|X\|_2$.}
+
+\glossx{Singular values}
+{Nonnegative numbers $\sigma_i(X)$ from SVD $X=U\Sigma V^\top$.}
+{Unitary invariants controlling many inequalities.}
+{Sort $\sigma_i$ decreasing; use vector inequalities on them.}
+{Magnitudes of principal stretches of a matrix.}
+{Pitfall: Eigenvalues can be negative; singular values are nonnegative.}
+
+\glossx{Matrix geometric mean}
+{$A\#B=A^{1/2}(A^{-1/2}BA^{-1/2})^{1/2}A^{1/2}$ for $A,B\succ0$.}
+{Bridges additive and multiplicative matrix structures.}
+{Compute via spectral calculus in the basis of $A$.}
+{Blend of $A$ and $B$ that is between them.}
+{Pitfall: Requires positive definiteness for inverse and square roots.}
+
+\clearpage
+\section{Symbol Ledger}
+\varmapStart
+\var{A,B,X,Y}{Real matrices with compatible dimensions.}
+\var{m,n}{Row and column dimensions.}
+\var{\operatorname{Tr}}{Trace operator on square matrices.}
+\var{\|\cdot\|_F}{Frobenius norm $\sqrt{\operatorname{Tr}(X^\top X)}$.}
+\var{\|\cdot\|_2}{Operator norm (largest singular value).}
+\var{\|\cdot\|_*}{Nuclear norm $\sum_i \sigma_i(\cdot)$.}
+\var{\sigma_i(\cdot)}{Singular values in nonincreasing order.}
+\var{\lambda_i(\cdot)}{Eigenvalues (for symmetric matrices).}
+\var{U,V}{Orthogonal matrices from SVD/eigendecomposition.}
+\var{p,q}{H\"older conjugates with $1\le p,q\le\infty$, $1/p+1/q=1$.}
+\var{r}{Rank of a matrix.}
+\var{I}{Identity matrix.}
+\var{\preceq}{Loewner order on symmetric matrices.}
+\varmapEnd
+
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{Frobenius Cauchy–Schwarz (Trace Form)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For all $X,Y\in\mathbb{R}^{m\times n}$,
+\[
+|\operatorname{Tr}(X^\top Y)|\le \|X\|_F\|Y\|_F.
+\]
+\WHAT{
+Bounds the trace inner product by the product of Frobenius norms.
+}
+\WHY{
+It is the cornerstone inequality in the matrix Hilbert space, enabling
+immediate control of bilinear terms and feeding Young and AM-GM bounds.
+}
+\FORMULA{
+\[
+|\operatorname{Tr}(X^\top Y)|\le
+\sqrt{\operatorname{Tr}(X^\top X)}\sqrt{\operatorname{Tr}(Y^\top Y)}.
+\]
+}
+\CANONICAL{
+$X,Y\in\mathbb{R}^{m\times n}$ with standard transpose. Equality holds iff
+$X$ and $Y$ are linearly dependent in the Frobenius sense: $Y=\alpha X$.
+}
+\PRECONDS{
+\begin{bullets}
+\item No structural assumptions beyond finite Frobenius norms.
+\item Real case; complex case uses conjugate transpose.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+$(\mathbb{R}^{m\times n},\langle\cdot,\cdot\rangle)$ with
+$\langle X,Y\rangle=\operatorname{Tr}(X^\top Y)$ is an inner product space,
+and $\|X\|_F=\sqrt{\langle X,X\rangle}$ is its norm. Cauchy–Schwarz holds.
+\end{lemma}
+\begin{proof}
+Bilinearity and symmetry are immediate from trace properties. Positivity:
+$\langle X,X\rangle=\operatorname{Tr}(X^\top X)=\sum_{ij}x_{ij}^2\ge0$ with
+equality iff $X=0$. Cauchy–Schwarz follows from the inner product axioms or
+by vectorization mapping to $\mathbb{R}^{mn}$. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{By the lemma: }&
+|\langle X,Y\rangle|\le \|X\|_F\|Y\|_F,\\
+&\Rightarrow |\operatorname{Tr}(X^\top Y)|
+\le \sqrt{\operatorname{Tr}(X^\top X)}\sqrt{\operatorname{Tr}(Y^\top Y)}.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Identify $\operatorname{Tr}(X^\top Y)$ structure.
+\item Compute or bound $\|X\|_F$ and $\|Y\|_F$.
+\item Apply the inequality and simplify.
+\item Check equality conditions if alignment is suspected.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item $\|\langle X,Y\rangle\|\le \|X\|_F\|Y\|_F$ with $\langle\cdot,\cdot\rangle$
+the Frobenius product.
+\item Vectorized form: $|\operatorname{vec}(X)^\top \operatorname{vec}(Y)|
+\le \|\operatorname{vec}(X)\|_2\|\operatorname{vec}(Y)\|_2$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $X=0$ or $Y=0$, both sides vanish.
+\item If $Y=\alpha X$, equality holds for any $\alpha\in\mathbb{R}$.
+\end{bullets}
+}
+\INPUTS{$X,Y\in\mathbb{R}^{m\times n}$.}
+\DERIVATION{
+\begin{align*}
+\text{Set } a&=\|X\|_F,\quad b=\|Y\|_F,\\
+|\operatorname{Tr}(X^\top Y)|&\le ab.
+\end{align*}
+}
+\RESULT{
+Trace inner product is bounded by Frobenius norm product; tight at alignment.
+}
+\UNITCHECK{
+Both sides scale bilinearly: replacing $X\mapsto \alpha X$ scales both sides
+by $|\alpha|$.
+}
+\PITFALLS{
+\begin{bullets}
+\item Do not replace $\|\cdot\|_F$ with operator norm unless intended.
+\item For complex matrices use conjugate transpose to keep positivity.
+\end{bullets}
+}
+\INTUITION{
+Flatten matrices to vectors; it is the usual dot-product Cauchy–Schwarz.
+}
+\CANONICAL{
+\begin{bullets}
+\item Universal Hilbert-space Cauchy–Schwarz applied to $(\mathbb{R}^{m\times n},
+\langle\cdot,\cdot\rangle)$.
+\end{bullets}
+}
+
+\FormulaPage{2}{Young Inequality for Traces}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For all $X,Y\in\mathbb{R}^{m\times n}$,
+\[
+\operatorname{Tr}(X^\top Y)\le \tfrac12\operatorname{Tr}(X^\top X)
++\tfrac12\operatorname{Tr}(Y^\top Y).
+\]
+\WHAT{
+Transforms a bilinear trace term into a sum of quadratic terms.
+}
+\WHY{
+Decouples mixed terms in energy estimates, convex optimization, and
+convergence proofs; yields matrix AM-GM for PSD square roots.
+}
+\FORMULA{
+\[
+2\operatorname{Tr}(X^\top Y)\le \operatorname{Tr}(X^\top X)+\operatorname{Tr}(Y^\top Y).
+\]
+}
+\CANONICAL{
+Real matrices with Frobenius inner product; equality iff $X=Y$.
+}
+\PRECONDS{
+\begin{bullets}
+\item None beyond finiteness of Frobenius norms.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For all $Z$, $\|Z\|_F^2\ge0$ with equality iff $Z=0$.
+\end{lemma}
+\begin{proof}
+$\|Z\|_F^2=\operatorname{Tr}(Z^\top Z)=\sum_{ij} z_{ij}^2\ge0$ and equals zero
+only when all entries vanish. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+0&\le \|X-Y\|_F^2=\operatorname{Tr}((X-Y)^\top (X-Y))\\
+&=\operatorname{Tr}(X^\top X)-2\operatorname{Tr}(X^\top Y)+\operatorname{Tr}(Y^\top Y),\\
+&\Rightarrow 2\operatorname{Tr}(X^\top Y)\le \operatorname{Tr}(X^\top X)+\operatorname{Tr}(Y^\top Y).
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Identify a mixed trace term $\operatorname{Tr}(X^\top Y)$.
+\item Complete the square using $\|X-Y\|_F^2\ge0$.
+\item Rearrange to isolate the desired inequality.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item For any $\varepsilon>0$,
+$\operatorname{Tr}(X^\top Y)\le \tfrac{1}{2\varepsilon}\|X\|_F^2+\tfrac{\varepsilon}{2}\|Y\|_F^2$.
+\item With $X=A^{1/2},Y=B^{1/2}$ PSD: $\operatorname{Tr}(A^{1/2}B^{1/2})
+\le \tfrac12\operatorname{Tr}(A+B)$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item Equality if and only if $X=Y$.
+\item Symmetric in $X$ and $Y$.
+\end{bullets}
+}
+\INPUTS{$X,Y\in\mathbb{R}^{m\times n}$.}
+\DERIVATION{
+\begin{align*}
+\text{Apply }\|X-Y\|_F^2\ge0\ \Rightarrow\ 
+\operatorname{Tr}(X^\top Y)\le \tfrac12(\|X\|_F^2+\|Y\|_F^2).
+\end{align*}
+}
+\RESULT{
+Upper bound linear in $\operatorname{Tr}(X^\top Y)$ by quadratic terms.
+}
+\UNITCHECK{
+Both sides scale as squares in $X,Y$; homogeneous of degree two.
+}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting the factor $\tfrac12$.
+\item Using absolute value is unnecessary; the inequality is one-sided.
+\end{bullets}
+}
+\INTUITION{
+Bounding a cross term by average of squares, as in $(a-b)^2\ge 0$.
+}
+\CANONICAL{
+\begin{bullets}
+\item Quadratic completion identity in Frobenius geometry.
+\end{bullets}
+}
+
+\FormulaPage{3}{Von Neumann Trace Inequality}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A,B\in\mathbb{R}^{m\times n}$ with singular values
+$\sigma_1(\cdot)\ge\cdots\ge\sigma_r(\cdot)\ge0$, $r=\min\{m,n\}$,
+\[
+|\operatorname{Tr}(A^\top B)|\le \sum_{i=1}^{r}\sigma_i(A)\sigma_i(B).
+\]
+\WHAT{
+Bounds the trace inner product by the inner product of singular value vectors
+sorted in the same order.
+}
+\WHY{
+It sharpens Frobenius Cauchy–Schwarz and underpins Schatten H\"older
+inequalities and best alignment principles.
+}
+\FORMULA{
+\[
+|\operatorname{Tr}(A^\top B)|\le \langle \sigma(A),\sigma(B)\rangle,\quad
+\sigma(\cdot)=(\sigma_1,\dots,\sigma_r).
+\]
+}
+\CANONICAL{
+SVDs $A=U_A\Sigma_A V_A^\top$, $B=U_B\Sigma_B V_B^\top$. Equality if singular
+vector bases align and signs cooperate.
+}
+\PRECONDS{
+\begin{bullets}
+\item Real matrices with finite SVD; singular values sorted nonincreasingly.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Let $X,Y$ be orthogonal. The matrix $P$ with entries
+$p_{ij}=|x_{ij}y_{ij}|$ is doubly substochastic: row and column sums are
+$\le1$.
+\end{lemma}
+\begin{proof}
+Fix $i$. By Cauchy–Schwarz on row $i$ of $X$ and $Y$,
+$\sum_j|x_{ij}y_{ij}|\le
+\left(\sum_j x_{ij}^2\right)^{1/2}\left(\sum_j y_{ij}^2\right)^{1/2}=1$.
+Similarly for columns because columns are also unit vectors. \qedhere
+\end{proof}
+\begin{lemma}
+If $d,e\in\mathbb{R}_+^r$ are decreasing and $P$ is doubly substochastic, then
+$\sum_i d_i (P e)_i\le \sum_i d_i e_i$.
+\end{lemma}
+\begin{proof}
+Augment $P$ to a $(r+1)\times(r+1)$ doubly stochastic matrix $Q$ by adding a
+slack row and column absorbing deficits. Let $d'=(d^\top,0)^\top$ and
+$e'=(e^\top,0)^\top$. By Birkhoff–von Neumann, $Q$ is a convex combination of
+permutation matrices. The rearrangement inequality yields
+$d'^{\top}Q e'\le d'^{\top} e'$. Restricting to the first $r$ entries gives
+the claim. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+A&=U_A\Sigma_A V_A^\top,\quad B=U_B\Sigma_B V_B^\top,\\
+\operatorname{Tr}(A^\top B)&=\operatorname{Tr}(V_A\Sigma_A U_A^\top U_B \Sigma_B V_B^\top)\\
+&=\operatorname{Tr}(\Sigma_A X \Sigma_B Y^\top),\quad
+X=U_A^\top U_B,\ Y=V_A^\top V_B\ \text{orthogonal},\\
+\operatorname{Tr}(\Sigma_A X \Sigma_B Y^\top)
+&=\sum_{i}\sum_{j}\sigma_i(A)\sigma_j(B)x_{ij}y_{ij},\\
+|\operatorname{Tr}(\cdot)|
+&\le \sum_{i}\sigma_i(A)\sum_j \sigma_j(B)|x_{ij}y_{ij}|\\
+&=\sum_i \sigma_i(A) (P\, \sigma(B))_i,\quad P_{ij}=|x_{ij}y_{ij}|,\\
+&\le \sum_i \sigma_i(A)\sigma_i(B)\quad(\text{by lemma and decreasing order}).
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute or bound singular values of both matrices.
+\item Align orders decreasingly and apply the inequality.
+\item Check if alignment of singular vectors is attainable.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item Procrustes maximum: $\max_{U,V\ \text{orth.}} \operatorname{Tr}(U^\top A V)
+=\sum_i \sigma_i(A)$.
+\item For symmetric PSD: $\operatorname{Tr}(AB)\le \sum_i \lambda_i(A)\lambda_i(B)$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If one matrix is rank-$1$, bound reduces to
+$|\operatorname{Tr}(A^\top B)|\le \sigma_1(A)\sigma_1(B)$.
+\item Equality when $U_A=U_B$, $V_A=V_B$ with matching order.
+\end{bullets}
+}
+\INPUTS{$A,B\in\mathbb{R}^{m\times n}$; singular values in decreasing order.}
+\DERIVATION{
+\begin{align*}
+\text{Compute SVDs}\ \Rightarrow\ \text{expand and apply substochastic bound.}
+\end{align*}
+}
+\RESULT{
+Trace inner product is dominated by the inner product of singular value lists.
+}
+\UNITCHECK{
+Both sides scale bilinearly with $(A,B)\mapsto(\alpha A,\beta B)$ as $|\alpha\beta|$.
+}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to sort singular values decreasingly.
+\item Confusing eigenvalues with singular values for nonsymmetric matrices.
+\end{bullets}
+}
+\INTUITION{
+Rotate to bases that diagonalize stretching; the best alignment multiplies
+largest stretches together, all other alignments underperform.
+}
+\CANONICAL{
+\begin{bullets}
+\item Majorization of matrix inner products by singular-value inner products.
+\end{bullets}
+}
+
+\FormulaPage{4}{Schatten H\"older Inequality}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let $1\le p,q\le\infty$ with $1/p+1/q=1$. For $X,Y\in\mathbb{R}^{m\times n}$,
+\[
+|\operatorname{Tr}(X^\top Y)|\le \|X\|_{S_p}\|Y\|_{S_q},
+\]
+where $\|X\|_{S_p}=(\sum_i \sigma_i(X)^p)^{1/p}$ for $p<\infty$ and
+$\|X\|_{S_\infty}=\sigma_1(X)$.
+\WHAT{
+Extends H\"older inequality to Schatten norms via singular values.
+}
+\WHY{
+Yields operator-nuclear norm duality and tight control across norm scales.
+}
+\FORMULA{
+\[
+|\operatorname{Tr}(X^\top Y)|\le
+\left(\sum_i \sigma_i(X)^p\right)^{1/p}
+\left(\sum_i \sigma_i(Y)^q\right)^{1/q}.
+\]
+}
+\CANONICAL{
+Follows from von Neumann plus vector H\"older applied to singular values.
+}
+\PRECONDS{
+\begin{bullets}
+\item Singular values are summable to the required power.
+\item Dual exponents $p,q$ with standard conventions for $\infty$ and $1$.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+(Vector H\"older) For $a,b\in\mathbb{R}_+^r$ and dual $p,q$,
+$\sum_i a_i b_i\le \|a\|_p\|b\|_q$.
+\end{lemma}
+\begin{proof}
+Standard H\"older inequality in $\ell_p$ spaces. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+|\operatorname{Tr}(X^\top Y)|
+&\le \sum_i \sigma_i(X)\sigma_i(Y)\quad(\text{von Neumann})\\
+&\le \left(\sum_i \sigma_i(X)^p\right)^{1/p}
+\left(\sum_i \sigma_i(Y)^q\right)^{1/q}\quad(\text{H\"older}).
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Choose exponents $(p,q)$ to match available norms.
+\item Compute or estimate the Schatten norms.
+\item Apply the inequality and simplify.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item $p=2$: recovers Frobenius Cauchy–Schwarz.
+\item $p=1,q=\infty$: $|\operatorname{Tr}(X^\top Y)|\le \|X\|_*\|Y\|_2$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item Extremes $p=1$ or $q=1$ yield nuclear/operator duality.
+\item Equality when singular vectors align and vector H\"older is tight.
+\end{bullets}
+}
+\INPUTS{$X,Y$ and chosen $p,q$.}
+\DERIVATION{
+\begin{align*}
+\text{Compute }\sigma(X),\sigma(Y),\ \text{apply vector H\"older.}
+\end{align*}
+}
+\RESULT{
+Unified family of trace bounds parameterized by $(p,q)$.
+}
+\UNITCHECK{
+Homogeneous: scaling $X\mapsto \alpha X$ scales both sides by $|\alpha|$.
+}
+\PITFALLS{
+\begin{bullets}
+\item Using unsorted singular values is harmless; sort for clarity.
+\item Confusing Schatten $S_p$ with entrywise $\ell_p$ of matrix entries.
+\end{bullets}
+}
+\INTUITION{
+Compare aligned stretches and apply scalar H\"older to the stretch magnitudes.
+}
+\CANONICAL{
+\begin{bullets}
+\item Duality $\|\cdot\|_{S_1}^\ast=\|\cdot\|_{S_\infty}$ via the trace pairing.
+\end{bullets}
+}
+
+\FormulaPage{5}{Matrix AM-GM (Trace Form for PSD)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For PSD $A,B\in\mathbb{R}^{n\times n}$,
+\[
+\operatorname{Tr}\big(A^{1/2}B^{1/2}\big)\le \tfrac12\operatorname{Tr}(A+B).
+\]
+\WHAT{
+A matrix analogue of scalar AM-GM using traces of square roots.
+}
+\WHY{
+Balances additive and multiplicative sizes, useful in PSD energy comparisons,
+covariance blending, and preconditioning design.
+}
+\FORMULA{
+\[
+\operatorname{Tr}(A^{1/2}B^{1/2})
+\le \tfrac12\operatorname{Tr}(A)+\tfrac12\operatorname{Tr}(B).
+\]
+}
+\CANONICAL{
+Take $X=A^{1/2}$ and $Y=B^{1/2}$ in Young's trace inequality.
+}
+\PRECONDS{
+\begin{bullets}
+\item $A,B\succeq 0$ to define real principal square roots.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $A\succeq 0$, there exists unique $A^{1/2}\succeq 0$ with
+$A^{1/2}A^{1/2}=A$ and $\operatorname{Tr}(A^{1/2}A^{1/2})=\operatorname{Tr}(A)$.
+\end{lemma}
+\begin{proof}
+Diagonalize $A=Q\Lambda Q^\top$ with $\Lambda=\operatorname{diag}(\lambda_i)$,
+$\lambda_i\ge0$, and set $A^{1/2}=Q\operatorname{diag}(\sqrt{\lambda_i})Q^\top$.
+Uniqueness and trace identity follow. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\operatorname{Tr}(A^{1/2}B^{1/2})
+&=\operatorname{Tr}\big((A^{1/2})^\top B^{1/2}\big)\\
+&\le \tfrac12\operatorname{Tr}\big((A^{1/2})^\top A^{1/2}\big)
++\tfrac12\operatorname{Tr}\big((B^{1/2})^\top B^{1/2}\big)\\
+&=\tfrac12\operatorname{Tr}(A)+\tfrac12\operatorname{Tr}(B).
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Verify PSD and compute square roots via eigendecomposition.
+\item Apply Young with $X=A^{1/2}$, $Y=B^{1/2}$.
+\item Simplify traces of squares to traces of $A,B$.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item Weighted form: for $\theta\in(0,1)$,
+$\operatorname{Tr}(A^\theta B^{1-\theta})
+\le \theta \operatorname{Tr}(A)+(1-\theta)\operatorname{Tr}(B)$
+for commuting $A,B$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item Equality iff $A^{1/2}=B^{1/2}$, i.e., $A=B$.
+\item Monotone in Loewner order: larger $A$ or $B$ increase both sides.
+\end{bullets}
+}
+\INPUTS{$A,B\succeq0$.}
+\DERIVATION{
+\begin{align*}
+X&=A^{1/2},\ Y=B^{1/2},\\
+\operatorname{Tr}(XY)&\le \tfrac12\operatorname{Tr}(X^2)+\tfrac12\operatorname{Tr}(Y^2)
+=\tfrac12\operatorname{Tr}(A)+\tfrac12\operatorname{Tr}(B).
+\end{align*}
+}
+\RESULT{
+Trace of geometric blend is upper bounded by arithmetic trace average.
+}
+\UNITCHECK{
+Both sides scale linearly with $(A,B)\mapsto(\alpha A,\alpha B)$, $\alpha\ge0$.
+}
+\PITFALLS{
+\begin{bullets}
+\item Requires PSD for real principal square roots.
+\item The inequality is for the trace, not the Loewner order in general.
+\end{bullets}
+}
+\INTUITION{
+Square roots linearize multiplicative interaction enough to apply Young.
+}
+\CANONICAL{
+\begin{bullets}
+\item Trace AM-GM for PSD via Frobenius Young inequality.
+\end{bullets}
+}
+
+\FormulaPage{6}{Eigenvalue AM-GM: $\det^{1/n}\le \operatorname{Tr}/n$ for PSD}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A\succeq0$ in $\mathbb{R}^{n\times n}$,
+\[
+\det(A)^{1/n}\le \frac{\operatorname{Tr}(A)}{n},
+\]
+with equality iff $A=\alpha I$ for some $\alpha\ge0$.
+\WHAT{
+Relates geometric mean of eigenvalues to their arithmetic mean.
+}
+\WHY{
+Controls determinant by trace; used in design of covariance regularizers,
+volume bounds, and log-det optimization.
+}
+\FORMULA{
+\[
+\left(\prod_{i=1}^n \lambda_i(A)\right)^{1/n}
+\le \frac{1}{n}\sum_{i=1}^n \lambda_i(A).
+\]
+}
+\CANONICAL{
+Apply scalar AM-GM to the nonnegative eigenvalues of $A$.
+}
+\PRECONDS{
+\begin{bullets}
+\item $A$ symmetric PSD so that $\lambda_i(A)\ge0$ and diagonalizable.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For $t_i\ge0$, $(\prod_i t_i)^{1/n}\le \frac{1}{n}\sum_i t_i$ with equality
+iff all $t_i$ are equal.
+\end{lemma}
+\begin{proof}
+Standard scalar AM-GM inequality. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+A&=Q\Lambda Q^\top,\quad \Lambda=\operatorname{diag}(\lambda_i(A)),\ \lambda_i\ge0,\\
+\det(A)^{1/n}&=\left(\prod_i \lambda_i(A)\right)^{1/n}
+\le \frac{1}{n}\sum_i \lambda_i(A)=\frac{\operatorname{Tr}(A)}{n}.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Diagonalize $A$ and read eigenvalues.
+\item Apply scalar AM-GM to the eigenvalue list.
+\item Translate back to determinant and trace.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item $\log\det(A)\le n\log\big(\operatorname{Tr}(A)/n\big)$ for $A\succ0$.
+\item For $A\succ0$, $\det(A)\le \left(\frac{\operatorname{Tr}(A)}{n}\right)^n$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $A$ is singular, $\det(A)=0$ and inequality is trivial.
+\item Equality iff $\lambda_1=\cdots=\lambda_n$.
+\end{bullets}
+}
+\INPUTS{$A\succeq0$.}
+\DERIVATION{
+\begin{align*}
+\text{Apply scalar AM-GM on }\{\lambda_i(A)\}_{i=1}^n.
+\end{align*}
+}
+\RESULT{
+Determinant bounded by trace average; isotropy characterizes equality.
+}
+\UNITCHECK{
+Both sides scale linearly with $A\mapsto \alpha A$ after taking $1/n$ power
+on the determinant.
+}
+\PITFALLS{
+\begin{bullets}
+\item Not valid for indefinite $A$ due to negative eigenvalues.
+\item Do not confuse with $\operatorname{Tr}(A^p)$ variants without care.
+\end{bullets}
+}
+\INTUITION{
+Equal spread of eigenvalues maximizes the geometric mean under fixed sum.
+}
+\CANONICAL{
+\begin{bullets}
+\item Spectral AM-GM applied to PSD eigenvalues.
+\end{bullets}
+}
+
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{From Cauchy–Schwarz to Young and AM-GM (PSD case)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Establish Frobenius Cauchy–Schwarz, deduce Young, and obtain the matrix
+AM-GM bound for PSD square roots with a numeric example.
+\PROBLEM{
+Show $|\operatorname{Tr}(X^\top Y)|\le \|X\|_F\|Y\|_F$, then prove
+$\operatorname{Tr}(X^\top Y)\le \tfrac12(\|X\|_F^2+\|Y\|_F^2)$ and
+for $A,B\succeq0$ obtain $\operatorname{Tr}(A^{1/2}B^{1/2})
+\le \tfrac12\operatorname{Tr}(A+B)$. Verify numerically for given matrices.
+}
+\MODEL{
+\[
+\langle X,Y\rangle=\operatorname{Tr}(X^\top Y),\quad \|X\|_F^2=\operatorname{Tr}(X^\top X).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Real matrices; PSD for square roots.
+\end{bullets}
+}
+\varmapStart
+\var{X,Y}{Test matrices in $\mathbb{R}^{2\times 2}$.}
+\var{A,B}{PSD matrices in $\mathbb{R}^{2\times 2}$.}
+\varmapEnd
+\WHICHFORMULA{
+Formulas 1 and 2 imply Formula 5 by substitution $X=A^{1/2}$, $Y=B^{1/2}$.
+}
+\GOVERN{
+\[
+|\operatorname{Tr}(X^\top Y)|\le \|X\|_F\|Y\|_F,\quad
+\operatorname{Tr}(X^\top Y)\le \tfrac12\|X\|_F^2+\tfrac12\|Y\|_F^2.
+\]
+}
+\INPUTS{$X=\begin{bmatrix}1&2\\-1&0\end{bmatrix}$,
+$Y=\begin{bmatrix}2&-1\\0&1\end{bmatrix}$,
+$A=\begin{bmatrix}2&1\\1&3\end{bmatrix}$,
+$B=\begin{bmatrix}1&0\\0&4\end{bmatrix}$.}
+\DERIVATION{
+\begin{align*}
+\|X\|_F^2&=1^2+2^2+(-1)^2+0^2=6,\ \|X\|_F=\sqrt6,\\
+\|Y\|_F^2&=2^2+(-1)^2+0^2+1^2=6,\ \|Y\|_F=\sqrt6,\\
+\operatorname{Tr}(X^\top Y)&=\operatorname{Tr}\!\left(\begin{bmatrix}1&-1\\2&0\end{bmatrix}
+\begin{bmatrix}2&-1\\0&1\end{bmatrix}\right)\\
+&=\operatorname{Tr}\!\left(\begin{bmatrix}2&-2\\4&-2\end{bmatrix}\right)=0,\\
+|\operatorname{Tr}(X^\top Y)|&=0\le \|X\|_F\|Y\|_F=6,\\
+\operatorname{Tr}(X^\top Y)&=0\le \tfrac12(6+6)=6.
+\end{align*}
+For AM-GM: A and B are PSD. Compute $A^{1/2}$ and $B^{1/2}$ via eigenvalues.\\
+B is diagonal: $B^{1/2}=\operatorname{diag}(1,2)$. For A, approximate numerically:
+\text{eigs}(A)\approx \{3.618,1.382\}, traces: $\operatorname{Tr}(A)=5$.\\
+Then $\operatorname{Tr}(A^{1/2}B^{1/2})\le \tfrac12(5+5)=5$.
+\end{align*}
+}
+\RESULT{
+Inequalities hold; numeric check shows strict inequality for nonidentical PSD.
+}
+\UNITCHECK{
+All terms are scalars; dimensions conform; PSD ensures real square roots.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $A=B$, equality holds in AM-GM.
+\item If $X=Y$, equality holds in Young.
+\end{bullets}
+}
+\ALTERNATE{
+Vectorize and apply scalar Cauchy–Schwarz; identical conclusions follow.
+}
+\VALIDATION{
+\begin{bullets}
+\item Compute both sides numerically and compare.
+\item Use spectral decomposition to verify PSD and square roots.
+\end{bullets}
+}
+\INTUITION{
+Cross terms are tempered by quadratic energy; square roots linearize PSD blends.
+}
+\CANONICAL{
+\begin{bullets}
+\item Frobenius geometry controls bilinear traces; PSD AM-GM follows.
+\end{bullets}
+}
+
+\ProblemPage{2}{Von Neumann Bound and Equality Characterization}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given $A,B\in\mathbb{R}^{3\times 2}$, bound $|\operatorname{Tr}(A^\top B)|$
+by singular values and characterize equality.
+\PROBLEM{
+Compute $\sigma(A)$ and $\sigma(B)$, then bound $|\operatorname{Tr}(A^\top B)|$
+by $\sum_i \sigma_i(A)\sigma_i(B)$. Identify when equality is achieved.
+}
+\MODEL{
+\[
+A=U_A\Sigma_A V_A^\top,\quad B=U_B\Sigma_B V_B^\top.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Real SVDs exist; singular values are nonnegative and sorted.
+\end{bullets}
+}
+\varmapStart
+\var{A,B}{Rectangular matrices with $r=\min\{3,2\}=2$.}
+\var{\sigma_i}{Singular values in decreasing order.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 3 (Von Neumann trace inequality).
+}
+\GOVERN{
+\[
+|\operatorname{Tr}(A^\top B)|\le \sigma_1(A)\sigma_1(B)+\sigma_2(A)\sigma_2(B).
+\]
+}
+\INPUTS{$A=\begin{bmatrix}1&0\\0&2\\1&1\end{bmatrix}$,
+$B=\begin{bmatrix}2&1\\-1&0\\0&1\end{bmatrix}$.}
+\DERIVATION{
+\begin{align*}
+\text{Compute }A^\top A&=\begin{bmatrix}2&1\\1&5\end{bmatrix},\
+\lambda(A^\top A)\approx \{5.618,1.382\},\\
+\sigma(A)&\approx \{\sqrt{5.618},\sqrt{1.382}\}\approx \{2.371,1.176\}.\\
+B^\top B&=\begin{bmatrix}5&2\\2&2\end{bmatrix},\
+\lambda(B^\top B)\approx \{6.561,0.439\},\\
+\sigma(B)&\approx \{\sqrt{6.561},\sqrt{0.439}\}\approx \{2.561,0.663\}.\\
+\Rightarrow \sum_i \sigma_i(A)\sigma_i(B)
+&\approx 2.371\cdot 2.561+1.176\cdot 0.663\\
+&\approx 6.074+0.779=6.853.\\
+\operatorname{Tr}(A^\top B)
+&=\operatorname{Tr}\!\left(\begin{bmatrix}1&0&1\\0&2&1\end{bmatrix}
+\begin{bmatrix}2&1\\-1&0\\0&1\end{bmatrix}\right)\\
+&=\operatorname{Tr}\!\left(\begin{bmatrix}2&2\\-2&2\end{bmatrix}\right)=4,\\
+|4|&\le 6.853\ \text{holds.}
+\end{align*}
+Equality requires aligned singular vector bases; here they do not align.
+}
+\RESULT{
+$|\operatorname{Tr}(A^\top B)|\le 6.853$ and equals $4$ in this instance.
+}
+\UNITCHECK{
+Scalar bounds with consistent units; singular values are nonnegative scalars.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $B=cA$ with $c\ge0$, equality holds.
+\item If either is zero, bound reduces to zero.
+\end{bullets}
+}
+\ALTERNATE{
+Upper bound by $\|A\|_F\|B\|_F$ from Formula 1 gives
+$\sqrt{\operatorname{Tr}(A^\top A)}\sqrt{\operatorname{Tr}(B^\top B)}
+=\sqrt{8}\sqrt{7}\approx 7.483$, weaker than 6.853.
+}
+\VALIDATION{
+\begin{bullets}
+\item Numerically compute SVDs and traces to cross-check.
+\item Test randomized orthogonal re-alignments to approach equality.
+\end{bullets}
+}
+\INTUITION{
+Best alignment pairs the largest singular stretches; misalignment reduces trace.
+}
+\CANONICAL{
+\begin{bullets}
+\item Singular-value inner product dominates trace inner product.
+\end{bullets}
+}
+
+\ProblemPage{3}{Determinant vs. Trace Bound and Isotropy}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A\succeq0$, prove $\det(A)^{1/n}\le \operatorname{Tr}(A)/n$ and find
+equality conditions with a numeric check.
+\PROBLEM{
+Use eigenvalue AM-GM to establish the inequality and characterize equality.
+}
+\MODEL{
+\[
+A=Q\Lambda Q^\top,\ \Lambda=\operatorname{diag}(\lambda_1,\dots,\lambda_n),\
+\lambda_i\ge0.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ symmetric PSD.
+\end{bullets}
+}
+\varmapStart
+\var{A}{PSD matrix of size $n\times n$.}
+\var{\lambda_i}{Eigenvalues of $A$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 6 (Eigenvalue AM-GM).
+}
+\GOVERN{
+\[
+\left(\prod_i \lambda_i\right)^{1/n}\le \frac{1}{n}\sum_i \lambda_i.
+\]
+}
+\INPUTS{$A=\begin{bmatrix}4&1\\1&1\end{bmatrix}$, $n=2$.}
+\DERIVATION{
+\begin{align*}
+\operatorname{Tr}(A)&=5,\ \det(A)=4\cdot 1-1=3,\\
+\det(A)^{1/2}&=\sqrt{3}\approx 1.732,\ \operatorname{Tr}(A)/2=2.5,\\
+\sqrt{3}&\le 2.5\ \text{holds}.\\
+\text{Eigenvalues }&\lambda=\frac{5\pm \sqrt{25-12}}{2}
+=\frac{5\pm \sqrt{13}}{2},\ \text{unequal}\\
+\Rightarrow \text{strict inequality (not isotropic).}
+\end{align*}
+}
+\RESULT{
+Bound verified; equality only if $A=\alpha I$.
+}
+\UNITCHECK{
+Both sides are in units of $A$'s eigenvalues; scale correctly with $\alpha$.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $\det(A)=0$, left side zero; inequality trivial.
+\item If $A=\alpha I$, both sides equal $\alpha$.
+\end{bullets}
+}
+\ALTERNATE{
+Apply log-concavity: $\log\det(A)\le n\log(\operatorname{Tr}(A)/n)$ via Jensen.
+}
+\VALIDATION{
+\begin{bullets}
+\item Diagonal examples: $A=\operatorname{diag}(a,b)$ reduce to scalar AM-GM.
+\item Random PSD tests via $A=G^\top G$ confirm numerically.
+\end{bullets}
+}
+\INTUITION{
+Given a fixed sum of eigenvalues, the product is maximized when they are equal.
+}
+\CANONICAL{
+\begin{bullets}
+\item Spectral AM-GM captures isotropy as the equality geometry.
+\end{bullets}
+}
+
+\ProblemPage{4}{Narrative: Alice and Bob Align Singular Vectors}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Alice may pre-multiply and post-multiply $A$ by orthogonals; Bob does the
+same to $B$. They wish to maximize $\operatorname{Tr}(A^\top B)$.
+\PROBLEM{
+Show that the maximum is $\sum_i \sigma_i(A)\sigma_i(B)$ and is achieved by
+aligning singular vector bases and ordering them decreasingly.
+}
+\MODEL{
+\[
+A=U_A\Sigma_A V_A^\top,\ B=U_B\Sigma_B V_B^\top,\ 
+\operatorname{Tr}(A^\top B)=\operatorname{Tr}(\Sigma_A X \Sigma_B Y^\top).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Orthogonal actions do not change singular values.
+\end{bullets}
+}
+\varmapStart
+\var{U_A,V_A}{Orthogonals for $A$.}
+\var{U_B,V_B}{Orthogonals for $B$.}
+\var{X,Y}{Relative orthogonals $U_A^\top U_B$, $V_A^\top V_B$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 3 with equality characterization at aligned bases.
+}
+\GOVERN{
+\[
+\max_{X,Y\ \text{orth.}}\ \operatorname{Tr}(\Sigma_A X \Sigma_B Y^\top)
+=\sum_i \sigma_i(A)\sigma_i(B).
+\]
+}
+\INPUTS{$\sigma(A)=(3,1)$, $\sigma(B)=(2,0.5)$.}
+\DERIVATION{
+\begin{align*}
+\text{Upper bound }&\sum_i \sigma_i(A)\sigma_i(B)=3\cdot 2+1\cdot 0.5=6.5.\\
+\text{Achievability: }&X=I,\ Y=I\ \Rightarrow
+\operatorname{Tr}(\Sigma_A \Sigma_B)=6.5.
+\end{align*}
+}
+\RESULT{
+Maximum trace equals $6.5$ with aligned singular vectors.
+}
+\UNITCHECK{
+Trace is invariant under cyclic permutations; orthogonals preserve norms.
+}
+\EDGECASES{
+\begin{bullets}
+\item If repeated singular values, any orthogonal mixing within the block
+attains the same maximum.
+\end{bullets}
+}
+\ALTERNATE{
+Use Procrustes: $\max_{U,V}\operatorname{Tr}(U^\top M V)=\sum_i \sigma_i(M)$
+with $M=\Sigma_A\Sigma_B$ diagonal nonnegative.
+}
+\VALIDATION{
+\begin{bullets}
+\item Random orthogonal perturbations yield values $\le 6.5$.
+\item Equality verified at identity alignment.
+\end{bullets}
+}
+\INTUITION{
+Line up the strongest stretches to maximize overlap.
+}
+\CANONICAL{
+\begin{bullets}
+\item Von Neumann bound is tight under singular vector alignment.
+\end{bullets}
+}
+
+\ProblemPage{5}{Narrative: Regularization and Isotropization}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Bob regularizes $A\succeq0$ by $\tilde{A}=A+\varepsilon I$. Study
+$\det(\tilde{A})^{1/n}\le \operatorname{Tr}(\tilde{A})/n$ as $\varepsilon\to0$.
+\PROBLEM{
+Show the bound tightens monotonically with $\varepsilon$ and converges to the
+unregularized case, with strict inequality unless $A$ is a multiple of $I$.
+}
+\MODEL{
+\[
+\tilde{A}=A+\varepsilon I,\ \lambda_i(\tilde{A})=\lambda_i(A)+\varepsilon.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A\succeq0$, $\varepsilon>0$.
+\end{bullets}
+}
+\varmapStart
+\var{\varepsilon}{Regularization strength.}
+\var{\lambda_i}{Eigenvalues of $A$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 6 applies to $\tilde{A}$; monotonicity in $\varepsilon$ follows since
+both sides increase linearly or superlinearly.
+}
+\GOVERN{
+\[
+\left(\prod_i (\lambda_i+\varepsilon)\right)^{1/n}
+\le \frac{1}{n}\sum_i (\lambda_i+\varepsilon).
+\]
+}
+\INPUTS{$A=\operatorname{diag}(1,0.1,0)$, $n=3$, various $\varepsilon>0$.}
+\DERIVATION{
+\begin{align*}
+\operatorname{Tr}(\tilde{A})/3&=\frac{1+0.1+\varepsilon\cdot 3}{3}
+=\frac{1.1}{3}+\varepsilon,\\
+\det(\tilde{A})^{1/3}&=((1+\varepsilon)(0.1+\varepsilon)\varepsilon)^{1/3}.\\
+\text{As }\varepsilon\downarrow 0:&\ \text{RHS}\downarrow 1.1/3\approx 0.3667,\\
+\text{LHS}\downarrow 0\ \text{(due to zero eigenvalue)}.
+\end{align*}
+}
+\RESULT{
+Inequality holds for all $\varepsilon>0$ and limits to the unregularized case.
+}
+\UNITCHECK{
+Both sides have eigenvalue units; dependence on $\varepsilon$ consistent.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $A=\alpha I$, equality for all $\varepsilon$.
+\item If $A$ singular, LHS vanishes as $\varepsilon\to0$.
+\end{bullets}
+}
+\ALTERNATE{
+Use $\log$ to analyze monotonicity: $\frac{d}{d\varepsilon}\log\det(\tilde{A})
+=\operatorname{Tr}((A+\varepsilon I)^{-1})$.
+}
+\VALIDATION{
+\begin{bullets}
+\item Plot both sides vs. $\varepsilon$; check inequality numerically.
+\item Random PSD tests with $A=G^\top G$.
+\end{bullets}
+}
+\INTUITION{
+Regularization lifts small eigenvalues, increasing geometric mean faster.
+}
+\CANONICAL{
+\begin{bullets}
+\item Regularization drives spectra toward isotropy, tightening AM-GM gaps.
+\end{bullets}
+}
+
+\ProblemPage{6}{Expectation Puzzle: Dice Matrices and Trace Bounds}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let $X,Y\in\mathbb{R}^{n\times n}$ have i.i.d. entries uniform on
+$\{1,2,3,4,5,6\}$. Bound $\mathbb{E}[|\operatorname{Tr}(X^\top Y)|]$ using
+Frobenius Cauchy–Schwarz and compute a numeric estimate.
+\PROBLEM{
+Show $\mathbb{E}[|\operatorname{Tr}(X^\top Y)|]\le
+\sqrt{\mathbb{E}\|X\|_F^2}\sqrt{\mathbb{E}\|Y\|_F^2}$ and evaluate the bound.
+}
+\MODEL{
+\[
+\|X\|_F^2=\sum_{ij}X_{ij}^2,\quad \mathbb{E}[X_{ij}^2]=\frac{1}{6}\sum_{k=1}^6 k^2.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Independence across entries and between $X$ and $Y$.
+\end{bullets}
+}
+\varmapStart
+\var{n}{Matrix dimension.}
+\var{X_{ij},Y_{ij}}{Die-valued entries.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 1 (Frobenius Cauchy–Schwarz) and Jensen on expectation.
+}
+\GOVERN{
+\[
+\mathbb{E}[|\operatorname{Tr}(X^\top Y)|]\le
+\mathbb{E}[\|X\|_F\|Y\|_F]\le
+\sqrt{\mathbb{E}\|X\|_F^2}\sqrt{\mathbb{E}\|Y\|_F^2}.
+\]
+}
+\INPUTS{$n=5$.}
+\DERIVATION{
+\begin{align*}
+\mathbb{E}[X_{ij}^2]&=\frac{1}{6}\sum_{k=1}^6 k^2=\frac{91}{6}\approx 15.1667,\\
+\mathbb{E}\|X\|_F^2&=n^2\,\mathbb{E}[X_{ij}^2]=25\cdot \frac{91}{6}\approx 379.1667,\\
+\sqrt{\mathbb{E}\|X\|_F^2}&\approx 19.472,\ \text{same for }Y,\\
+\Rightarrow \mathbb{E}[|\operatorname{Tr}(X^\top Y)|]
+&\le 19.472^2\approx 379.1667.
+\end{align*}
+}
+\RESULT{
+Bound $\mathbb{E}[|\operatorname{Tr}(X^\top Y)|]\le 379.17$ for $n=5$.
+}
+\UNITCHECK{
+All quantities are scalars; scaling with $n$ matches $n^2$ entries.
+}
+\EDGECASES{
+\begin{bullets}
+\item As $n$ grows, bound scales like $n^2$.
+\item If entries centered, expectation of trace is zero, but magnitude bound
+remains positive.
+\end{bullets}
+}
+\ALTERNATE{
+Center variables and apply variance bounds to tighten estimates.
+}
+\VALIDATION{
+\begin{bullets}
+\item Monte Carlo simulation with fixed seed to estimate expectation.
+\end{bullets}
+}
+\INTUITION{
+Random signs would cancel, but positive dice keep large magnitudes.
+}
+\CANONICAL{
+\begin{bullets}
+\item Frobenius geometry plus Jensen bounds expected magnitudes.
+\end{bullets}
+}
+
+\ProblemPage{7}{Proof-Style: Commuting Weighted AM-GM Trace}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For commuting PSD $A,B$ and $\theta\in[0,1]$, prove
+$\operatorname{Tr}(A^\theta B^{1-\theta})
+\le \theta \operatorname{Tr}(A)+(1-\theta)\operatorname{Tr}(B)$.
+\PROBLEM{
+Use scalar AM-GM on the common eigenbasis to prove the inequality.
+}
+\MODEL{
+\[
+AB=BA\ \Rightarrow\ \exists Q:\ A=Q\Lambda Q^\top,\ B=Q M Q^\top,\
+\Lambda,M\ \text{diagonal, }\lambda_i,\mu_i\ge0.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A,B$ PSD and commute.
+\end{bullets}
+}
+\varmapStart
+\var{\theta}{Weight in $[0,1]$.}
+\var{\lambda_i,\mu_i}{Eigenvalues of $A,B$.}
+\varmapEnd
+\WHICHFORMULA{
+Scalar AM-GM: $x^\theta y^{1-\theta}\le \theta x+(1-\theta)y$ for $x,y\ge0$.
+}
+\GOVERN{
+\[
+\sum_i \lambda_i^\theta \mu_i^{1-\theta}
+\le \sum_i (\theta \lambda_i+(1-\theta)\mu_i).
+\]
+}
+\INPUTS{Symbolic proof; numeric check optional.}
+\DERIVATION{
+\begin{align*}
+\operatorname{Tr}(A^\theta B^{1-\theta})
+&=\operatorname{Tr}\big(Q\Lambda^\theta Q^\top Q M^{1-\theta} Q^\top\big)
+=\operatorname{Tr}(\Lambda^\theta M^{1-\theta})\\
+&=\sum_i \lambda_i^\theta \mu_i^{1-\theta}
+\le \sum_i \big(\theta \lambda_i+(1-\theta)\mu_i\big)\\
+&=\theta \operatorname{Tr}(A)+(1-\theta)\operatorname{Tr}(B).
+\end{align*}
+}
+\RESULT{
+Weighted trace AM-GM for commuting PSD holds with equality iff $\lambda_i=\mu_i$
+for all $i$ with $\theta\in(0,1)$.
+}
+\UNITCHECK{
+Homogeneous of degree one in $(A,B)$ jointly.
+}
+\EDGECASES{
+\begin{bullets}
+\item $\theta=0$ or $1$ reduces to identity.
+\item If some eigenvalues vanish, inequality remains valid.
+\end{bullets}
+}
+\ALTERNATE{
+Lieb concavity implies concavity of $(A,B)\mapsto \operatorname{Tr}(A^\theta B^{1-\theta})$,
+but scalar proof suffices under commuting assumption.
+}
+\VALIDATION{
+\begin{bullets}
+\item Diagonal examples validate entrywise inequality.
+\end{bullets}
+}
+\INTUITION{
+Work in the basis where both are diagonal; apply scalar AM-GM componentwise.
+}
+\CANONICAL{
+\begin{bullets}
+\item Commutativity reduces matrix inequality to scalar AM-GM on eigenvalues.
+\end{bullets}
+}
+
+\ProblemPage{8}{Proof-Style: Nuclear/Operator Duality via Schatten H\"older}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Prove $|\operatorname{Tr}(X^\top Y)|\le \|X\|_*\|Y\|_2$.
+\PROBLEM{
+Apply Schatten H\"older with $(p,q)=(1,\infty)$.
+}
+\MODEL{
+\[
+\|X\|_*=\sum_i \sigma_i(X),\quad \|Y\|_2=\sigma_1(Y).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Finite sums of singular values.
+\end{bullets}
+}
+\varmapStart
+\var{X,Y}{Compatible real matrices.}
+\var{\sigma_i}{Singular values.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 4 with $p=1,q=\infty$.
+}
+\GOVERN{
+\[
+|\operatorname{Tr}(X^\top Y)|\le \left(\sum_i \sigma_i(X)\right)\cdot \sigma_1(Y).
+\]
+}
+\INPUTS{Symbolic proof.}
+\DERIVATION{
+\begin{align*}
+|\operatorname{Tr}(X^\top Y)|&\le \sum_i \sigma_i(X)\sigma_i(Y)
+\le \left(\sum_i \sigma_i(X)\right)\cdot \max_i \sigma_i(Y)\\
+&=\|X\|_*\|Y\|_2.
+\end{align*}
+}
+\RESULT{
+Trace pairing is dominated by nuclear/operator norm dual pair.
+}
+\UNITCHECK{
+Homogeneous: scales linearly in $X$ and $Y$ jointly by absolute scalar.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $Y$ is rank-$1$, bound becomes $|\operatorname{Tr}(X^\top Y)|
+\le \|X\|_* \|Y\|_2$ with equality if singular vectors align.
+\end{bullets}
+}
+\ALTERNATE{
+Direct duality: $\|X\|_*=\max_{\|Y\|_2\le1}\operatorname{Tr}(X^\top Y)$.
+}
+\VALIDATION{
+\begin{bullets}
+\item Compute both sides numerically across random samples.
+\end{bullets}
+}
+\INTUITION{
+One side measures total stretch; the other the largest single stretch.
+}
+\CANONICAL{
+\begin{bullets}
+\item Duality of Schatten $S_1$ and $S_\infty$ under the trace pairing.
+\end{bullets}
+}
+
+\ProblemPage{9}{Combo: Norm-Constrained Minimization of a Trace Term}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Minimize $\operatorname{Tr}(X^\top B)$ subject to $\|X\|_F\le \tau$.
+\PROBLEM{
+Find $X^\star$ and the minimum value using Frobenius Cauchy–Schwarz.
+}
+\MODEL{
+\[
+\min_{\|X\|_F\le \tau}\ \langle X,B\rangle,\quad \langle X,B\rangle=
+\operatorname{Tr}(X^\top B).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $B$ fixed real matrix; $\tau>0$.
+\end{bullets}
+}
+\varmapStart
+\var{B}{Given matrix.}
+\var{X^\star}{Optimal solution.}
+\var{\tau}{Frobenius norm budget.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 1 with equality when $X$ is negatively aligned with $B$.
+}
+\GOVERN{
+\[
+\langle X,B\rangle\ge -\|X\|_F\|B\|_F\ge -\tau\|B\|_F.
+\]
+}
+\INPUTS{$B=\begin{bmatrix}1&-2\\3&0\end{bmatrix}$, $\tau=2$.}
+\DERIVATION{
+\begin{align*}
+\|B\|_F^2&=1+4+9+0=14,\ \|B\|_F=\sqrt{14}.\\
+\min \langle X,B\rangle&=-\tau\|B\|_F=-2\sqrt{14}.\\
+\text{Achieved at }&X^\star=-\tau \frac{B}{\|B\|_F}.
+\end{align*}
+}
+\RESULT{
+$X^\star=-\frac{2}{\sqrt{14}}B$, minimum value $-2\sqrt{14}$.
+}
+\UNITCHECK{
+Trace is linear in $X$; norm constraint consistent; units match.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $\tau=0$, minimum is $0$ at $X=0$.
+\item If $B=0$, any feasible $X$ is optimal with value $0$.
+\end{bullets}
+}
+\ALTERNATE{
+Lagrangian with KKT: $\min_X \langle X,B\rangle+\frac{\lambda}{2}(\|X\|_F^2-\tau^2)$
+gives $X^\star=-B/\lambda$ with $\|X^\star\|_F=\tau$.
+}
+\VALIDATION{
+\begin{bullets}
+\item Substitute $X^\star$ and check feasibility and optimality.
+\end{bullets}
+}
+\INTUITION{
+Point opposite to $B$ on the Frobenius ball.
+}
+\CANONICAL{
+\begin{bullets}
+\item Dual norm alignment yields optimality in Hilbert spaces.
+\end{bullets}
+}
+
+\ProblemPage{10}{Combo: PSD Quadratic Form and AM-GM Trace Bound}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For PSD $A,B$, bound $\operatorname{Tr}(AB)$ via AM-GM and Cauchy–Schwarz.
+\PROBLEM{
+Show $\operatorname{Tr}(AB)\le \tfrac12\operatorname{Tr}(A^2)+\tfrac12\operatorname{Tr}(B^2)$
+and compare with $\operatorname{Tr}(AB)\le \|A\|_F\|B\|_F$.
+}
+\MODEL{
+\[
+\operatorname{Tr}(AB)=\operatorname{Tr}(A^{1/2} A^{1/2}B)\overset{\text{cyc.}}
+{=}\operatorname{Tr}(A^{1/2} B A^{1/2}).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A,B\succeq0$.
+\end{bullets}
+}
+\varmapStart
+\var{A,B}{PSD matrices.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 2 with $X=A$, $Y=B$; or Formula 5 with $X=A$, $Y=B$ at the square level.
+}
+\GOVERN{
+\[
+\operatorname{Tr}(AB)\le \tfrac12\operatorname{Tr}(A^2)+\tfrac12\operatorname{Tr}(B^2).
+\]
+}
+\INPUTS{$A=\begin{bmatrix}2&1\\1&2\end{bmatrix}$,
+$B=\begin{bmatrix}3&0\\0&1\end{bmatrix}$.}
+\DERIVATION{
+\begin{align*}
+\operatorname{Tr}(AB)&=\operatorname{Tr}\!\left(\begin{bmatrix}2&1\\1&2\end{bmatrix}
+\begin{bmatrix}3&0\\0&1\end{bmatrix}\right)
+=\operatorname{Tr}\!\left(\begin{bmatrix}6&1\\3&2\end{bmatrix}\right)=8,\\
+\operatorname{Tr}(A^2)&=\operatorname{Tr}\!\left(\begin{bmatrix}5&4\\4&5\end{bmatrix}\right)=10,\\
+\operatorname{Tr}(B^2)&=\operatorname{Tr}\!\left(\begin{bmatrix}9&0\\0&1\end{bmatrix}\right)=10,\\
+\tfrac12(\operatorname{Tr}(A^2)+\operatorname{Tr}(B^2))&=10\ge 8.\\
+\|A\|_F&=\sqrt{2^2+1^2+1^2+2^2}=\sqrt{10},\ \|B\|_F=\sqrt{10},\\
+\|A\|_F\|B\|_F&=10\ge 8.
+\end{align*}
+}
+\RESULT{
+Both bounds hold; here both give the same numeric bound $10\ge 8$.
+}
+\UNITCHECK{
+All traces scalar; PSD ensures nonnegativity of quadratic terms.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $A=B$, both bounds give equality $\operatorname{Tr}(A^2)$.
+\item If $AB=0$, both bounds give zero left side.
+\end{bullets}
+}
+\ALTERNATE{
+Diagonalize both simultaneously if they commute, then apply entrywise AM-GM.
+}
+\VALIDATION{
+\begin{bullets}
+\item Random PSD tests verify inequality numerically.
+\end{bullets}
+}
+\INTUITION{
+Cross energy does not exceed the average of self-energies.
+}
+\CANONICAL{
+\begin{bullets}
+\item Trace AM-GM at the level of $A$ and $B$ without square roots.
+\end{bullets}
+}
+
+\section{Coding Demonstrations}
+
+\CodeDemoPage{Numerical Check of Von Neumann Trace Inequality}
+\PROBLEM{
+Given $A,B$, compute $|\operatorname{Tr}(A^\top B)|$ and compare with
+$\sum_i \sigma_i(A)\sigma_i(B)$. Verify equality by aligning singular vectors.
+}
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> tuple}: parse sizes and seed.
+\item \inlinecode{def solve_case(obj) -> dict}: compute both sides.
+\item \inlinecode{def validate() -> None}: unit tests with assertions.
+\item \inlinecode{def main() -> None}: orchestrate deterministic runs.
+\end{bullets}
+}
+\INPUTS{
+String "m n seed" with integers.
+}
+\OUTPUTS{
+Dictionary with keys: "lhs", "rhs", "ok", "eq_aligned".
+}
+\FORMULA{
+\[
+\text{lhs}=|\operatorname{Tr}(A^\top B)|,\quad
+\text{rhs}=\sum_i \sigma_i(A)\sigma_i(B).
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    m, n, seed = [int(x) for x in s.split()]
+    return m, n, seed
+
+def solve_case(obj):
+    m, n, seed = obj
+    np.random.seed(seed)
+    A = np.random.randn(m, n)
+    B = np.random.randn(m, n)
+    lhs = abs(float(np.trace(A.T @ B)))
+    sa = np.linalg.svd(A, compute_uv=False)
+    sb = np.linalg.svd(B, compute_uv=False)
+    r = min(len(sa), len(sb))
+    rhs = float((sa[:r] * sb[:r]).sum())
+    # Align singular vectors for equality
+    Ua, Sa, Va = np.linalg.svd(A, full_matrices=False)
+    Ub, Sb, Vb = np.linalg.svd(B, full_matrices=False)
+    A2 = Ua @ np.diag(Sa) @ Va
+    B2 = Ua @ np.diag(Sb) @ Va
+    lhs_eq = abs(float(np.trace(A2.T @ B2)))
+    rhs_eq = float((Sa[:r] * Sb[:r]).sum())
+    return {"lhs": lhs, "rhs": rhs, "ok": lhs <= rhs + 1e-10,
+            "eq_aligned": abs(lhs_eq - rhs_eq) < 1e-9}
+
+def validate():
+    d = solve_case((4, 3, 0))
+    assert d["ok"]
+    assert d["eq_aligned"]
+
+def main():
+    validate()
+    print(solve_case(read_input("5 4 1")))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    return tuple(int(x) for x in s.split())
+
+def solve_case(obj):
+    m, n, seed = obj
+    np.random.seed(seed)
+    A = np.random.randn(m, n)
+    B = np.random.randn(m, n)
+    lhs = abs(float(np.trace(A.T @ B)))
+    sa = np.linalg.svd(A, compute_uv=False)
+    sb = np.linalg.svd(B, compute_uv=False)
+    r = min(len(sa), len(sb))
+    rhs = float(np.dot(sa[:r], sb[:r]))
+    Ua, Sa, Va = np.linalg.svd(A, full_matrices=False)
+    Ub, Sb, Vb = np.linalg.svd(B, full_matrices=False)
+    lhs_eq = abs(float(np.trace((Ua @ np.diag(Sa) @ Va).T
+                                @ (Ua @ np.diag(Sb) @ Va))))
+    rhs_eq = float(np.dot(Sa[:r], Sb[:r]))
+    return {"lhs": lhs, "rhs": rhs, "ok": lhs <= rhs + 1e-10,
+            "eq_aligned": abs(lhs_eq - rhs_eq) < 1e-9}
+
+def validate():
+    assert solve_case((3, 3, 0))["ok"]
+    assert solve_case((6, 2, 7))["eq_aligned"]
+
+def main():
+    validate()
+    print(solve_case(read_input("6 5 42")))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Time $\mathcal{O}(mn\min\{m,n\})$ due to SVD; space $\mathcal{O}(mn)$.
+}
+\FAILMODES{
+\begin{bullets}
+\item Ill-conditioned matrices: SVD remains stable but tolerances needed.
+\item Nonfinite inputs: guard against NaN/Inf.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item SVD is backward stable; trace computation is well-conditioned.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Assertions on inequality and equality in aligned case.
+\item Repeat with fixed seeds for determinism.
+\end{bullets}
+}
+\RESULT{
+Both implementations agree; inequality holds with equality under alignment.
+}
+\EXPLANATION{
+SVD yields singular values; von Neumann compares trace with their product sum.
+}
+\EXTENSION{
+Vectorized sweeps over seeds to estimate tightness distributions.
+}
+
+\CodeDemoPage{Matrix AM-GM: $\operatorname{Tr}(A^{1/2}B^{1/2})$ vs. Average Trace}
+\PROBLEM{
+Given PSD $A,B$, compute $\operatorname{Tr}(A^{1/2}B^{1/2})$ and verify
+$\le \tfrac12\operatorname{Tr}(A+B)$ deterministically.
+}
+\API{
+\begin{bullets}
+\item \inlinecode{def psd_sqrt(M) -> np.ndarray}: eigendecompose and sqrt.
+\item \inlinecode{def solve_case(seed) -> dict}: build PSD and compare.
+\item \inlinecode{def validate() -> None}: assertions for multiple seeds.
+\item \inlinecode{def main() -> None}: run validation and sample case.
+\end{bullets}
+}
+\INPUTS{
+Integer seed for reproducibility.
+}
+\OUTPUTS{
+Dictionary with "lhs", "rhs", "ok".
+}
+\FORMULA{
+\[
+\text{lhs}=\operatorname{Tr}(A^{1/2}B^{1/2}),\quad
+\text{rhs}=\tfrac12\operatorname{Tr}(A+B).
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def psd_sqrt(M):
+    w, Q = np.linalg.eigh(M)
+    w = np.clip(w, 0.0, None)
+    return Q @ np.diag(np.sqrt(w)) @ Q.T
+
+def solve_case(seed):
+    np.random.seed(seed)
+    G = np.random.randn(4, 4)
+    H = np.random.randn(4, 4)
+    A = G.T @ G + 0.1 * np.eye(4)
+    B = H.T @ H + 0.1 * np.eye(4)
+    As = psd_sqrt(A)
+    Bs = psd_sqrt(B)
+    lhs = float(np.trace(As @ Bs))
+    rhs = float(0.5 * np.trace(A + B))
+    return {"lhs": lhs, "rhs": rhs, "ok": lhs <= rhs + 1e-10}
+
+def validate():
+    for s in range(5):
+        d = solve_case(s)
+        assert d["ok"]
+
+def main():
+    validate()
+    print(solve_case(7))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def psd_sqrt(M):
+    w, Q = np.linalg.eigh(M)
+    return Q @ np.diag(np.sqrt(np.clip(w, 0.0, None))) @ Q.T
+
+def solve_case(seed):
+    np.random.seed(seed)
+    A = np.random.randn(5, 5)
+    B = np.random.randn(5, 5)
+    A = A.T @ A + 0.2 * np.eye(5)
+    B = B.T @ B + 0.2 * np.eye(5)
+    As = psd_sqrt(A)
+    Bs = psd_sqrt(B)
+    lhs = float(np.trace(As @ Bs))
+    rhs = float(0.5 * np.trace(A + B))
+    return {"lhs": lhs, "rhs": rhs, "ok": lhs <= rhs + 1e-10}
+
+def validate():
+    for s in [0, 1, 2, 3, 4]:
+        assert solve_case(s)["ok"]
+
+def main():
+    validate()
+    print(solve_case(11))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Eigen $4\times 4$ or $5\times 5$: time $\mathcal{O}(n^3)$, space $\mathcal{O}(n^2)$.
+}
+\FAILMODES{
+\begin{bullets}
+\item Negative eigenvalues from roundoff: clip to zero.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Symmetric eigendecomposition is numerically stable.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Multiple seeds; tight tolerance in assertion.
+\end{bullets}
+}
+\RESULT{
+All tests satisfy AM-GM trace inequality deterministically.
+}
+\EXPLANATION{
+Young inequality with $A^{1/2},B^{1/2}$ yields the bound; code implements it.
+}
+
+\CodeDemoPage{Determinant vs. Trace for PSD}
+\PROBLEM{
+Given $A=G^\top G+\alpha I$, verify $\det(A)^{1/n}\le \operatorname{Tr}(A)/n$.
+}
+\API{
+\begin{bullets}
+\item \inlinecode{def solve_case(n, seed) -> dict}: build PSD and compare.
+\item \inlinecode{def validate() -> None}: repeated checks.
+\item \inlinecode{def main() -> None}: run.
+\end{bullets}
+}
+\INPUTS{
+$n$ size and integer seed.
+}
+\OUTPUTS{
+"lhs", "rhs", "ok".
+}
+\FORMULA{
+\[
+\text{lhs}=\det(A)^{1/n},\quad \text{rhs}=\operatorname{Tr}(A)/n.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def solve_case(n, seed):
+    np.random.seed(seed)
+    G = np.random.randn(n, n)
+    A = G.T @ G + 0.5 * np.eye(n)
+    lhs = float(np.linalg.det(A) ** (1.0 / n))
+    rhs = float(np.trace(A) / n)
+    return {"lhs": lhs, "rhs": rhs, "ok": lhs <= rhs + 1e-10}
+
+def validate():
+    for n in [2, 3, 4]:
+        for s in range(5):
+            assert solve_case(n, s)["ok"]
+
+def main():
+    validate()
+    print(solve_case(4, 7))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def solve_case(n, seed):
+    np.random.seed(seed)
+    G = np.random.randn(n, n)
+    A = G.T @ G + 0.1 * np.eye(n)
+    sign, logdet = np.linalg.slogdet(A)
+    lhs = float(np.exp(logdet / n))
+    rhs = float(np.trace(A) / n)
+    return {"lhs": lhs, "rhs": rhs, "ok": lhs <= rhs + 1e-10}
+
+def validate():
+    for n in [2, 3, 5]:
+        for s in [0, 1, 2, 3]:
+            assert solve_case(n, s)["ok"]
+
+def main():
+    validate()
+    print(solve_case(5, 9))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Time $\mathcal{O}(n^3)$ for Cholesky-like operations; space $\mathcal{O}(n^2)$.
+}
+\FAILMODES{
+\begin{bullets}
+\item Near-singular $A$: use slogdet to avoid underflow/overflow.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Log-determinant computation is numerically stable for SPD.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Sweep across sizes and seeds with assertions.
+\end{bullets}
+}
+\RESULT{
+Inequality holds across tested PSD matrices.
+}
+\EXPLANATION{
+Eigenvalue AM-GM translates to determinant and trace; code evaluates both.
+}
+
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Linear predictor $f_W(X)=\operatorname{Tr}(W^\top X)$ with weight $W$ and
+feature matrix $X$. Bound prediction magnitude using nuclear/operator or
+Frobenius norms.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Deterministic features; bounded operator norm $\|X\|_2$.
+\item Weight constraints via $\|W\|_*$ or $\|W\|_F$.
+\end{bullets}
+}
+\WHICHFORMULA{
+$|\operatorname{Tr}(W^\top X)|\le \|W\|_*\|X\|_2$ (Formula 4 with $p=1$) and
+$|\operatorname{Tr}(W^\top X)|\le \|W\|_F\|X\|_F$ (Formula 1).
+}
+\varmapStart
+\var{W}{Model parameter matrix.}
+\var{X}{Feature matrix.}
+\var{\tau}{Norm budget.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate $W$ under a norm constraint.
+\item Sample $X$ and compute prediction and bounds.
+\item Verify inequalities and compare tightness.
+\end{bullets}
+}
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    n, seed = [int(x) for x in s.split()]
+    return n, seed
+
+def solve_case(obj):
+    n, seed = obj
+    np.random.seed(seed)
+    U, _ = np.linalg.qr(np.random.randn(n, n))
+    V, _ = np.linalg.qr(np.random.randn(n, n))
+    s = np.array([2.0, 1.0] + [0.0] * (n - 2))
+    W = U @ np.diag(s) @ V.T  # nuclear norm = 3
+    X = np.random.randn(n, n)
+    pred = float(np.trace(W.T @ X))
+    bound1 = float(np.linalg.norm(s, 1) * np.linalg.norm(X, 2))
+    bound2 = float(np.linalg.norm(W, "fro") * np.linalg.norm(X, "fro"))
+    return {"pred": pred, "b1": bound1, "b2": bound2,
+            "ok1": abs(pred) <= bound1 + 1e-10,
+            "ok2": abs(pred) <= bound2 + 1e-10}
+
+def main():
+    d = solve_case(read_input("6 0"))
+    print(d)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{Implementation (Library Version)}
+\begin{codepy}
+import numpy as np
+
+def main():
+    n, seed = 6, 1
+    np.random.seed(seed)
+    U, _ = np.linalg.qr(np.random.randn(n, n))
+    V, _ = np.linalg.qr(np.random.randn(n, n))
+    s = np.array([1.5, 0.5] + [0.0] * (n - 2))
+    W = U @ np.diag(s) @ V.T
+    X = np.random.randn(n, n)
+    pred = float(np.trace(W.T @ X))
+    b1 = float(np.sum(s) * np.linalg.norm(X, 2))
+    b2 = float(np.linalg.norm(W, "fro") * np.linalg.norm(X, "fro"))
+    print({"pred": pred, "b1": b1, "b2": b2,
+           "ok1": abs(pred) <= b1 + 1e-10,
+           "ok2": abs(pred) <= b2 + 1e-10})
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{
+Max absolute prediction bounded by nuclear-operator or Frobenius-Frobenius.
+}
+\INTERPRET{
+Nuclear norm promotes low rank; operator bound reflects worst-case feature
+stretch.
+}
+\NEXTSTEPS{
+Use bounds to set margin-based regularizers and certify robustness.
+}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Given factor loading matrix $L$ and covariance $\Sigma\succeq0$, bound the
+risk proxy $\operatorname{Tr}(L^\top \Sigma L)$ using Young and Frobenius norm.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\Sigma$ is PSD; $L$ arbitrary.
+\end{bullets}
+}
+\WHICHFORMULA{
+$\operatorname{Tr}(AB)\le \tfrac12\operatorname{Tr}(A^2)+\tfrac12\operatorname{Tr}(B^2)$
+with $A=L^\top \Sigma^{1/2}$, $B=\Sigma^{1/2}L$.
+}
+\varmapStart
+\var{L}{Loadings matrix $(d\times k)$.}
+\var{\Sigma}{Covariance $(d\times d)$ PSD.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Build PSD $\Sigma$ and random $L$.
+\item Compute $\operatorname{Tr}(L^\top \Sigma L)$.
+\item Bound via AM-GM form and compare.
+\end{bullets}
+}
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def psd_from_seed(d, seed):
+    np.random.seed(seed)
+    A = np.random.randn(d, d)
+    return A.T @ A + 0.1 * np.eye(d)
+
+def main():
+    d, k, seed = 5, 3, 0
+    Sigma = psd_from_seed(d, seed)
+    L = np.random.randn(d, k)
+    S2 = np.linalg.cholesky(Sigma)
+    A = L.T @ S2.T
+    B = S2 @ L
+    lhs = float(np.trace(L.T @ Sigma @ L))
+    rhs = float(0.5 * (np.trace(A.T @ A) + np.trace(B.T @ B)))
+    print({"lhs": lhs, "rhs": rhs, "ok": lhs <= rhs + 1e-10})
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{
+Compare exact risk proxy and the AM-GM upper bound.
+}
+\INTERPRET{
+Cross-risk $\operatorname{Tr}(L^\top \Sigma L)$ is controlled by quadratic
+energies in whitened coordinates.
+}
+\NEXTSTEPS{
+Optimize $L$ under constraints to minimize the upper bound for risk control.
+}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+For gradient $G$ and weights $W$, bound inner product $\operatorname{Tr}(W^\top G)$
+to derive a safe step size using Young inequality.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Frobenius geometry for parameter updates.
+\item Learning rate chosen to ensure descent.
+\end{bullets}
+}
+\WHICHFORMULA{
+$\operatorname{Tr}(W^\top G)\le \tfrac{1}{2\varepsilon}\|W\|_F^2
++\tfrac{\varepsilon}{2}\|G\|_F^2$ for any $\varepsilon>0$.
+}
+\PIPELINE{
+\begin{bullets}
+\item Fix $W,G$ and pick $\varepsilon$.
+\item Compute bound and choose step size accordingly.
+\end{bullets}
+}
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+
+def main():
+    np.random.seed(0)
+    W = np.random.randn(10, 10)
+    G = np.random.randn(10, 10)
+    eps = 0.1
+    ip = float(np.trace(W.T @ G))
+    bnd = float(0.5 / eps * np.linalg.norm(W, "fro") ** 2
+                + 0.5 * eps * np.linalg.norm(G, "fro") ** 2)
+    print({"ip": ip, "bound": bnd, "ok": ip <= bnd + 1e-10})
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{
+Inner product vs. bound; descent condition for update size.
+}
+\INTERPRET{
+Cross term is upper bounded by energy terms with tunable $\varepsilon$.
+}
+\NEXTSTEPS{
+Adapt $\varepsilon$ online to balance fit and regularization.
+}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+EDA on covariance matrices: verify $\det(\Sigma)^{1/d}\le \operatorname{Tr}(\Sigma)/d$
+and $\operatorname{Tr}(S^{1/2}T^{1/2})\le \tfrac12\operatorname{Tr}(S+T)$ for
+empirical covariances $S,T$.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Data centered; covariances are PSD.
+\end{bullets}
+}
+\WHICHFORMULA{
+Formulas 5 and 6 applied to empirical covariances.
+}
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic correlated features.
+\item Estimate covariances.
+\item Verify inequalities numerically.
+\end{bullets}
+}
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def cov(X):
+    Xc = X - X.mean(axis=0, keepdims=True)
+    return (Xc.T @ Xc) / X.shape[0]
+
+def psd_sqrt(M):
+    w, Q = np.linalg.eigh(M)
+    return Q @ np.diag(np.sqrt(np.clip(w, 0.0, None))) @ Q.T
+
+def main():
+    np.random.seed(0)
+    n, d = 500, 4
+    Z = np.random.randn(n, d)
+    A = np.array([[1.0, 0.8, 0.2, 0.0],
+                  [0.8, 1.0, 0.1, 0.0],
+                  [0.2, 0.1, 1.0, 0.5],
+                  [0.0, 0.0, 0.5, 1.0]])
+    X = Z @ np.linalg.cholesky(A).T
+    Y = Z @ np.linalg.cholesky(0.5 * (A + np.eye(d))).T
+    S = cov(X)
+    T = cov(Y)
+    lhs1 = float(np.exp(np.linalg.slogdet(S)[1] / d))
+    rhs1 = float(np.trace(S) / d)
+    As = psd_sqrt(S)
+    Bs = psd_sqrt(T)
+    lhs2 = float(np.trace(As @ Bs))
+    rhs2 = float(0.5 * np.trace(S + T))
+    print({"det_tr": (lhs1, rhs1, lhs1 <= rhs1 + 1e-10),
+           "amgm": (lhs2, rhs2, lhs2 <= rhs2 + 1e-10)})
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{
+Geometric vs. arithmetic mean of eigenvalues; AM-GM trace gap.
+}
+\INTERPRET{
+Isotropy increases determinant under fixed trace; AM-GM reflects blending cost.
+}
+\NEXTSTEPS{
+Apply to feature scaling and covariance shrinkage selection.
+}
+
+\end{document}

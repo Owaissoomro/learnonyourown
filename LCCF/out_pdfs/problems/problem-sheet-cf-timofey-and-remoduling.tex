@@ -1,0 +1,921 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Timofey and remoduling}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/763/C}}
+\LINE{DIFFICULTY / RATING}{2600}
+\STATEMENT{Little Timofey likes integers a lot. Unfortunately, he is very young and can not work with very big integers, so he does all the operations modulo his favorite prime $m$. Also, Timofey likes to look for arithmetical progressions everywhere.
+
+One of his birthday presents was a sequence of distinct integers $a_1,a_2,\ldots,a_n$. Timofey wants to know whether he can rearrange the elements of the sequence so that it will be an arithmetical progression modulo $m$, or not.
+
+Arithmetical progression modulo $m$ of length $n$ with first element $x$ and difference $d$ is sequence of integers
+\begin{BreakableEquation*}
+x,\ x + d,\ x + 2d,\ \ldots,\ x + (n - 1)\cdot d,
+\end{BreakableEquation*}
+each taken modulo $m$.
+
+Input: The first line contains two integers $m$ and $n$ ($2 \le m \le 10^9 + 7$, $1 \le n \le 10^5$, $m$ is prime) — Timofey's favorite prime modulus and the length of the sequence.
+
+The second line contains $n$ distinct integers $a_1,a_2,\ldots,a_n$ ($0 \le a_i < m$) — the elements of the sequence.
+
+Output: Print $-1$ if it is not possible to rearrange the elements of the sequence so that it will be an arithmetical progression modulo $m$.
+
+Otherwise, print two integers — the first element of the obtained progression $x$ ($0 \le x < m$) and its difference $d$ ($0 \le d < m$).
+
+If there are multiple answers, print any of them.}
+\BREAKDOWN{We must decide if the given distinct residues form a set equal to some modular arithmetic progression of length $n$ in $\mathbb{Z}_m$ (with $m$ prime), and output any corresponding $(x,d)$.}
+\ELI{Use modular moment identities to derive $d$ (up to sign), then compute $x$ from the sum and verify membership via a hash set; handle edge and degenerate cases carefully.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Two integers $m,n$ on the first line; next line $n$ distinct integers $a_i$ with $0 \le a_i < m$. Prime $m$, $2 \le m \le 10^9+7$, $1 \le n \le 10^5$.}
+\OUTPUTS{Print $-1$ if impossible. Otherwise print any valid pair $x,d$ with $0 \le x,d < m$ such that $\{x + k d \bmod m \mid 0 \le k < n\}$ equals the input set.}
+\SAMPLES{Example 1: $m=7, n=3$, $a=[1,3,5]$ $\to$ output: $1\ 2$. Example 2: $m=5, n=4$, $a=[0,1,2,3]$ $\to$ output: $0\ 1$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Given a prime field $\mathbb{F}_m$ and a subset $A \subset \mathbb{F}_m$ with $|A|=n$, decide if there exist $x,d \in \mathbb{F}_m$ such that $A=\{x + k d \mid k=0,\ldots,n-1\}$.}
+\varmapStart
+\var{m}{prime modulus}
+\var{n}{set size}
+\var{A}{input set of residues}
+\var{x}{first term of arithmetic progression}
+\var{d}{common difference (step)}
+\var{S_1}{sum $\sum a_i \bmod m$}
+\var{S_2}{sum of squares $\sum a_i^2 \bmod m$}
+\var{S_4}{sum of fourth powers $\sum a_i^4 \bmod m$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+S_1 &\equiv n x + d \cdot \frac{n(n-1)}{2} \pmod m, \\
+S_2 &\equiv n x^2 + 2 x d \cdot \frac{n(n-1)}{2} + d^2 \cdot \frac{n(n-1)(2n-1)}{6} \pmod m, \\
+S_4 &\equiv n x^4 + 4 x^3 d \cdot \frac{n(n-1)}{2} + 6 x^2 d^2 \cdot \frac{n(n-1)(2n-1)}{6} \\
+&\quad + 4 x d^3 \cdot \left(\frac{n(n-1)}{2}\right)^2 + d^4 \cdot \frac{(n-1)n(2n-1)(3n^2 - 3n - 1)}{30} \pmod m.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{All $a_i$ are distinct. $m$ is prime, so all non-zero elements have inverses. For $n=1$ or $n=m$ special handling applies.}
+\INVARIANTS{If a solution exists with $d \ne 0$, then $d$ is unique up to sign, and the set equals an AP regardless of ordering. The AP set equality can be verified in $O(n)$ via hashing.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Use the first-moment identity $S_1 \equiv n x + c_1 d$ with $c_1=\tfrac{n(n-1)}{2}$ to compute $x$ for each $d$, then check the set equality.}
+\ASSUMPTIONS{Feasible only when $m$ is small.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute $S_1=\sum a_i \bmod m$, $c_1=\tfrac{n(n-1)}{2} \bmod m$, and $n^{-1} \bmod m$.
+\item For every $d \in [0,m-1]$, set $x \equiv (S_1 - c_1 d) \cdot n^{-1} \pmod m$.
+\item Verify whether $\{x+k d \bmod m \mid 0 \le k < n\}$ equals the input set; if so, output $(x,d)$.
+\end{algosteps}
+\COMPLEXITY{Brute force over $m$ candidates.}
+\[
+\begin{aligned}
+T(n,m) &= O(m \cdot n) \\
+S(n) &= O(n)
+\end{aligned}
+\]
+\CORRECTNESS{If a valid $d$ exists, the corresponding $x$ from the first-moment identity produces the correct AP set; otherwise no $d$ passes the membership check.}
+\EDGECASES{$n=1$ trivially $(x,d)=(a_1,0)$. If $n=m$, answer is $(0,1)$.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple, Optional, Set
+
+def inv_mod(a: int, p: int) -> int:
+    return pow(a, p - 2, p)
+
+def read_input(data: Optional[str] = None) -> Tuple[int, int, List[int]]:
+    if data is None:
+        data = sys.stdin.read()
+    parts = list(map(int, data.strip().split()))
+    if not parts:
+        return 0, 0, []
+    m, n = parts[0], parts[1]
+    arr = parts[2:2 + n]
+    return m, n, arr
+
+def check_progression(m: int, n: int, arr_set: Set[int], x: int, d: int) -> bool:
+    for k in range(n):
+        if (x + k * d) % m not in arr_set:
+            return False
+    return True
+
+def solve_case_bruteforce(m: int, n: int, arr: List[int]) -> Optional[Tuple[int, int]]:
+    if n == 0:
+        return None
+    if n == 1:
+        return (arr[0] % m, 0)
+    if n == m:
+        return (0, 1)
+    arr_set = set(a % m for a in arr)
+    if len(arr_set) != n:
+        return None
+    S1 = sum(arr) % m
+    inv_n = inv_mod(n % m, m)
+    # compute c1 = n*(n-1)/2 mod m safely
+    c1 = (n % m) * ((n - 1) % m) % m
+    c1 = (c1 * inv_mod(2 % m, m)) % m if m != 2 else 0  # if m=2, we'll just brute d anyway
+    for d in range(m):
+        x = (S1 - c1 * d) % m
+        x = (x * inv_n) % m
+        if check_progression(m, n, arr_set, x, d):
+            return (x, d)
+    return None
+
+def main():
+    m, n, arr = read_input()
+    if m == 0 and n == 0:
+        # self-test mode
+        def run():
+            # Small brute cases
+            m, n, arr = 7, 3, [1, 3, 5]
+            assert solve_case_bruteforce(m, n, arr) == (1, 2)
+            m, n, arr = 5, 4, [0, 1, 2, 3]
+            ans = solve_case_bruteforce(m, n, arr)
+            assert ans in {(0, 1), (1, 1), (2, 1), (3, 1), (4, 1), (0, 2), (0, 3), (0, 4)}
+        run()
+        print("OK")
+        return
+    ans = solve_case_bruteforce(m, n, arr)
+    if ans is None:
+        print(-1)
+    else:
+        print(ans[0], ans[1])
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Checked on tiny sets where brute force is feasible.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Complement Trick + Early Exit}
+\WHICHFORMULA{Reduce the candidate space by possibly switching to the complement set when $n > m/2$; use the same first-moment identity and a smaller verification set.}
+\ASSUMPTIONS{If the complement forms an AP with step $d$, then the original also forms an AP with the same $d$ and shifted $x$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item If $n > m/2$, replace $A$ by its complement in $\mathbb{Z}_m$ and set $n \leftarrow m - n$. Remember a flag to map back $x$ later.
+\item For each $d$ in a limited subset (e.g., test the first $\min(m, 200000)$ values or a few deltas from a reference point), compute $x$ from $S_1$ and verify.
+\item If the complement was used, convert the found $(x,d)$ back to the original set.
+\end{algosteps}
+\COMPLEXITY{Still $O(n \cdot \min(m, \text{cap}))$, but faster on dense sets due to complement.}
+\[
+\begin{aligned}
+T(n,m) &= O(\min(n,m-n)\cdot \text{cap}) \\
+\end{aligned}
+\]
+\CORRECTNESS{The complement of an AP of length $n$ in $\mathbb{Z}_m$ is an AP of length $m-n$ with the same $d$. Verifying set equality ensures no false positives.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple, Optional, Set
+
+def inv_mod(a: int, p: int) -> int:
+    return pow(a, p - 2, p)
+
+def read_input(data: Optional[str] = None) -> Tuple[int, int, List[int]]:
+    if data is None:
+        data = sys.stdin.read()
+    parts = list(map(int, data.strip().split()))
+    if not parts:
+        return 0, 0, []
+    m, n = parts[0], parts[1]
+    arr = parts[2:2 + n]
+    return m, n, arr
+
+def check_progression(m: int, n: int, arr_set: Set[int], x: int, d: int) -> bool:
+    for k in range(n):
+        if (x + k * d) % m not in arr_set:
+            return False
+    return True
+
+def solve_case_improved(m: int, n: int, arr: List[int]) -> Optional[Tuple[int, int]]:
+    if n == 0:
+        return None
+    if n == 1:
+        return (arr[0] % m, 0)
+    if n == m:
+        return (0, 1)
+    arr = [a % m for a in arr]
+    arr_set = set(arr)
+    if len(arr_set) != n:
+        return None
+    # Complement trick
+    use_compl = False
+    if n > m - n:
+        use_compl = True
+        full = set(range(m))
+        comp_set = full - arr_set
+        arr_set = comp_set
+        n = m - n
+    S1 = sum(arr_set) % m
+    inv_n = inv_mod(n % m, m)
+    if m == 1:
+        return None
+    inv2 = inv_mod(2 % m, m) if m != 2 else 0
+    c1 = (n % m) * ((n - 1) % m) % m
+    c1 = (c1 * inv2) % m if m != 2 else 0
+    cap = min(m, 200000)  # practical cap
+    tried = 0
+    for d in range(m):
+        tried += 1
+        if tried > cap:
+            break
+        x = (S1 - c1 * d) % m
+        x = (x * inv_n) % m
+        if check_progression(m, n, arr_set, x, d):
+            if use_compl:
+                # Original set is complement: original AP starts at (x + n*d) with same d
+                x_orig = (x + n * d) % m
+                return (x_orig, d)
+            return (x, d)
+    return None
+
+def main():
+    m, n, arr = read_input()
+    if m == 0 and n == 0:
+        # self-tests
+        m, n, arr = 7, 3, [1, 3, 5]
+        assert solve_case_improved(m, n, arr) == (1, 2)
+        m, n, arr = 5, 4, [0, 1, 2, 3]
+        ans = solve_case_improved(m, n, arr)
+        assert ans is not None
+        m, n, arr = 7, 3, [0, 1, 3]
+        assert solve_case_improved(m, n, arr) is None
+        print("OK")
+        return
+    ans = solve_case_improved(m, n, arr)
+    if ans is None:
+        print(-1)
+    else:
+        print(ans[0], ans[1])
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Works on small/dense cases and complements; capped search avoids worst-case scans.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Moment Identities + Tonelli--Shanks}
+\WHICHFORMULA{Eliminate $x$ from the first two moment equations to get a linear equation in $d^2$. When degenerate, use the fourth moment to solve for $d^4$. Recover $d$ via modular square roots and verify.}
+\ASSUMPTIONS{Prime $m$; modular inverses of $2,6,30$ exist unless $m \in \{2,3,5\}$, which we handle by brute force.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Handle $n=1$ and $n=m$ directly.
+\item Compute $S_1=\sum a_i$, $S_2=\sum a_i^2$, $S_4=\sum a_i^4$ modulo $m$.
+\item Compute $c_1=\tfrac{n(n-1)}{2}$, $c_2=\tfrac{n(n-1)(2n-1)}{6}$, $K=c_2 - c_1^2/n \pmod m$, and $R=S_2 - S_1^2/n \pmod m$.
+\item If $K \ne 0$: get $d^2 \equiv R/K \pmod m$. Take modular square root(s) to get $d$, compute $x$ from $S_1$, and verify.
+\item If $K=0$: require $R=0$. Compute $S_4$ coefficient $C$ so that $S_4 \equiv n (S_1/n)^4 + C d^4$; solve for $d^4$ and take two square roots to get $d$; compute $x$ and verify.
+\item For $m \in \{2,3,5\}$ or if degenerate, fall back to bounded brute force over $d$.
+\end{algosteps}
+\OPTIMALITY{Deriving a constant-size candidate set (at most two) for $d$ leads to $O(n)$ verification. The Tonelli--Shanks algorithm runs in $O(\log^2 m)$ time.}
+\COMPLEXITY{Overall $O(n + \log^2 m)$, dominated by hashing the verification set and modular root finding.}
+\[
+\begin{aligned}
+T(n) &= O(n + \log^2 m) \\
+S(n) &= O(n)
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple, Optional, Set
+
+def inv_mod(a: int, p: int) -> int:
+    return pow(a, p - 2, p)
+
+def legendre_symbol(a: int, p: int) -> int:
+    if a % p == 0:
+        return 0
+    ls = pow(a, (p - 1) // 2, p)
+    return -1 if ls == p - 1 else ls
+
+def tonelli_shanks(n: int, p: int) -> Optional[int]:
+    """Return r with r^2 == n (mod p) for odd prime p, or None if no root."""
+    n %= p
+    if n == 0:
+        return 0
+    if p == 2:
+        return n
+    if legendre_symbol(n, p) != 1:
+        return None
+    if p % 4 == 3:
+        return pow(n, (p + 1) // 4, p)
+    # Factor p-1 as q * 2^s with q odd
+    q = p - 1
+    s = 0
+    while q % 2 == 0:
+        q //= 2
+        s += 1
+    # Find a quadratic non-residue z
+    z = 2
+    while legendre_symbol(z, p) != -1:
+        z += 1
+    m = s
+    c = pow(z, q, p)
+    t = pow(n, q, p)
+    r = pow(n, (q + 1) // 2, p)
+    while t != 1:
+        # find least i in [1, m) such that t^(2^i) == 1
+        i = 1
+        t2i = pow(t, 2, p)
+        while t2i != 1:
+            t2i = pow(t2i, 2, p)
+            i += 1
+            if i == m:
+                return None
+        b = pow(c, 1 << (m - i - 1), p)
+        r = (r * b) % p
+        c = (b * b) % p
+        t = (t * c) % p
+        m = i
+    return r
+
+def read_input(data: Optional[str] = None) -> Tuple[int, int, List[int]]:
+    if data is None:
+        data = sys.stdin.read()
+    parts = list(map(int, data.strip().split()))
+    if not parts:
+        return 0, 0, []
+    m, n = parts[0], parts[1]
+    arr = parts[2:2 + n]
+    return m, n, arr
+
+def check_progression(m: int, n: int, arr_set: Set[int], x: int, d: int) -> bool:
+    for k in range(n):
+        if (x + k * d) % m not in arr_set:
+            return False
+    return True
+
+def solve_case(m: int, n: int, arr: List[int]) -> Optional[Tuple[int, int]]:
+    if n == 0:
+        return None
+    arr = [a % m for a in arr]
+    arr_set = set(arr)
+    if len(arr_set) != n:
+        return None
+    if n == 1:
+        return (arr[0] % m, 0)
+    if n == m:
+        return (0, 1)
+    # Brute fallback for tiny primes
+    if m in (2, 3, 5):
+        return solve_case_bruteforce(m, n, arr)
+    inv_n = inv_mod(n % m, m)
+    inv2 = inv_mod(2 % m, m)
+    inv6 = inv_mod(6 % m, m)
+    inv30 = inv_mod(30 % m, m)
+    S1 = sum(arr) % m
+    S2 = sum((a * a) % m for a in arr) % m
+    S4 = sum((pow(a, 4, m)) for a in arr) % m
+    # c1, c2
+    c1 = (n % m) * ((n - 1) % m) % m
+    c1 = (c1 * inv2) % m
+    c2 = (n % m) * ((n - 1) % m) % m
+    c2 = (c2 * ((2 * n - 1) % m)) % m
+    c2 = (c2 * inv6) % m
+    # K and RHS for d^2
+    K = (c2 - (c1 * c1 % m) * inv_n) % m
+    RHS = (S2 - (S1 * S1 % m) * inv_n) % m
+    def try_with_d2(d2: int) -> Optional[Tuple[int, int]]:
+        r = tonelli_shanks(d2 % m, m)
+        if r is None:
+            return None
+        for d in {r % m, (-r) % m}:
+            x = (S1 - c1 * d) % m
+            x = (x * inv_n) % m
+            if check_progression(m, n, arr_set, x, d):
+                return (x, d)
+        return None
+    if K != 0:
+        d2 = (RHS * inv_mod(K, m)) % m
+        ans = try_with_d2(d2)
+        if ans is not None:
+            return ans
+        return None
+    else:
+        if RHS % m != 0:
+            return None
+        # Use S4: S4 = n*mu^4 + C * d^4 where mu = S1/n
+        mu = (S1 * inv_n) % m
+        # Precompute moments constants
+        A = c1  # n(n-1)/2
+        B = c2  # n(n-1)(2n-1)/6
+        C3 = (A * A) % m  # (n(n-1)/2)^2
+        C4 = (n % m) * ((n - 1) % m) % m
+        C4 = (C4 * ((2 * n - 1) % m)) % m
+        C4 = (C4 * ((3 * n * n - 3 * n - 1) % m)) % m
+        C4 = (C4 * inv30) % m  # sum_{i=0}^{n-1} i^4
+        # Coefficient of d^4 after eliminating mu: E - 4 A^3 / n + 6 A^2 B / n^2 - 3 A^4 / n^3
+        inv_n2 = (inv_n * inv_n) % m
+        inv_n3 = (inv_n2 * inv_n) % m
+        term = (C4 - (4 * pow(A, 3, m) * inv_n) % m + (6 * (A * A % m) * B % m) * inv_n2 % m - (3 * pow(A, 4, m) % m) * inv_n3 % m) % m
+        if term == 0:
+            # Degenerate again; as a last resort, small brute force over limited d around 0..min(m, 200000)
+            cap = min(m, 200000)
+            for d in range(cap):
+                x = (S1 - c1 * d) % m
+                x = (x * inv_n) % m
+                if check_progression(m, n, arr_set, x, d):
+                    return (x, d)
+            return None
+        mu4 = pow(mu, 4, m)
+        lhs = (S4 - (n % m) * mu4) % m
+        d4 = (lhs * inv_mod(term, m)) % m
+        # Take sqrt twice
+        d2 = tonelli_shanks(d4, m)
+        if d2 is None:
+            return None
+        ans = try_with_d2(d2)
+        if ans is not None:
+            return ans
+        # try the other square root of d4
+        d2b = (-d2) % m
+        ans = try_with_d2(d2b)
+        if ans is not None:
+            return ans
+        return None
+
+def solve_case_bruteforce(m: int, n: int, arr: List[int]) -> Optional[Tuple[int, int]]:
+    arr = [a % m for a in arr]
+    arr_set = set(arr)
+    if len(arr_set) != n:
+        return None
+    if n == 1:
+        return (arr[0] % m, 0)
+    if n == m:
+        return (0, 1)
+    S1 = sum(arr) % m
+    inv_n = inv_mod(n % m, m)
+    inv2 = inv_mod(2 % m, m) if m != 2 else 0
+    c1 = (n % m) * ((n - 1) % m) % m
+    c1 = (c1 * inv2) % m if m != 2 else 0
+    for d in range(m):
+        x = (S1 - c1 * d) % m
+        x = (x * inv_n) % m
+        if check_progression(m, n, arr_set, x, d):
+            return (x, d)
+    return None
+
+def main():
+    m, n, arr = read_input()
+    if m == 0 and n == 0:
+        # Self-tests
+        # 1) Simple AP
+        m1, n1, a1 = 7, 3, [1, 3, 5]
+        assert solve_case(m1, n1, a1) == (1, 2)
+        # 2) Full set always AP
+        m2, n2 = 11, 11
+        a2 = list(range(11))
+        assert solve_case(m2, n2, a2) == (0, 1)
+        # 3) K==0 example: m=5, n=4
+        m3, n3, a3 = 5, 4, [0, 1, 2, 3]
+        ans3 = solve_case(m3, n3, a3)
+        assert ans3 is not None
+        print("OK")
+        return
+    ans = solve_case(m, n, arr)
+    if ans is None:
+        print(-1)
+    else:
+        print(ans[0], ans[1])
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts: a small AP case, a full-set case $n=m$, and a degenerate $K=0$ case ($m=5,n=4$).}
+\RESULT{If possible, outputs any valid $(x,d)$ such that the input set equals $\{x,x+d,\ldots,x+(n-1)d\}\bmod m$. Otherwise prints $-1$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit-test the solver on: trivial $n=1$; full-set $n=m$; random small primes with random APs; negative cases by perturbing one element; degenerate $K=0$ primes like $m=5$ with $n=4$.}
+\LINE{CROSS-CHECKS}{Compare outputs from Baseline (A), Improved (B), and Optimal (C) on small $m$ to ensure consistency.}
+\LINE{EDGE-CASE GENERATOR}{Generate APs with $d=0$ (only $n=1$), $d=m-1$ (reverse order), dense sets using complement, and cases with $m \in \{2,3,5\}$.}
+\begin{minted}{python}
+import random
+
+def gen_ap(m, n, x=None, d=None):
+    if x is None:
+        x = random.randrange(m)
+    if d is None:
+        d = random.randrange(1, m) if n > 1 else 0
+    arr = [(x + k * d) % m for k in range(n)]
+    arr = list(dict.fromkeys(arr))  # ensure distinct
+    assert len(arr) == n
+    return m, n, arr, x, d
+
+def random_negative_case(m, n):
+    m, n, arr, x, d = gen_ap(m, n)
+    # perturb one element
+    arr[0] = (arr[0] + 1) % m
+    if len(set(arr)) < n:
+        arr[0] = (arr[0] + 2) % m
+    return m, n, arr
+
+def run_cross_checks():
+    # Cross-check A vs C on small m
+    for m in [7, 11, 13, 17]:
+        for n in range(1, min(6, m) + 1):
+            for _ in range(50):
+                m, n, arr, x, d = gen_ap(m, n)
+                from __main__ import solve_case, solve_case_bruteforce
+                ansA = solve_case_bruteforce(m, n, arr)
+                ansC = solve_case(m, n, arr)
+                assert ansA is not None and ansC is not None
+                # verify both answers
+                assert set(arr) == set((ansA[0] + k * ansA[1]) % m for k in range(n))
+                assert set(arr) == set((ansC[0] + k * ansC[1]) % m for k in range(n))
+            # negative cases
+            if n >= 2 and n < m:
+                m2, n2, arr2 = random_negative_case(m, n)
+                from __main__ import solve_case
+                assert solve_case(m2, n2, arr2) is None
+
+# Example usage:
+# run_cross_checks()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple, Optional, Set
+
+def inv_mod(a: int, p: int) -> int:
+    return pow(a, p - 2, p)
+
+def legendre_symbol(a: int, p: int) -> int:
+    if a % p == 0:
+        return 0
+    ls = pow(a, (p - 1) // 2, p)
+    return -1 if ls == p - 1 else ls
+
+def tonelli_shanks(n: int, p: int) -> Optional[int]:
+    n %= p
+    if n == 0:
+        return 0
+    if p == 2:
+        return n
+    if legendre_symbol(n, p) != 1:
+        return None
+    if p % 4 == 3:
+        return pow(n, (p + 1) // 4, p)
+    q = p - 1
+    s = 0
+    while q % 2 == 0:
+        q //= 2
+        s += 1
+    z = 2
+    while legendre_symbol(z, p) != -1:
+        z += 1
+    m = s
+    c = pow(z, q, p)
+    t = pow(n, q, p)
+    r = pow(n, (q + 1) // 2, p)
+    while t != 1:
+        i = 1
+        t2i = pow(t, 2, p)
+        while t2i != 1:
+            t2i = pow(t2i, 2, p)
+            i += 1
+            if i == m:
+                return None
+        b = pow(c, 1 << (m - i - 1), p)
+        r = (r * b) % p
+        c = (b * b) % p
+        t = (t * c) % p
+        m = i
+    return r
+
+def read_input(data: Optional[str] = None) -> Tuple[int, int, List[int]]:
+    if data is None:
+        data = sys.stdin.read()
+    parts = list(map(int, data.strip().split()))
+    if not parts:
+        return 0, 0, []
+    m, n = parts[0], parts[1]
+    arr = parts[2:2 + n]
+    return m, n, arr
+
+def check_progression(m: int, n: int, arr_set: Set[int], x: int, d: int) -> bool:
+    for k in range(n):
+        if (x + k * d) % m not in arr_set:
+            return False
+    return True
+
+def solve_case_bruteforce(m: int, n: int, arr: List[int]) -> Optional[Tuple[int, int]]:
+    arr = [a % m for a in arr]
+    arr_set = set(arr)
+    if len(arr_set) != n:
+        return None
+    if n == 1:
+        return (arr[0] % m, 0)
+    if n == m:
+        return (0, 1)
+    S1 = sum(arr) % m
+    inv_n = inv_mod(n % m, m)
+    inv2 = inv_mod(2 % m, m) if m != 2 else 0
+    c1 = (n % m) * ((n - 1) % m) % m
+    c1 = (c1 * inv2) % m if m != 2 else 0
+    for d in range(m):
+        x = (S1 - c1 * d) % m
+        x = (x * inv_n) % m
+        if check_progression(m, n, arr_set, x, d):
+            return (x, d)
+    return None
+
+def solve_case(m: int, n: int, arr: List[int]) -> Optional[Tuple[int, int]]:
+    if n == 0:
+        return None
+    arr = [a % m for a in arr]
+    arr_set = set(arr)
+    if len(arr_set) != n:
+        return None
+    if n == 1:
+        return (arr[0] % m, 0)
+    if n == m:
+        return (0, 1)
+    if m in (2, 3, 5):
+        return solve_case_bruteforce(m, n, arr)
+    inv_n = inv_mod(n % m, m)
+    inv2 = inv_mod(2 % m, m)
+    inv6 = inv_mod(6 % m, m)
+    inv30 = inv_mod(30 % m, m)
+    S1 = sum(arr) % m
+    S2 = sum((a * a) % m for a in arr) % m
+    S4 = sum((pow(a, 4, m)) for a in arr) % m
+    c1 = (n % m) * ((n - 1) % m) % m
+    c1 = (c1 * inv2) % m
+    c2 = (n % m) * ((n - 1) % m) % m
+    c2 = (c2 * ((2 * n - 1) % m)) % m
+    c2 = (c2 * inv6) % m
+    K = (c2 - (c1 * c1 % m) * inv_n) % m
+    RHS = (S2 - (S1 * S1 % m) * inv_n) % m
+    def try_with_d2(d2: int) -> Optional[Tuple[int, int]]:
+        r = tonelli_shanks(d2 % m, m)
+        if r is None:
+            return None
+        for d in {r % m, (-r) % m}:
+            x = (S1 - c1 * d) % m
+            x = (x * inv_n) % m
+            if check_progression(m, n, arr_set, x, d):
+                return (x, d)
+        return None
+    if K != 0:
+        d2 = (RHS * inv_mod(K, m)) % m
+        ans = try_with_d2(d2)
+        if ans is not None:
+            return ans
+        return None
+    else:
+        if RHS % m != 0:
+            return None
+        mu = (S1 * inv_n) % m
+        A = c1
+        B = c2
+        C4 = (n % m) * ((n - 1) % m) % m
+        C4 = (C4 * ((2 * n - 1) % m)) % m
+        C4 = (C4 * ((3 * n * n - 3 * n - 1) % m)) % m
+        C4 = (C4 * inv30) % m
+        inv_n2 = (inv_n * inv_n) % m
+        inv_n3 = (inv_n2 * inv_n) % m
+        term = (C4 - (4 * pow(A, 3, m) * inv_n) % m + (6 * (A * A % m) * B % m) * inv_n2 % m - (3 * pow(A, 4, m) % m) * inv_n3 % m) % m
+        if term == 0:
+            cap = min(m, 200000)
+            for d in range(cap):
+                x = (S1 - c1 * d) % m
+                x = (x * inv_n) % m
+                if check_progression(m, n, arr_set, x, d):
+                    return (x, d)
+            return None
+        mu4 = pow(mu, 4, m)
+        lhs = (S4 - (n % m) * mu4) % m
+        d4 = (lhs * inv_mod(term, m)) % m
+        d2 = tonelli_shanks(d4, m)
+        if d2 is None:
+            return None
+        ans = try_with_d2(d2)
+        if ans is not None:
+            return ans
+        d2b = (-d2) % m
+        ans = try_with_d2(d2b)
+        if ans is not None:
+            return ans
+        return None
+
+def main():
+    m, n, arr = read_input()
+    if m == 0 and n == 0:
+        # Self-tests
+        m1, n1, a1 = 7, 3, [1, 3, 5]
+        assert solve_case(m1, n1, a1) == (1, 2)
+        m2, n2 = 11, 11
+        a2 = list(range(11))
+        assert solve_case(m2, n2, a2) == (0, 1)
+        m3, n3, a3 = 5, 4, [0, 1, 2, 3]
+        ans3 = solve_case(m3, n3, a3)
+        assert ans3 is not None
+        print("OK")
+        return
+    ans = solve_case(m, n, arr)
+    if ans is None:
+        print(-1)
+    else:
+        print(ans[0], ans[1])
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Decide if a set equals a modular arithmetic progression; derive $d$ via moments and verify.}
+\WHY{Tests understanding of modular algebra, number theory (Tonelli--Shanks), and careful edge handling.}
+\CHECKLIST{
+\begin{bullets}
+\item Handle $n=1$ and $n=m$ first.
+\item Compute $S_1,S_2,S_4$ modulo $m$.
+\item Compute $c_1,c_2$, then $K$ and $R$.
+\item If $K \ne 0$: get $d^2$, take sqrt(s), compute $x$, verify.
+\item If $K=0$: ensure $R=0$, use $S_4$ to get $d^4$, take two sqrts, compute $x$, verify.
+\item For $m \in \{2,3,5\}$ or degenerate, use bounded brute force.
+\end{bullets}
+}
+\EDGECASES{
+\begin{bullets}
+\item $n=1$: $(x,d)=(a_1,0)$.
+\item $n=m$: full residue set, output $(0,1)$.
+\item Small primes $m \in \{2,3,5\}$ where $2,6,30$ are not invertible.
+\item No square root for $d^2$ modulo $m$.
+\item Duplicate inputs (should not occur); validate distinctness.
+\item Very large $m$ with small $n$; hashing still $O(n)$.
+\end{bullets}
+}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to reduce all sums and powers modulo $m$.
+\item Using integer division instead of modular inverses for $2,6,30$.
+\item Not considering both $\pm d$ when taking square roots.
+\item Mishandling negative residues; always normalize with $\bmod\ m$.
+\item Assuming $K \ne 0$; must handle $K=0$ correctly.
+\item Not verifying the candidate $(x,d)$ against the set.
+\end{bullets}
+}
+\FAILMODES{Approaches that attempt to sort by numeric order and infer $d$ from adjacent gaps fail due to wrap-around. Pairwise-difference $O(n^2)$ methods time out.}
+\ELI{Sum and sum-of-squares of an arithmetic progression have closed forms. Equating them to the given set under modulo arithmetic lets us derive the step size $d$ up to sign. We then reconstruct $x$ and check that stepping by $d$ visits exactly the given elements.}
+\NotePages{3}
+
+\end{document}

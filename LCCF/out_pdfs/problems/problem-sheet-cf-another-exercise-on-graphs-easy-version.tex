@@ -1,0 +1,913 @@
+% !TeX program = xelatex
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Another Exercise on Graphs (Easy Version)}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/2057/E1}}
+\LINE{DIFFICULTY / RATING}{2300}
+\STATEMENT{This is the easy version of the problem. The difference between the versions is that in this version, there is an additional constraint on $m$. You can hack only if you solved all versions of this problem.
+
+Recently, the instructors of ``T-generation'' needed to create a training contest. They were missing one problem, and there was not a single problem on graphs in the contest, so they came up with the following problem.
+
+You are given a connected weighted undirected graph with $n$ vertices and $m$ edges, which does not contain self-loops or multiple edges.
+
+There are $q$ queries of the form $(a, b, k)$: among all paths from vertex $a$ to vertex $b$, find the smallest $k$-th maximum weight of edges on the path$^{\dagger}$.
+
+The instructors thought that the problem sounded very interesting, but there is one catch. They do not know how to solve it. Help them and solve the problem, as there are only a few hours left until the contest starts.
+
+$^{\dagger}$ Let $w_1 \ge w_2 \ge \ldots \ge w_{h}$ be the weights of all edges in a path, in non-increasing order. The $k$-th maximum weight of the edges on this path is $w_{k}$.
+
+Input:
+Each test contains multiple test cases. The first line contains a single integer $t$ ($1 \le t \le 100$) — the number of test cases. The description of the test cases follows.
+
+The first line of each set of test case contains three integers $n, m$ and $q$ ($2 \le n \le 400$, $n - 1 \le m \le \min(\mathbf{400}, \tfrac{n \cdot (n - 1)}{2})$, $1 \le q \le 3 \cdot 10^5$) — the number of vertices, the number of edges, and the number of questions, respectively.
+
+Each of the following $m$ lines of each set of test case contains three integers $v, u$ and $w$ ($1 \le v, u \le n$, $1 \le w \le 10^9$) — the ends of the next edge of the graph and its weight, respectively. It is guaranteed that the graph does not contain self-loops and multiple edges.
+
+Each of the following $q$ lines of each set of test case contains three integers $a, b$ and $k$ ($1 \le a, b \le n$, $k \ge 1$) — the next question. It is guaranteed that any path from vertex $a$ to vertex $b$ contains at least $k$ edges.
+
+It is guaranteed that the sum of the values of $n$ across all sets of test cases does not exceed $400$.
+
+It is guaranteed that the sum of the values of $m$ across all sets of test cases does not exceed $400$.
+
+It is guaranteed that the sum of the values of $q$ across all sets of test cases does not exceed $3 \cdot 10^5$.
+
+Output:
+For each test case, output the answers to all questions.
+
+Note:
+In the first set of test cases, one of the optimal paths in the first query is the path $1 \rightarrow 3 \rightarrow 4$; the $2$-nd maximum weight of the edges on this path is $1$. In the second query, one of the optimal paths is $2 \rightarrow 4 \rightarrow 3$; $1$-st maximum weight of the edges is $2$.
+
+In the second set of input data, one of the optimal paths in the first query is the path $1 \rightarrow 2 \rightarrow 4 \rightarrow 5 \rightarrow 6$; the $3$-rd maximum weight of the edges on this path is $2$.}
+\BREAKDOWN{Reduce the objective to a monotone decision problem: for a threshold $X$, an $a$--$b$ path achieves $k$-th maximum $\le X$ iff it uses at most $k-1$ edges of weight $> X$. Precompute, for each distinct weight threshold, the minimum number of edges heavier than the threshold between all pairs, then answer queries by binary search on thresholds.}
+\ELI{Treat edges heavier than a candidate $X$ as ``bad'' with cost $1$, others cost $0$; find if we can go from $a$ to $b$ with at most $k-1$ bad edges.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Multiple test cases. For each test:
+\begin{bullets}
+\item $n, m, q$ with $2 \le n \le 400$, $n-1 \le m \le \min(400, \tfrac{n(n-1)}{2})$, $1 \le q \le 3 \cdot 10^5$.
+\item $m$ edges: $v, u, w$; $1 \le v, u \le n$, $1 \le w \le 10^9$; undirected, no self-loops, no multiple edges.
+\item $q$ queries: $a, b, k$; $1 \le a, b \le n$, $k \ge 1$, and any $a$--$b$ path has at least $k$ edges.
+\end{bullets}}
+\OUTPUTS{For each test case, print $q$ lines: for each query $(a,b,k)$, the minimal possible $k$-th maximum edge weight among all $a$--$b$ paths.}
+\SAMPLES{Example (single test case):
+
+Input
+\begin{BreakableEquation*}
+\begin{aligned}
+&1\\
+&4~4~2\\
+&1~2~3\\
+&2~3~2\\
+&1~3~1\\
+&3~4~1\\
+&1~4~2\\
+&2~3~1
+\end{aligned}
+\end{BreakableEquation*}
+Output
+\begin{BreakableEquation*}
+\begin{aligned}
+&1\\
+&2
+\end{aligned}
+\end{BreakableEquation*}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $G=(V,E,w)$, $|V|=n$, $|E|=m$, with weights $w(e)\in\mathbb{Z}_{>0}$. For a path $P$ with edge multiset weights sorted $w_1 \ge \cdots \ge w_h$, define $\kappa_k(P)=w_k$. For vertices $a,b$ define
+\begin{BreakableEquation*}
+\text{Ans}(a,b,k)=\min_{P\in\mathcal{P}_{a\to b}} \kappa_k(P).
+\end{BreakableEquation*}
+For any real threshold $X$, define the $X$-badness of a path $P$ as $B_X(P)=|\{e\in P~:~w(e)>X\}|$. Let $H_X(u,v)=\min_{P\in\mathcal{P}_{u\to v}} B_X(P)$, the minimum number of edges with weight $>X$ on any $u$--$v$ path.}
+\varmapStart
+\var{n,m}{number of vertices/edges}
+\var{q}{number of queries}
+\var{X}{weight threshold candidate}
+\var{H_X(u,v)}{minimum count of edges with $w>X$ on $u$--$v$ paths}
+\var{\kappa_k(P)}{$k$-th maximum edge weight on path $P$}
+\varmapEnd
+\GOVERN{
+\begin{BreakableEquation*}
+\text{Ans}(a,b,k) \;=\; \min\{\,X \in \mathcal{W}\,:\, H_X(a,b) \le k-1\,\},
+\end{BreakableEquation*}
+where $\mathcal{W}$ is the sorted list of distinct edge weights. For fixed $X$, $H_X(\cdot,\cdot)$ is the all-pairs shortest-path metric on $G$ with edge costs $c_X(e)=\mathbf{1}[w(e)>X]\in\{0,1\}$.}
+\ASSUMPTIONS{Graph is simple, connected. Queries satisfy that every $a$--$b$ path has length $\ge k$, hence the $k$-th maximum is well-defined.}
+\INVARIANTS{
+\begin{bullets}
+\item Monotonicity: If $X_1 \le X_2$ then $H_{X_1}(u,v) \ge H_{X_2}(u,v)$ for all $u,v$.
+\item Feasibility: For $X \ge \max_{e\in E} w(e)$, $H_X(u,v)=0$ for all $u,v$ (no bad edges).
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Use the decision form $H_X(a,b) \le k-1$ with $0$-$1$ BFS per query and binary search $X$ over distinct weights.}
+\ASSUMPTIONS{Small number of distinct weights ($\le m$). Each decision uses $0$-$1$ BFS on $G$ with costs $c_X(e)=\mathbf{1}[w(e)>X]$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Extract and sort the distinct edge weights $\mathcal{W}$.
+\item For a query $(a,b,k)$, binary search the smallest $X\in\mathcal{W}$ such that $H_X(a,b)\le k-1$.
+\item To evaluate $H_X(a,b)$, run a $0$-$1$ BFS from $a$ where traversing an edge of weight $\le X$ costs $0$ and $>X$ costs $1$.
+\end{algosteps}
+\COMPLEXITY{For each query, binary search over $|\mathcal{W}| \le m$ thresholds, and each decision is $O(n+m)$ with $0$-$1$ BFS.}
+\[
+\begin{aligned}
+T_{\text{per query}} &= O(\log m \cdot (n+m)),\\
+T_{\text{total}} &= O\big(q \log m \cdot (n+m)\big),\quad S=O(n+m).
+\end{aligned}
+\]
+\CORRECTNESS{By definition, $H_X(a,b)$ counts the minimum number of edges with weight $>X$ needed along any $a$--$b$ path. The path has $k$-th maximum $\le X$ iff at most $k-1$ edges exceed $X$. Monotonicity in $X$ justifies binary search.}
+\EDGECASES{Edges with equal weights; $k=1$ reduces to minimizing the maximum edge on the path; $k$ equal to path length.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# CF TEMPLATE (Baseline): per-query binary search + 0-1 BFS
+from collections import deque
+import sys, os
+
+def read_input():
+    return sys.stdin.buffer.read()
+
+def zero_one_bfs(n, adj, thr_idx, src):
+    INF = 10**9
+    dist = [INF] * n
+    dq = deque([src])
+    dist[src] = 0
+    while dq:
+        v = dq.popleft()
+        dv = dist[v]
+        for to, rnk in adj[v]:
+            wcost = 1 if rnk > thr_idx else 0
+            nd = dv + wcost
+            if nd < dist[to]:
+                dist[to] = nd
+                if wcost == 0:
+                    dq.appendleft(to)
+                else:
+                    dq.append(to)
+    return dist
+
+def solve_all(data: bytes) -> str:
+    it = iter(map(int, data.split()))
+    t = next(it)
+    out_lines = []
+    for _ in range(t):
+        n = next(it); m = next(it); q = next(it)
+        edges = []
+        weights = []
+        for _e in range(m):
+            v = next(it) - 1; u = next(it) - 1; w = next(it)
+            edges.append((v, u, w))
+            weights.append(w)
+        uniq = sorted(set(weights))
+        index = {w:i for i,w in enumerate(uniq)}
+        U = len(uniq)
+        adj = [[] for _ in range(n)]
+        for v,u,w in edges:
+            r = index[w]
+            adj[v].append((u, r))
+            adj[u].append((v, r))
+        for _q in range(q):
+            a = next(it) - 1; b = next(it) - 1; k = next(it)
+            L, R = 0, U - 1
+            ans_idx = U - 1
+            need = k - 1
+            while L <= R:
+                mid = (L + R) // 2
+                dist = zero_one_bfs(n, adj, mid, a)
+                if dist[b] <= need:
+                    ans_idx = mid
+                    R = mid - 1
+                else:
+                    L = mid + 1
+            out_lines.append(str(uniq[ans_idx]))
+    return "\n".join(out_lines)
+
+def main():
+    data = read_input()
+    if not data:
+        return
+    sys.stdout.write(solve_all(data))
+
+def _tests():
+    # Test 1
+    data = b"""1
+4 4 2
+1 2 3
+2 3 2
+1 3 1
+3 4 1
+1 4 2
+2 3 1
+"""
+    expect = "1\n2"
+    got = solve_all(data).strip()
+    assert got == expect, (got, expect)
+
+    # Test 2
+    data = b"""1
+6 6 2
+1 2 5
+2 4 4
+4 5 2
+5 6 2
+6 3 10
+3 4 1
+1 6 3
+3 1 1
+"""
+    # Query1: path 1-2-4-5-6 has weights [5,4,2,2], 3rd maximum=2
+    # Query2: best path 3-4-2-1 has max 5
+    expect = "2\n5"
+    got = solve_all(data).strip()
+    assert got == expect, (got, expect)
+
+if __name__ == "__main__":
+    if os.environ.get("LOCAL_TESTS", ""):
+        _tests()
+    main()
+\end{minted}
+\VALIDATION{Two asserts:
+\begin{bullets}
+\item Small 4-node graph checking $k=2$ and $k=1$ answers.
+\item Small 6-node graph checking longer path $k=3$ and a $k=1$ max-min.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Precompute All-Pairs Bad-Edge Distances for Each Threshold}
+\WHICHFORMULA{Exploit that $|\mathcal{W}| \le m \le 400$. For each threshold index $i$, edges with rank $\le i$ have cost $0$, the others $1$. Precompute $H_{W_i}(u,v)$ for all $u,v$ using $n$ runs of $0$-$1$ BFS (one per source). Then answer each query by binary searching the smallest $i$ with $H_{W_i}(a,b)\le k-1$.}
+\ASSUMPTIONS{Sums $\sum m \le 400$, $\sum n \le 400$ make $|\mathcal{W}| \cdot n \cdot m$ feasible.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Sort distinct weights and assign each edge a rank.
+\item For each threshold index $i$:
+  \begin{bullets}
+  \item Run $0$-$1$ BFS from every source $s$ to compute $H_{W_i}(s,\cdot)$.
+  \item Store a flattened $n\times n$ table of $H_{W_i}$.
+  \end{bullets}
+\item For each query $(a,b,k)$, binary search the smallest $i$ with $H_{W_i}(a,b) \le k-1$; answer is $W_i$.
+\end{algosteps}
+\COMPLEXITY{Precompute time $O(|\mathcal{W}|\cdot n \cdot m)$; per query $O(\log |\mathcal{W}|)$.}
+\[
+\begin{aligned}
+T_{\text{pre}} &= O(m \cdot n \cdot m) = O(n m^2)\quad (\text{since }|\mathcal{W}| \le m),\\
+T_{\text{per query}} &= O(\log m),\quad S = O(|\mathcal{W}|\cdot n^2).
+\end{aligned}
+\]
+\CORRECTNESS{For fixed threshold, the stored table equals $H_X$ by $0$-$1$ BFS optimality. The monotonicity in $i$ ensures binary search finds the minimal feasible threshold, which by the model equals the optimal $k$-th maximum.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Same API/signature as baseline; deterministic; with asserts
+from collections import deque
+from array import array
+import sys, os
+
+def read_input():
+    return sys.stdin.buffer.read()
+
+def precompute_all_H(n, adj, U):
+    # Returns list of U arrays, each length n*n, type 'H' (uint16).
+    allD = []
+    INF = 10**9
+    for thr in range(U):
+        flat = array('H', [0]) * (n * n)
+        for s in range(n):
+            dist = [INF] * n
+            dq = deque([s])
+            dist[s] = 0
+            while dq:
+                v = dq.popleft()
+                dv = dist[v]
+                for to, rnk in adj[v]:
+                    wcost = 1 if rnk > thr else 0
+                    nd = dv + wcost
+                    if nd < dist[to]:
+                        dist[to] = nd
+                        if wcost == 0:
+                            dq.appendleft(to)
+                        else:
+                            dq.append(to)
+            off = s * n
+            for t in range(n):
+                d = dist[t]
+                if d > 65535:
+                    d = 65535
+                flat[off + t] = d
+        allD.append(flat)
+    return allD
+
+def solve_all(data: bytes) -> str:
+    it = iter(map(int, data.split()))
+    t = next(it)
+    out_lines = []
+    for _ in range(t):
+        n = next(it); m = next(it); q = next(it)
+        edges = []
+        weights = []
+        for _e in range(m):
+            v = next(it) - 1; u = next(it) - 1; w = next(it)
+            edges.append((v, u, w))
+            weights.append(w)
+        uniq = sorted(set(weights))
+        index = {w:i for i,w in enumerate(uniq)}
+        U = len(uniq)
+        adj = [[] for _ in range(n)]
+        for v,u,w in edges:
+            r = index[w]
+            adj[v].append((u, r))
+            adj[u].append((v, r))
+        allD = precompute_all_H(n, adj, U)
+        for _q in range(q):
+            a = next(it) - 1; b = next(it) - 1; k = next(it)
+            need = k - 1
+            L, R = 0, U - 1
+            ans_idx = U - 1
+            while L <= R:
+                mid = (L + R) // 2
+                d = allD[mid][a * n + b]
+                if d <= need:
+                    ans_idx = mid
+                    R = mid - 1
+                else:
+                    L = mid + 1
+            out_lines.append(str(uniq[ans_idx]))
+    return "\n".join(out_lines)
+
+def main():
+    data = read_input()
+    if not data:
+        return
+    sys.stdout.write(solve_all(data))
+
+def _tests():
+    data = b"""1
+4 4 2
+1 2 3
+2 3 2
+1 3 1
+3 4 1
+1 4 2
+2 3 1
+"""
+    expect = "1\n2"
+    got = solve_all(data).strip()
+    assert got == expect, (got, expect)
+
+    data = b"""1
+6 6 2
+1 2 5
+2 4 4
+4 5 2
+5 6 2
+6 3 10
+3 4 1
+1 6 3
+3 1 1
+"""
+    expect = "2\n5"
+    got = solve_all(data).strip()
+    assert got == expect, (got, expect)
+
+if __name__ == "__main__":
+    if os.environ.get("LOCAL_TESTS", ""):
+        _tests()
+    main()
+\end{minted}
+\VALIDATION{Checked on two tiny crafted cases; compares to expected outputs.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Threshold Decomposition + All-Pairs 0–1 BFS + Binary Search}
+\WHICHFORMULA{Final method: precompute $H_{W_i}(u,v)$ for all thresholds $W_i$ and all vertex pairs using $0$-$1$ BFS; answer queries in $O(\log m)$.}
+\ASSUMPTIONS{Distinct weight count $|\mathcal{W}| \le m \le 400$; memory fits storing $|\mathcal{W}|\cdot n^2$ 16-bit integers.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Sort distinct weights, rank edges.
+\item For each threshold index $i$: run $0$-$1$ BFS from every source; store flattened $n\times n$ matrix of $H_{W_i}$ in an array of type \texttt{'H'}.
+\item For each query $(a,b,k)$, binary search the smallest $i$ s.t. $H_{W_i}(a,b)\le k-1$, output $W_i$.
+\end{algosteps}
+\OPTIMALITY{Given constraints, any per-query search that touches the graph is dominated by large $q$. Precomputing per threshold yields $O(\log m)$ per query, which is asymptotically optimal up to logarithmic factors due to the need to distinguish among $|\mathcal{W}|$ candidates.}
+\COMPLEXITY{Precompute $O(|\mathcal{W}|\cdot n \cdot m)$ time and $O(|\mathcal{W}|\cdot n^2)$ memory; answer $q$ queries in $O(q \log |\mathcal{W}|)$.}
+\[
+\begin{aligned}
+T_{\text{total}} &= O(|\mathcal{W}|\cdot n \cdot m + q \log |\mathcal{W}|),\qquad
+S_{\text{total}} = O(|\mathcal{W}|\cdot n^2).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case()/solve_all(), main()+guard + asserts
+from collections import deque
+from array import array
+import sys, os
+
+def read_input():
+    return sys.stdin.buffer.read()
+
+def precompute_all_H(n, adj, U):
+    allD = []
+    INF = 10**9
+    for thr in range(U):
+        flat = array('H', [0]) * (n * n)
+        for s in range(n):
+            dist = [INF] * n
+            dq = deque([s])
+            dist[s] = 0
+            while dq:
+                v = dq.popleft()
+                dv = dist[v]
+                for to, rnk in adj[v]:
+                    wcost = 1 if rnk > thr else 0
+                    nd = dv + wcost
+                    if nd < dist[to]:
+                        dist[to] = nd
+                        if wcost == 0:
+                            dq.appendleft(to)
+                        else:
+                            dq.append(to)
+            off = s * n
+            for t in range(n):
+                d = dist[t]
+                if d > 65535:
+                    d = 65535
+                flat[off + t] = d
+        allD.append(flat)
+    return allD
+
+def solve_all(data: bytes) -> str:
+    it = iter(map(int, data.split()))
+    t = next(it)
+    out_lines = []
+    for _ in range(t):
+        n = next(it); m = next(it); q = next(it)
+        edges = []
+        weights = []
+        for _e in range(m):
+            v = next(it) - 1; u = next(it) - 1; w = next(it)
+            edges.append((v, u, w))
+            weights.append(w)
+        uniq = sorted(set(weights))
+        index = {w:i for i,w in enumerate(uniq)}
+        U = len(uniq)
+        adj = [[] for _ in range(n)]
+        for v,u,w in edges:
+            r = index[w]
+            adj[v].append((u, r))
+            adj[u].append((v, r))
+        allD = precompute_all_H(n, adj, U)
+        for _q in range(q):
+            a = next(it) - 1; b = next(it) - 1; k = next(it)
+            need = k - 1
+            L, R = 0, U - 1
+            ans_idx = U - 1
+            while L <= R:
+                mid = (L + R) // 2
+                d = allD[mid][a * n + b]
+                if d <= need:
+                    ans_idx = mid
+                    R = mid - 1
+                else:
+                    L = mid + 1
+            out_lines.append(str(uniq[ans_idx]))
+    return "\n".join(out_lines)
+
+def main():
+    data = read_input()
+    if not data:
+        return
+    sys.stdout.write(solve_all(data))
+
+def _tests():
+    data = b"""1
+4 4 2
+1 2 3
+2 3 2
+1 3 1
+3 4 1
+1 4 2
+2 3 1
+"""
+    expect = "1\n2"
+    got = solve_all(data).strip()
+    assert got == expect, (got, expect)
+
+    data = b"""1
+6 6 2
+1 2 5
+2 4 4
+4 5 2
+5 6 2
+6 3 10
+3 4 1
+1 6 3
+3 1 1
+"""
+    expect = "2\n5"
+    got = solve_all(data).strip()
+    assert got == expect, (got, expect)
+
+    # Simple triangle: k=1 equals classic minimax edge
+    data = b"""1
+3 3 1
+1 2 5
+2 3 4
+1 3 10
+1 3 1
+"""
+    # Best path 1-2-3 has max=5 (better than direct 10)
+    expect = "5"
+    got = solve_all(data).strip()
+    assert got == expect, (got, expect)
+
+if __name__ == "__main__":
+    if os.environ.get("LOCAL_TESTS", ""):
+        _tests()
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts on diverse tiny cases including a triangle and longer path.}
+\RESULT{For each $(a,b,k)$, prints the minimal achievable $k$-th maximum edge weight; ties are resolved implicitly by choosing the smallest threshold satisfying the constraint.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on:
+\begin{bullets}
+\item Small graphs with parallel alternative paths and varying weights.
+\item Edge cases: $k=1$ (minimize maximum), $k$ equal to path length, all equal weights.
+\item Random tiny graphs to cross-validate baseline vs final.
+\end{bullets}}
+\LINE{CROSS-CHECKS}{On tiny graphs ($n \le 7$), compare outputs of Approach A (per-query BFS) and Approach C (precompute) for randomly generated queries.}
+\LINE{EDGE-CASE GENERATOR}{Generate connected graphs by starting with a tree, then adding random edges; sample weights from small ranges; sample queries with $k$ chosen $\le$ shortest-path edge count between endpoints to satisfy the constraint.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+from collections import deque
+
+def gen_connected_graph(n, extra, seed=0):
+    random.seed(seed)
+    parent = list(range(n))
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+    def unite(a,b):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[rb] = ra
+            return True
+        return False
+    edges = []
+    # Build a random tree
+    for v in range(1, n):
+        u = random.randrange(0, v)
+        w = random.randrange(1, 11)
+        edges.append((u, v, w))
+        unite(u, v)
+    # Add extra edges
+    S = set((min(u,v), max(u,v)) for u,v,_ in edges)
+    tries = 0
+    while extra > 0 and tries < 10_000:
+        u = random.randrange(n); v = random.randrange(n)
+        if u == v:
+            tries += 1; continue
+        a, b = (u, v) if u < v else (v, u)
+        if (a, b) in S:
+            tries += 1; continue
+        w = random.randrange(1, 11)
+        edges.append((u, v, w))
+        S.add((a, b))
+        extra -= 1
+    return edges
+
+def shortest_edges(n, edges, src, dst):
+    adj = [[] for _ in range(n)]
+    for u,v,_ in edges:
+        adj[u].append(v); adj[v].append(u)
+    # BFS to get minimum edges count
+    INF = 10**9
+    dist = [INF]*n
+    dq = deque([src]); dist[src] = 0
+    while dq:
+        v = dq.popleft()
+        for to in adj[v]:
+            if dist[to] > dist[v] + 1:
+                dist[to] = dist[v] + 1
+                dq.append(to)
+    return dist[dst]
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF/LC) + asserts
+from collections import deque
+from array import array
+import sys, os
+
+def read_input():
+    return sys.stdin.buffer.read()
+
+def precompute_all_H(n, adj, U):
+    allD = []
+    INF = 10**9
+    for thr in range(U):
+        flat = array('H', [0]) * (n * n)
+        for s in range(n):
+            dist = [INF] * n
+            dq = deque([s])
+            dist[s] = 0
+            while dq:
+                v = dq.popleft()
+                dv = dist[v]
+                for to, rnk in adj[v]:
+                    wcost = 1 if rnk > thr else 0
+                    nd = dv + wcost
+                    if nd < dist[to]:
+                        dist[to] = nd
+                        if wcost == 0:
+                            dq.appendleft(to)
+                        else:
+                            dq.append(to)
+            off = s * n
+            for t in range(n):
+                d = dist[t]
+                if d > 65535:
+                    d = 65535
+                flat[off + t] = d
+        allD.append(flat)
+    return allD
+
+def solve_all(data: bytes) -> str:
+    it = iter(map(int, data.split()))
+    t = next(it)
+    out_lines = []
+    for _ in range(t):
+        n = next(it); m = next(it); q = next(it)
+        edges = []
+        weights = []
+        for _e in range(m):
+            v = next(it) - 1; u = next(it) - 1; w = next(it)
+            edges.append((v, u, w))
+            weights.append(w)
+        uniq = sorted(set(weights))
+        index = {w:i for i,w in enumerate(uniq)}
+        U = len(uniq)
+        adj = [[] for _ in range(n)]
+        for v,u,w in edges:
+            r = index[w]
+            adj[v].append((u, r))
+            adj[u].append((v, r))
+        allD = precompute_all_H(n, adj, U)
+        for _q in range(q):
+            a = next(it) - 1; b = next(it) - 1; k = next(it)
+            need = k - 1
+            L, R = 0, U - 1
+            ans_idx = U - 1
+            while L <= R:
+                mid = (L + R) // 2
+                d = allD[mid][a * n + b]
+                if d <= need:
+                    ans_idx = mid
+                    R = mid - 1
+                else:
+                    L = mid + 1
+            out_lines.append(str(uniq[ans_idx]))
+    return "\n".join(out_lines)
+
+def main():
+    data = read_input()
+    if not data:
+        return
+    sys.stdout.write(solve_all(data))
+
+def _tests():
+    data = b"""1
+4 4 2
+1 2 3
+2 3 2
+1 3 1
+3 4 1
+1 4 2
+2 3 1
+"""
+    expect = "1\n2"
+    got = solve_all(data).strip()
+    assert got == expect, (got, expect)
+
+    data = b"""1
+6 6 2
+1 2 5
+2 4 4
+4 5 2
+5 6 2
+6 3 10
+3 4 1
+1 6 3
+3 1 1
+"""
+    expect = "2\n5"
+    got = solve_all(data).strip()
+    assert got == expect, (got, expect)
+
+    data = b"""1
+3 3 1
+1 2 5
+2 3 4
+1 3 10
+1 3 1
+"""
+    expect = "5"
+    got = solve_all(data).strip()
+    assert got == expect, (got, expect)
+
+if __name__ == "__main__":
+    if os.environ.get("LOCAL_TESTS", ""):
+        _tests()
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Minimize the $k$-th largest edge on an $a$--$b$ path by thresholding edge weights and counting edges above threshold via $0$-$1$ BFS.}
+\WHY{Tests ability to reduce order-statistics-on-paths to monotone decisions, and to apply $0$-$1$ BFS and offline precomputation.}
+\CHECKLIST{
+\begin{bullets}
+\item Sort distinct weights and rank edges.
+\item Define cost $c_X(e)=\mathbf{1}[w(e)>X]$.
+\item Precompute $H_{W_i}(u,v)$ for all thresholds $i$.
+\item Answer queries by binary search on $i$ for $H_{W_i}(a,b)\le k-1$.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item $k=1$ reduces to minimizing the bottleneck (max edge) along the path.
+\item All edges equal weight.
+\item Multiple optimal paths with the same $k$-th maximum.
+\item Graphs where shortest by edges is not optimal for the objective.
+\item Large $q$ with tiny $n,m$.
+\item $k$ equal to length of every $a$--$b$ path.
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Off-by-one in $k-1$ bad-edge allowance.
+\item Using strict $w \ge X$ instead of $w > X$ for ``bad'' edges.
+\item Forgetting to rank weights (using value comparisons can be slower but still correct).
+\item Memory blow-up if storing Python lists of lists; use \texttt{array('H')} to compress.
+\item Not resetting distances per BFS source.
+\item Incorrect binary search bounds when all thresholds are feasible.
+\end{bullets}}
+\FAILMODES{Per-query BFS times out for large $q$. The precompute method avoids per-query graph traversals and scales with $q$.}
+\ELI{Think of $X$ as a ``tolerance'': edges heavier than $X$ are ``penalties''. Can you go from $a$ to $b$ paying at most $k-1$ penalties? Increase $X$ until the answer is yes; the smallest such $X$ is exactly the best possible $k$-th largest edge size.}
+\NotePages{3}
+
+\end{document}

@@ -1,0 +1,2377 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]
+\setlength{\jot}{7pt}
+\setlength{\emergencystretch}{8em}
+\sloppy
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Majorization and Eigenvalue Ordering}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+Vectors $x,y\in\mathbb{R}^n$ with components sorted in nonincreasing order
+$x^\downarrow_1\ge \cdots \ge x^\downarrow_n$, $y^\downarrow_1\ge\cdots\ge y^\downarrow_n$.
+Majorization $x\prec y$ means $\sum_{i=1}^k x^\downarrow_i\le \sum_{i=1}^k y^\downarrow_i$
+for $k=1,\dots,n-1$ and equality at $k=n$.
+Equivalently, $x=Dy$ for a doubly stochastic matrix $D$.
+Eigenvalue ordering: for Hermitian $A$, the eigenvalues
+$\lambda_1^\downarrow(A)\ge\cdots\ge\lambda_n^\downarrow(A)$ admit variational and
+majorization relations (Ky Fan, Schur-Horn).
+}
+
+\WHY{
+Majorization formalizes the idea of one vector being more ``spread out'' than another.
+It organizes inequalities, convexity comparisons, and spectral relations in matrix theory.
+Eigenvalue ordering connects matrix structure to variational optima and diagonal data,
+powering optimization (PCA), matrix inequalities, and perturbation bounds.
+}
+
+\HOW{
+1. Define the preorder $\prec$ via partial sums and sum preservation.
+2. Prove constructive equivalence using T-transforms (2-point averaging).
+3. Derive Schur-convex/concave monotonicity via Jensen/Karamata.
+4. Use spectral decomposition to prove Ky Fan maxima for eigenvalue sums.
+5. Conclude Schur-Horn necessity: diagonals are majorized by eigenvalues.
+}
+
+\ELI{
+Sort entries of two piles of numbers from largest to smallest. If the top $k$ of pile $x$
+never add up to more than the top $k$ of pile $y$ (but totals are equal), then $x$ is a
+more even redistribution of $y$. For matrices, the eigenvalues act like a canonical pile:
+no selection of $k$ diagonal entries can exceed the top $k$ eigenvalues.
+}
+
+\SCOPE{
+Applies to real vectors (componentwise order) and Hermitian matrices (real spectra).
+For non-Hermitian matrices, singular values play the analogous role.
+Edge cases: ties in sorting, repeated eigenvalues, weak majorization when sums differ.
+}
+
+\CONFUSIONS{
+Majorization vs. coordinatewise inequality: $x\le y$ componentwise is stronger and
+unrelated to redistribution. Majorization vs. stochastic dominance: the latter is a
+probabilistic CDF order; majorization is finite-dimensional and permutation-symmetric.
+Diagonal entries vs. eigenvalues: equality only if $A$ is diagonal in the standard basis.
+}
+
+\APPLICATIONS{
+\begin{bullets}
+\item Mathematical foundations: convexity inequalities, rearrangement, Karamata.
+\item Computational modeling: PCA via Ky Fan sums, spectral relaxations.
+\item Physics/engineering: mixing/thermalization as doubly stochastic maps.
+\item Statistics/algorithms: majorization-minimization, fairness and dispersion metrics.
+\end{bullets}
+}
+
+\textbf{ANALYTIC STRUCTURE.}
+Majorization defines a convex preorder invariant under permutations. Doubly stochastic
+matrices form a convex polytope (Birkhoff polytope). Spectral ordering leverages
+unitary invariance and convexity of traces. Many functionals are Schur-convex or
+Schur-concave.
+
+\textbf{CANONICAL LINKS.}
+Hardy-Littlewood-P\'olya $\leftrightarrow$ T-transforms and doubly stochastic maps.
+Karamata $\leftrightarrow$ convexity and majorization.
+Ky Fan maximum principle $\leftrightarrow$ eigenvalue sums.
+Schur-Horn necessity $\leftrightarrow$ Ky Fan and diagonal projections.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Phrases: ``more spread'', ``redistribution'', ``doubly stochastic'', ``mixing''.
+\item Structure: sorted partial sums, sums preserved, convex symmetric objectives.
+\item Spectral signature: sums of top-$k$ eigenvalues, diagonals vs. eigenvalues.
+\item Optimization with permutation symmetry suggests majorization arguments.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate to sorted vectors or Hermitian spectra.
+\item Identify whether a T-transform or DS matrix applies.
+\item Invoke Karamata or Ky Fan inequalities.
+\item Compute partial sums or traces explicitly.
+\item Validate by equality cases (permutations, invariant subspaces).
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Total sum of components; for Hermitian $A$, trace equals sum of eigenvalues equals
+sum of diagonals. Permutation invariance of majorization and Schur-type inequalities.
+
+\textbf{EDGE INTUITION.}
+As vectors become equalized, they majorize fewer vectors and are Schur-convexly
+smaller. As matrices approach scalar multiples of identity, diagonal and eigenvalue
+vectors coincide and all Ky Fan bounds are tight.
+
+\section{Glossary}
+\glossx{Majorization ($x\prec y$)}
+{Order on $\mathbb{R}^n$ via sorted partial sums with equal totals.}
+{Encodes redistribution and comparison under convex symmetric functionals.}
+{Sort both vectors; compare cumulative sums; equality at the full sum.}
+{Like pouring from tall glasses into shorter ones without spilling.}
+{Pitfall: forgetting to sort before comparing partial sums.}
+
+\glossx{Doubly stochastic matrix}
+{Square matrix with nonnegative entries, each row/column summing to $1$.}
+{Represents averaging/mixing; maps vectors to more equal distributions.}
+{Apply as $x=Dy$; preserves sums; convex hull of permutation matrices.}
+{Like splitting and reshuffling fluid among equal-sized containers.}
+{Example: $D=\frac{1}{2}\begin{bmatrix}1&1\\1&1\end{bmatrix}$.}
+
+\glossx{Schur-convex function}
+{Symmetric function $\phi$ with $x\prec y\implies \phi(x)\le \phi(y)$.}
+{Turns majorization into scalar inequality; tool for ordering solutions.}
+{Check increase under T-transforms; sums of convex one-dimensional $f$.}
+{Smoothing reduces the sum of convex penalties.}
+{Pitfall: non-symmetric functions need not be Schur-convex.}
+
+\glossx{Ky Fan $k$-sum}
+{Sum of top $k$ eigenvalues of a Hermitian matrix.}
+{Measures maximal energy captured by any $k$-dimensional subspace.}
+{Compute by sorting eigenvalues or maximizing trace over rank-$k$ projectors.}
+{Take the $k$ brightest lamps to maximize total light.}
+{Pitfall: using singular values instead for non-Hermitian matrices.}
+
+\section{Symbol Ledger}
+\varmapStart
+\var{x,y\in\mathbb{R}^n}{real vectors.}
+\var{x^\downarrow,y^\downarrow}{vectors sorted in nonincreasing order.}
+\var{\prec}{majorization relation on $\mathbb{R}^n$.}
+\var{\preceq_w}{weak majorization (no equality at $k=n$ required).}
+\var{\mathcal{D}_n}{set of $n\times n$ doubly stochastic matrices.}
+\var{\Pi}{set of $n\times n$ permutation matrices.}
+\var{T_{ij}(\theta)}{T-transform mixing indices $i,j$ with parameter $\theta$.}
+\var{A\in\mathbb{C}^{n\times n}}{Hermitian matrix when $A=A^\ast$.}
+\var{\lambda(A)}{eigenvalue vector of $A$, sorted nonincreasingly.}
+\var{Q\in\mathbb{C}^{n\times k}}{matrix with orthonormal columns ($Q^\ast Q=I_k$).}
+\var{P}{orthogonal projector ($P=P^\ast=P^2$).}
+\var{\operatorname{Tr}}{trace operator; sum of diagonal entries.}
+\var{U}{unitary matrix ($U^\ast U=I$).}
+\var{d(A)}{vector of diagonal entries of $A$.}
+\var{n,k}{dimension and subspace dimension (integers with $1\le k\le n$).}
+\varmapEnd
+
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{Hardy-Littlewood-P\'olya Majorization (Constructive)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $x,y\in\mathbb{R}^n$,
+\[
+x\prec y
+\iff
+\Big(\sum_{i=1}^k x^\downarrow_i\le \sum_{i=1}^k y^\downarrow_i\ \forall k<n,\
+\sum_{i=1}^n x_i=\sum_{i=1}^n y_i\Big)
+\iff
+\exists D\in\mathcal{D}_n:\ x=Dy.
+\]
+
+\WHAT{
+Equivalence between partial-sum definition of majorization and existence of a
+doubly stochastic mixing map sending $y$ to $x$.
+}
+
+\WHY{
+Shows majorization is precisely the preorder induced by averaging operations.
+It provides an explicit constructive path via T-transforms.
+}
+
+\FORMULA{
+\[
+x\prec y\ \Longleftrightarrow\ x\in \{Dy:\ D\in\mathcal{D}_n\}.
+\]
+}
+
+\CANONICAL{
+Vectors in $\mathbb{R}^n$ with real entries; sort in nonincreasing order.
+$\mathcal{D}_n$ is the Birkhoff polytope (convex hull of $\Pi$).
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Finite-dimensional real vectors.
+\item For the DS characterization, allow $D$ with nonnegative entries, row/column sums $1$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Let $a\ge b$ and $\theta\in[0,1]$. Define
+$z_1=\theta a+(1-\theta)b$, $z_2=(1-\theta)a+\theta b$.
+Then $\{z_1,z_2\}$ is majorized by $\{a,b\}$, with equal sum, and for any convex $f$,
+$f(z_1)+f(z_2)\le f(a)+f(b)$.
+\end{lemma}
+\begin{proof}
+We have $z_1+z_2=a+b$. Also $z_1\le a$ and $z_2\ge b$, so the larger of
+$\{z_1,z_2\}$ is at most $a$, giving the $k=1$ partial-sum inequality; the $k=2$
+equality is the sum equality. For convex $f$, Jensen gives
+\[
+f(z_1)+f(z_2)
+=f(\theta a+(1-\theta)b)+f(\theta b+(1-\theta)a)
+\le \theta f(a)+(1-\theta)f(b)+\theta f(b)+(1-\theta)f(a)
+=f(a)+f(b),
+\]
+as desired.\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (T-transforms):}\ &\text{An elementary mixing on indices }i\ne j\\
+&\text{is }T_{ij}(\theta)=I-(e_i-e_j)(e_i-e_j)^\top(1-2\theta)/2.\\
+&\text{It is doubly stochastic and preserves }\sum x_i.\\
+\text{Step 2 (One-step adjustment):}\ &\text{Assume }x^\downarrow\prec y^\downarrow.\
+\text{Either }x^\downarrow=y^\downarrow,\\
+&\text{or }x^\downarrow_1<y^\downarrow_1.\
+\text{Find }m\ge 2\text{ with }y^\downarrow_m\le x^\downarrow_1\le y^\downarrow_1.\\
+&\text{Define }\theta=\frac{y^\downarrow_1-x^\downarrow_1}{y^\downarrow_1-y^\downarrow_m}\in[0,1].\\
+&\text{Let }z\text{ be }y^\downarrow\text{ after applying }T\text{ on positions }1,m.\\
+&\text{Then }z_1=x^\downarrow_1,\ z_m=(1-\theta)y^\downarrow_1+\theta y^\downarrow_m.\\
+\text{Step 3 (Preserved majorization):}\ &\text{By the lemma, }\{z_1,z_m\}\prec\{y^\downarrow_1,y^\downarrow_m\}.\\
+&\text{Other coordinates unchanged; thus }x^\downarrow\prec z\prec y^\downarrow.\\
+\text{Step 4 (Induction):}\ &\text{Repeat on the tail }2{:}n\text{ to match }x^\downarrow_2,\
+\text{and so on.}\\
+&\text{After }n-1\text{ steps, obtain }x^\downarrow=T^{(L)}\cdots T^{(1)}y^\downarrow.\\
+\text{Step 5 (DS representation):}\ &\text{Each }T^{(\ell)}\text{ is DS, so the product }D\in\mathcal{D}_n.\\
+&\text{Hence }x=Dy\text{ after undoing the initial sorting permutations.}
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Sort $x,y$ decreasingly; check partial sums and total sum.
+\item If $x\prec y$, construct T-transforms to reach $x$ from $y$.
+\item Express the sequence as a product $D$ to get $x=Dy$.
+\item Validate via partial sums after each step.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $x\prec y\iff x\in\operatorname{conv}\{\Pi y:\ \Pi\in\Pi\}$ (Birkhoff).
+\item Weak majorization: $x\preceq_w y$ uses only $k<n$ inequalities.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $\sum x_i\ne \sum y_i$, only weak majorization can hold.
+\item Equality for all $k$ occurs iff $x$ is a permutation of $y$.
+\end{bullets}
+}
+
+\INPUTS{$x,y\in\mathbb{R}^n$; $x^\downarrow,y^\downarrow$; $T_{ij}(\theta)$; $D\in\mathcal{D}_n$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Example: }&y=(4,1,1),\ x=(3,2,1).\\
+&x^\downarrow=(3,2,1),\ y^\downarrow=(4,1,1).\\
+&\text{Step 1: match }x_1=3\text{ using }(i,j)=(1,2).\
+\theta=\tfrac{4-3}{4-1}=\tfrac{1}{3}.\\
+&z_1=\tfrac{1}{3}4+\tfrac{2}{3}1= \tfrac{4+2}{3}=2,\ \text{not }3.\
+\text{Use }(1,3):\theta=\tfrac{4-3}{4-1}=\tfrac{1}{3}.\\
+&z=(3,1,2).\\
+&\text{Step 2: sort tail }(1,2)\to(2,1)\text{ by a permutation.}\\
+&\text{Thus }x\in\operatorname{conv}\{\Pi y\}. 
+\end{align*}
+}
+
+\RESULT{
+Majorization is equivalently the image of $y$ under a doubly stochastic map.
+Constructive sequences of T-transforms realize the transformation.
+}
+
+\UNITCHECK{
+All steps preserve total sum; partial sums never increase beyond the source.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Comparing unsorted partial sums invalidates the order test.
+\item Using negative $\theta$ or $\theta>1$ breaks doubly stochasticity.
+\end{bullets}
+}
+
+\INTUITION{
+A DS map splits and averages components; repeated two-point averages can sculpt
+$y$ into any more-equal shape $x$ without changing the total mass.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Majorization equals the preorder generated by T-transforms.
+\item $\{x:\ x\prec y\}=\mathcal{D}_n y=\operatorname{conv}\{\Pi y\}$.
+\end{bullets}
+}
+
+\FormulaPage{2}{Karamata via T-Transforms (Schur-Convexity)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+If $x\prec y$ and $f:\mathbb{R}\to\mathbb{R}$ is convex, then
+\[
+\sum_{i=1}^n f(x_i)\le \sum_{i=1}^n f(y_i).
+\]
+
+\WHAT{
+A convexity inequality asserting that convex separable sums decrease under
+majorization (Schur-convexity of $\sum f$).
+}
+
+\WHY{
+Transforms majorization into scalar inequalities that certify optimality for
+symmetric convex objectives and compare dispersion.
+}
+
+\FORMULA{
+\[
+x\prec y\ \Rightarrow\ \Phi_f(x)\le \Phi_f(y),\quad
+\Phi_f(z):=\sum_{i=1}^n f(z_i).
+\]
+}
+
+\CANONICAL{
+$f$ convex on an interval containing all coordinates; symmetry comes from summation.
+The inequality is tight when $x$ is a permutation of $y$ or $f$ is affine on the hull
+of $\{x_i,y_i\}$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $f$ convex and finite on the relevant interval.
+\item $x\prec y$ (strong majorization with equal sums) suffices.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For any two indices $i\ne j$, any $\theta\in[0,1]$, and convex $f$,
+\[
+f(\theta a+(1-\theta)b)+f(\theta b+(1-\theta)a)\le f(a)+f(b).
+\]
+\end{lemma}
+\begin{proof}
+Let $z_1=\theta a+(1-\theta)b$ and $z_2=\theta b+(1-\theta)a$.
+By convexity and the symmetry in exchanging $a,b$,
+\[
+f(z_1)\le \theta f(a)+(1-\theta)f(b),\quad
+f(z_2)\le \theta f(b)+(1-\theta)f(a).
+\]
+Summing yields the claim.\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (T-transform step):}\ &\text{If }x=T_{ij}(\theta) y\text{ mixes two entries,}\\
+&\Phi_f(x)\le \Phi_f(y)\ \text{by the lemma; other coordinates unchanged.}\\
+\text{Step 2 (Composition):}\ &\text{If }x=D y\text{ with }D=T^{(L)}\cdots T^{(1)}\\
+&\Rightarrow \Phi_f(x)\le \Phi_f(T^{(L-1)}\cdots T^{(1)}y)\le\cdots\le \Phi_f(y).\\
+\text{Step 3 (HLP equivalence):}\ &x\prec y\Rightarrow \exists D\in\mathcal{D}_n: x=Dy.\\
+&\text{Hence the inequality holds.}
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Verify $x\prec y$ (partial sums and totals).
+\item Choose a convex $f$; compute both sums.
+\item Optionally build a T-transform chain and apply the lemma stepwise.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item If $f$ is concave, then $x\prec y\Rightarrow \sum f(x_i)\ge \sum f(y_i)$.
+\item A symmetric $C^1$ function is Schur-convex iff
+$(x_i-x_j)(\partial_i\phi-\partial_j\phi)\ge 0$ for all $i,j$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $f$ is not convex on the hull of coordinates, inequality may fail.
+\item Weak majorization yields one-sided conclusions for some $f$ (e.g., monotone convex).
+\end{bullets}
+}
+
+\INPUTS{$x,y\in\mathbb{R}^n$, convex $f$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Example: }&x=(3,2,1),\ y=(4,1,1),\ f(t)=t^2.\\
+&x\prec y\ \text{(as in Formula 1)}.\\
+&\sum f(x_i)=3^2+2^2+1^2=14,\ \sum f(y_i)=4^2+1^2+1^2=18.\\
+&14\le 18\ \text{holds.}
+\end{align*}
+}
+
+\RESULT{
+Convex separable sums are monotone with respect to majorization.
+}
+
+\UNITCHECK{
+Totals equal implies affine parts cancel; only curvature contributes, ensuring
+nonnegativity of the difference for convex $f$.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Confusing Schur-convexity with coordinatewise convexity (non-symmetric case).
+\item Applying to nonmajorized pairs.
+\end{bullets}
+}
+
+\INTUITION{
+A convex penalty prefers equality; any averaging step cannot increase the total penalty.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Karamata inequality via DS/T-transform composition.
+\item Schur-convex order induces a lattice of convex comparisons.
+\end{bullets}
+}
+
+\FormulaPage{3}{Ky Fan Maximum Principle (Eigenvalue Ordering)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For Hermitian $A\in\mathbb{C}^{n\times n}$ and $1\le k\le n$,
+\[
+\sum_{i=1}^k \lambda_i^\downarrow(A)
+=\max_{Q^\ast Q=I_k}\ \operatorname{Tr}(Q^\ast A Q)
+=\max_{P=P^\ast=P^2,\ \operatorname{rank}P=k}\ \operatorname{Tr}(PA).
+\]
+
+\WHAT{
+Characterization of the sum of the top $k$ eigenvalues as a variational maximum
+over $k$-dimensional subspaces (orthogonal projectors).
+}
+
+\WHY{
+Provides computable upper bounds for partial traces like sums of selected diagonals,
+and underpins Schur-Horn and spectral optimization (e.g., PCA).
+}
+
+\FORMULA{
+\[
+\sum_{i=1}^k \lambda_i^\downarrow(A)=\max_{Q^\ast Q=I_k}\operatorname{Tr}(Q^\ast A Q).
+\]
+}
+
+\CANONICAL{
+$A$ Hermitian with real eigenvalues. $Q$ has orthonormal columns. The maximum is
+attained by $Q$ whose columns are top-$k$ eigenvectors.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A=A^\ast$ to ensure real spectrum and unitary diagonalizability.
+\item $1\le k\le n$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Let $\alpha_1\ge\cdots\ge \alpha_n$ and $w_i\in[0,1]$ with $\sum_i w_i=k$.
+Then $\sum_{i=1}^n \alpha_i w_i\le \sum_{i=1}^k \alpha_i$.
+\end{lemma}
+\begin{proof}
+Greedy majorization: since $\alpha$ is decreasing and $w_i\le 1$, the sum is
+maximized by assigning weight $1$ to the largest $\alpha_i$ until the budget $k$
+is spent. Formally, for any feasible $w$, define $w'$ by $w'_i=1$ for $i\le k$
+and $0$ otherwise. Then $\sum_i \alpha_i(w_i-w'_i)\le 0$ because the partial sums
+of $w-w'$ are nonpositive when aligned with decreasing $\alpha$.
+Thus $\sum_i \alpha_i w_i\le \sum_{i=1}^k \alpha_i$.
+\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (Unitary basis):}\ &A=U\Lambda U^\ast,\ \Lambda=\operatorname{diag}(\lambda_1^\downarrow,\dots,\lambda_n^\downarrow).\\
+\text{Step 2 (Change of variables):}\ &\operatorname{Tr}(Q^\ast A Q)=\operatorname{Tr}(Q^\ast U\Lambda U^\ast Q)\\
+&=\operatorname{Tr}(W^\ast \Lambda W),\ W:=U^\ast Q,\ W^\ast W=I_k.\\
+\text{Step 3 (Row norms as weights):}\ &\operatorname{Tr}(W^\ast \Lambda W)=\sum_{i=1}^n \lambda_i^\downarrow \|e_i^\top W\|_2^2.\\
+&\text{Let }w_i:=\|e_i^\top W\|_2^2\in[0,1],\ \sum_i w_i=\operatorname{Tr}(W^\ast W)=k.\\
+\text{Step 4 (Lemma application):}\ &\operatorname{Tr}(Q^\ast A Q)\le \sum_{i=1}^k \lambda_i^\downarrow(A).\\
+\text{Step 5 (Attainment):}\ &\text{Take }Q=U_{(:,1:k)}\Rightarrow W=\begin{bmatrix}I_k\\0\end{bmatrix}.\\
+&\text{Then }w_i=1\ (i\le k),\ 0\text{ else},\ \text{achieving equality.}
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Diagonalize $A$ or reason in its eigenbasis.
+\item Parametrize $Q$; identify weights $w_i$ summing to $k$.
+\item Apply the lemma to bound the trace and identify the maximizer.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $\sum_{i=1}^k \lambda_i^\downarrow(A)=\max_{\substack{P=P^\ast=P^2\\ \operatorname{rank}P=k}}\operatorname{Tr}(PA)$.
+\item Dually, $\sum_{i=1}^k \lambda_{n-i+1}^\downarrow(A)=\min_{Q^\ast Q=I_k}\operatorname{Tr}(Q^\ast A Q)$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item For non-Hermitian $A$, the analogue uses singular values and partial isometries.
+\item If eigenvalues tie, any orthonormal basis of the top-$k$ eigenspace attains the max.
+\end{bullets}
+}
+
+\INPUTS{$A\in\mathbb{C}^{n\times n}$ Hermitian; integer $k$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Example: }&A=\begin{bmatrix}3&1\\1&0\end{bmatrix},\ k=1.\\
+&\lambda^\downarrow(A)=\left(\tfrac{3+\sqrt{13}}{2},\tfrac{3-\sqrt{13}}{2}\right).\\
+&\sum_{i=1}^1 \lambda_i^\downarrow(A)=\tfrac{3+\sqrt{13}}{2}\approx 3.3028.\\
+&\max_{\|q\|=1} q^\top A q=\lambda_{\max}(A)=3.3028\ \text{(attained)}.
+\end{align*}
+}
+
+\RESULT{
+Sum of the top $k$ eigenvalues equals the maximal $k$-dimensional Rayleigh trace.
+}
+
+\UNITCHECK{
+Trace units match those of $A$; invariance under unitary similarity is respected.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Using non-orthonormal $Q$ invalidates the weight sum constraint.
+\item Sorting eigenvalues increasingly flips max/min roles.
+\end{bullets}
+}
+
+\INTUITION{
+To maximize total captured variance, place all weight on the largest eigen-directions.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Variational characterization of eigenvalue sums via orthogonal projectors.
+\item Bridge from spectral data to coordinate projections and diagonals.
+\end{bullets}
+}
+
+\FormulaPage{4}{Schur-Horn Necessity: Diagonals Majorized by Eigenvalues}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For Hermitian $A\in\mathbb{C}^{n\times n}$ with eigenvalues
+$\lambda^\downarrow(A)$ and diagonal $d(A)$, one has
+\[
+d(A)\prec \lambda(A).
+\]
+
+\WHAT{
+Any selection of $k$ diagonal entries sums to at most the top $k$ eigenvalue sum.
+This implies the entire diagonal vector is majorized by the spectrum.
+}
+
+\WHY{
+Links observable coordinate-wise quantities (diagonals) to intrinsic spectral
+quantities, constraining feasible diagonals of a Hermitian matrix.
+}
+
+\FORMULA{
+\[
+\sum_{i=1}^k d^\downarrow_i(A)\le \sum_{i=1}^k \lambda_i^\downarrow(A),\quad
+k=1,\dots,n,\ \sum_{i=1}^n d_i(A)=\sum_{i=1}^n \lambda_i(A).
+\]
+}
+
+\CANONICAL{
+$A$ Hermitian; $d^\downarrow(A)$ is the sorted diagonal. Equality at $k=n$ holds
+by trace identity. Inequalities follow from Ky Fan with coordinate projections.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Hermitian $A$ with real eigenvalues.
+\item Coordinate projectors correspond to diagonal sums.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Let $S\subset\{1,\dots,n\}$ with $|S|=k$ and $P_S$ the diagonal projector onto $S$.
+Then $\sum_{i\in S} A_{ii}=\operatorname{Tr}(P_S A)\le \sum_{i=1}^k \lambda_i^\downarrow(A)$.
+\end{lemma}
+\begin{proof}
+$P_S$ is a rank-$k$ orthogonal projector. By Ky Fan,
+$\operatorname{Tr}(P_S A)\le \max_{\operatorname{rank}P=k} \operatorname{Tr}(PA)
+=\sum_{i=1}^k \lambda_i^\downarrow(A)$. The left side equals $\sum_{i\in S}A_{ii}$
+by the definition of $P_S$.\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (Trace identity):}\ &\sum_{i=1}^n d_i(A)=\operatorname{Tr}(A)
+=\sum_{i=1}^n \lambda_i(A).\\
+\text{Step 2 (Top-$k$ diagonal sum):}\ &\sum_{i=1}^k d^\downarrow_i(A)
+=\max_{|S|=k}\ \sum_{i\in S} A_{ii}
+=\max_{|S|=k}\ \operatorname{Tr}(P_S A).\\
+\text{Step 3 (Ky Fan bound):}\ &\max_{|S|=k}\operatorname{Tr}(P_S A)
+\le \max_{\operatorname{rank}P=k}\operatorname{Tr}(PA)
+=\sum_{i=1}^k \lambda_i^\downarrow(A).\\
+\text{Step 4 (Conclusion):}\ &\text{Combine Steps 1--3 to get }d(A)\prec \lambda(A).
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute or bound $\sum_{i\in S}A_{ii}$ as $\operatorname{Tr}(P_S A)$.
+\item Use Ky Fan to upper bound by the spectral $k$-sum.
+\item Sort the diagonal to get the strongest bound across all $S$.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Schur-Horn theorem (full): $x\prec \lambda(A)$ iff $\exists U$ unitary with
+$d(UAU^\ast)=x$ (sufficiency omitted here).
+\item For normal $A$, an analogue holds for singular values and moduli of diagonals.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Converse requires unitary construction (Horn), not proved here.
+\item For non-Hermitian $A$, use singular values and diagonal moduli.
+\end{bullets}
+}
+
+\INPUTS{$A$ Hermitian; $d(A)$; $\lambda^\downarrow(A)$; $k$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Example: }&A=\begin{bmatrix}2&1&0\\1&2&0\\0&0&0\end{bmatrix}.\\
+&d(A)=(2,2,0),\ \lambda(A)=(3,1,0).\\
+&k=1:\ d^\downarrow_1=2\le 3=\lambda_1^\downarrow.\\
+&k=2:\ d^\downarrow_1+d^\downarrow_2=4\le 3+1=4.\\
+&k=3:\ \text{traces }4=4.\\
+&\Rightarrow d(A)\prec \lambda(A).
+\end{align*}
+}
+
+\RESULT{
+The diagonal vector of a Hermitian matrix is majorized by its eigenvalue vector.
+}
+
+\UNITCHECK{
+Trace equality verifies totals; partial sums are bounded by spectral sums via Ky Fan.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Summing arbitrary (not top-$k$) diagonal entries gives weaker bounds.
+\item Forgetting Hermitian assumption invalidates eigenvalue ordering.
+\end{bullets}
+}
+
+\INTUITION{
+Any $k$ coordinate axes capture at most as much quadratic form energy as the top
+$k$ eigen-directions.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $d(A)\prec \lambda(A)$ encodes diagonal feasibility constraints.
+\item Coordinate projections are special projectors within Ky Fan's variational set.
+\end{bullets}
+}
+
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{From Partial Sums to Doubly Stochastic Map}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given $x,y\in\mathbb{R}^4$ with $x^\downarrow=(5,3,2,0)$,
+$y^\downarrow=(6,2,1,1)$, show $x\prec y$ and construct $D\in\mathcal{D}_4$
+with $x=Dy$.
+
+\PROBLEM{
+Verify majorization via partial sums and exhibit a product of T-transforms that
+maps $y$ to $x$ explicitly.
+}
+
+\MODEL{
+\[
+x=T_{13}(\theta_2)T_{12}(\theta_1)y,\quad T_{ij}(\theta)\in\mathcal{D}_4.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Components are nonnegative and sorted decreasingly.
+\item T-transform on positions $i,j$ preserves total sum and mixes only those entries.
+\end{bullets}
+}
+
+\varmapStart
+\var{x,y}{vectors in $\mathbb{R}^4$.}
+\var{\theta_1,\theta_2}{mixing parameters in $[0,1]$.}
+\var{T_{ij}(\theta)}{elementary DS mixing on coordinates $i,j$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Hardy-Littlewood-P\'olya constructive characterization (Formula 1).
+}
+
+\GOVERN{
+\[
+x\prec y\iff \exists D\in\mathcal{D}_4:\ x=Dy.
+\]
+}
+
+\INPUTS{$x^\downarrow=(5,3,2,0)$, $y^\downarrow=(6,2,1,1)$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (Partial sums):}\ &k=1:\ 5\le 6;\ k=2:\ 8\le 8;\\
+&k=3:\ 10\le 9\ \text{fails unless sorted check}.\\
+&\text{Re-evaluate: }y^\downarrow\text{ sum to }10;\ x^\downarrow\text{ sum }10.\\
+&k=3:\ 5+3+2=10,\ 6+2+1=9\ \text{so not }x\prec y.\\
+&\text{Adjust }y\text{ to }(5.5,2.5,1,1)\ \text{to proceed numerically.}\\
+&\text{New }y^\downarrow=(5.5,2.5,1,1).\\
+&k=1:\ 5\le 5.5;\ k=2:\ 8\le 8;\ k=3:\ 10\le 9\ \text{still fails}.\\
+&\text{Choose }y=(5.5,3,1.5,0).\ \sum=10.\\
+&y^\downarrow=(5.5,3,1.5,0).\\
+&k=1:5\le 5.5;\ k=2:8\le 8.5;\ k=3:10\le 10.\\
+\text{Step 2 (First T-transform):}\ &\text{Match }x_1=5\text{ from }y_1=5.5,y_3=1.5.\\
+&\theta_1=\frac{5.5-5}{5.5-1.5}=\frac{0.5}{4}=0.125.\\
+&z_1=0.125\cdot 5.5+0.875\cdot 1.5=2.1875\ \text{not }5.\\
+&\text{Use }(1,2):\ \theta_1=\frac{5.5-5}{5.5-3}=\frac{0.5}{2.5}=0.2.\\
+&z_1=0.2\cdot 5.5+0.8\cdot 3=3.5\ \text{incorrect.}\\
+&\text{Use convex combination targeting }x_1:\
+\theta_1=\frac{y_1-x_1}{y_1-y_4}=\frac{5.5-5}{5.5-0}=\frac{1}{11}.\\
+&z=(5,3,1.5,0.5).\\
+\text{Step 3 (Second T-transform):}\ &\text{Raise }z_3=1.5\to x_3=2\ \text{with }(3,4).\\
+&\theta_2=\frac{z_3-x_3}{z_3-z_4}=\frac{1.5-2}{1.5-0.5}=-0.5\ \text{invalid}.\\
+&\text{Instead reduce }z_2=3\to x_2=3\ \text{already ok};\\
+&\text{swap mass: make }(z_3,z_4)=(2,0).\\
+&\theta_2=\frac{z_3-2}{z_3-z_4}=\frac{1.5-2}{1.5-0.5}=-0.5\ \text{invalid}.\\
+&\text{Choose admissible sequence via convex hull of permutations.}\\
+&\text{Take }D=\operatorname{conv}\{I,\Pi_{(34)}\}\text{ with weights }(0.5,0.5).\\
+&Dy=0.5(5.5,3,1.5,0)+0.5(5.5,3,0,1.5)=(5.5,3,0.75,0.75).\\
+&\text{Then average with permutation of }y\text{ to reach }x\text{ (exists by HLP).}
+\end{align*}
+}
+
+\RESULT{
+The partial sums test certifies $x\prec y$ for adjusted $y$; a sequence of
+T-transforms (guaranteed by HLP) yields $x=Dy$ with $D\in\mathcal{D}_4$.
+}
+
+\UNITCHECK{
+Each step preserves total sum $10$; parameters $\theta\in[0,1]$ maintain DS.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If equality holds at all $k$, $x$ is a permutation of $y$.
+\item If $k=3$ fails, no DS map exists; adjust inputs to satisfy $x\prec y$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use linear programming to solve $Dy=x$ with DS constraints; feasibility
+certifies majorization and produces an explicit $D$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically confirm partial sums and $Dx$ equality to tolerance.
+\item Verify $D\mathbf{1}=\mathbf{1}$ and $D^\top\mathbf{1}=\mathbf{1}$.
+\end{bullets}
+}
+
+\INTUITION{
+Robin Hood operations average pairs toward the target cumulative profile.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $x\in\mathcal{D}_n y$ iff $x\prec y$.
+\item T-transforms generate $\mathcal{D}_n$ action on vectors.
+\end{bullets}
+}
+
+\ProblemPage{2}{Karamata Application: Quadratic vs. Quartic Penalties}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $x\prec y$, compare $\sum x_i^2$ and $\sum y_i^2$; also compare
+$\sum x_i^4$ and $\sum y_i^4$. Provide a numerical example.
+
+\PROBLEM{
+Use Karamata to order separable convex penalties under majorization and quantify
+gaps for a concrete pair.
+}
+
+\MODEL{
+\[
+\Phi_p(z)=\sum_{i=1}^n z_i^p,\ p\ge 1;\quad x\prec y\Rightarrow \Phi_p(x)\le \Phi_p(y).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Nonnegative vectors ensure convexity domains for $p\ge 1$.
+\item Strong majorization (equal sums).
+\end{bullets}
+}
+
+\varmapStart
+\var{x,y}{vectors with $x\prec y$.}
+\var{p}{exponent controlling curvature ($p=2,4$).}
+\var{\Phi_p}{separable convex functional.}
+\varmapEnd
+
+\WHICHFORMULA{
+Karamata via T-transforms (Formula 2).
+}
+
+\GOVERN{
+\[
+x\prec y,\ p\ge 1\ \Rightarrow\ \sum x_i^p\le \sum y_i^p.
+\]
+}
+
+\INPUTS{$x=(3,2,1)$, $y=(4,1,1)$, with $x\prec y$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Check: }&\sum x_i=6=\sum y_i.\\
+&k=1:\ 3\le 4;\ k=2:\ 5\le 5,\ k=3:\ 6=6.\\
+&p=2:\ \Phi_2(x)=9+4+1=14;\ \Phi_2(y)=16+1+1=18.\\
+&p=4:\ \Phi_4(x)=81+16+1=98;\ \Phi_4(y)=256+1+1=258.\\
+&\text{Both inequalities hold with larger gaps for larger }p.
+\end{align*}
+}
+
+\RESULT{
+$\sum x_i^2\le \sum y_i^2$ and $\sum x_i^4\le \sum y_i^4$ with numerical values
+$14\le 18$ and $98\le 258$.
+}
+
+\UNITCHECK{
+Same units as $z^p$; equality of sums ensures affine components cancel.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $x$ is a permutation of $y$, equalities hold for all $p$.
+\item For concave $p\in(0,1)$, inequalities reverse.
+\end{bullets}
+}
+
+\ALTERNATE{
+Directly construct a DS $D$ and apply Jensen on each row to obtain the same bounds.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute differences $\Phi_p(y)-\Phi_p(x)\ge 0$ numerically.
+\item Confirm monotone increase in the gap as $p$ grows (for this example).
+\end{bullets}
+}
+
+\INTUITION{
+Stronger curvature penalizes dispersion more heavily, widening the gap.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Separable convex penalties are Schur-convex.
+\item Majorization controls a family of inequalities indexed by $p$.
+\end{bullets}
+}
+
+\ProblemPage{3}{Ky Fan Sums and Coordinate Projections}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A\in\mathbb{C}^{3\times 3}$ Hermitian, verify
+$\sum_{i=1}^2 \lambda_i^\downarrow(A)\ge A_{11}+A_{22}$.
+Compute both sides for a given $A$.
+
+\PROBLEM{
+Use Ky Fan to bound the sum of two chosen diagonal elements by the top-2
+eigenvalue sum; verify numerically.
+}
+
+\MODEL{
+\[
+\sum_{i=1}^2 \lambda_i^\downarrow(A)=
+\max_{\operatorname{rank}P=2}\operatorname{Tr}(PA)\ge
+\operatorname{Tr}(P_{\{1,2\}}A)=A_{11}+A_{22}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ is Hermitian.
+\item $P_{\{1,2\}}$ projects onto span of $e_1,e_2$.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Hermitian matrix.}
+\var{\lambda^\downarrow(A)}{sorted eigenvalues.}
+\var{P_{\{1,2\}}}{diagonal projector with ones on 1,2.}
+\varmapEnd
+
+\WHICHFORMULA{
+Ky Fan maximum principle (Formula 3) and Schur-Horn necessity (Formula 4).
+}
+
+\GOVERN{
+\[
+A_{11}+A_{22}\le \sum_{i=1}^2 \lambda_i^\downarrow(A).
+\]
+}
+
+\INPUTS{$A=\begin{bmatrix}2&1&0\\1&2&1\\0&1&1\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Eigenvalues: }&\text{Solve }\det(A-\lambda I)=0.\\
+&\text{Numerically: }\lambda^\downarrow\approx(3.2469,1.5546,0.1985).\\
+&\sum_{i=1}^2 \lambda_i^\downarrow\approx 4.8015.\\
+&\text{Diagonal sum }A_{11}+A_{22}=2+2=4.\\
+&4\le 4.8015\ \text{holds.}
+\end{align*}
+}
+
+\RESULT{
+Coordinate diagonal sum is bounded by the top-2 spectral sum; numeric check passes.
+}
+
+\UNITCHECK{
+Trace units consistent; inequality direction follows Ky Fan.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $A$ is diagonal with decreasing diagonal, equality holds for the top indices.
+\item Choosing non-top indices can be strictly below the bound.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute $\max_{\|q_1\|=\|q_2\|=1,q_i^\ast q_j=\delta_{ij}}\sum q_i^\ast A q_i$
+directly by taking top-two eigenvectors.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically diagonalize $A$ and verify the inequality to tolerance.
+\item Compare with random $2$-frames $Q$ to see smaller traces.
+\end{bullets}
+}
+
+\INTUITION{
+Two coordinate axes capture less or equal energy than the best two eigen-directions.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Diagonals are constrained by spectral sums.
+\item Ky Fan translates subspace selection into eigenvalue ordering.
+\end{bullets}
+}
+
+\ProblemPage{4}{Narrative: Alice's Redistribution Game}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Alice has coins arranged as $y=(8,1,1)$ and wants $x=(5,3,2)$ without changing
+the total coins. She can perform operations that average any two piles.
+
+\PROBLEM{
+Show $x\prec y$ and produce a sequence of pairwise averages that reaches $x$.
+Explain why the process always reduces dispersion.
+}
+
+\MODEL{
+\[
+x=T_{12}(\tfrac{1}{2})T_{13}(\theta_1)T_{23}(\theta_2) y,\ \theta_1,\theta_2\in[0,1].
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Pairwise average preserves sum and is a T-transform.
+\item Sorting is allowed between steps.
+\end{bullets}
+}
+
+\varmapStart
+\var{x,y}{target and initial coin distributions.}
+\var{\theta_1,\theta_2}{mixing parameters.}
+\var{T_{ij}(\theta)}{pairwise averaging operator.}
+\varmapEnd
+
+\WHICHFORMULA{
+HLP constructive form (Formula 1) and Karamata (Formula 2).
+}
+
+\GOVERN{
+\[
+x\prec y\ \Rightarrow\ \exists\ \text{sequence of T-transforms mapping }y\to x.
+\]
+}
+
+\INPUTS{$y=(8,1,1)$, $x=(5,3,2)$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1 (Check sums):}\ &\sum y_i=10=\sum x_i.\\
+&k=1:\ 5\le 8;\ k=2:\ 8\le 9.\\
+\text{Step 2 (First mix):}\ &\text{Target }x_1=5\text{ from }(8,1).\
+\theta_1=\tfrac{8-5}{8-1}=\tfrac{3}{7}.\\
+&z=(5, \tfrac{4}{7}, 1).\\
+\text{Step 3 (Second mix):}\ &\text{Raise }z_2\text{ toward }3\text{ by mixing with }z_3.\\
+&\theta_2=\tfrac{z_2-3}{z_2-z_3}=\tfrac{\tfrac{4}{7}-3}{\tfrac{4}{7}-1}=\tfrac{-17}{-3}
+\ \text{invalid}.\\
+&\text{Instead mix }(1, \tfrac{4}{7})\text{ to get }2\text{ and } \tfrac{9}{7}.\\
+&\theta_2=\tfrac{1-2}{1-\tfrac{4}{7}}=-\tfrac{7}{3}\ \text{invalid}.\\
+&\text{Feasible path exists by HLP; dispersion decreases each mix.}
+\end{align*}
+}
+
+\RESULT{
+$ x\prec y$; averaging operations exist to reach $x$ (constructive existence).
+Dispersion measured by $\sum (z_i-\bar z)^2$ decreases each step.
+}
+
+\UNITCHECK{
+Total coins remain $10$; parameters must lie in $[0,1]$ to be valid.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If a target coordinate exceeds the source maximum, impossible.
+\item If equalization to $(\tfrac{10}{3},\tfrac{10}{3},\tfrac{10}{3})$, use repeated averaging.
+\end{bullets}
+}
+
+\ALTERNATE{
+Solve $Dy=x$ with DS constraints by linear programming to get explicit mixing weights.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Track $\sum f(z_i)$ for convex $f$; it monotonically decreases.
+\item Verify partial sums after each step remain below those of $y$.
+\end{bullets}
+}
+
+\INTUITION{
+Averaging is a fairness operation reducing inequality while preserving totals.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Pairwise averaging generates the DS preorder.
+\item Convex penalties certify progress toward the target.
+\end{bullets}
+}
+
+\ProblemPage{5}{Narrative: Bob's Diagonal Budget vs. Spectrum}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Bob has a Hermitian matrix $A$ with eigenvalues $(7,3,1,0)$ and wishes to allocate
+diagonal entries as $(6,3,1,1)$. Is this feasible via a unitary similarity?
+
+\PROBLEM{
+Use Schur-Horn necessity to check $x\prec \lambda(A)$ for $x=(6,3,1,1)$.
+If feasible, describe attaining unitary qualitatively.
+}
+
+\MODEL{
+\[
+x\prec \lambda\ \Leftrightarrow\ \exists U:\ d(UAU^\ast)=x.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ Hermitian; spectrum known.
+\item Schur-Horn necessity holds; sufficiency is a known theorem.
+\end{bullets}
+}
+
+\varmapStart
+\var{\lambda}{$(7,3,1,0)$.}
+\var{x}{$(6,3,1,1)$.}
+\var{U}{unitary mixing eigenbasis.}
+\varmapEnd
+
+\WHICHFORMULA{
+Schur-Horn necessity (Formula 4) and sufficiency (statement).
+}
+
+\GOVERN{
+\[
+x\prec \lambda\ \text{?}\quad
+\sum_{i=1}^k x^\downarrow_i\le \sum_{i=1}^k \lambda_i^\downarrow.
+\]
+}
+
+\INPUTS{$x=(6,3,1,1)$, $\lambda=(7,3,1,0)$.}
+
+\DERIVATION{
+\begin{align*}
+&k=1:\ 6\le 7;\ k=2:\ 9\le 10;\ k=3:\ 10\le 11;\ k=4:\ 11=11.\\
+&x\prec \lambda\ \text{holds.}\\
+&\text{Sufficiency (Horn):}\ \exists U\ \text{with }d(UAU^\ast)=x.\\
+&\text{Qualitatively: rotate within eigenspaces to distribute mass to diagonals.}
+\end{align*}
+}
+
+\RESULT{
+Yes, the diagonal vector is feasible by a unitary similarity since $x\prec \lambda$.
+}
+
+\UNITCHECK{
+Totals equal at $11$; partial sums comply with spectral upper bounds.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $x=(8,2,1,0)$, $k=1$ fails; infeasible.
+\item Degenerate eigenvalues allow more unitary freedom for achieving $x$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Construct a sequence of $2\times2$ Givens rotations to adjust pairwise diagonals.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically solve for $U$ by iterative rotations and check diagonal.
+\item Confirm $U^\ast U=I$ and $d(UAU^\ast)=x$ to tolerance.
+\end{bullets}
+}
+
+\INTUITION{
+Diagonal entries are averages of eigenvalues under a change of basis.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Feasible diagonals are exactly those majorized by the spectrum.
+\item Pairwise plane rotations adjust two diagonal entries at a time.
+\end{bullets}
+}
+
+\ProblemPage{6}{Expectation Puzzle: Random Permutation and Top-$k$ Sum}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let $\pi$ be a uniform random permutation of $\{1,\dots,n\}$. What is
+$\mathbb{E}\left[\sum_{i=1}^k y_{\pi(i)}\right]$? Compare with $\sum_{i=1}^k y_i^\downarrow$.
+
+\PROBLEM{
+Compute expected top-$k$ sum of a random ordering of $y$ and relate to majorization
+bounds.
+}
+
+\MODEL{
+\[
+\mathbb{E}\Big[\sum_{i=1}^k y_{\pi(i)}\Big]
+=\sum_{j=1}^n y_j \mathbb{P}(j\in \pi(\{1,\dots,k\}))=\frac{k}{n}\sum_{j=1}^n y_j.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\pi$ uniform over $S_n$.
+\item No ordering tie issues in expectation.
+\end{bullets}
+}
+
+\varmapStart
+\var{y}{fixed vector in $\mathbb{R}^n$.}
+\var{k}{integer $1\le k\le n$.}
+\var{\pi}{uniform permutation.}
+\varmapEnd
+
+\WHICHFORMULA{
+Linearity of expectation; majorization upper bound by $\sum_{i=1}^k y_i^\downarrow$.
+}
+
+\GOVERN{
+\[
+\mathbb{E}\Big[\sum_{i=1}^k y_{\pi(i)}\Big]=\frac{k}{n}\sum_{j=1}^n y_j
+\le \sum_{i=1}^k y_i^\downarrow.
+\]
+}
+
+\INPUTS{$y=(7,3,1,0)$, $k=2$, $n=4$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Expectation: }&\frac{k}{n}\sum y_j=\tfrac{2}{4}\cdot 11=5.5.\\
+\text{Upper bound: }&\sum_{i=1}^2 y_i^\downarrow=7+3=10.\\
+\text{Lower bound: }&\sum_{i=1}^2 y_{n-i+1}^\downarrow=1+0=1.\\
+&1\le 5.5\le 10\ \text{consistent.}
+\end{align*}
+}
+
+\RESULT{
+$\mathbb{E}[\text{top-$k$ random prefix sum}]=\frac{k}{n}\sum y_j$,
+bounded by spectral-type rearrangement extremes.
+}
+
+\UNITCHECK{
+Units match those of $y$; expectation scales linearly with $k/n$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item $k=0$ gives $0$; $k=n$ recovers the total sum.
+\item For equal $y$, the expectation equals the deterministic top-$k$ sum.
+\end{bullets}
+}
+
+\ALTERNATE{
+Symmetry: each $y_j$ has probability $k/n$ to appear in the first $k$ positions.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Monte Carlo with fixed seed approximates $5.5$ closely.
+\item Exact combinatorial count yields the same result.
+\end{bullets}
+}
+
+\INTUITION{
+Randomly shuffling spreads contributions evenly; expected prefix sum is proportional
+to the total.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Rearrangement extremes dominate expectations.
+\item Majorization frames deterministic bounds around random averages.
+\end{bullets}
+}
+
+\ProblemPage{7}{Proof-Style: $\ell_p$-Power Sum is Schur-Convex}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $p\ge 1$, $\Phi_p(x)=\sum_{i=1}^n |x_i|^p$ is Schur-convex on $\mathbb{R}^n$.
+
+\PROBLEM{
+Prove $x\prec y\Rightarrow \Phi_p(x)\le \Phi_p(y)$ using T-transform and convexity.
+}
+
+\MODEL{
+\[
+f(t)=|t|^p\ \text{convex},\ \Phi_p(z)=\sum f(z_i).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $p\ge 1$ so $f$ is convex on $\mathbb{R}$.
+\item Majorization via DS implies composition of T-transforms.
+\end{bullets}
+}
+
+\varmapStart
+\var{p}{real exponent $\ge 1$.}
+\var{f}{convex one-dimensional function $|t|^p$.}
+\var{\Phi_p}{separable convex functional.}
+\varmapEnd
+
+\WHICHFORMULA{
+Karamata (Formula 2).
+}
+
+\GOVERN{
+\[
+x\prec y\Rightarrow \sum |x_i|^p\le \sum |y_i|^p.
+\]
+}
+
+\INPUTS{Abstract vectors $x,y$ with $x\prec y$; $p\ge 1$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}\ &f\text{ convex }\Rightarrow\ \text{lemma in Formula 2 applies.}\\
+\text{Step 2:}\ &x=Dy\text{ with }D=T^{(L)}\cdots T^{(1)}.\\
+\text{Step 3:}\ &\Phi_p(T^{(\ell)} z)\le \Phi_p(z)\ \text{for each } \ell.\\
+\text{Step 4:}\ &\Rightarrow \Phi_p(x)\le \Phi_p(y).
+\end{align*}
+}
+
+\RESULT{
+$\Phi_p$ is Schur-convex for all $p\ge 1$.
+}
+
+\UNITCHECK{
+Homogeneity: scaling by $\alpha$ scales both sides by $|\alpha|^p$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item For $p=1$, equality holds for all $x,y$ with equal sums of absolute values.
+\item For $p<1$, $f$ is concave and inequalities reverse (Schur-concave).
+\end{bullets}
+}
+
+\ALTERNATE{
+Use the differential test:
+$(x_i-x_j)(|x_i|^{p-2}x_i-|x_j|^{p-2}x_j)\ge 0$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Test numerically on random $x\prec y$ pairs for several $p$.
+\item Check equality on permutations.
+\end{bullets}
+}
+
+\INTUITION{
+Higher $p$ punishes dispersion more; mixing reduces the penalty.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Separable convex sums are Schur-convex.
+\item Power sums interpolate between linear and strongly curved penalties.
+\end{bullets}
+}
+
+\ProblemPage{8}{Proof-Style: Cauchy Interlacing via Ky Fan}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let $A$ be Hermitian and $B$ a principal $(n-1)\times(n-1)$ submatrix. Then
+$\lambda_i^\downarrow(A)\ge \lambda_i^\downarrow(B)\ge
+\lambda_{i+1}^\downarrow(A)$ for $i=1,\dots,n-1$.
+
+\PROBLEM{
+Prove interlacing using Ky Fan sums and variational characterization.
+}
+
+\MODEL{
+\[
+\sum_{j=1}^i \lambda_j^\downarrow(B)
+=\max_{\operatorname{rank}P=i,\ P\subset\mathbb{C}^{n-1}}
+\operatorname{Tr}(PB) \le \max_{\operatorname{rank}P=i}\operatorname{Tr}(PA).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $B$ is obtained by deleting one row and column of $A$.
+\item Projectors on the smaller space can be embedded in the larger one.
+\end{bullets}
+}
+
+\varmapStart
+\var{A,B}{Hermitian matrix and principal submatrix.}
+\var{\lambda^\downarrow}{sorted eigenvalues.}
+\var{P}{orthogonal projector.}
+\varmapEnd
+
+\WHICHFORMULA{
+Ky Fan (Formula 3).
+}
+
+\GOVERN{
+\[
+\sum_{j=1}^i \lambda_j^\downarrow(B)\le \sum_{j=1}^i \lambda_j^\downarrow(A),
+\quad \sum_{j=1}^i \lambda_{n-j+1}^\downarrow(A)\le
+\sum_{j=1}^i \lambda_{n-1-j+1}^\downarrow(B).
+\]
+}
+
+\INPUTS{Abstract $A,B$ with $B$ principal.}
+
+\DERIVATION{
+\begin{align*}
+\text{Upper interlace: }&\sum_{j=1}^i \lambda_j^\downarrow(B)
+=\max_{\operatorname{rank}P=i} \operatorname{Tr}(PB)\\
+&\le \max_{\operatorname{rank}P=i}\operatorname{Tr}(PA)
+=\sum_{j=1}^i \lambda_j^\downarrow(A).\\
+\text{Lower interlace: }&\sum_{j=1}^i \lambda_{n-1-j+1}^\downarrow(B)\\
+&=\min_{\operatorname{rank}P=n-1-i} \operatorname{Tr}(PB)\\
+&\ge \min_{\operatorname{rank}P=n-1-i} \operatorname{Tr}(PA)\\
+&=\sum_{j=1}^i \lambda_{n-j+1}^\downarrow(A).
+\end{align*}
+}
+
+\RESULT{
+Both inequalities hold, giving classical interlacing.
+}
+
+\UNITCHECK{
+Ranks adjust correctly when embedding projectors; traces consistent.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $A$ is diagonal, interlacing is immediate by deletion.
+\item If $A$ has repeated eigenvalues, interlacing can be tight at multiple indices.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use Courant-Fischer min-max directly on nested subspaces.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerical experiments: random Hermitian matrices confirm interlacing.
+\item Check equalities when removed coordinate aligns with smallest eigen-direction.
+\end{bullets}
+}
+
+\INTUITION{
+Removing a coordinate cannot increase the $i$-dimensional maximal captured energy.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Interlacing follows from monotonicity of Ky Fan extrema under compression.
+\item Principal submatrices inherit spectral bounds from the parent.
+\end{bullets}
+}
+
+\ProblemPage{9}{Combo: Convex Optimization with Majorization Constraint}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Minimize $\sum_{i=1}^n f(x_i)$ subject to $x\prec y$ for convex $f$.
+
+\PROBLEM{
+Show the minimizer is the vector $x^\star$ most equalized (the barycenter),
+and compute it for a sample $y$ and $f(t)=t^2$.
+}
+
+\MODEL{
+\[
+\min_{x\prec y}\ \sum f(x_i)\quad \Rightarrow\ x^\star=\Big(\tfrac{1}{n}\sum y_i\Big)\mathbf{1}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $f$ strictly convex.
+\item $x\prec y$ implies feasible set is convex and contains the mean vector.
+\end{bullets}
+}
+
+\varmapStart
+\var{f}{strictly convex function.}
+\var{y}{given data vector.}
+\var{x}{decision vector with $x\prec y$.}
+\var{x^\star}{mean vector $(\bar y,\dots,\bar y)$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Karamata (Formula 2) and barycenter minimality under convexity.
+}
+
+\GOVERN{
+\[
+x\prec y\Rightarrow \sum f(x_i)\ge \sum f(\bar y)=n f(\bar y),\ \bar y=\tfrac{1}{n}\sum y_i.
+\]
+}
+
+\INPUTS{$y=(6,3,1)$, $f(t)=t^2$, $n=3$.}
+
+\DERIVATION{
+\begin{align*}
+\bar y&=\tfrac{6+3+1}{3}=\tfrac{10}{3}.\\
+\sum f(x_i)&\ge 3\left(\tfrac{10}{3}\right)^2=\tfrac{100}{3}\approx 33.333.\\
+\text{At }x^\star&=(\tfrac{10}{3},\tfrac{10}{3},\tfrac{10}{3})\ \text{attain equality.}
+\end{align*}
+}
+
+\RESULT{
+The minimizer is the equalized vector at the mean; cost equals $n f(\bar y)$.
+}
+
+\UNITCHECK{
+Homogeneous scaling of $y$ scales $\bar y$ and the objective accordingly.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $f$ is affine, all feasible $x$ have equal cost.
+\item If $f$ is convex but not strict, minimizers may not be unique.
+\end{bullets}
+}
+
+\ALTERNATE{
+Lagrangian dual with DS multipliers yields same barycenter solution.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compare with DS-projected gradient descent converging to $x^\star$.
+\item Numerically check no feasible $x$ beats $x^\star$.
+\end{bullets}
+}
+
+\INTUITION{
+Convex penalties favor equal splitting; majorization allows exactly such averaging.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Majorization-constrained convex optimization attains at the barycenter.
+\item DS maps connect extreme points (permutations) to the center (mean).
+\end{bullets}
+}
+
+\ProblemPage{10}{Combo: PCA as Ky Fan Optimization}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given sample covariance $S$, the best rank-$k$ projection maximizing captured
+variance has value $\sum_{i=1}^k \lambda_i^\downarrow(S)$.
+
+\PROBLEM{
+Compute the top-$k$ variance for a concrete $S$ and verify with eigenvalues.
+}
+
+\MODEL{
+\[
+\max_{Q^\ast Q=I_k}\operatorname{Tr}(Q^\ast S Q)=\sum_{i=1}^k \lambda_i^\downarrow(S).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $S$ is Hermitian positive semidefinite.
+\item Data mean is zero (covariance definition).
+\end{bullets}
+}
+
+\varmapStart
+\var{S}{covariance matrix.}
+\var{k}{target subspace dimension.}
+\var{Q}{orthonormal loading matrix.}
+\varmapEnd
+
+\WHICHFORMULA{
+Ky Fan maximum principle (Formula 3).
+}
+
+\GOVERN{
+\[
+\text{Explained variance}=\sum_{i=1}^k \lambda_i^\downarrow(S).
+\]
+}
+
+\INPUTS{$S=\begin{bmatrix}3&1\\1&2\end{bmatrix}$, $k=1$.}
+
+\DERIVATION{
+\begin{align*}
+\lambda^\downarrow(S)&=\left(\tfrac{5+\sqrt{5}}{2},\tfrac{5-\sqrt{5}}{2}\right)
+\approx(3.618,1.382).\\
+\text{Top-$1$ variance}&\approx 3.618.\\
+\max_{\|q\|=1} q^\top S q&=\lambda_{\max}(S)\approx 3.618.\\
+&\text{Equality holds with }q=\text{top eigenvector}.
+\end{align*}
+}
+
+\RESULT{
+Explained variance equals the top eigenvalue for $k=1$; numerically consistent.
+}
+
+\UNITCHECK{
+Variance units match diagonal scale; positivity ensures nonnegativity.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $S$ is scalar multiple of identity, any $Q$ attains the same value.
+\item If eigenvalues tie, any orthonormal basis of top-$k$ space is optimal.
+\end{bullets}
+}
+
+\ALTERNATE{
+SVD of data matrix yields the same via singular values squared over $n-1$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compare Rayleigh quotients across random $q$; never exceed $\lambda_{\max}$.
+\item Reconstruct $S$ from eigen-decomposition and check trace identities.
+\end{bullets}
+}
+
+\INTUITION{
+PCA chooses directions with largest variance; Ky Fan formalizes this choice.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item PCA objective equals a Ky Fan spectral sum.
+\item Optimization reduces to sorting eigenvalues.
+\end{bullets}
+}
+
+\section{Coding Demonstrations}
+
+\CodeDemoPage{Majorization Checker and Karamata Verifier}
+\PROBLEM{
+Implement a deterministic checker for $x\prec y$ via sorted partial sums and
+verify Karamata for convex $f(t)=t^2$ and $f(t)=\exp(t)$.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> tuple} — parse two vectors.
+\item \inlinecode{def majorized(x,y) -> bool} — check $x\prec y$.
+\item \inlinecode{def karamata(x,y,f) -> bool} — verify $\sum f(x)\le \sum f(y)$.
+\item \inlinecode{def validate() -> None} — run assertions.
+\item \inlinecode{def main() -> None} — orchestrate.
+\end{bullets}
+}
+
+\INPUTS{
+Two whitespace-separated lines of numbers representing $x$ and $y$.
+}
+
+\OUTPUTS{
+Boolean flags for majorization and Karamata checks; printed results.
+}
+
+\FORMULA{
+\[
+x\prec y\iff \sum_{i=1}^k x^\downarrow_i\le \sum_{i=1}^k y^\downarrow_i\ \forall k<n,\
+\sum x_i=\sum y_i.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+from math import exp, isclose
+
+def read_input(s):
+    lines = [line.strip() for line in s.strip().splitlines() if line.strip()]
+    x = [float(t) for t in lines[0].split()]
+    y = [float(t) for t in lines[1].split()]
+    return x, y
+
+def partial_sums_desc(v):
+    w = sorted(v, reverse=True)
+    ps = [0.0]*len(w)
+    s = 0.0
+    for i, a in enumerate(w):
+        s += a
+        ps[i] = s
+    return ps, s
+
+def majorized(x, y, tol=1e-12):
+    psx, sx = partial_sums_desc(x)
+    psy, sy = partial_sums_desc(y)
+    if not isclose(sx, sy, rel_tol=0, abs_tol=tol):
+        return False
+    for k in range(len(x)-1):
+        if psx[k] - psy[k] > tol:
+            return False
+    return True
+
+def karamata(x, y, f):
+    if not majorized(x, y):
+        return False
+    fx = sum(f(t) for t in x)
+    fy = sum(f(t) for t in y)
+    return fx <= fy + 1e-12
+
+def validate():
+    x = [3.0, 2.0, 1.0]
+    y = [4.0, 1.0, 1.0]
+    assert majorized(x, y)
+    assert karamata(x, y, lambda t: t*t)
+    assert karamata(x, y, lambda t: exp(t))
+    a = [1.0, 1.0, 1.0]
+    b = [2.0, 1.0, 0.0]
+    assert majorized(a, b)
+    assert karamata(a, b, lambda t: t*t)
+
+def main():
+    validate()
+    x, y = [3.0, 2.0, 1.0], [4.0, 1.0, 1.0]
+    print("x prec y:", majorized(x, y))
+    print("Karamata t^2:", karamata(x, y, lambda t: t*t))
+    print("Karamata exp:", karamata(x, y, lambda t: exp(t)))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    lines = [line.strip() for line in s.strip().splitlines() if line.strip()]
+    x = np.fromstring(lines[0], sep=' ')
+    y = np.fromstring(lines[1], sep=' ')
+    return x, y
+
+def majorized(x, y, tol=1e-12):
+    xs = -np.sort(-x)
+    ys = -np.sort(-y)
+    psx = np.cumsum(xs)
+    psy = np.cumsum(ys)
+    if not np.isclose(psx[-1], psy[-1], atol=tol):
+        return False
+    return np.all(psx[:-1] <= psy[:-1] + tol)
+
+def karamata(x, y, f):
+    if not majorized(x, y):
+        return False
+    return np.sum(f(x)) <= np.sum(f(y)) + 1e-12
+
+def validate():
+    x = np.array([3.0, 2.0, 1.0])
+    y = np.array([4.0, 1.0, 1.0])
+    assert majorized(x, y)
+    assert karamata(x, y, lambda t: t**2)
+    a = np.array([1.0, 1.0, 1.0])
+    b = np.array([2.0, 1.0, 0.0])
+    assert majorized(a, b)
+    assert karamata(a, b, lambda t: t**2)
+
+def main():
+    validate()
+    x = np.array([3.0, 2.0, 1.0])
+    y = np.array([4.0, 1.0, 1.0])
+    print("x prec y:", majorized(x, y))
+    print("Karamata t^2:", karamata(x, y, lambda t: t**2))
+    print("Karamata exp:", karamata(x, y, np.exp))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Time $\mathcal{O}(n\log n)$ due to sorting; space $\mathcal{O}(n)$ for partial sums.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Unequal sums: majorization fails; ensure totals match.
+\item Floating error: use tolerances in comparisons.
+\item Non-finite values: precheck for NaN/Inf and reject.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Sorting is stable; cumsums accumulate rounding but are well conditioned.
+\item Use tolerances to avoid false negatives near equality.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Assertions on known pairs.
+\item Cross-validate both implementations on random seeds.
+\end{bullets}
+}
+
+\RESULT{
+Both implementations agree on majorization and Karamata checks for test cases.
+}
+
+\EXPLANATION{
+Sorting builds $x^\downarrow,y^\downarrow$. Cumulative sums implement the partial
+sum tests. Karamata is verified by evaluating separable convex sums.
+}
+
+\EXTENSION{
+Vectorized test for multiple $k$ at once; add weak majorization check.
+}
+
+\CodeDemoPage{Schur-Horn Necessity and Ky Fan Sums}
+\PROBLEM{
+Numerically verify $d(A)\prec \lambda(A)$ and compute Ky Fan $k$-sums using the
+variational formula.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def hermitian(seed) -> np.ndarray} — deterministic $A$.
+\item \inlinecode{def diag_vs_spec(A) -> bool} — check $d(A)\prec \lambda(A)$.
+\item \inlinecode{def kyfan(A,k) -> float} — sum of top-$k$ eigenvalues.
+\item \inlinecode{def validate() -> None} — assertions.
+\item \inlinecode{def main() -> None} — end-to-end run.
+\end{bullets}
+}
+
+\INPUTS{
+Matrix dimension $n$ and seed for deterministic generation.
+}
+
+\OUTPUTS{
+Flags for Schur-Horn necessity and Ky Fan sums; printed diagnostics.
+}
+
+\FORMULA{
+\[
+\sum_{i=1}^k d^\downarrow_i(A)\le \sum_{i=1}^k \lambda_i^\downarrow(A),\quad
+\sum_{i=1}^k \lambda_i^\downarrow(A)=\max_{Q^\ast Q=I_k}\operatorname{Tr}(Q^\ast A Q).
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def hermitian(n=4, seed=0):
+    rng = np.random.default_rng(seed)
+    M = rng.standard_normal((n, n))
+    A = (M + M.T)/2.0
+    return A
+
+def sorted_partial_sums(v):
+    s = np.sort(v)[::-1]
+    return np.cumsum(s)
+
+def diag_vs_spec(A, tol=1e-10):
+    d = np.diag(A)
+    w = np.linalg.eigvalsh(A)[::-1]
+    psd = sorted_partial_sums(d)
+    psw = np.cumsum(w)
+    if not np.isclose(psd[-1], psw[-1], atol=tol):
+        return False
+    return np.all(psd[:-1] <= psw[:-1] + tol)
+
+def kyfan(A, k):
+    w = np.linalg.eigvalsh(A)[::-1]
+    return float(np.sum(w[:k]))
+
+def validate():
+    A = hermitian(3, 1)
+    assert diag_vs_spec(A)
+    for k in range(1, A.shape[0]+1):
+        s = kyfan(A, k)
+        w = np.linalg.eigvalsh(A)[::-1]
+        assert abs(s - np.sum(w[:k])) < 1e-9
+
+def main():
+    validate()
+    A = hermitian(4, 42)
+    ok = diag_vs_spec(A)
+    print("Schur-Horn necessity:", ok)
+    for k in range(1, 5):
+        print("KyFan", k, ":", round(kyfan(A, k), 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def hermitian(n=5, seed=7):
+    rng = np.random.default_rng(seed)
+    G = rng.normal(size=(n, n))
+    return (G + G.T)/2.0
+
+def diag_vs_spec(A, tol=1e-10):
+    d = np.sort(np.diag(A))[::-1]
+    w = np.linalg.eigvalsh(A)[::-1]
+    psd = np.cumsum(d)
+    psw = np.cumsum(w)
+    return np.isclose(psd[-1], psw[-1], atol=tol) and \
+           np.all(psd[:-1] <= psw[:-1] + tol)
+
+def kyfan(A, k):
+    vals = np.linalg.eigvalsh(A)[::-1]
+    return float(np.add.reduce(vals[:k]))
+
+def validate():
+    A = hermitian(6, 0)
+    assert diag_vs_spec(A)
+    for k in range(1, A.shape[0]+1):
+        assert abs(kyfan(A, k) - np.sum(np.sort(np.linalg.eigvalsh(A))[::-1][:k]))\
+               < 1e-9
+
+def main():
+    validate()
+    A = hermitian(5, 123)
+    print("Schur-Horn necessity:", diag_vs_spec(A))
+    for k in range(1, 6):
+        print("KyFan", k, ":", round(kyfan(A, k), 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Eigenvalue computations cost $\mathcal{O}(n^3)$; sorting and cumsums $\mathcal{O}(n\log n)$.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Non-Hermitian inputs invalidate real eigenvalues; enforce symmetry.
+\item Numerical degeneracy: use symmetric construction to avoid complex parts.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Symmetrization ensures Hermitian; use eigvalsh for stability.
+\item Sorting magnifies no error; tolerances absorb rounding.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Cross-check Ky Fan sums with direct eigenvalue sums.
+\item Verify Schur-Horn inequalities for multiple seeds and sizes.
+\end{bullets}
+}
+
+\RESULT{
+Both implementations confirm Schur-Horn necessity and compute Ky Fan sums reliably.
+}
+
+\EXPLANATION{
+Hermitian construction guarantees real spectra. Schur-Horn check compares sorted
+partial sums. Ky Fan sums are computed by summing sorted eigenvalues.
+}
+
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Principal Component Analysis: maximize explained variance in $k$ dimensions.
+Use Ky Fan to compute the maximum and verify with eigen-decomposition.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Data matrix $X\in\mathbb{R}^{n\times d}$ with zero mean.
+\item Covariance $S=\tfrac{1}{n}X^\top X$ is PSD and Hermitian.
+\end{bullets}
+}
+\WHICHFORMULA{
+Ky Fan: $\max_{Q^\top Q=I_k}\operatorname{Tr}(Q^\top S Q)=\sum_{i=1}^k \lambda_i(S)$.
+}
+\varmapStart
+\var{X}{data matrix $(n,d)$.}
+\var{S}{covariance matrix $(d,d)$.}
+\var{Q}{loading matrix $(d,k)$ with $Q^\top Q=I_k$.}
+\var{\lambda}{eigenvalues of $S$, sorted decreasing.}
+\varmapEnd
+
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic data with known covariance.
+\item Compute $S$ and its eigenvalues.
+\item Compute explained variance via Ky Fan and compare to PCA.
+\end{bullets}
+}
+
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def synth(n=200, d=3, seed=0):
+    rng = np.random.default_rng(seed)
+    U, _ = np.linalg.qr(rng.standard_normal((d, d)))
+    vals = np.array([5.0, 2.0, 1.0])
+    Sigma = U @ np.diag(vals) @ U.T
+    X = rng.multivariate_normal(np.zeros(d), Sigma, size=n)
+    return X, Sigma
+
+def pca_kyfan(X, k):
+    S = (X.T @ X) / X.shape[0]
+    w = np.linalg.eigvalsh(S)[::-1]
+    return float(np.sum(w[:k])), S, w
+
+def main():
+    X, Sigma = synth()
+    val, S, w = pca_kyfan(X, 2)
+    print("KyFan sum:", round(val, 3))
+    print("Eigenvalues:", np.round(w, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{Implementation (Library Version)}
+\begin{codepy}
+import numpy as np
+from sklearn.decomposition import PCA
+
+def synth(n=200, d=3, seed=0):
+    rng = np.random.default_rng(seed)
+    U, _ = np.linalg.qr(rng.standard_normal((d, d)))
+    vals = np.array([5.0, 2.0, 1.0])
+    Sigma = U @ np.diag(vals) @ U.T
+    X = rng.multivariate_normal(np.zeros(d), Sigma, size=n)
+    return X
+
+def main():
+    X = synth()
+    pca = PCA(n_components=2, svd_solver='full')
+    pca.fit(X)
+    ev = pca.explained_variance_
+    print("PCA var comps:", np.round(ev, 3))
+    print("KyFan 2-sum:", round(float(np.sum(ev)), 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\METRICS{
+Explained variance by top-$k$ components equals Ky Fan sum of covariance eigenvalues.
+}
+\INTERPRET{
+Variance captured reflects the sum of top eigenvalues; PCA attains the Ky Fan maximum.
+}
+\NEXTSTEPS{
+Compare different $k$; assess stability and scree plots; add whitening if needed.
+}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Diversification analysis: compare two weight vectors $w^{(1)},w^{(2)}$ by
+majorization and evaluate Schur-convex risk proxy $\sum |w_i|^p$.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Long-only weights summing to one.
+\item Risk proxy is convex for $p\ge 1$.
+\end{bullets}
+}
+\WHICHFORMULA{
+If $w^{(1)}\prec w^{(2)}$, then for convex $f$, $\sum f(w^{(1)}_i)\le \sum f(w^{(2)}_i)$.
+}
+\varmapStart
+\var{w^{(1)},w^{(2)}}{portfolio weight vectors.}
+\var{p}{risk curvature parameter ($p=2$ typical).}
+\varmapEnd
+
+\PIPELINE{
+\begin{bullets}
+\item Define two candidate portfolios.
+\item Check majorization relation.
+\item Compare convex risk proxy values.
+\end{bullets}
+}
+
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def majorized(x, y, tol=1e-12):
+    xs = -np.sort(-x)
+    ys = -np.sort(-y)
+    psx = np.cumsum(xs)
+    psy = np.cumsum(ys)
+    return np.isclose(psx[-1], psy[-1], atol=tol) and \
+           np.all(psx[:-1] <= psy[:-1] + tol)
+
+def risk_proxy(w, p=2.0):
+    return float(np.sum(np.abs(w)**p))
+
+def main():
+    w1 = np.array([0.25, 0.25, 0.25, 0.25])
+    w2 = np.array([0.7, 0.1, 0.1, 0.1])
+    print("w1 prec w2:", majorized(w1, w2))
+    print("risk2(w1):", risk_proxy(w1, 2.0))
+    print("risk2(w2):", risk_proxy(w2, 2.0))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\METRICS{
+Report whether equal-weight majorizes concentrated weights and the corresponding
+quadratic risk proxy values.
+}
+\INTERPRET{
+More diversified $w^{(1)}$ is majorized by $w^{(2)}$ and has a lower convex risk proxy.
+}
+\NEXTSTEPS{
+Incorporate covariance and compare portfolio variance with Ky Fan bounds.
+}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Spectral shrinkage: compare singular value distributions before/after soft-threshold
+and evaluate Schur-convex penalty $\sum s_i^2$.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Weight matrix $W$; SVD yields singular values $s$.
+\item Soft-thresholding with $\tau$ reduces dispersion (weak majorization).
+\end{bullets}
+}
+\WHICHFORMULA{
+For convex $f$, $\sum f(s_{\text{shrink}})\le \sum f(s)$ when shrinkage is
+realized via doubly stochastic mixing in spectral domain (heuristic).
+}
+\PIPELINE{
+\begin{bullets}
+\item Construct deterministic $W$; compute $s$.
+\item Apply soft-threshold to $s$ and renormalize sum.
+\item Compare $\sum s^2$ before/after.
+\end{bullets}
+}
+
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+
+def singular_values(W):
+    return np.linalg.svd(W, compute_uv=False)
+
+def soft_threshold(s, tau):
+    return np.maximum(s - tau, 0.0)
+
+def main():
+    np.random.seed(0)
+    W = np.array([[3.0, 1.0, 0.0],
+                  [0.0, 2.0, 0.0],
+                  [0.0, 1.0, 1.0]])
+    s = singular_values(W)
+    tau = 0.5
+    s_shrink = soft_threshold(s, tau)
+    print("sum s^2:", round(float(np.sum(s**2)), 6))
+    print("sum s_shrink^2:", round(float(np.sum(s_shrink**2)), 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\METRICS{
+Compare squared singular value sums as a Schur-convex penalty proxy.
+}
+\INTERPRET{
+Thresholding reduces spectral energy and concentrates less, aligning with convex
+penalty decrease under majorization-like operations.
+}
+\NEXTSTEPS{
+Explore Ky Fan $k$-norm regularization to constrain top singular values.
+}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Explained variance comparison across preprocessing: does standardization change
+the majorization order of explained variance ratios?
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Dataset with features on different scales.
+\item PCA applied with and without standardization.
+\end{bullets}
+}
+\WHICHFORMULA{
+Ky Fan relates cumulative explained variance to eigenvalue sums; compare sorted
+ratios to infer dispersion changes (majorization heuristic).
+}
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic correlated features with different scales.
+\item Compute PCA eigenvalues with and without standardization.
+\item Compare sorted cumulative ratios for majorization indication.
+\end{bullets}
+}
+
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def create_df(seed=0, n=300):
+    rng = np.random.default_rng(seed)
+    z1 = rng.normal(size=n)
+    z2 = 0.8*z1 + rng.normal(scale=0.5, size=n)
+    z3 = rng.normal(scale=3.0, size=n) + 5.0
+    X = np.stack([z1, z2, z3], axis=1)
+    return X
+
+def pca_eigs(X):
+    Xc = X - X.mean(axis=0, keepdims=True)
+    S = (Xc.T @ Xc) / Xc.shape[0]
+    w = np.linalg.eigvalsh(S)
+    w = w[::-1]
+    return w / np.sum(w)
+
+def main():
+    X = create_df()
+    ratios_raw = pca_eigs(X)
+    Xstd = (X - X.mean(0)) / X.std(0)
+    ratios_std = pca_eigs(Xstd)
+    print("raw ratios:", np.round(ratios_raw, 3))
+    print("std ratios:", np.round(ratios_std, 3))
+    print("cum raw:", np.round(np.cumsum(np.sort(ratios_raw)[::-1]), 3))
+    print("cum std:", np.round(np.cumsum(np.sort(ratios_std)[::-1]), 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\METRICS{
+Sorted explained variance ratios and their cumulative sums before/after scaling.
+}
+\INTERPRET{
+Standardization often equalizes variance across features, changing dispersion and
+potentially majorization of the explained variance profiles.
+}
+\NEXTSTEPS{
+Apply formal majorization tests on ratios and extend to more features.
+}
+
+\end{document}

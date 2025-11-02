@@ -1,0 +1,926 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Nash Matrix}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1316/D}}
+\LINE{DIFFICULTY / RATING}{2000}
+\STATEMENT{Nash designed an interesting yet simple board game where a player is simply required to follow instructions written on the cell where the player currently stands.
+
+This board game is played on the $n\times n$ board. Rows and columns of this board are numbered from $1$ to $n$. The cell on the intersection of the $r$-th row and $c$-th column is denoted by $(r,c)$.
+
+Some cells on the board are called blocked zones. On each cell of the board, there is written one of the following $5$ characters — $U$, $D$, $L$, $R$ or $X$ — instructions for the player. Suppose that the current cell is $(r,c)$. If the character is $R$, the player should move to the right cell $(r,c+1)$, for $L$ the player should move to the left cell $(r,c-1)$, for $U$ the player should move to the top cell $(r-1,c)$, for $D$ the player should move to the bottom cell $(r+1,c)$. Finally, if the character in the cell is $X$, then this cell is the blocked zone. The player should remain in this cell (the game for him is not very interesting from now on).
+
+It is guaranteed that the characters are written in a way that the player will never have to step outside of the board, no matter at which cell he starts.
+
+As a player starts from a cell, he moves according to the character in the current cell. The player keeps moving until he lands in a blocked zone. It is also possible that the player will keep moving infinitely long.
+
+For every of the $n^2$ cells of the board Alice, your friend, wants to know, how will the game go, if the player starts in this cell. For each starting cell of the board, she writes down the cell that the player stops at, or that the player never stops at all. She gives you the information she has written: for each cell $(r,c)$ she wrote:
+\begin{bullets}
+\item a pair $(x,y)$, meaning if a player had started at $(r,c)$, he would end up at cell $(x,y)$.
+\item or a pair $(-1,-1)$, meaning if a player had started at $(r,c)$, he would keep moving infinitely long and would never enter the blocked zone.
+\end{bullets}
+
+It might be possible that Alice is trying to fool you and there is no possible grid that satisfies all the constraints Alice gave you. For the given information Alice provided you, you are required to decipher a possible board, or to determine that such a board does not exist. If there exist several different boards that satisfy the provided information, you can find any of them.
+
+Input: The first line contains an integer $n$ ($1 \le n \le 10^{3}$) — the side of the board. The $i$-th of the next $n$ lines contains $2n$ integers $x_1,y_1,x_2,y_2,\ldots,x_n,y_n$, where $(x_j,y_j)$ ($1 \le x_j \le n, 1 \le y_j \le n$, or $(x_j,y_j)=(-1,-1)$) is the pair written by Alice for the cell $(i,j)$.
+
+Output: If there does not exist a board satisfying the information that Alice gave you, print a single line containing \texttt{INVALID}. Otherwise, print \texttt{VALID} and then $n$ lines, each a string of $n$ characters among $U,D,L,R,X$, describing one valid board.}
+\BREAKDOWN{Treat each distinct finite target $(x,y)$ as a sink root with label $X$ and connect all cells that claim $(x,y)$ by pointing along a breadth-first tree toward that root. For cells marked $(-1,-1)$, connect each connected component into a directed graph with out-degree $1$ per cell (e.g., a tree with the root linked to a neighbor) to ensure an infinite walk. Validate consistency and existence of roots.}
+\ELI{Flood from every $X$-cell to pull in all cells that want to end there; for the rest, make cycles among the $(-1,-1)$ cells.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{
+- $n$: integer, $1 \le n \le 10^{3}$.\\
+- Grid $T$ of size $n\times n$; each entry is either a pair $(x,y)$ with $1\le x,y\le n$ or $(-1,-1)$. $T[i][j]$ is Alice's note for cell $(i+1,j+1)$.
+}
+\OUTPUTS{
+- Either a single line \texttt{INVALID}, or:\\
+- First line \texttt{VALID}, then $n$ lines each of length $n$, with characters in $\{U,D,L,R,X\}$ forming a board consistent with $T$ and never stepping outside the board when followed.
+}
+\SAMPLES{
+Example 1 (finite sinks):\\
+$n=2$ and
+$\begin{smallmatrix}
+(1,1)&(1,1)\\
+(2,2)&(2,2)
+\end{smallmatrix}$
+is valid, e.g.
+$\begin{smallmatrix}
+X&L\\
+R&X
+\end{smallmatrix}$.\\
+
+Example 2 (one $X$, others infinite): for $n=3$ with only center $(2,2)$ as $(2,2)$ and all other cells $(-1,-1)$, any arrangement that keeps the $(-1,-1)$ cells pointing among themselves and the center as $X$ is valid.
+}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Consider the undirected grid graph $G=(V,E)$ on $n\times n$ cells with 4-neighborhood. Each vertex $v\in V$ has a label $T(v)\in \{(-1,-1)\}\cup([n]\times[n])$. We seek an assignment $f:V\to\{U,D,L,R,X\}$ such that:
+\begin{bullets}
+\item If $f(v)=X$ then $T(v)=(i,j)$ equals the coordinates of $v$.
+\item If $T(v)=(i,j)\ne(-1,-1)$ then the unique walk induced by $f$ from $v$ terminates at the vertex $(i,j)$ and that vertex has $f=\!X$.
+\item If $T(v)=(-1,-1)$ then the induced walk from $v$ is infinite (in a finite graph this means it eventually enters a directed cycle and never hits $X$).
+\end{bullets}}
+\varmapStart
+\var{V}{set of $n^2$ cells}
+\var{E}{edges between 4-neighbors}
+\var{T(v)}{Alice's target for cell $v$}
+\var{f(v)}{instruction assigned to $v$}
+\var{R_{x,y}}{root cell at coordinates $(x,y)$, if present}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\forall v:\ T(v)=(x,y)\in [n]^2 \implies \exists!\ R_{x,y}=(x,y)\in V\ \land\ f(R_{x,y})=X,\\
+&\forall v:\ T(v)=(x,y)\in [n]^2 \implies \text{following } f \text{ from } v \text{ reaches } R_{x,y},\\
+&\forall v:\ T(v)=(-1,-1) \implies \text{following } f \text{ from } v \text{ never reaches any } X.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Indices are $1$-based in the statement; we implement with $0$-based internally. All moves must remain within the grid.}
+\INVARIANTS{
+- For each finite target $(x,y)$, edges among cells with that target point strictly closer (in BFS layers) to $(x,y)$.\\
+- In $(-1,-1)$ components, every vertex has out-degree $1$ and no $X$, hence all walks are infinite.
+}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Group cells by their finite target $(x,y)$, require $(x,y)$ to appear at its own position as a root with $X$, and flood-fill within each group assigning pointers toward the root. Defer $(-1,-1)$ cells and connect them naively inside their components.}
+\ASSUMPTIONS{Cells with equal finite targets should be connected via 4-neighborhood to be satisfiable; $(-1,-1)$ components must have at least two cells to avoid isolation.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Initialize all directions as unknown. Queue all roots where $T(i,j)=(i,j)$ and set them to $X$.
+\item BFS from roots: for a visited cell $u$, for each neighbor $v$ with the same finite target, set $v$'s direction to move toward $u$ and enqueue $v$.
+\item For remaining $(-1,-1)$ cells, for each connected component (size $\ge 2$), orient a spanning tree toward an arbitrary root and let the root point to any neighbor, creating at least one directed cycle.
+\end{algosteps}
+\COMPLEXITY{Each cell and edge is processed $O(1)$ times.}
+\[
+\begin{aligned}
+T(n) &= O(n^2),\quad S(n)=O(n^2).
+\end{aligned}
+\]
+\CORRECTNESS{BFS guarantees all finite-target cells reach their root $X$ and no cross-target edges are used. For $(-1,-1)$ components, out-degree $1$ and absence of $X$ imply every walk is infinite. If some finite target appears but its root is absent or some cell with that target is unreachable within the group, the instance is invalid. If a $(-1,-1)$ component is a singleton, it is invalid.}
+\EDGECASES{Single cell grids; multiple disjoint groups for the same finite target; border cells; isolated $(-1,-1)$; all cells aiming at one root.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from collections import deque
+
+DIRS = [(-1,0,'U'), (1,0,'D'), (0,-1,'L'), (0,1,'R')]
+
+def dir_from_to(fr, to):
+    (i,j) = fr; (x,y) = to
+    if x == i-1 and y == j: return 'U'
+    if x == i+1 and y == j: return 'D'
+    if x == i and y == j-1: return 'L'
+    if x == i and y == j+1: return 'R'
+    return None
+
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.read()
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    tgt = [[(-2,-2) for _ in range(n)] for __ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            x = int(next(it)); y = int(next(it))
+            if x == -1 and y == -1:
+                tgt[i][j] = (-1,-1)
+            else:
+                tgt[i][j] = (x-1, y-1)
+    return n, tgt
+
+def solve_case(n, tgt):
+    dirg = [['?' for _ in range(n)] for __ in range(n)]
+    vis = [[False]*n for _ in range(n)]
+    q = deque()
+    # Roots for finite targets
+    for i in range(n):
+        for j in range(n):
+            if tgt[i][j] != (-1,-1) and tgt[i][j] == (i,j):
+                dirg[i][j] = 'X'
+                vis[i][j] = True
+                q.append((i,j))
+    # BFS per finite group
+    while q:
+        i,j = q.popleft()
+        tx, ty = tgt[i][j]
+        for di,dj,ch in DIRS:
+            ni, nj = i+di, j+dj
+            if 0 <= ni < n and 0 <= nj < n:
+                if not vis[ni][nj] and tgt[ni][nj] == (tx,ty):
+                    vis[ni][nj] = True
+                    dirg[ni][nj] = dir_from_to((ni,nj),(i,j))
+                    q.append((ni,nj))
+    # Validate finite targets covered
+    for i in range(n):
+        for j in range(n):
+            if tgt[i][j] != (-1,-1) and not vis[i][j]:
+                return False, None
+    # Handle (-1,-1) components
+    seen = [[False]*n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            if tgt[i][j] == (-1,-1):
+                seen[i][j] = False
+    for i in range(n):
+        for j in range(n):
+            if tgt[i][j] == (-1,-1) and dirg[i][j] == '?':
+                # BFS to collect component
+                comp = []
+                dq = deque()
+                dq.append((i,j))
+                seen[i][j] = True
+                parent = {(i,j): None}
+                while dq:
+                    x,y = dq.popleft()
+                    comp.append((x,y))
+                    for di,dj,ch in DIRS:
+                        nx, ny = x+di, y+dj
+                        if 0 <= nx < n and 0 <= ny < n and tgt[nx][ny] == (-1,-1) and not seen[nx][ny]:
+                            seen[nx][ny] = True
+                            parent[(nx,ny)] = (x,y)
+                            dq.append((nx,ny))
+                if len(comp) == 1:
+                    return False, None
+                comp_set = set(comp)
+                root = (i,j)
+                # Assign directions: children -> parent
+                for (x,y), par in parent.items():
+                    if par is not None:
+                        dirg[x][y] = dir_from_to((x,y), par)
+                # Root points to any neighbor in component
+                rx, ry = root
+                assigned = False
+                for di,dj,ch in DIRS:
+                    nx, ny = rx+di, ry+dj
+                    if (nx,ny) in comp_set:
+                        dirg[rx][ry] = ch
+                        assigned = True
+                        break
+                if not assigned:
+                    return False, None
+    # Final check
+    for i in range(n):
+        for j in range(n):
+            if dirg[i][j] == '?':
+                return False, None
+    return True, ["".join(row) for row in dirg]
+
+def solve_all():
+    inp = read_input()
+    if inp is None:
+        return
+    n, tgt = inp
+    ok, grid = solve_case(n, tgt)
+    out_lines = []
+    if not ok:
+        out_lines.append("INVALID")
+    else:
+        out_lines.append("VALID")
+        out_lines.extend(grid)
+    sys.stdout.write("\n".join(out_lines))
+
+def _solve_io(s: str) -> str:
+    saved_stdin = sys.stdin
+    saved_stdout = sys.stdout
+    try:
+        from io import StringIO
+        sys.stdin = StringIO(s)
+        out = StringIO()
+        sys.stdout = out
+        solve_all()
+        return out.getvalue()
+    finally:
+        sys.stdin = saved_stdin
+        sys.stdout = saved_stdout
+
+if __name__ == "__main__":
+    # Tiny validations
+    # Valid finite sinks
+    s = "2\n1 1 1 1\n2 2 2 2\n"
+    out = _solve_io(s).strip().splitlines()
+    assert out[0] == "VALID"
+    # Valid with infinite components
+    s = "3\n-1 -1 -1 -1 -1 -1\n-1 -1 2 2 -1 -1\n-1 -1 -1 -1 -1 -1\n"
+    out = _solve_io(s).strip().splitlines()
+    assert out[0] == "VALID"
+    # Invalid: isolated (-1,-1) single cell
+    s = "1\n-1 -1\n"
+    out = _solve_io(s).strip()
+    assert out == "INVALID"
+\end{minted}
+\VALIDATION{Checked validity header on constructed inputs, including an invalid singleton $(-1,-1)$ case.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Use a single multi-source BFS from all finite roots to assign directions for all finite-target cells in $O(n^2)$ time, then process each $(-1,-1)$ component once to assign a cycle using a spanning tree.}
+\ASSUMPTIONS{Grid adjacency is 4-neighborhood; each finite target group must contain its root at $(x,y)$. For $(-1,-1)$, each connected component must have size at least $2$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Enqueue all roots $(i,j)$ with $T(i,j)=(i,j)$, mark them $X$.
+\item Pop and relax neighbors within the same target group, assigning reverse directions toward the parent in BFS.
+\item Verify coverage of all finite-target cells; if any unvisited remains, declare invalid.
+\item For each unassigned $(-1,-1)$ component, BFS to collect it, orient tree edges child$\to$parent, and pick the root to point to any neighbor in the component.
+\end{algosteps}
+\COMPLEXITY{Each vertex enters a queue at most once; each edge is inspected $O(1)$ times.}
+\[
+\begin{aligned}
+T(n) &= O(n^2),\quad S(n)=O(n^2).
+\end{aligned}
+\]
+\CORRECTNESS{Multi-source BFS produces shortest-layer trees rooted at each $(x,y)$, ensuring termination at the correct $X$. For $(-1,-1)$ components, the directed graph has out-degree $1$ and no $X$, forcing eventual cycling. Components of size $1$ cannot be satisfied and are rejected.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Same API/signature as baseline; deterministic; with asserts
+import sys
+from collections import deque
+
+DIRS = [(-1,0,'U'), (1,0,'D'), (0,-1,'L'), (0,1,'R')]
+
+def dir_from_to(fr, to):
+    (i,j) = fr; (x,y) = to
+    if x == i-1 and y == j: return 'U'
+    if x == i+1 and y == j: return 'D'
+    if x == i and y == j-1: return 'L'
+    if x == i and y == j+1: return 'R'
+    return None
+
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.read()
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    tgt = [[(-2,-2) for _ in range(n)] for __ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            x = int(next(it)); y = int(next(it))
+            if x == -1 and y == -1:
+                tgt[i][j] = (-1,-1)
+            else:
+                tgt[i][j] = (x-1, y-1)
+    return n, tgt
+
+def solve_case(n, tgt):
+    dirg = [['?' for _ in range(n)] for __ in range(n)]
+    vis = [[False]*n for _ in range(n)]
+    q = deque()
+    # Enqueue all finite roots
+    for i in range(n):
+        for j in range(n):
+            if tgt[i][j] != (-1,-1) and tgt[i][j] == (i,j):
+                dirg[i][j] = 'X'
+                vis[i][j] = True
+                q.append((i,j))
+    # BFS per finite target
+    while q:
+        i,j = q.popleft()
+        tx, ty = tgt[i][j]
+        for di,dj,ch in DIRS:
+            ni, nj = i+di, j+dj
+            if 0 <= ni < n and 0 <= nj < n:
+                if not vis[ni][nj] and tgt[ni][nj] == (tx,ty):
+                    vis[ni][nj] = True
+                    dirg[ni][nj] = dir_from_to((ni,nj),(i,j))
+                    q.append((ni,nj))
+    # Validate finite coverage
+    for i in range(n):
+        for j in range(n):
+            if tgt[i][j] != (-1,-1) and not vis[i][j]:
+                return False, None
+    # Handle (-1,-1) components
+    seen = [[False]*n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            if tgt[i][j] == (-1,-1) and dirg[i][j] == '?' and not seen[i][j]:
+                comp = []
+                dq = deque()
+                parent = {(i,j): None}
+                dq.append((i,j)); seen[i][j] = True
+                while dq:
+                    x,y = dq.popleft()
+                    comp.append((x,y))
+                    for di,dj,ch in DIRS:
+                        nx, ny = x+di, y+dj
+                        if 0 <= nx < n and 0 <= ny < n and tgt[nx][ny] == (-1,-1) and not seen[nx][ny]:
+                            seen[nx][ny] = True
+                            parent[(nx,ny)] = (x,y)
+                            dq.append((nx,ny))
+                if len(comp) == 1:
+                    return False, None
+                comp_set = set(comp)
+                # Assign children -> parent
+                for (x,y), par in parent.items():
+                    if par is not None:
+                        dirg[x][y] = dir_from_to((x,y), par)
+                # Root points to any neighbor
+                rx, ry = i, j
+                chosen = False
+                for di,dj,ch in DIRS:
+                    nx, ny = rx+di, ry+dj
+                    if (nx,ny) in comp_set:
+                        dirg[rx][ry] = ch
+                        chosen = True
+                        break
+                if not chosen:
+                    return False, None
+    # Final check
+    for i in range(n):
+        for j in range(n):
+            if dirg[i][j] == '?':
+                return False, None
+    return True, ["".join(row) for row in dirg]
+
+def solve_all():
+    inp = read_input()
+    if inp is None:
+        return
+    n, tgt = inp
+    ok, grid = solve_case(n, tgt)
+    out = []
+    if not ok:
+        out.append("INVALID")
+    else:
+        out.append("VALID")
+        out.extend(grid)
+    sys.stdout.write("\n".join(out))
+
+def _solve_io(s: str) -> str:
+    saved_in, saved_out = sys.stdin, sys.stdout
+    try:
+        from io import StringIO
+        sys.stdin = StringIO(s)
+        out = StringIO()
+        sys.stdout = out
+        solve_all()
+        return out.getvalue()
+    finally:
+        sys.stdin, sys.stdout = saved_in, saved_out
+
+if __name__ == "__main__":
+    # Checks on edge inputs
+    assert _solve_io("1\n1 1\n").splitlines()[0] == "VALID"
+    assert _solve_io("1\n-1 -1\n").strip() == "INVALID"
+    # Invalid finite target without its root
+    s = "2\n-1 -1 1 1\n-1 -1 -1 -1\n"
+    assert _solve_io(s).splitlines()[0] == "INVALID"
+\end{minted}
+\VALIDATION{Edge inputs: smallest grids, invalid singleton infinite, and missing-root cases.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Multi-source BFS from all finite roots $(x,y)$ to cover their target groups, then per-component spanning assignment for $(-1,-1)$ cells to ensure out-degree $1$ and at least one directed cycle.}
+\ASSUMPTIONS{Satisfiable iff every finite target group contains $(x,y)$ itself and each group is connected under 4-neighborhood; each $(-1,-1)$ component has size $\ge 2$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Initialize queue with all $X$ roots: cells with $T(i,j)=(i,j)$.
+\item While queue nonempty, pop $(i,j)$ and relax 4-neighbors that share the same finite target, assigning their direction to move toward $(i,j)$; enqueue them.
+\item Verify all finite-target cells are assigned; otherwise invalid.
+\item For each $(-1,-1)$ connected component of size $\ge 2$, assign every non-root node to point to its BFS parent; assign the component root to point to any neighbor in the component, forming a cycle.
+\end{algosteps}
+\OPTIMALITY{Each vertex and edge is processed constant times. Any solution must at least read the input and decide per cell, implying $\Omega(n^2)$ time, so the algorithm is optimal up to constant factors.}
+\COMPLEXITY{Linear in the number of cells.}
+\[
+\begin{aligned}
+T(n) &= O(n^2),\quad S(n)=O(n^2).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case()/solve_all(), main()+guard + asserts
+import sys
+from collections import deque
+
+DIRS = [(-1,0,'U'), (1,0,'D'), (0,-1,'L'), (0,1,'R')]
+
+def dir_from_to(fr, to):
+    (i,j) = fr; (x,y) = to
+    if x == i-1 and y == j: return 'U'
+    if x == i+1 and y == j: return 'D'
+    if x == i and y == j-1: return 'L'
+    if x == i and y == j+1: return 'R'
+    return None
+
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.read()
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    tgt = [[(-2,-2) for _ in range(n)] for __ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            x = int(next(it)); y = int(next(it))
+            if x == -1 and y == -1:
+                tgt[i][j] = (-1,-1)
+            else:
+                tgt[i][j] = (x-1, y-1)
+    return n, tgt
+
+def solve_case(n, tgt):
+    dirg = [['?' for _ in range(n)] for __ in range(n)]
+    vis = [[False]*n for _ in range(n)]
+    q = deque()
+    # Enqueue roots for finite targets
+    for i in range(n):
+        for j in range(n):
+            if tgt[i][j] != (-1,-1) and tgt[i][j] == (i,j):
+                dirg[i][j] = 'X'
+                vis[i][j] = True
+                q.append((i,j))
+    # BFS within each finite target group
+    while q:
+        i,j = q.popleft()
+        tx, ty = tgt[i][j]
+        for di,dj,ch in DIRS:
+            ni, nj = i+di, j+dj
+            if 0 <= ni < n and 0 <= nj < n:
+                if not vis[ni][nj] and tgt[ni][nj] == (tx,ty):
+                    vis[ni][nj] = True
+                    dirg[ni][nj] = dir_from_to((ni,nj),(i,j))
+                    q.append((ni,nj))
+    # Validate finite targets
+    for i in range(n):
+        for j in range(n):
+            if tgt[i][j] != (-1,-1) and not vis[i][j]:
+                return False, None
+    # Process (-1,-1) components
+    seen = [[False]*n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            if tgt[i][j] == (-1,-1) and dirg[i][j] == '?' and not seen[i][j]:
+                comp = []
+                dq = deque()
+                parent = {(i,j): None}
+                dq.append((i,j)); seen[i][j] = True
+                while dq:
+                    x,y = dq.popleft()
+                    comp.append((x,y))
+                    for di,dj,ch in DIRS:
+                        nx, ny = x+di, y+dj
+                        if 0 <= nx < n and 0 <= ny < n and tgt[nx][ny] == (-1,-1) and not seen[nx][ny]:
+                            seen[nx][ny] = True
+                            parent[(nx,ny)] = (x,y)
+                            dq.append((nx,ny))
+                if len(comp) == 1:
+                    return False, None
+                comp_set = set(comp)
+                # Children point to parent
+                for (x,y), par in parent.items():
+                    if par is not None:
+                        dirg[x][y] = dir_from_to((x,y), par)
+                # Root points to any neighbor in the component
+                rx, ry = i, j
+                chosen = False
+                for di,dj,ch in DIRS:
+                    nx, ny = rx+di, ry+dj
+                    if (nx,ny) in comp_set:
+                        dirg[rx][ry] = ch
+                        chosen = True
+                        break
+                if not chosen:
+                    return False, None
+    # Ensure all assigned
+    for i in range(n):
+        for j in range(n):
+            if dirg[i][j] == '?':
+                return False, None
+    return True, ["".join(row) for row in dirg]
+
+def solve_all():
+    inp = read_input()
+    if inp is None:
+        return
+    n, tgt = inp
+    ok, grid = solve_case(n, tgt)
+    if not ok:
+        print("INVALID")
+    else:
+        print("VALID")
+        for row in grid:
+            print(row)
+
+def _solve_io(s: str) -> str:
+    saved_in, saved_out = sys.stdin, sys.stdout
+    try:
+        from io import StringIO
+        sys.stdin = StringIO(s)
+        out = StringIO()
+        sys.stdout = out
+        solve_all()
+        return out.getvalue()
+    finally:
+        sys.stdin, sys.stdout = saved_in, saved_out
+
+if __name__ == "__main__":
+    # Exactly 3 asserts
+    # 1) Valid simple case with two roots
+    s = "2\n1 1 1 1\n2 2 2 2\n"
+    assert _solve_io(s).splitlines()[0] == "VALID"
+    # 2) Invalid: finite target group missing its root
+    s = "2\n-1 -1 1 1\n-1 -1 -1 -1\n"
+    assert _solve_io(s).splitlines()[0] == "INVALID"
+    # 3) Invalid singleton (-1,-1)
+    s = "1\n-1 -1\n"
+    assert _solve_io(s).strip() == "INVALID"
+\end{minted}
+\VALIDATION{Three mini-tests: valid with two sinks; invalid missing root; invalid singleton infinite.}
+\RESULT{Outputs either INVALID or a valid grid of $U,D,L,R,X$ that exactly realizes Alice's notes. In finite groups, $X$ sits at $(x,y)$; in infinite groups, all arrows stay within the $(-1,-1)$ components.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests check: presence/absence of roots; coverage of finite targets; detection of isolated $(-1,-1)$; mixed scenarios. Property checks: no move goes out of bounds; all finite-target cells reach their $X$; all infinite cells avoid $X$.}
+\LINE{CROSS-CHECKS}{Compare outputs from Approach A/B/C on random tiny cases by verifying validity predicates rather than exact boards.}
+\LINE{EDGE-CASE GENERATOR}{Generate small $n\le 4$ cases with random clusters of equal finite targets (including missing-root cases) and random $(-1,-1)$ masks; verify solver declared invalid precisely when constraints fail.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def gen_case(n, seed=0):
+    random.seed(seed)
+    tgt = [[(-1,-1) for _ in range(n)] for __ in range(n)]
+    # Place some roots
+    roots = []
+    for _ in range(random.randint(0, n)):
+        i = random.randrange(n); j = random.randrange(n)
+        tgt[i][j] = (i,j); roots.append((i,j))
+    # For each root, assign some neighbors to target it
+    for (x,y) in roots:
+        for (di,dj) in [(-1,0),(1,0),(0,-1),(0,1)]:
+            if random.random() < 0.5:
+                i, j = x+di, y+dj
+                if 0 <= i < n and 0 <= j < n:
+                    tgt[i][j] = (x,y)
+    return tgt
+
+def to_input(n, tgt):
+    s = [str(n)]
+    for i in range(n):
+        row = []
+        for j in range(n):
+            x,y = tgt[i][j]
+            if x == -1:
+                row += ["-1","-1"]
+            else:
+                row += [str(x+1), str(y+1)]
+        s.append(" ".join(row))
+    return "\n".join(s) + "\n"
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF/LC) + asserts
+import sys
+from collections import deque
+
+DIRS = [(-1,0,'U'), (1,0,'D'), (0,-1,'L'), (0,1,'R')]
+
+def dir_from_to(fr, to):
+    (i,j) = fr; (x,y) = to
+    if x == i-1 and y == j: return 'U'
+    if x == i+1 and y == j: return 'D'
+    if x == i and y == j-1: return 'L'
+    if x == i and y == j+1: return 'R'
+    return None
+
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.read()
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    tgt = [[(-2,-2) for _ in range(n)] for __ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            x = int(next(it)); y = int(next(it))
+            if x == -1 and y == -1:
+                tgt[i][j] = (-1,-1)
+            else:
+                tgt[i][j] = (x-1, y-1)
+    return n, tgt
+
+def solve_case(n, tgt):
+    dirg = [['?' for _ in range(n)] for __ in range(n)]
+    vis = [[False]*n for _ in range(n)]
+    q = deque()
+    # Enqueue finite roots
+    for i in range(n):
+        for j in range(n):
+            if tgt[i][j] != (-1,-1) and tgt[i][j] == (i,j):
+                dirg[i][j] = 'X'
+                vis[i][j] = True
+                q.append((i,j))
+    # BFS within finite target groups
+    while q:
+        i,j = q.popleft()
+        tx, ty = tgt[i][j]
+        for di,dj,ch in DIRS:
+            ni, nj = i+di, j+dj
+            if 0 <= ni < n and 0 <= nj < n:
+                if not vis[ni][nj] and tgt[ni][nj] == (tx,ty):
+                    vis[ni][nj] = True
+                    dirg[ni][nj] = dir_from_to((ni,nj),(i,j))
+                    q.append((ni,nj))
+    # Validate finite targets
+    for i in range(n):
+        for j in range(n):
+            if tgt[i][j] != (-1,-1) and not vis[i][j]:
+                return False, None
+    # Process (-1,-1) components
+    seen = [[False]*n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            if tgt[i][j] == (-1,-1) and dirg[i][j] == '?' and not seen[i][j]:
+                comp = []
+                dq = deque()
+                parent = {(i,j): None}
+                dq.append((i,j)); seen[i][j] = True
+                while dq:
+                    x,y = dq.popleft()
+                    comp.append((x,y))
+                    for di,dj,ch in DIRS:
+                        nx, ny = x+di, y+dj
+                        if 0 <= nx < n and 0 <= ny < n and tgt[nx][ny] == (-1,-1) and not seen[nx][ny]:
+                            seen[nx][ny] = True
+                            parent[(nx,ny)] = (x,y)
+                            dq.append((nx,ny))
+                if len(comp) == 1:
+                    return False, None
+                comp_set = set(comp)
+                # Children point to parent
+                for (x,y), par in parent.items():
+                    if par is not None:
+                        dirg[x][y] = dir_from_to((x,y), par)
+                # Root points to any neighbor in component
+                rx, ry = i, j
+                chosen = False
+                for di,dj,ch in DIRS:
+                    nx, ny = rx+di, ry+dj
+                    if (nx,ny) in comp_set:
+                        dirg[rx][ry] = ch
+                        chosen = True
+                        break
+                if not chosen:
+                    return False, None
+    # Ensure all assigned
+    for i in range(n):
+        for j in range(n):
+            if dirg[i][j] == '?':
+                return False, None
+    return True, ["".join(row) for row in dirg]
+
+def solve_all():
+    inp = read_input()
+    if inp is None:
+        return
+    n, tgt = inp
+    ok, grid = solve_case(n, tgt)
+    if not ok:
+        print("INVALID")
+    else:
+        print("VALID")
+        for row in grid:
+            print(row)
+
+if __name__ == "__main__":
+    solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Multi-source BFS to pull finite-target cells to their $(x,y)$ root; cycle-orientation for $(-1,-1)$ components.}
+\WHY{Classic grid-graph construction with constraints appears in interviews to test BFS on multiple sources, component reasoning, and constructive proofs.}
+\CHECKLIST{
+- Identify and enqueue all roots $(i,j)$ where $T(i,j)=(i,j)$.\\
+- BFS within each finite target group; assign reverse directions.\\
+- Validate coverage of all finite-target cells.\\
+- For each $(-1,-1)$ component: ensure size $\ge 2$, orient to form a cycle.\\
+- Final pass: no unknown directions remain; all moves are in-bounds.
+}
+\EDGECASES{
+- Singleton grid $n=1$ with $(-1,-1)$ (invalid).\\
+- Finite target appears but root missing (invalid).\\
+- Disconnected cells sharing same finite target (invalid).\\
+- Borders: do not assign directions pointing outside.\\
+- All cells finite to same $(x,y)$.\\
+- All cells $(-1,-1)$ (valid if $n\ge 2$).
+}
+\PITFALLS{
+- Forgetting to set $X$ at roots.\\
+- Assigning directions from parent to child instead of child to parent.\\
+- Allowing cross-target edges in BFS.\\
+- Not checking for isolated $(-1,-1)$ cells.\\
+- Leaving some directions unassigned.\\
+- Off-by-one when converting coordinates to $0$-based.
+}
+\FAILMODES{Greedy local assignments for finite targets can connect to a wrong root; failing to enforce component connectivity for identical targets yields unreachable cells; pairing $(-1,-1)$ without ensuring any neighbor causes impossible moves. The presented construction avoids all by strict grouping and component checks.}
+\ELI{Mark all homes $(x,y)$ with $X$, then lay arrows so every friend who wants that home walks closer to it. For the wanderers $(-1,-1)$, make them walk in circles with their neighbors so they never arrive anywhere.}
+\NotePages{3}
+
+\end{document}

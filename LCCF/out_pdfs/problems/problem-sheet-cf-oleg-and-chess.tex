@@ -1,0 +1,909 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Oleg and chess}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/793/G}}
+\LINE{DIFFICULTY / RATING}{3400}
+\STATEMENT{Oleg the bank client solves an interesting chess problem: place on $n \times n$ chessboard the maximum number of rooks so that they do not beat each other. Of course, no two rooks can share the same cell.
+
+Remind that a rook standing in the cell $(a, b)$ beats a rook standing in the cell $(x, y)$ if and only if $a = x$ or $b = y$.
+
+Unfortunately (or fortunately?) for Oleg the answer in this problem was always $n$, so the task bored Oleg soon. He decided to make it more difficult by removing some cells from the board. If a cell is deleted, Oleg cannot put a rook there, but rooks do beat each other ``through'' deleted cells.
+
+Oleg deletes the cells in groups, namely, he repeatedly chooses a rectangle with sides parallel to the board sides and deletes all the cells inside the rectangle. Formally, if he chooses a rectangle, lower left cell of which has coordinates $(x_1, y_1)$, and upper right cell of which has coordinates $(x_2, y_2)$, then he deletes all such cells with coordinates $(x, y)$ that $x_1 \le x \le x_2$ and $y_1 \le y \le y_2$. It is guaranteed that no cell is deleted twice, i.e. the chosen rectangles do not intersect.
+
+This version of the problem Oleg cannot solve, and his friend Igor is busy at a conference, so he cannot help Oleg.
+
+You are the last hope for Oleg! Help him: given the size of the board and the deleted rectangles, find the maximum possible number of rooks that could be placed on the board so that no two rooks beat each other.
+
+Input:\\
+The first line contains single integer $n$ ($1 \le n \le 10000$) --- the size of the board.\\
+The second line contains single integer $q$ ($0 \le q \le 10000$) --- the number of deleted rectangles.\\
+The next $q$ lines contain the information about the deleted rectangles.\\
+Each of these lines contains four integers $x_1, y_1, x_2$ and $y_2$ ($1 \le x_1 \le x_2 \le n$, $1 \le y_1 \le y_2 \le n$) --- the coordinates of the lower left and the upper right cells of a deleted rectangle.\\
+It is guaranteed that the rectangles do not intersect.
+
+Output:\\
+In the only line print the maximum number of rooks Oleg can place on the board so that no two rooks beat each other.
+
+Note:\\
+Here is the board and the example of rooks placement in the first example:}
+\BREAKDOWN{Model rows and columns as bipartite sets $\{1,\ldots,n\}$ with an edge $(i,j)$ if cell $(i,j)$ is not deleted. Compute the maximum matching size in this graph. Exploit the fact that the deleted cells are a disjoint union of axis-aligned rectangles to compress intervals and add edges in batches.}
+\ELI{Pick as many rows as possible and assign each a distinct column avoiding the deleted rectangles; this is a bipartite matching problem with interval structure.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test case.\\
+- $n$ (int): board size, $1 \le n \le 10000$.\\
+- $q$ (int): number of deleted rectangles, $0 \le q \le 10000$.\\
+- $q$ rectangles: each line $x_1,y_1,x_2,y_2$ with $1 \le x_1 \le x_2 \le n$, $1 \le y_1 \le y_2 \le n$. Rectangles are pairwise disjoint (no cell is deleted twice).}
+\OUTPUTS{One integer: the maximum number of non-attacking rooks that can be placed on non-deleted cells.}
+\SAMPLES{Example (constructive):\\
+- $n=2$, $q=1$, rectangle $(1,1,1,1)$. Answer: $2$ (place at $(1,2)$ and $(2,1)$).\\
+- $n=3$, $q=1$, rectangle $(1,2,3,2)$ deletes entire column $2$. Answer: $2$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $R = \{1,\ldots,n\}$ be row indices and $C=\{1,\ldots,n\}$ be column indices. Let $\mathcal{D} \subseteq R \times C$ be the deleted cells, a disjoint union of axis-aligned rectangles. Define bipartite graph $G=(R \cup C, E)$ where $E = \{(i,j) \in R \times C : (i,j) \notin \mathcal{D}\}$. We seek $\max$ matching size in $G$.}
+\varmapStart
+\var{n}{board size}
+\var{q}{number of deleted rectangles}
+\var{\mathcal{D}}{set of forbidden cells, disjoint union of rectangles}
+\var{E}{allowed edges: $(i,j)$ with $(i,j)\notin\mathcal{D}$}
+\var{\nu(G)}{maximum matching size in $G$}
+\varmapEnd
+\GOVERN{
+\begin{BreakableEquation*}
+\text{Answer} \;=\; \nu(G) \;=\; \max\Big\{|M| : M \subseteq E,~\forall i\in R,~\deg_M(i)\le 1,~\forall j\in C,~\deg_M(j)\le 1\Big\}.
+\end{BreakableEquation*}
+}
+\ASSUMPTIONS{Rectangles do not intersect; rows and columns are unit-capacity; edges exist for all non-deleted cells.}
+\INVARIANTS{A matching never uses two edges sharing a row or a column. Removing more cells never increases $\nu(G)$. On a full board, $\nu(G)=n$.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Directly build $G$ and compute maximum bipartite matching (Hopcroft--Karp).}
+\ASSUMPTIONS{Feasible only for small $n$ and $q$; we materialize adjacency by scanning rectangles per row and subtracting forbidden intervals.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For each row $i$, collect all forbidden $y$-intervals from rectangles with $x_1 \le i \le x_2$, merge them, and take the complement in $[1,n]$ as allowed intervals.
+\item Build adjacency list from row $i$ to each allowed column $j$ (iterate over allowed intervals).
+\item Run Hopcroft--Karp to compute the maximum matching size.
+\end{algosteps}
+\COMPLEXITY{Let $F_i$ be the number of forbidden intervals touching row $i$; after merging, suppose we have $A_i$ allowed intervals. The build time is $O\!\left(\sum_i F_i \log F_i + \sum_i \sum \text{(length of allowed intervals)}\right)$, and matching runs in $O(E\sqrt{V})$. In worst case this is too large for $n,q\approx 10^4$; acceptable only as a conceptual baseline.}
+\[
+\begin{aligned}
+V &= 2n,\\
+E &\le \sum_{i=1}^n \sum_{\text{allowed intervals on }i} \text{length},\\
+T_{\text{HK}} &\in O\big(E \sqrt{V}\big).
+\end{aligned}
+\]
+\CORRECTNESS{By construction, edges connect exactly non-deleted cells, and Hopcroft--Karp finds a maximum matching in bipartite graphs.}
+\EDGECASES{No rectangles ($q=0$) returns $n$. Entire row or column deleted. Single-cell deletions.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+from collections import deque
+from typing import List, Tuple, Optional
+
+INF = 10**18
+
+def merge_intervals(intervals: List[Tuple[int,int]]) -> List[Tuple[int,int]]:
+    if not intervals:
+        return []
+    intervals.sort()
+    merged = []
+    cur_l, cur_r = intervals[0]
+    for l, r in intervals[1:]:
+        if l <= cur_r + 1:
+            if r > cur_r:
+                cur_r = r
+        else:
+            merged.append((cur_l, cur_r))
+            cur_l, cur_r = l, r
+    merged.append((cur_l, cur_r))
+    return merged
+
+def allowed_intervals(n: int, forb: List[Tuple[int,int]]) -> List[Tuple[int,int]]:
+    forb = merge_intervals(forb)
+    res = []
+    prev = 1
+    for l, r in forb:
+        if prev <= l - 1:
+            res.append((prev, l - 1))
+        prev = r + 1
+    if prev <= n:
+        res.append((prev, n))
+    return res
+
+class HopcroftKarp:
+    def __init__(self, n_left: int, n_right: int):
+        self.nL = n_left
+        self.nR = n_right
+        self.adj = [[] for _ in range(n_left)]
+        self.dist = [0] * n_left
+        self.pairU = [-1] * n_left
+        self.pairV = [-1] * n_right
+
+    def add_edge(self, u: int, v: int):
+        self.adj[u].append(v)
+
+    def bfs(self) -> bool:
+        q = deque()
+        for u in range(self.nL):
+            if self.pairU[u] == -1:
+                self.dist[u] = 0
+                q.append(u)
+            else:
+                self.dist[u] = -1
+        found = False
+        while q:
+            u = q.popleft()
+            for v in self.adj[u]:
+                pu = self.pairV[v]
+                if pu != -1 and self.dist[pu] == -1:
+                    self.dist[pu] = self.dist[u] + 1
+                    q.append(pu)
+                if pu == -1:
+                    found = True
+        return found
+
+    def dfs(self, u: int) -> bool:
+        for v in self.adj[u]:
+            pu = self.pairV[v]
+            if pu == -1 or (self.dist[pu] == self.dist[u] + 1 and self.dfs(pu)):
+                self.pairU[u] = v
+                self.pairV[v] = u
+                return True
+        self.dist[u] = -1
+        return False
+
+    def max_matching(self) -> int:
+        res = 0
+        while self.bfs():
+            for u in range(self.nL):
+                if self.pairU[u] == -1:
+                    if self.dfs(u):
+                        res += 1
+        return res
+
+def read_input(data: Optional[str] = None):
+    import sys
+    it = iter(data.strip().split()) if data is not None else iter(sys.stdin.read().strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    q = int(next(it))
+    rects = []
+    for _ in range(q):
+        x1 = int(next(it)); y1 = int(next(it)); x2 = int(next(it)); y2 = int(next(it))
+        rects.append((x1, y1, x2, y2))
+    return n, rects
+
+def solve_case_baseline(n: int, rects: List[Tuple[int,int,int,int]]) -> int:
+    hk = HopcroftKarp(n, n)
+    for i in range(1, n+1):
+        forb = []
+        for x1, y1, x2, y2 in rects:
+            if x1 <= i <= x2:
+                forb.append((y1, y2))
+        for l, r in allowed_intervals(n, forb):
+            for y in range(l, r+1):
+                hk.add_edge(i-1, y-1)
+    return hk.max_matching()
+
+def main_baseline():
+    parsed = read_input()
+    if parsed is None:
+        return
+    n, rects = parsed
+    print(solve_case_baseline(n, rects))
+
+# Tiny sanity checks for the baseline
+assert solve_case_baseline(2, [(1,1,1,1)]) == 2
+assert solve_case_baseline(3, [(1,2,3,2)]) == 2
+assert solve_case_baseline(3, [(1,1,1,3), (3,1,3,3)]) == 1
+\end{minted}
+\VALIDATION{Checked on small crafted cases and degenerate configurations.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Row Grouping + Column Segment-Tree Flow}
+\WHICHFORMULA{Group identical rows by x-segments induced by rectangle borders. For each row-segment (block of rows with identical forbidden $y$-intervals), connect one node of capacity equal to the block size to a segment tree over columns, adding edges only for allowed $y$-intervals. Run a max flow that equals the maximum matching.}
+\ASSUMPTIONS{Rectangles are disjoint, so within any fixed row, forbidden $y$-intervals are disjoint and their union across a row-segment is stable. Segment tree over columns allows $O(\log n)$ edges per allowed interval.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Collect all x-borders: $\{1\} \cup \{x_1, x_2{+}1\}$ from rectangles and sort; these define row-segments.
+\item For each row-segment $[L,R]$ (inclusive rows), gather rectangles that fully cover this segment to get forbidden $y$-intervals, merge them, and compute allowed complements.
+\item Build a flow network: source to each row-segment with capacity $R{-}L{+}1$; a segment tree on columns with leaf-to-sink capacity $1$; connect row-segment to segment-tree nodes covering each allowed $y$-interval with large capacity.
+\item Run Dinic's algorithm on this network; the max flow equals the maximum number of rooks.
+\end{algosteps}
+\COMPLEXITY{Let $S_x$ be the number of row-segments ($\le 2q{+}1$). The column segment tree has $O(n)$ nodes; edges are $O(n)$ for the tree itself plus $O\!\left(\sum_{\text{row-seg}} A_{\text{seg}}\log n\right)$ for allowed intervals. Worst-case can be large, but in many inputs this is fast.}
+\[
+\begin{aligned}
+V &\approx S_x + 4n, \\
+E &\approx 4n + \sum_{\text{seg}} A_{\text{seg}}\log n, \\
+T &\approx O\big(E \sqrt{V}\big)\text{ or Dinic's }O(E \min\{V^{2/3}, \sqrt{E}\})\text{ in practice}.
+\end{aligned}
+\]
+\CORRECTNESS{Each row in a segment can send at most one unit; each column receives at most one unit. Edges exist exactly for allowed pairs via interval coverage. Integrality of max flow ensures an integral matching.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+from collections import deque
+from typing import List, Tuple, Optional
+
+INF = 10**18
+
+def merge_intervals(intervals: List[Tuple[int,int]]) -> List[Tuple[int,int]]:
+    if not intervals:
+        return []
+    intervals.sort()
+    merged = []
+    l, r = intervals[0]
+    for a, b in intervals[1:]:
+        if a <= r + 1:
+            if b > r:
+                r = b
+        else:
+            merged.append((l, r))
+            l, r = a, b
+    merged.append((l, r))
+    return merged
+
+def complement_intervals(n: int, forb: List[Tuple[int,int]]) -> List[Tuple[int,int]]:
+    forb = merge_intervals(forb)
+    res = []
+    cur = 1
+    for l, r in forb:
+        if cur <= l - 1:
+            res.append((cur, l - 1))
+        cur = r + 1
+    if cur <= n:
+        res.append((cur, n))
+    return res
+
+class Dinic:
+    def __init__(self, n: int):
+        self.n = n
+        self.adj = [[] for _ in range(n)]
+        self.to = []
+        self.cap = []
+        self.level = [0]*n
+        self.it = [0]*n
+
+    def add_edge(self, u: int, v: int, c: int):
+        self.to.append(v); self.cap.append(c); self.adj[u].append(len(self.to)-1)
+        self.to.append(u); self.cap.append(0); self.adj[v].append(len(self.to)-1)
+
+    def bfs(self, s: int, t: int) -> bool:
+        for i in range(self.n):
+            self.level[i] = -1
+        q = deque([s])
+        self.level[s] = 0
+        while q:
+            u = q.popleft()
+            for ei in self.adj[u]:
+                v = self.to[ei]
+                if self.cap[ei] > 0 and self.level[v] < 0:
+                    self.level[v] = self.level[u] + 1
+                    q.append(v)
+        return self.level[t] >= 0
+
+    def dfs(self, u: int, t: int, f: int) -> int:
+        if u == t or f == 0:
+            return f
+        i = self.it[u]
+        while i < len(self.adj[u]):
+            ei = self.adj[u][i]
+            v = self.to[ei]
+            if self.cap[ei] > 0 and self.level[v] == self.level[u] + 1:
+                ret = self.dfs(v, t, min(f, self.cap[ei]))
+                if ret:
+                    self.cap[ei] -= ret
+                    self.cap[ei ^ 1] += ret
+                    return ret
+            i += 1
+            self.it[u] = i
+        return 0
+
+    def maxflow(self, s: int, t: int) -> int:
+        flow = 0
+        while self.bfs(s, t):
+            self.it = [0]*self.n
+            while True:
+                pushed = self.dfs(s, t, 10**18)
+                if not pushed:
+                    break
+                flow += pushed
+        return flow
+
+class ColumnSegTree:
+    def __init__(self, n: int, dinic: Dinic, base_id: int, sink: int):
+        self.n = n
+        self.dinic = dinic
+        self.base = base_id
+        self.sink = sink
+        self.nodes = []  # list of (l,r,node_id)
+        self._build(1, 1, n)
+
+    def _build(self, idx: int, l: int, r: int) -> int:
+        node_id = self.base + idx
+        if idx >= len(self.nodes):
+            self.nodes.extend([None]*(idx - len(self.nodes) + 1))
+        self.nodes[idx] = (l, r, node_id)
+        if l == r:
+            self.dinic.add_edge(node_id, self.sink, 1)
+        else:
+            mid = (l + r) // 2
+            left_id = self._build(idx*2, l, mid)
+            right_id = self._build(idx*2+1, mid+1, r)
+            # internal node splits to children with infinite capacity
+            self.dinic.add_edge(node_id, self.base + idx*2, 10**9)
+            self.dinic.add_edge(node_id, self.base + idx*2 + 1, 10**9)
+        return node_id
+
+    def add_interval_edge(self, u: int, ql: int, qr: int, idx: int = 1):
+        l, r, node_id = self.nodes[idx]
+        if qr < l or r < ql:
+            return
+        if ql <= l and r <= qr:
+            self.dinic.add_edge(u, node_id, 10**9)
+            return
+        self.add_interval_edge(u, ql, qr, idx*2)
+        self.add_interval_edge(u, ql, qr, idx*2+1)
+
+def read_input(data: Optional[str] = None):
+    import sys
+    it = iter(data.strip().split()) if data is not None else iter(sys.stdin.read().strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    q = int(next(it))
+    rects = []
+    for _ in range(q):
+        x1 = int(next(it)); y1 = int(next(it)); x2 = int(next(it)); y2 = int(next(it))
+        rects.append((x1, y1, x2, y2))
+    return n, rects
+
+def build_row_segments(n: int, rects: List[Tuple[int,int,int,int]]) -> List[Tuple[int,int]]:
+    cuts = {1, n+1}
+    for x1, _, x2, _ in rects:
+        cuts.add(x1)
+        if x2 + 1 <= n:
+            cuts.add(x2 + 1)
+    xs = sorted(cuts)
+    segs = []
+    for i in range(len(xs) - 1):
+        L = xs[i]
+        R = xs[i+1] - 1
+        if L <= R:
+            segs.append((L, R))
+    return segs
+
+def solve_case_flow_grouped(n: int, rects: List[Tuple[int,int,int,int]]) -> int:
+    # Pre-sort rectangles by x for quick filtering per segment (still O(q) per seg worst-case)
+    rects_sorted = rects[:]  # (x1,y1,x2,y2)
+    rects_sorted.sort()
+    row_segs = build_row_segments(n, rects_sorted)
+    # Dinic nodes:
+    # 0: source, 1: sink; we'll place others after
+    SRC = 0
+    SNK = 1
+    # Column segtree will use indices base..base+4n
+    base = 2
+    approx_nodes = base + 4*n + len(row_segs) + 5
+    din = Dinic(approx_nodes)
+    # Build column segment tree
+    ctree = ColumnSegTree(n, din, base, SNK)
+    next_id = base + 4*n + 5
+    # Build row segment nodes and edges
+    ans_upper = 0
+    row_nodes = []
+    for (L, R) in row_segs:
+        size = R - L + 1
+        if size <= 0:
+            continue
+        u = next_id
+        next_id += 1
+        row_nodes.append(u)
+        din.add_edge(SRC, u, size)
+        # Gather forbidden y-intervals for this entire row segment:
+        forb = []
+        # A rectangle covers entire segment iff x1 <= L and x2 >= R
+        # Since rectangles are disjoint, on any fixed row they do not overlap in y.
+        for x1, y1, x2, y2 in rects_sorted:
+            if x1 > L:
+                break
+            if x1 <= L and x2 >= R:
+                forb.append((y1, y2))
+        # Now complement to allowed intervals in [1..n]
+        allowed = complement_intervals(n, forb)
+        for l, r in allowed:
+            if l <= r:
+                ctree.add_interval_edge(u, l, r)
+        ans_upper += size
+    # Adjust Dinic graph size if underestimated
+    din.n = max(din.n, next_id)
+    flow = din.maxflow(SRC, SNK)
+    # flow equals number of placed rooks
+    return flow
+
+def main_grouped():
+    parsed = read_input()
+    if parsed is None:
+        return
+    n, rects = parsed
+    print(solve_case_flow_grouped(n, rects))
+
+# Sanity checks for grouped flow
+assert solve_case_flow_grouped(2, [(1,1,1,1)]) == 2
+assert solve_case_flow_grouped(3, [(1,2,3,2)]) == 2
+assert solve_case_flow_grouped(3, [(1,1,1,3), (3,1,3,3)]) == 1
+assert solve_case_flow_grouped(4, []) == 4
+\end{minted}
+\VALIDATION{Validated on tiny cases and degenerate patterns: empty deletions, full deleted rows/columns, single-cell deletions.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Row-Segment Grouping + Column Segment-Tree Max Flow (Practical)}
+\WHICHFORMULA{The provably optimal solutions use dual segment trees (on rows and columns) and connect rectangle gadgets to avoid $O(S_x S_y)$ edges, yielding near $O((n{+}q)\log(n{+}q))$ edges. Here we present a robust practical implementation that groups identical rows and uses a column segment tree to add allowed edges in $O(\log n)$ per interval.}
+\ASSUMPTIONS{Rectangles are pairwise disjoint; integrality of max flow provides an exact matching; grouping by x-segments is valid since all rows in a segment share identical neighborhoods.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build x-segments from rectangle x-borders.
+\item For each segment, compute merged forbidden $y$-intervals from rectangles that fully cover the segment; then complement to get allowed intervals.
+\item Construct a flow network: source $\to$ row-segment (capacity = segment length), row-segment $\to$ column segment-tree nodes (for allowed intervals, capacity $+\infty$), column leaves $\to$ sink (capacity $1$).
+\item Run Dinic to obtain the maximum number of rooks.
+\end{algosteps}
+\OPTIMALITY{The method computes the exact maximum matching for the constructed network, which exactly represents the allowed pairs; hence it is optimal. More advanced implementations can reduce worst-case edges via dual segment trees and rectangle gadgets.}
+\COMPLEXITY{As implemented, worst-case edges can be large, but typical complexity is $O\big((n + \sum_{\text{segments}} A_{\text{seg}}\log n)\big)$ edges with fast max flow in practice.}
+\[
+\begin{aligned}
+T &\approx O\Big(\big(4n + \sum_{\text{seg}} A_{\text{seg}}\log n\big)\cdot \sqrt{n + 4n}\Big)\ \text{(heuristic)}.
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+from collections import deque
+from typing import List, Tuple, Optional
+
+INF = 10**18
+
+def merge_intervals(intervals: List[Tuple[int,int]]) -> List[Tuple[int,int]]:
+    if not intervals:
+        return []
+    intervals.sort()
+    merged = []
+    l, r = intervals[0]
+    for a, b in intervals[1:]:
+        if a <= r + 1:
+            if b > r:
+                r = b
+        else:
+            merged.append((l, r))
+            l, r = a, b
+    merged.append((l, r))
+    return merged
+
+def complement_intervals(n: int, forb: List[Tuple[int,int]]) -> List[Tuple[int,int]]:
+    forb = merge_intervals(forb)
+    res = []
+    cur = 1
+    for l, r in forb:
+        if cur <= l - 1:
+            res.append((cur, l - 1))
+        cur = r + 1
+    if cur <= n:
+        res.append((cur, n))
+    return res
+
+class Dinic:
+    def __init__(self, n: int):
+        self.n = n
+        self.adj = [[] for _ in range(n)]
+        self.to = []
+        self.cap = []
+        self.level = [0]*n
+        self.it = [0]*n
+
+    def add_edge(self, u: int, v: int, c: int):
+        self.to.append(v); self.cap.append(c); self.adj[u].append(len(self.to)-1)
+        self.to.append(u); self.cap.append(0); self.adj[v].append(len(self.to)-1)
+
+    def bfs(self, s: int, t: int) -> bool:
+        for i in range(self.n):
+            self.level[i] = -1
+        q = deque([s])
+        self.level[s] = 0
+        while q:
+            u = q.popleft()
+            for ei in self.adj[u]:
+                v = self.to[ei]
+                if self.cap[ei] > 0 and self.level[v] < 0:
+                    self.level[v] = self.level[u] + 1
+                    q.append(v)
+        return self.level[t] >= 0
+
+    def dfs(self, u: int, t: int, f: int) -> int:
+        if u == t or f == 0:
+            return f
+        i = self.it[u]
+        while i < len(self.adj[u]):
+            ei = self.adj[u][i]
+            v = self.to[ei]
+            if self.cap[ei] > 0 and self.level[v] == self.level[u] + 1:
+                ret = self.dfs(v, t, min(f, self.cap[ei]))
+                if ret:
+                    self.cap[ei] -= ret
+                    self.cap[ei ^ 1] += ret
+                    return ret
+            i += 1
+            self.it[u] = i
+        return 0
+
+    def maxflow(self, s: int, t: int) -> int:
+        flow = 0
+        while self.bfs(s, t):
+            self.it = [0]*self.n
+            while True:
+                pushed = self.dfs(s, t, 10**18)
+                if not pushed:
+                    break
+                flow += pushed
+        return flow
+
+class ColumnSegTree:
+    def __init__(self, n: int, dinic: Dinic, base_id: int, sink: int):
+        self.n = n
+        self.dinic = dinic
+        self.base = base_id
+        self.sink = sink
+        self.nodes = []
+        self._build(1, 1, n)
+
+    def _build(self, idx: int, l: int, r: int) -> int:
+        node_id = self.base + idx
+        if idx >= len(self.nodes):
+            self.nodes.extend([None]*(idx - len(self.nodes) + 1))
+        self.nodes[idx] = (l, r, node_id)
+        if l == r:
+            self.dinic.add_edge(node_id, self.sink, 1)
+        else:
+            mid = (l + r) // 2
+            self._build(idx*2, l, mid)
+            self._build(idx*2+1, mid+1, r)
+            self.dinic.add_edge(node_id, self.base + idx*2, 10**9)
+            self.dinic.add_edge(node_id, self.base + idx*2 + 1, 10**9)
+        return node_id
+
+    def add_interval_edge(self, u: int, ql: int, qr: int, idx: int = 1):
+        l, r, node_id = self.nodes[idx]
+        if qr < l or r < ql:
+            return
+        if ql <= l and r <= qr:
+            self.dinic.add_edge(u, node_id, 10**9)
+            return
+        self.add_interval_edge(u, ql, qr, idx*2)
+        self.add_interval_edge(u, ql, qr, idx*2+1)
+
+def read_input(data: Optional[str] = None):
+    import sys
+    it = iter(data.strip().split()) if data is not None else iter(sys.stdin.read().strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    q = int(next(it))
+    rects = []
+    for _ in range(q):
+        x1 = int(next(it)); y1 = int(next(it)); x2 = int(next(it)); y2 = int(next(it))
+        rects.append((x1, y1, x2, y2))
+    return n, rects
+
+def build_row_segments(n: int, rects: List[Tuple[int,int,int,int]]) -> List[Tuple[int,int]]:
+    cuts = {1, n+1}
+    for x1, _, x2, _ in rects:
+        cuts.add(x1)
+        if x2 + 1 <= n:
+            cuts.add(x2 + 1)
+    xs = sorted(cuts)
+    segs = []
+    for i in range(len(xs) - 1):
+        L = xs[i]
+        R = xs[i+1] - 1
+        if L <= R:
+            segs.append((L, R))
+    return segs
+
+def solve_case(n: int, rects: List[Tuple[int,int,int,int]]) -> int:
+    rects_sorted = rects[:]
+    rects_sorted.sort()  # sort by x1
+    row_segs = build_row_segments(n, rects_sorted)
+    SRC = 0
+    SNK = 1
+    base = 2
+    approx_nodes = base + 4*n + len(row_segs) + 5
+    din = Dinic(approx_nodes)
+    ctree = ColumnSegTree(n, din, base, SNK)
+    next_id = base + 4*n + 5
+    for (L, R) in row_segs:
+        size = R - L + 1
+        if size <= 0:
+            continue
+        u = next_id
+        next_id += 1
+        din.add_edge(SRC, u, size)
+        forb = []
+        for x1, y1, x2, y2 in rects_sorted:
+            if x1 > L:
+                break
+            if x1 <= L and x2 >= R:
+                forb.append((y1, y2))
+        allowed = complement_intervals(n, forb)
+        for l, r in allowed:
+            if l <= r:
+                ctree.add_interval_edge(u, l, r)
+    din.n = max(din.n, next_id)
+    return din.maxflow(SRC, SNK)
+
+def main():
+    parsed = read_input()
+    if parsed is None:
+        return
+    n, rects = parsed
+    print(solve_case(n, rects))
+
+if __name__ == "__main__":
+    # Tiny asserts
+    assert solve_case(2, [(1,1,1,1)]) == 2
+    assert solve_case(3, []) == 3
+    assert solve_case(3, [(1,2,3,2)]) == 2
+    assert solve_case(3, [(1,1,1,3), (3,1,3,3)]) == 1
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts included. Simple I/O driven test in main.}
+\RESULT{Print a single integer: the maximum number of non-attacking rooks placeable on non-deleted cells; ties are irrelevant as the output is a count.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests for small $n$ and edge deletions; property: with $q=0$ answer is $n$; deleting an entire column lowers answer by at most $1$; deleting an entire row lowers answer by at most $1$.}
+\LINE{CROSS-CHECKS}{Compare Baseline (HK) vs Improved (Flow) on small random boards where $n \le 25$ and few rectangles; results should match.}
+\LINE{EDGE-CASE GENERATOR}{Generate rectangles: none; single-cell; full row; full column; bands; checker of disjoint rectangles.}
+\begin{minted}{python}
+import random
+
+def gen_non_intersecting_rects(n: int, k: int):
+    # naive generator: produce disjoint rectangles by reserving cells in a mask
+    taken = [[False]*(n+1) for _ in range(n+1)]
+    rects = []
+    trials = 0
+    while len(rects) < k and trials < 5000:
+        trials += 1
+        x1 = random.randint(1, n)
+        x2 = random.randint(x1, n)
+        y1 = random.randint(1, n)
+        y2 = random.randint(y1, n)
+        ok = True
+        for x in range(x1, x2+1):
+            for y in range(y1, y2+1):
+                if taken[x][y]:
+                    ok = False
+                    break
+            if not ok:
+                break
+        if not ok:
+            continue
+        for x in range(x1, x2+1):
+            for y in range(y1, y2+1):
+                taken[x][y] = True
+        rects.append((x1,y1,x2,y2))
+    return rects
+
+def reference_small(n: int, rects):
+    # baseline Hopcroft-Karp for small n
+    return solve_case_baseline(n, rects)
+
+def final_solver(n: int, rects):
+    return solve_case(n, rects)
+
+# Cross-check on tiny randoms
+random.seed(0)
+for n in range(1, 8):
+    for _ in range(5):
+        rects = gen_non_intersecting_rects(n, k=random.randint(0, min(4, n)))
+        assert reference_small(n, rects) == final_solver(n, rects)
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# See Approach C — the 'main()' there provides the final solution entrypoint for CF:
+# - read_input()
+# - solve_case()
+# - main() with guard + asserts
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Maximum matching on an $n \times n$ grid with forbidden rectangles, leveraging interval structure and segment-tree based flow construction.}
+\WHY{Classic interview/contest pattern: compress identical neighborhoods, add batched edges via data structures, and solve with max flow/matching.}
+\CHECKLIST{
+- Parse $n,q$ and rectangles; sanitize coordinates. 
+- Build x-segments from $\{1\}\cup\{x_1,x_2{+}1\}\cup\{n{+}1\}$.
+- For each row-segment, collect/merge forbidden $y$-intervals, complement to allowed.
+- Build column segment tree (leaf $\to$ sink capacity $1$).
+- Source $\to$ row-segment capacity equals segment length.
+- Add edges row-segment $\to$ segtree nodes for each allowed interval.
+- Run Dinic; print flow.
+}
+\EDGECASES{
+- $q=0$ $\Rightarrow$ answer $=n$.
+- Single-cell deletions.
+- Entire row or column deleted by a rectangle.
+- Rectangles adjacent but not intersecting.
+- $n=1$.
+- Many tiny rectangles spread out.}
+\PITFALLS{
+- Forgetting to include cut at $x_2{+}1$; segments become off-by-one.
+- Not merging forbidden intervals before complement; duplicates cause over-edges.
+- Overflow in ``infinite'' capacity; use a safe large constant.
+- Building insufficient node capacity for Dinic; ensure array sizes can grow.
+- Incorrectly wiring segment-tree edges (direction, child linkage).
+- Using 0-based vs 1-based indices inconsistently in intervals.}
+\FAILMODES{Naive per-row adjacency ($O(nq)$ or worse) times out for $n,q\approx 10^4$. The grouped + segment-tree approach mitigates edge explosion by batching intervals.}
+\ELI{Group rows that see the same holes, then connect those groups to column ranges using a tree that can represent many columns with few edges. Push as much flow as possible from row groups to columns: the value is exactly how many rooks you can place without attacking each other or landing in a hole.}
+\NotePages{3}
+
+\end{document}

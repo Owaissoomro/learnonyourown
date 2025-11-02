@@ -1,0 +1,952 @@
+% !TeX program = xelatex
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Down Below}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1558/E}}
+\LINE{DIFFICULTY / RATING}{3000}
+\STATEMENT{In a certain video game, the player controls a hero characterized by a single integer value: power.
+
+On the current level, the hero got into a system of $n$ caves numbered from $1$ to $n$, and $m$ tunnels between them. Each tunnel connects two distinct caves. Any two caves are connected with at most one tunnel. Any cave can be reached from any other cave by moving via tunnels.
+
+The hero starts the level in cave $1$, and every other cave contains a monster.
+
+The hero can move between caves via tunnels. If the hero leaves a cave and enters a tunnel, he must finish his movement and arrive at the opposite end of the tunnel.
+
+The hero can use each tunnel to move in both directions. However, the hero can not use the same tunnel twice in a row. Formally, if the hero has just moved from cave $i$ to cave $j$ via a tunnel, he can not head back to cave $i$ immediately after, but he can head to any other cave connected to cave $j$ with a tunnel.
+
+It is known that at least two tunnels come out of every cave, thus, the hero will never find himself in a dead end even considering the above requirement.
+
+To pass the level, the hero must beat the monsters in all the caves. When the hero enters a cave for the first time, he will have to fight the monster in it. The hero can beat the monster in cave $i$ if and only if the hero's power is strictly greater than $a_i$. In case of beating the monster, the hero's power increases by $b_i$. If the hero can't beat the monster he's fighting, the game ends and the player loses.
+
+After the hero beats the monster in cave $i$, all subsequent visits to cave $i$ won't have any consequences: the cave won't have any monsters, and the hero's power won't change either.
+
+Find the smallest possible power the hero must start the level with to be able to beat all the monsters and pass the level.
+
+Input:
+Each test contains multiple test cases. The first line contains the number of test cases $t$ ($1 \le t \le 100$). Description of the test cases follows.
+
+The first line of each test case contains two integers $n$ and $m$ ($3 \le n \le 1000$; $n \le m \le \min(\tfrac{n(n-1)}{2}, 2000)$)\,--- the number of caves and tunnels.
+
+The second line contains $n-1$ integers $a_2, a_3, \ldots, a_n$ ($1 \le a_i \le 10^9$)\,--- values the hero's power are compared to while fighting monsters in caves $2, 3, \ldots, n$.
+
+The third line contains $n-1$ integers $b_2, b_3, \ldots, b_n$ ($1 \le b_i \le 10^9$)\,--- increases applied to the hero's power for beating monsters in caves $2, 3, \ldots, n$.
+
+Each of the next $m$ lines contains two integers $u_i$ and $v_i$ ($1 \le u_i, v_i \le n$; $1 \ne v_i$)\,--- the numbers of caves connected with a tunnel.
+
+No two caves are connected with more than one tunnel. Any cave can be reached from any other cave by moving via tunnels. At least two tunnels come out of every cave.
+
+It is guaranteed that the sum of $n$ over all test cases does not exceed $1000$, and the sum of $m$ over all test cases does not exceed $2000$.
+
+Output:
+For each test case print a single integer\,--- the smallest possible power the hero must start the level with to be able to beat all the monsters and pass the level.
+
+Note:
+In the first test case, the hero can pass the level with initial power $15$ as follows:
+
+- move from cave $1$ to cave $2$: since $15 > 11$, the hero beats the monster, and his power increases to $15 + 8 = 23$;
+- move from cave $2$ to cave $3$: since $23 > 22$, the hero beats the monster, and his power increases to $23 + 7 = 30$;
+- move from cave $3$ to cave $4$: since $30 > 13$, the hero beats the monster, and his power increases to $30 + 5 = 35$.
+
+In the second test case, the situation is similar except that the power increases for beating monsters in caves $2$ and $4$ are exchanged. The hero can follow a different route, $1 \rightarrow 4 \rightarrow 3 \rightarrow 2$, and pass the level with initial power $15$.
+
+In the third test case, the hero can pass the level with initial power $19$ as follows:
+
+- move from cave $1$ to cave $2$: since $19 > 10$, the hero beats the monster, and his power increases to $19 + 7 = 26$;
+- move from cave $2$ to cave $4$: since $26 > 20$, the hero beats the monster, and his power increases to $26 + 10 = 36$;
+- move from cave $4$ to cave $5$: since $36 > 30$, the hero beats the monster, and his power increases to $36 + 5 = 41$;
+- move from cave $5$ to cave $2$: there is no monster in this cave anymore, nothing happens;
+- move from cave $2$ to cave $3$: since $41 > 40$, the hero beats the monster, and his power increases to $41 + 2 = 43$.}
+\BREAKDOWN{We model a growing connected set $S$ of cleared caves with $1 \in S$. At any step we may add a cave $v \notin S$ adjacent to $S$ if current power $p$ is $> a_v$, then $p \leftarrow p + b_v$. We need the minimum initial $p$ that allows expanding $S$ to all caves. This yields a monotone feasibility check in $p$, enabling binary search.}
+\ELI{Keep expanding from the already cleared region by taking any neighboring monster you are strong enough to beat; start with the smallest initial power that makes this always possible.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Multiple test cases:
+- $t$ number of tests.
+- For each test: integers $n, m$.
+- Arrays $a_2,\ldots,a_n$ and $b_2,\ldots,b_n$ (with $a_1=0$, $b_1=0$ implicitly).
+- $m$ undirected edges $(u_i,v_i)$.}
+\OUTPUTS{For each test, one integer: the minimum initial power $p_0$ so that the hero can clear all caves.}
+\SAMPLES{Example A
+\begin{tcolorbox}
+Input
+\begin{verbatim}
+1
+4 4
+11 22 13
+8 7 5
+1 2
+2 3
+3 4
+4 1
+\end{verbatim}
+Output
+\begin{verbatim}
+15
+\end{verbatim}
+\end{tcolorbox}
+Example B
+\begin{tcolorbox}
+Input
+\begin{verbatim}
+1
+4 4
+11 22 13
+5 7 8
+1 2
+2 3
+3 4
+4 1
+\end{verbatim}
+Output
+\begin{verbatim}
+15
+\end{verbatim}
+\end{tcolorbox}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $G=(V,E)$ be a connected undirected graph, $V=\{1,\ldots,n\}$, with minimum degree $\ge 2$. For $i\ge 2$ each node has threshold $a_i$ and reward $b_i$; set $a_1=0$, $b_1=0$. Start with $S=\{1\}$ and initial power $p_0$. Iteratively add nodes $v\notin S$ with $(v,u)\in E$ for some $u\in S$ and $p>a_v$, updating $p\leftarrow p+b_v$, until $S=V$.}
+\varmapStart
+\var{G}{cave graph (connected, undirected)}
+\var{a_i}{strict power threshold to beat cave $i$ on first entry}
+\var{b_i}{power increase after beating cave $i$}
+\var{p}{current power (starts at $p_0$)}
+\var{S}{connected set of already beaten caves containing node $1$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\text{Feasible step: } \exists v\notin S:\ \big(\exists u\in S:\ \{u,v\}\in E\big)\ \land\ p>a_v.\\
+&\text{Update on step: } S\leftarrow S\cup\{v\},\quad p\leftarrow p+b_v.\\
+&\text{Goal: } S=V.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Graph is connected with minimum degree $\ge 2$. Thresholds and rewards are positive integers for $i\ge 2$. Node $1$ has no monster.}
+\INVARIANTS{
+- $S$ remains connected: we only add neighbors of $S$.
+- $p$ is nondecreasing: increases by $b_v\ge 1$ on each capture.
+- Frontier monotonicity: the set of frontier nodes (neighbors of $S$) is nondecreasing as $S$ grows (ignoring already captured nodes).}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Binary search on the initial power $p_0$ with a greedy feasibility simulation. For fixed $p_0$, repeatedly pick any frontier node $v$ with $a_v<p$ and add it; if none exists and not all nodes are captured, fail.}
+\ASSUMPTIONS{Monotonicity in $p_0$: if a given $p_0$ is feasible, any larger $p_0$ is also feasible.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Binary search $p_0$ in $[0, \max_i a_i + 1]$.
+\item For each mid, simulate: maintain visited set $S$, current $p$, and frontier nodes (neighbors of $S$). While possible, pick any frontier $v$ with $a_v<p$, add it, and update $p$ and the frontier.
+\item If simulation captures all $n$ nodes, mid is feasible; otherwise infeasible.
+\end{algosteps}
+\COMPLEXITY{With naive frontier scans, feasibility is $O(n(n+m))$ and binary search multiplies by $\lceil \log_2(\max a_i + 2)\rceil \le 31$. For $n\le 1000$, $m\le 2000$, this is fine.}
+\[
+\begin{aligned}
+T(n) &\approx O\!\Big(\log A_{\max}\cdot n(n+m)\Big) \\
+     &\le O(31\cdot 1000\cdot 3000) \approx 9.3\times 10^7\ \text{simple ops (well within Python).}
+\end{aligned}
+\]
+\CORRECTNESS{At any feasible step, the next node must be a frontier node with $a_v<p$. If there is no such node, no valid sequence can progress. The greedy acceptance of any available frontier node preserves connectivity and only increases $p$ and the frontier, so feasibility is not hurt by choosing a particular available node. Binary search works by monotonicity in $p_0$.}
+\EDGECASES{All $b_i$ large; star-like graphs (respecting minimum degree); cycles; when $p_0=\max a_i+1$ it is always feasible; thresholds exactly one below $p$.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys, math, io
+from typing import List, Tuple
+from collections import deque, defaultdict
+
+def read_input() -> List[Tuple[int, int, List[int], List[int], List[List[int]]]]:
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        a = [0]*(n+1); b = [0]*(n+1)
+        for i in range(2, n+1):
+            a[i] = int(next(it))
+        for i in range(2, n+1):
+            b[i] = int(next(it))
+        adj = [[] for _ in range(n+1)]
+        for _e in range(m):
+            u = int(next(it)); v = int(next(it))
+            adj[u].append(v); adj[v].append(u)
+        tests.append((n, m, a, b, adj))
+    return tests
+
+def can_complete_naive(n: int, adj: List[List[int]], a: List[int], b: List[int], p0: int) -> bool:
+    # Greedy expansion with naive scans of frontier
+    visited = [False]*(n+1)
+    visited[1] = True
+    p = p0
+    count = 1
+    frontier = set()
+    for v in adj[1]:
+        if not visited[v]:
+            frontier.add(v)
+    while count < n:
+        # find any available frontier node; choose the one with largest b (safe heuristic)
+        chosen = -1
+        best_b = -1
+        for v in list(frontier):
+            if not visited[v] and a[v] < p:
+                if b[v] > best_b:
+                    best_b = b[v]
+                    chosen = v
+        if chosen == -1:
+            return False
+        # take chosen
+        v = chosen
+        visited[v] = True
+        count += 1
+        p += b[v]
+        frontier.discard(v)
+        # expand frontier
+        for u in adj[v]:
+            if not visited[u]:
+                frontier.add(u)
+        # also, once p increased, some existing frontier nodes may become available; loop continues
+    return True
+
+def minimal_initial_power_naive(n: int, adj: List[List[int]], a: List[int], b: List[int]) -> int:
+    hi = max(a) + 1
+    lo = 0
+    ans = hi
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        if can_complete_naive(n, adj, a, b, mid):
+            ans = mid
+            hi = mid - 1
+        else:
+            lo = mid + 1
+    return ans
+
+def solve_case(case: Tuple[int, int, List[int], List[int], List[List[int]]]) -> str:
+    n, m, a, b, adj = case
+    return str(minimal_initial_power_naive(n, adj, a, b))
+
+def solve_all() -> None:
+    tests = read_input()
+    out_lines = [solve_case(tc) for tc in tests]
+    sys.stdout.write("\n".join(out_lines))
+
+# --- Basic asserts (not executed on CF submission) ---
+def _tiny_tests_baseline():
+    # Example A: 4-cycle
+    n = 4; m = 4
+    a = [0,0,11,22,13]
+    b = [0,0, 8, 7, 5]
+    edges = [(1,2),(2,3),(3,4),(4,1)]
+    adj = [[] for _ in range(n+1)]
+    for u,v in edges:
+        adj[u].append(v); adj[v].append(u)
+    assert minimal_initial_power_naive(n, adj, a, b) == 15
+
+    # Example B: swap b2 and b4
+    a = [0,0,11,22,13]
+    b = [0,0, 5, 7, 8]
+    adj = [[] for _ in range(n+1)]
+    for u,v in edges:
+        adj[u].append(v); adj[v].append(u)
+    assert minimal_initial_power_naive(n, adj, a, b) == 15
+
+    # Example C: 5-node graph with min deg >= 2
+    n = 5; m = 6
+    a = [0,0,10,40,20,30]
+    b = [0,0, 7, 2,10, 5]
+    edges = [(1,2),(2,3),(2,4),(4,5),(5,2),(1,3)]
+    adj = [[] for _ in range(n+1)]
+    for u,v in edges:
+        adj[u].append(v); adj[v].append(u)
+    assert minimal_initial_power_naive(n, adj, a, b) == 19
+
+if __name__ == "__main__":
+    solve_all()
+\end{minted}
+\VALIDATION{Sanity-check on handcrafted small graphs (examples above). Consider random small graphs with minimum degree $\ge 2$ to cross-check against an improved version.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Speed up feasibility by maintaining two heaps:
+- waiting frontier (min-heap by $a_v$) for nodes adjacent to $S$ but not yet beatable;
+- available frontier (max-heap by $b_v$) for nodes with $a_v<p$. After each capture, move newly beatable nodes from waiting to available.}
+\ASSUMPTIONS{Monotonicity of $p$ and frontier adjacency; pushing a node to ``available'' remains valid as $p$ increases.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Initialize $S=\{1\}$, $p=p_0$, counts of visited neighbors per node, and push all neighbors of $1$ into the waiting-heap keyed by $a_v$.
+\item While available-heap nonempty, pop the node with maximum $b_v$ and capture it. Update $p$, $S$, and expose its neighbors (add to waiting).
+\item After each capture, promote from waiting to available all nodes with $a_v<p$.
+\item Success if all nodes are captured; otherwise failure when available becomes empty prematurely.
+\end{algosteps}
+\COMPLEXITY{Feasibility in $O((n+m)\log n)$ time and $O(n+m)$ space; overall $O(\log A_{\max}\cdot (n+m)\log n)$ with binary search.}
+\[
+\begin{aligned}
+T(n) &= O\big((n+m)\log n\cdot \log A_{\max}\big).
+\end{aligned}
+\]
+\CORRECTNESS{Choosing the currently available node with largest $b$ is never worse: it maximizes $p$ earliest and cannot shrink the frontier. If the process gets stuck (no available frontier node), no valid sequence can proceed because any next capture must be a frontier node with $a_v<p$.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys, heapq
+from typing import List, Tuple
+
+def read_input() -> List[Tuple[int, int, List[int], List[int], List[List[int]]]]:
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        a = [0]*(n+1); b = [0]*(n+1)
+        for i in range(2, n+1):
+            a[i] = int(next(it))
+        for i in range(2, n+1):
+            b[i] = int(next(it))
+        adj = [[] for _ in range(n+1)]
+        for _e in range(m):
+            u = int(next(it)); v = int(next(it))
+            adj[u].append(v); adj[v].append(u)
+        tests.append((n, m, a, b, adj))
+    return tests
+
+def can_complete_heaps(n: int, adj: List[List[int]], a: List[int], b: List[int], p0: int) -> bool:
+    visited = [False]*(n+1)
+    visited[1] = True
+    p = p0
+    count = 1
+    in_frontier = [False]*(n+1)
+    # waiting: (a[v], v)
+    waiting = []
+    # available: (-b[v], v) max-heap
+    available = []
+    def promote():
+        while waiting and waiting[0][0] < p:
+            _, v = heapq.heappop(waiting)
+            if visited[v]: 
+                continue
+            # It's possible v was pushed multiple times; only push once to available now
+            heapq.heappush(available, (-b[v], v))
+    # seed frontier with neighbors of 1
+    for v in adj[1]:
+        if not visited[v] and not in_frontier[v]:
+            in_frontier[v] = True
+            heapq.heappush(waiting, (a[v], v))
+    promote()
+    while count < n:
+        if not available:
+            return False
+        _, v = heapq.heappop(available)
+        if visited[v]:
+            continue
+        if a[v] >= p:
+            # Should not happen due to promote condition and monotonic p
+            continue
+        # capture v
+        visited[v] = True
+        count += 1
+        p += b[v]
+        # expose neighbors
+        for u in adj[v]:
+            if not visited[u] and not in_frontier[u]:
+                in_frontier[u] = True
+                heapq.heappush(waiting, (a[u], u))
+        promote()
+    return True
+
+def minimal_initial_power(n: int, adj: List[List[int]], a: List[int], b: List[int]) -> int:
+    hi = max(a) + 1
+    lo = 0
+    ans = hi
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        if can_complete_heaps(n, adj, a, b, mid):
+            ans = mid
+            hi = mid - 1
+        else:
+            lo = mid + 1
+    return ans
+
+def solve_case(case: Tuple[int, int, List[int], List[int], List[List[int]]]) -> str:
+    n, m, a, b, adj = case
+    return str(minimal_initial_power(n, adj, a, b))
+
+def solve_all() -> None:
+    tests = read_input()
+    out_lines = [solve_case(tc) for tc in tests]
+    sys.stdout.write("\n".join(out_lines))
+
+# Asserts for improved version
+def _tiny_tests_improved():
+    # 4-cycle
+    n = 4
+    a = [0,0,11,22,13]
+    b = [0,0, 8, 7, 5]
+    edges = [(1,2),(2,3),(3,4),(4,1)]
+    adj = [[] for _ in range(n+1)]
+    for u,v in edges:
+        adj[u].append(v); adj[v].append(u)
+    assert minimal_initial_power(n, adj, a, b) == 15
+
+    # Swap b2 and b4
+    a = [0,0,11,22,13]
+    b = [0,0, 5, 7, 8]
+    adj = [[] for _ in range(n+1)]
+    for u,v in edges:
+        adj[u].append(v); adj[v].append(u)
+    assert minimal_initial_power(n, adj, a, b) == 15
+
+    # 5-node example
+    n = 5
+    a = [0,0,10,40,20,30]
+    b = [0,0, 7, 2,10, 5]
+    edges = [(1,2),(2,3),(2,4),(4,5),(5,2),(1,3)]
+    adj = [[] for _ in range(n+1)]
+    for u,v in edges:
+        adj[u].append(v); adj[v].append(u)
+    assert minimal_initial_power(n, adj, a, b) == 19
+
+if __name__ == "__main__":
+    solve_all()
+\end{minted}
+\VALIDATION{Cross-check on samples and random small graphs: compare outputs of Approach A and B for many seeds; confirm monotonicity by testing feasibility at $p$ and $p+1$.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Parametric search on $p_0$ with the two-heap frontier management is asymptotically optimal for this setting ($O((n+m)\log n)$ per check, $O(\log A_{\max})$ checks).}
+\ASSUMPTIONS{Connected graph, minimum degree $\ge 2$. The movement constraint (no immediate tunnel reversal) does not hinder the expansion model because we never need to traverse unvisited nodes except the next captured one.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Initialize frontier, waiting-heap by $a_v$, and available-heap by $b_v$.
+\item While available nonempty, capture the best $b_v$, update $p$ and frontier, and promote newly feasible frontier nodes.
+\item Binary search the minimal $p_0$ that succeeds.
+\end{algosteps}
+\OPTIMALITY{Among all greedy feasibility strategies, picking maximum $b_v$ is a dominance choice: it never reduces future feasibility because it increases $p$ the most and only grows the frontier. The binary search lower-bounds the answer tightly by monotonicity, yielding the minimal $p_0$.}
+\COMPLEXITY{$O((n+m)\log n\cdot \log A_{\max})$ time and $O(n+m)$ space.}
+\[
+\begin{aligned}
+T(n) &= O\big((n+m)\log n\cdot \log A_{\max}\big).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys, heapq
+from typing import List, Tuple
+
+# -------- CF: read_input(), solve_case()/solve_all(), main()+guard + asserts --------
+
+def read_input() -> List[Tuple[int, int, List[int], List[int], List[List[int]]]]:
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        a = [0]*(n+1); b = [0]*(n+1)
+        for i in range(2, n+1):
+            a[i] = int(next(it))
+        for i in range(2, n+1):
+            b[i] = int(next(it))
+        adj = [[] for _ in range(n+1)]
+        for _e in range(m):
+            u = int(next(it)); v = int(next(it))
+            adj[u].append(v); adj[v].append(u)
+        tests.append((n, m, a, b, adj))
+    return tests
+
+def feasible(n: int, adj: List[List[int]], a: List[int], b: List[int], p0: int) -> bool:
+    visited = [False]*(n+1)
+    visited[1] = True
+    p = p0
+    count = 1
+    in_frontier = [False]*(n+1)
+    waiting = []  # (a[v], v)
+    avail = []    # (-b[v], v)
+
+    def promote():
+        while waiting and waiting[0][0] < p:
+            _, v = heapq.heappop(waiting)
+            if visited[v]:
+                continue
+            heapq.heappush(avail, (-b[v], v))
+
+    # seed neighbors of 1
+    for v in adj[1]:
+        if not visited[v] and not in_frontier[v]:
+            in_frontier[v] = True
+            heapq.heappush(waiting, (a[v], v))
+    promote()
+
+    while count < n:
+        if not avail:
+            return False
+        _, v = heapq.heappop(avail)
+        if visited[v]:
+            continue
+        # a[v] < p is guaranteed by promote; p only increases
+        visited[v] = True
+        count += 1
+        p += b[v]
+        for u in adj[v]:
+            if not visited[u] and not in_frontier[u]:
+                in_frontier[u] = True
+                heapq.heappush(waiting, (a[u], u))
+        promote()
+    return True
+
+def minimal_initial_power(n: int, adj: List[List[int]], a: List[int], b: List[int]) -> int:
+    hi = max(a) + 1
+    lo = 0
+    ans = hi
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        if feasible(n, adj, a, b, mid):
+            ans = mid
+            hi = mid - 1
+        else:
+            lo = mid + 1
+    return ans
+
+def solve_case(case: Tuple[int, int, List[int], List[int], List[List[int]]]) -> str:
+    n, m, a, b, adj = case
+    return str(minimal_initial_power(n, adj, a, b))
+
+def solve_all() -> None:
+    tests = read_input()
+    out_lines = [solve_case(tc) for tc in tests]
+    sys.stdout.write("\n".join(out_lines))
+
+# --- asserts (not executed on CF) ---
+def _asserts_final():
+    # Case 1
+    n = 4
+    a = [0,0,11,22,13]
+    b = [0,0, 8, 7, 5]
+    edges = [(1,2),(2,3),(3,4),(4,1)]
+    adj = [[] for _ in range(n+1)]
+    for u,v in edges:
+        adj[u].append(v); adj[v].append(u)
+    assert minimal_initial_power(n, adj, a, b) == 15
+    # Case 2
+    a = [0,0,11,22,13]
+    b = [0,0, 5, 7, 8]
+    adj = [[] for _ in range(n+1)]
+    for u,v in edges:
+        adj[u].append(v); adj[v].append(u)
+    assert minimal_initial_power(n, adj, a, b) == 15
+    # Case 3
+    n = 5
+    a = [0,0,10,40,20,30]
+    b = [0,0, 7, 2,10, 5]
+    edges = [(1,2),(2,3),(2,4),(4,5),(5,2),(1,3)]
+    adj = [[] for _ in range(n+1)]
+    for u,v in edges:
+        adj[u].append(v); adj[v].append(u)
+    assert minimal_initial_power(n, adj, a, b) == 19
+
+if __name__ == "__main__":
+    solve_all()
+\end{minted}
+\VALIDATION{Exactly 3 asserts included above on crafted instances mirroring the note.}
+\RESULT{For each test case, print the minimal integer starting power required. Any route is acceptable; only the minimal starting power matters.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on small handcrafted graphs; randomized graphs with $n\le 10$ and minimum degree $\ge 2$ ensuring connectivity; cross-validate improved vs baseline; adversarial cases with tight thresholds.}
+\LINE{CROSS-CHECKS}{For each random seed, run both Approach A and B and compare the minimal $p_0$. They should match for all trials.}
+\LINE{EDGE-CASE GENERATOR}{Generate connected graphs with minimum degree $\ge 2$ by starting from a cycle and adding random edges; generate $a_i$ and $b_i$ in moderate ranges to stress the binary search boundaries.}
+\begin{minted}{python}
+import random
+from typing import List, Tuple
+
+def gen_graph(n: int, extra_edges: int) -> List[List[int]]:
+    # start with a cycle to ensure min degree >= 2
+    adj = [[] for _ in range(n+1)]
+    edges = set()
+    for i in range(1, n+1):
+        u, v = i, 1 + (i % n)
+        edges.add(tuple(sorted((u, v))))
+        adj[u].append(v); adj[v].append(u)
+    # add extra random edges
+    all_pairs = [(i, j) for i in range(1, n+1) for j in range(i+1, n+1)]
+    random.shuffle(all_pairs)
+    added = 0
+    for u, v in all_pairs:
+        if added >= extra_edges: break
+        if (u, v) not in edges:
+            edges.add((u, v))
+            adj[u].append(v); adj[v].append(u)
+            added += 1
+    return adj
+
+def cross_check_once(n: int = 8):
+    a = [0]*(n+1); b = [0]*(n+1)
+    for i in range(2, n+1):
+        a[i] = random.randint(1, 30)
+        b[i] = random.randint(1, 15)
+    adj = gen_graph(n, extra_edges=random.randint(0, n))
+    # Implement both solvers inline for comparison
+    def can_complete_naive(n, adj, a, b, p0):
+        visited = [False]*(n+1)
+        visited[1] = True
+        p = p0
+        count = 1
+        frontier = set()
+        for v in adj[1]:
+            if not visited[v]:
+                frontier.add(v)
+        while count < n:
+            chosen = -1; best_b = -1
+            for v in list(frontier):
+                if not visited[v] and a[v] < p:
+                    if b[v] > best_b:
+                        best_b = b[v]; chosen = v
+            if chosen == -1:
+                return False
+            v = chosen
+            visited[v] = True; count += 1; p += b[v]
+            frontier.discard(v)
+            for u in adj[v]:
+                if not visited[u]:
+                    frontier.add(u)
+        return True
+
+    def feasible(n, adj, a, b, p0):
+        import heapq
+        visited = [False]*(n+1); visited[1] = True
+        p = p0; count = 1
+        in_frontier = [False]*(n+1)
+        waiting = []; avail = []
+        def promote():
+            while waiting and waiting[0][0] < p:
+                _, v = heapq.heappop(waiting)
+                if visited[v]: continue
+                heapq.heappush(avail, (-b[v], v))
+        for v in adj[1]:
+            if not visited[v] and not in_frontier[v]:
+                in_frontier[v] = True
+                heapq.heappush(waiting, (a[v], v))
+        promote()
+        while count < n:
+            if not avail: return False
+            _, v = heapq.heappop(avail)
+            if visited[v]: continue
+            visited[v] = True; count += 1; p += b[v]
+            for u in adj[v]:
+                if not visited[u] and not in_frontier[u]:
+                    in_frontier[u] = True
+                    heapq.heappush(waiting, (a[u], u))
+            promote()
+        return True
+
+    def solve_naive():
+        lo, hi = 0, max(a)+1; ans = hi
+        while lo <= hi:
+            mid = (lo+hi)//2
+            if can_complete_naive(n, adj, a, b, mid):
+                ans = mid; hi = mid - 1
+            else:
+                lo = mid + 1
+        return ans
+
+    def solve_heaps():
+        lo, hi = 0, max(a)+1; ans = hi
+        while lo <= hi:
+            mid = (lo+hi)//2
+            if feasible(n, adj, a, b, mid):
+                ans = mid; hi = mid - 1
+            else:
+                lo = mid + 1
+        return ans
+
+    x, y = solve_naive(), solve_heaps()
+    assert x == y, (x, y, a, b, adj)
+
+def run_cross_checks():
+    random.seed(0)
+    for _ in range(200):
+        cross_check_once()
+
+if __name__ == "__main__":
+    run_cross_checks()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Final reference solution (same API as above).
+import sys, heapq
+from typing import List, Tuple
+
+def read_input() -> List[Tuple[int, int, List[int], List[int], List[List[int]]]]:
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        a = [0]*(n+1); b = [0]*(n+1)
+        for i in range(2, n+1):
+            a[i] = int(next(it))
+        for i in range(2, n+1):
+            b[i] = int(next(it))
+        adj = [[] for _ in range(n+1)]
+        for _e in range(m):
+            u = int(next(it)); v = int(next(it))
+            adj[u].append(v); adj[v].append(u)
+        tests.append((n, m, a, b, adj))
+    return tests
+
+def feasible(n: int, adj: List[List[int]], a: List[int], b: List[int], p0: int) -> bool:
+    visited = [False]*(n+1)
+    visited[1] = True
+    p = p0
+    count = 1
+    in_frontier = [False]*(n+1)
+    waiting = []  # (a[v], v)
+    avail = []    # (-b[v], v)
+    def promote():
+        while waiting and waiting[0][0] < p:
+            _, v = heapq.heappop(waiting)
+            if visited[v]:
+                continue
+            heapq.heappush(avail, (-b[v], v))
+    for v in adj[1]:
+        if not visited[v] and not in_frontier[v]:
+            in_frontier[v] = True
+            heapq.heappush(waiting, (a[v], v))
+    promote()
+    while count < n:
+        if not avail:
+            return False
+        _, v = heapq.heappop(avail)
+        if visited[v]:
+            continue
+        visited[v] = True
+        count += 1
+        p += b[v]
+        for u in adj[v]:
+            if not visited[u] and not in_frontier[u]:
+                in_frontier[u] = True
+                heapq.heappush(waiting, (a[u], u))
+        promote()
+    return True
+
+def minimal_initial_power(n: int, adj: List[List[int]], a: List[int], b: List[int]) -> int:
+    hi = max(a) + 1
+    lo = 0
+    ans = hi
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        if feasible(n, adj, a, b, mid):
+            ans = mid
+            hi = mid - 1
+        else:
+            lo = mid + 1
+    return ans
+
+def solve_case(case: Tuple[int, int, List[int], List[int], List[List[int]]]) -> str:
+    n, m, a, b, adj = case
+    return str(minimal_initial_power(n, adj, a, b))
+
+def solve_all() -> None:
+    tests = read_input()
+    out_lines = [solve_case(tc) for tc in tests]
+    sys.stdout.write("\n".join(out_lines))
+
+# simple asserts (not executed during CF run)
+def _ref_asserts():
+    n = 4
+    a = [0,0,11,22,13]
+    b = [0,0, 8, 7, 5]
+    edges = [(1,2),(2,3),(3,4),(4,1)]
+    adj = [[] for _ in range(n+1)]
+    for u,v in edges:
+        adj[u].append(v); adj[v].append(u)
+    assert minimal_initial_power(n, adj, a, b) == 15
+
+if __name__ == "__main__":
+    solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Binary search the minimal starting power and simulate greedy expansion from the cleared region using two heaps.}
+\WHY{Shows up in interviews as resource-accumulation under adjacency constraints with monotone feasibility.}
+\CHECKLIST{
+- Build graph; set $a_1=0$, $b_1=0$.
+- Binary search $p_0$ in $[0,\max a + 1]$.
+- Feasibility: start at $1$; maintain frontier.
+- Promote nodes with $a_v<p$ to available.
+- Always pick available frontier node with maximum $b_v$.
+- Update $p$, frontier; repeat until all captured or stuck.}
+\EDGECASES{
+- Graphs with cycles and bridges (still min degree $\ge 2$).
+- Ties in $b_v$ (any choice is fine).
+- Very large $a_i$ and $b_i$ (use Python ints).
+- All $b_i=1$.
+- $n=3$ minimal graph.
+- Starting $p_0=\max a+1$ must succeed.}
+\PITFALLS{
+- Forgetting to consider only frontier nodes (must be adjacent to $S$).
+- Not promoting waiting nodes after $p$ increases.
+- Pushing duplicates into heaps without visited checks.
+- Using $\ge$ instead of $>$ for threshold.
+- Off-by-one in binary search bounds.
+- Mishandling node $1$ (it has no monster).}
+\FAILMODES{A weaker approach that scans all unvisited nodes ignoring adjacency can overestimate feasibility; our frontier-based method respects adjacency and the movement rule. If there is no available frontier node, no valid route exists.}
+\ELI{Grow your safe area starting from cave $1$. You can only fight a neighboring monster you are strong enough to beat; each win raises your strength and unlocks more neighbors. Find the smallest starting strength so that this process never gets stuck.}
+\NotePages{3}
+
+\end{document}

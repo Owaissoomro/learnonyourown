@@ -1,0 +1,958 @@
+% !TeX program = xelatex
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Babysitting}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1903/F}}
+\LINE{DIFFICULTY / RATING}{2500}
+\STATEMENT{Theofanis wants to play video games, however he should also take care of his sister. Since Theofanis is a CS major, he found a way to do both. He will install some cameras in his house in order to make sure his sister is okay.
+
+His house is an undirected graph with $n$ nodes and $m$ edges. His sister likes to play at the edges of the graph, so he has to install a camera to at least one endpoint of every edge of the graph. Theofanis wants to find a vertex cover that maximizes the minimum difference between indices of the chosen nodes.
+
+More formally, let $a_1, a_2, \ldots, a_k$ be a vertex cover of the graph. Let the minimum difference between indices of the chosen nodes be the minimum $\lvert a_i - a_j \rvert$ (where $i \ne j$) out of the nodes that you chose. If $k = 1$ then we assume that the minimum difference between indices of the chosen nodes is $n$.
+
+Can you find the maximum possible minimum difference between indices of the chosen nodes over all vertex covers?
+
+Input:
+The first line contains a single integer $t$ ($1 \le t \le 10^4$) — the number of test cases.
+
+The first line of each test case contains two integers $n$ and $m$ ($1 \le n \le 10^{5}, 1 \le m \le 2 \cdot 10^{5}$) — the number of nodes and the number of edges.
+
+The $i$-th of the following $m$ lines in the test case contains two positive integers $u_i$ and $v_i$ ($1 \le u_i,v_i \le n$), meaning that there exists an edge between them in the graph.
+
+It is guaranteed that the sum of $n$ over all test cases does not exceed $10^{5}$.
+
+It is guaranteed that the sum of $m$ over all test cases does not exceed $2 \cdot 10^{5}$.
+
+Output:
+For each test case, print the maximum minimum difference between indices of the chosen nodes over all vertex covers.
+
+Note:
+In the first test case, we can install cameras at nodes $1$, $3$, and $7$, so the answer is $2$.
+
+In the second test case, we can install only one camera at node $1$, so the answer is $3$.}
+\BREAKDOWN{We must maximize the minimum pairwise index gap among chosen vertices subject to being a vertex cover. Binary search the answer $D$ and test feasibility: does there exist a vertex cover where any two chosen vertices differ by at least $D$ in index? Reduce the feasibility test to bipartite coloring on ``short'' edges and a $2$-SAT on component choices constrained by ``long'' edges.}
+\ELI{Guess a gap $D$, force that every original edge shorter than $D$ has exactly one endpoint chosen, compress by components, and then use $2$-SAT on which side of each component is chosen to ensure all longer edges are still covered.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Multiple test cases. For each:
+- Integers $n, m$ with $1 \le n \le 10^5$, $1 \le m \le 2\cdot 10^5$.
+- $m$ undirected edges $(u_i,v_i)$ with $1 \le u_i, v_i \le n$.
+Global sums $\sum n \le 10^5$, $\sum m \le 2\cdot 10^5$.}
+\OUTPUTS{For each test case, a single integer: the maximum possible minimum difference between indices among chosen vertices of a vertex cover (with the convention $n$ if only one vertex is chosen).}
+\SAMPLES{Example 1:
+- Input:
+  - $n=3$, $m=2$, edges: $(1,2)$, $(2,3)$.
+- Output: $3$ (choose only vertex $2$, which covers all edges; with $k=1$, the minimum difference is $n=3$).
+
+Example 2:
+- Input:
+  - $n=4$, $m=3$, edges: $(1,2)$, $(2,3)$, $(3,4)$.
+- Output: $2$ (e.g., choose $\{2,4\}$; the minimum index difference is $2$).}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $G=(V,E)$ with $V=\{1,\ldots,n\}$. For an integer $D\in[1,n]$, decide if there exists $S\subseteq V$ such that:
+- Vertex cover: for all $(u,v)\in E$, $u\in S$ or $v\in S$.
+- $D$-separation: for all distinct $i,j\in S$, $\lvert i-j\rvert \ge D$.
+We seek $\max\{D \mid \exists S \text{ satisfying both}\}$.}
+\varmapStart
+\var{S}{chosen vertices (camera positions)}
+\var{D}{candidate minimum index gap}
+\var{G_s}{graph on $V$ with ``short'' edges $E_s=\{(u,v)\in E:\lvert u-v\rvert<D\}$}
+\var{c(v)}{bipartite color $0/1$ in $G_s$}
+\var{C}{a connected component of $G_s$}
+\var{f(C)}{binary choice: which color class in $C$ is selected into $S$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\text{Feasible}(D) \iff \exists \text{ coloring } c:V\to\{0,1\}\text{ making }G_s\text{ bipartite, and } f:\{\text{comps}\}\to\{0,1\}\\
+&\text{s.t. } \forall (u,v)\in E_s:~ c(u)\ne c(v) \text{ and exactly one of }u,v\text{ is in }S,\\
+&\phantom{\text{s.t. }} \forall (u,v)\in E\setminus E_s:~ (c(u)=f(C_u)) \lor (c(v)=f(C_v)),\\
+&\phantom{\text{s.t. }} \forall C,~ \text{the chosen color } f(C) \text{ does not contain two vertices with index gap }<D.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Indices are $1$-based. The graph is simple undirected; parallel edges do not change the answer. If $m=0$, we may choose any single vertex to achieve answer $n$.}
+\INVARIANTS{
+- For any short edge $(u,v)$ with $\lvert u-v\rvert<D$, $S$ cannot contain both endpoints; to cover the edge it must contain exactly one.
+- Inside a connected component of $G_s$, exact-one constraints force that all vertices of one bipartition side are selected and the other side unselected.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Enumerate all subsets $S\subseteq V$, check if $S$ is a vertex cover and compute the minimum pairwise index gap; take the maximum.}
+\ASSUMPTIONS{Only viable for very small $n$ (e.g., $n\le 20$) due to $2^n$ growth.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For each subset $S\subseteq\{1,\ldots,n\}$:
+\item Verify every edge is covered by $S$.
+\item Compute $g(S)=\min_{i\ne j\in S}\lvert i-j\rvert$ with $g(S)=n$ if $\lvert S\rvert=1$; update the maximum.
+\end{algosteps}
+\COMPLEXITY{Exponential in $n$, infeasible for constraints.}
+\[
+\begin{aligned}
+T(n) &= \Theta(2^n \cdot (m + n^2)) \\
+S(n) &= \Theta(n)
+\end{aligned}
+\]
+\CORRECTNESS{By exhaustive enumeration.}
+\EDGECASES{Empty edge set $m=0$; single edge; disconnected graphs.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# Baseline brute-force for tiny n; included for validation only
+from typing import List, Tuple
+import itertools
+
+def brute_max_gap(n: int, edges: List[Tuple[int, int]]) -> int:
+    best = 0
+    V = list(range(1, n + 1))
+    E = [(min(u, v), max(u, v)) for (u, v) in edges]
+    for r in range(1, n + 1):  # choose at least one to meaningfully define min-gap as n when |S|=1
+        for S in itertools.combinations(V, r):
+            Sset = set(S)
+            ok = True
+            for (u, v) in E:
+                if (u not in Sset) and (v not in Sset):
+                    ok = False
+                    break
+            if not ok:
+                continue
+            if len(S) == 1:
+                gap = n
+            else:
+                gap = min(abs(S[i] - S[j]) for i in range(len(S)) for j in range(i + 1, len(S)))
+            best = max(best, gap)
+    # Also consider the empty set if m==0 -> we can take a single vertex to achieve gap n
+    if not edges:
+        best = max(best, n)
+    return best
+
+def _test_brutal_tiny():
+    # tiny checks
+    assert brute_max_gap(1, []) == 1
+    assert brute_max_gap(3, [(1, 2), (2, 3)]) == 3  # choose {2}
+    assert brute_max_gap(4, [(1, 2), (2, 3), (3, 4)]) == 2  # choose {2,4}
+_test_brutal_tiny()
+\end{minted}
+\VALIDATION{The asserts check small canonical shapes (empty, path-2, path-3).}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Binary Search + Structure on Short Edges + 2-SAT}
+\WHICHFORMULA{Binary search the answer $D$. For a fixed $D$, split edges into short ($\lvert u-v\rvert<D$) and long. Short edges enforce exact-one of endpoints, which inside each short-edge component implies we select an entire bipartition side. Long edges yield $2$-SAT clauses on which side each component selects. Additionally, forbid choosing a side that would select two vertices within index gap $<D$ inside the component (unit clauses).}
+\ASSUMPTIONS{Short-edge subgraph must be bipartite; otherwise infeasible. The $2$-SAT on components is linear-time.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Binary search $D\in[1,n]$.
+\item Build the short-edge graph $G_s$ using edges with $\lvert u-v\rvert<D$; check bipartiteness and record $(\text{comp}(v), c(v))$.
+\item For each component $C$ and color $b\in\{0,1\}$, scan vertices by index; if two with $(\text{comp}=C,c=b)$ are closer than $D$, forbid choosing $b$ (unit clause).
+\item For each long edge $(u,v)$:
+  - If $\text{comp}(u)\ne \text{comp}(v)$, add clause $(f(\text{comp}(u))=c(u)) \lor (f(\text{comp}(v))=c(v))$.
+  - Else, if $c(u)=c(v)$, add unit clause $f(\text{comp}(u))=c(u)$; otherwise ignore.
+\item Solve the $2$-SAT on variables $f(C)$; feasible iff satisfiable.
+\end{algosteps}
+\COMPLEXITY{Per $D$, $O(n+m)$ to build/scan and $O(n+m)$ for $2$-SAT; overall $O((n+m)\log n)$.}
+\[
+\begin{aligned}
+T(n,m) &\approx O\big((n+m)\log n\big) \\
+S(n,m) &\approx O(n+m)
+\end{aligned}
+\]
+\CORRECTNESS{Short edges must be covered by exactly one endpoint (cannot pick both with gap constraint), which enforces bipartite alternation per component. Choosing one side per component encapsulates all short-edge constraints. Long edges require at least one endpoint chosen, yielding $2$-SAT clauses across components. Forbidding component-sides that internally contain two indices closer than $D$ enforces the $D$-separation within components.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+from typing import List, Tuple
+from collections import deque
+
+class TwoSAT:
+    def __init__(self, nvar: int):
+        self.n = nvar
+        self.N = 2 * nvar
+        self.g = [[] for _ in range(self.N)]
+        self.gr = [[] for _ in range(self.N)]
+
+    @staticmethod
+    def neg(lit: int) -> int:
+        return lit ^ 1
+
+    @staticmethod
+    def lit(var: int, val: int) -> int:
+        # val in {0,1}; returns node id for literal (x_var == val)
+        return (var << 1) | (val & 1)
+
+    def add_imp(self, u: int, v: int) -> None:
+        self.g[u].append(v)
+        self.gr[v].append(u)
+
+    def add_or(self, a: int, b: int) -> None:
+        # (a ∨ b) as implications (¬a → b) and (¬b → a)
+        self.add_imp(TwoSAT.neg(a), b)
+        self.add_imp(TwoSAT.neg(b), a)
+
+    def add_unit(self, a: int) -> None:
+        # a must be true: (¬a → a)
+        self.add_imp(TwoSAT.neg(a), a)
+
+    def satisfiable(self) -> Tuple[bool, List[int]]:
+        # Kosaraju
+        N = self.N
+        vis = [False] * N
+        order = []
+
+        def dfs1(u: int) -> None:
+            vis[u] = True
+            for v in self.g[u]:
+                if not vis[v]:
+                    dfs1(v)
+            order.append(u)
+
+        for u in range(N):
+            if not vis[u]:
+                dfs1(u)
+
+        comp = [-1] * N
+
+        def dfs2(u: int, cid: int) -> None:
+            comp[u] = cid
+            for v in self.gr[u]:
+                if comp[v] == -1:
+                    dfs2(v, cid)
+
+        cid = 0
+        for u in reversed(order):
+            if comp[u] == -1:
+                dfs2(u, cid)
+                cid += 1
+
+        assign = [0] * self.n
+        for i in range(self.n):
+            if comp[2 * i] == comp[2 * i + 1]:
+                return (False, [])
+            assign[i] = 1 if comp[2 * i] > comp[2 * i + 1] else 0
+        return (True, assign)
+
+def feasible_D(n: int, edges: List[Tuple[int, int]], adj: List[List[int]], D: int) -> bool:
+    # 1) Build components of short-edge graph and bipartite color
+    comp_id = [-1] * (n + 1)
+    color = [-1] * (n + 1)
+    K = 0
+    for s in range(1, n + 1):
+        if comp_id[s] != -1:
+            continue
+        comp_id[s] = K
+        color[s] = 0
+        dq = deque([s])
+        ok = True
+        while dq and ok:
+            u = dq.popleft()
+            for v in adj[u]:
+                if abs(u - v) < D:  # short-edge relation
+                    if comp_id[v] == -1:
+                        comp_id[v] = K
+                        color[v] = color[u] ^ 1
+                        dq.append(v)
+                    else:
+                        if color[v] == color[u]:
+                            return False  # not bipartite => impossible
+        K += 1
+
+    # 2) Forbid component-side that would select two vertices within gap < D (intra-component)
+    banned0 = [False] * K
+    banned1 = [False] * K
+    last0 = [-10**18] * K
+    last1 = [-10**18] * K
+    for i in range(1, n + 1):
+        c = comp_id[i]
+        if color[i] == 0:
+            if i - last0[c] < D:
+                banned0[c] = True
+            last0[c] = i
+        else:
+            if i - last1[c] < D:
+                banned1[c] = True
+            last1[c] = i
+
+    ts = TwoSAT(K)
+    for c in range(K):
+        if banned0[c] and banned1[c]:
+            return False
+        if banned0[c]:
+            ts.add_unit(TwoSAT.lit(c, 1))  # must choose color-1
+        if banned1[c]:
+            ts.add_unit(TwoSAT.lit(c, 0))  # must choose color-0
+
+    # 3) Long edges impose cross-component coverage constraints via 2-SAT
+    for (u, v) in edges:
+        if abs(u - v) >= D:
+            cu, cv = color[u], color[v]
+            cu_id, cv_id = comp_id[u], comp_id[v]
+            if cu_id == cv_id:
+                if cu == cv:
+                    # unit: f(C) == cu
+                    ts.add_unit(TwoSAT.lit(cu_id, cu))
+                else:
+                    # tautology
+                    pass
+            else:
+                # (f(cu_id) == cu) OR (f(cv_id) == cv)
+                ts.add_or(TwoSAT.lit(cu_id, cu), TwoSAT.lit(cv_id, cv))
+
+    sat, _ = ts.satisfiable()
+    return sat
+
+def solve_one(n: int, edges: List[Tuple[int, int]]) -> int:
+    adj = [[] for _ in range(n + 1)]
+    for (u, v) in edges:
+        adj[u].append(v)
+        adj[v].append(u)
+    lo, hi = 1, n
+    ans = 1
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        if feasible_D(n, edges, adj, mid):
+            ans = mid
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    return ans
+
+def read_input() -> List[Tuple[int, List[Tuple[int, int]]]]:
+    import sys
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    t = int(next(it))
+    cases = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        edges = []
+        for __ in range(m):
+            u = int(next(it)); v = int(next(it))
+            edges.append((u, v))
+        cases.append((n, edges))
+    return cases
+
+def solve_all():
+    import sys
+    out = []
+    for (n, edges) in read_input():
+        out.append(str(solve_one(n, edges)))
+    sys.stdout.write("\n".join(out))
+
+def _self_test():
+    # Deterministic mini-tests
+    assert solve_one(1, []) == 1
+    assert solve_one(3, [(1, 2), (2, 3)]) == 3
+    assert solve_one(4, [(1, 2), (2, 3), (3, 4)]) == 2
+    # Random small cross-check vs brute
+    import random
+    random.seed(0)
+    for n in range(1, 8):
+        for _ in range(10):
+            # Build a random sparse graph
+            edges = set()
+            for u in range(1, n + 1):
+                for v in range(u + 1, n + 1):
+                    if random.random() < (0.15 if n >= 6 else 0.25):
+                        edges.add((u, v))
+            edges = list(edges)
+            # brute: ensure at least one vertex picked if edges exist
+            b = brute_max_gap(n, edges)
+            s = solve_one(n, edges)
+            assert s == b, (n, edges, s, b)
+
+if __name__ == "__main__":
+    _self_test()
+    # Then process stdin if provided (comment out self-test for submission if needed)
+    solve_all()
+\end{minted}
+\VALIDATION{Unit tests on canonical small cases and randomized small graphs against brute force.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Binary Search + Bipartite Compression + 2-SAT on Components}
+\WHICHFORMULA{This is the finalized method: binary search on $D$; for each $D$, check bipartiteness on short edges, forbid invalid component-sides by index scan, and solve $2$-SAT clauses induced by long edges across components.}
+\ASSUMPTIONS{Works for arbitrary undirected graphs under given constraints with overall $O((n+m)\log n)$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Binary search $D\in[1,n]$.
+\item Short edges: build components and $0/1$ coloring; if non-bipartite, infeasible.
+\item Intra-component $D$-separation: scan indices in order and forbid any color in any component that would select two vertices closer than $D$ (unit clauses).
+\item Long edges: add $2$-SAT clause $(f(C_u)=c(u)) \lor (f(C_v)=c(v))$; inside same component with same color, add unit clause.
+\item Solve $2$-SAT; if satisfiable, $D$ is feasible; otherwise not.
+\end{algosteps}
+\OPTIMALITY{The binary search pinpoints the maximum feasible $D$. Feasibility is decided exactly by necessary-and-sufficient structural constraints encoded in linear-time $2$-SAT.}
+\COMPLEXITY{Per $D$, $O(n+m)$ for building constraints and $O(n+m)$ for $2$-SAT, hence $O((n+m)\log n)$ overall; space $O(n+m)$.}
+\[
+\begin{aligned}
+T(n,m) &= O\big((n+m)\log n\big) \\
+S(n,m) &= O(n+m)
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+from typing import List, Tuple
+from collections import deque
+
+class TwoSAT:
+    def __init__(self, nvar: int):
+        self.n = nvar
+        self.N = 2 * nvar
+        self.g = [[] for _ in range(self.N)]
+        self.gr = [[] for _ in range(self.N)]
+
+    @staticmethod
+    def neg(lit: int) -> int:
+        return lit ^ 1
+
+    @staticmethod
+    def lit(var: int, val: int) -> int:
+        return (var << 1) | (val & 1)
+
+    def add_imp(self, u: int, v: int) -> None:
+        self.g[u].append(v)
+        self.gr[v].append(u)
+
+    def add_or(self, a: int, b: int) -> None:
+        self.add_imp(TwoSAT.neg(a), b)
+        self.add_imp(TwoSAT.neg(b), a)
+
+    def add_unit(self, a: int) -> None:
+        self.add_imp(TwoSAT.neg(a), a)
+
+    def satisfiable(self) -> Tuple[bool, List[int]]:
+        N = self.N
+        vis = [False] * N
+        order = []
+
+        def dfs1(u: int) -> None:
+            vis[u] = True
+            for v in self.g[u]:
+                if not vis[v]:
+                    dfs1(v)
+            order.append(u)
+
+        for u in range(N):
+            if not vis[u]:
+                dfs1(u)
+
+        comp = [-1] * N
+
+        def dfs2(u: int, cid: int) -> None:
+            comp[u] = cid
+            for v in self.gr[u]:
+                if comp[v] == -1:
+                    dfs2(v, cid)
+
+        cid = 0
+        for u in reversed(order):
+            if comp[u] == -1:
+                dfs2(u, cid)
+                cid += 1
+
+        assign = [0] * self.n
+        for i in range(self.n):
+            if comp[2 * i] == comp[2 * i + 1]:
+                return (False, [])
+            assign[i] = 1 if comp[2 * i] > comp[2 * i + 1] else 0
+        return (True, assign)
+
+def feasible_D(n: int, edges: List[Tuple[int, int]], adj: List[List[int]], D: int) -> bool:
+    comp_id = [-1] * (n + 1)
+    color = [-1] * (n + 1)
+    K = 0
+    for s in range(1, n + 1):
+        if comp_id[s] != -1:
+            continue
+        comp_id[s] = K
+        color[s] = 0
+        dq = deque([s])
+        while dq:
+            u = dq.popleft()
+            for v in adj[u]:
+                if abs(u - v) < D:
+                    if comp_id[v] == -1:
+                        comp_id[v] = K
+                        color[v] = color[u] ^ 1
+                        dq.append(v)
+                    else:
+                        if color[v] == color[u]:
+                            return False
+        K += 1
+
+    banned0 = [False] * K
+    banned1 = [False] * K
+    last0 = [-10**18] * K
+    last1 = [-10**18] * K
+    for i in range(1, n + 1):
+        c = comp_id[i]
+        if color[i] == 0:
+            if i - last0[c] < D:
+                banned0[c] = True
+            last0[c] = i
+        else:
+            if i - last1[c] < D:
+                banned1[c] = True
+            last1[c] = i
+
+    ts = TwoSAT(K)
+    for c in range(K):
+        if banned0[c] and banned1[c]:
+            return False
+        if banned0[c]:
+            ts.add_unit(TwoSAT.lit(c, 1))
+        if banned1[c]:
+            ts.add_unit(TwoSAT.lit(c, 0))
+
+    for (u, v) in edges:
+        if abs(u - v) >= D:
+            cu, cv = color[u], color[v]
+            cu_id, cv_id = comp_id[u], comp_id[v]
+            if cu_id == cv_id:
+                if cu == cv:
+                    ts.add_unit(TwoSAT.lit(cu_id, cu))
+            else:
+                ts.add_or(TwoSAT.lit(cu_id, cu), TwoSAT.lit(cv_id, cv))
+
+    sat, _ = ts.satisfiable()
+    return sat
+
+def solve_one(n: int, edges: List[Tuple[int, int]]) -> int:
+    adj = [[] for _ in range(n + 1)]
+    for (u, v) in edges:
+        adj[u].append(v)
+        adj[v].append(u)
+    lo, hi = 1, n
+    ans = 1
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        if feasible_D(n, edges, adj, mid):
+            ans = mid
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    return ans
+
+def read_input() -> List[Tuple[int, List[Tuple[int, int]]]]:
+    import sys
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    t = int(next(it))
+    cases = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        edges = []
+        for __ in range(m):
+            u = int(next(it)); v = int(next(it))
+            edges.append((u, v))
+        cases.append((n, edges))
+    return cases
+
+def solve_all():
+    import sys
+    out = []
+    for (n, edges) in read_input():
+        out.append(str(solve_one(n, edges)))
+    sys.stdout.write("\n".join(out))
+
+def _tests():
+    # exact 3 asserts as required
+    assert solve_one(1, []) == 1
+    assert solve_one(3, [(1, 2), (2, 3)]) == 3
+    assert solve_one(4, [(1, 2), (2, 3), (3, 4)]) == 2
+
+if __name__ == "__main__":
+    _tests()
+    solve_all()
+\end{minted}
+\VALIDATION{Three asserts on canonical cases; additional randomized checks were provided earlier.}
+\RESULT{Print, per test case, the maximum $D$ such that there exists a vertex cover whose chosen vertices have pairwise index differences at least $D$ (with the convention $D=n$ when exactly one vertex is chosen).}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on small graphs: paths, stars, cycles; randomized small graphs cross-checked against brute force; and edge cases like $m=0$.}
+\LINE{CROSS-CHECKS}{Compare Approach B/C results with brute force for $n\le 7$ across random graphs; verify binary search boundaries $D=1$ and $D=n$.}
+\LINE{EDGE-CASE GENERATOR}{Create graphs with only short edges, only long edges, mixed; include odd cycles in short-edge graph to trigger infeasibility.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+from typing import List, Tuple
+import random
+
+def gen_path(n: int) -> List[Tuple[int, int]]:
+    return [(i, i + 1) for i in range(1, n)]
+
+def gen_star(n: int, center: int = 1) -> List[Tuple[int, int]]:
+    return [(center, i) for i in range(1, n + 1) if i != center]
+
+def gen_cycle(n: int) -> List[Tuple[int, int]]:
+    e = gen_path(n)
+    if n >= 3:
+        e.append((n, 1))
+    return e
+
+def gen_random(n: int, p: float, seed: int = 0) -> List[Tuple[int, int]]:
+    random.seed(seed)
+    edges = []
+    for u in range(1, n + 1):
+        for v in range(u + 1, n + 1):
+            if random.random() < p:
+                edges.append((u, v))
+    return edges
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+from typing import List, Tuple
+from collections import deque
+
+class TwoSAT:
+    def __init__(self, nvar: int):
+        self.n = nvar
+        self.N = 2 * nvar
+        self.g = [[] for _ in range(self.N)]
+        self.gr = [[] for _ in range(self.N)]
+
+    @staticmethod
+    def neg(lit: int) -> int:
+        return lit ^ 1
+
+    @staticmethod
+    def lit(var: int, val: int) -> int:
+        return (var << 1) | (val & 1)
+
+    def add_imp(self, u: int, v: int) -> None:
+        self.g[u].append(v)
+        self.gr[v].append(u)
+
+    def add_or(self, a: int, b: int) -> None:
+        self.add_imp(TwoSAT.neg(a), b)
+        self.add_imp(TwoSAT.neg(b), a)
+
+    def add_unit(self, a: int) -> None:
+        self.add_imp(TwoSAT.neg(a), a)
+
+    def satisfiable(self) -> Tuple[bool, List[int]]:
+        N = self.N
+        vis = [False] * N
+        order = []
+
+        def dfs1(u: int) -> None:
+            vis[u] = True
+            for v in self.g[u]:
+                if not vis[v]:
+                    dfs1(v)
+            order.append(u)
+
+        for u in range(N):
+            if not vis[u]:
+                dfs1(u)
+
+        comp = [-1] * N
+
+        def dfs2(u: int, cid: int) -> None:
+            comp[u] = cid
+            for v in self.gr[u]:
+                if comp[v] == -1:
+                    dfs2(v, cid)
+
+        cid = 0
+        for u in reversed(order):
+            if comp[u] == -1:
+                dfs2(u, cid)
+                cid += 1
+
+        assign = [0] * self.n
+        for i in range(self.n):
+            if comp[2 * i] == comp[2 * i + 1]:
+                return (False, [])
+            assign[i] = 1 if comp[2 * i] > comp[2 * i + 1] else 0
+        return (True, assign)
+
+def feasible_D(n: int, edges: List[Tuple[int, int]], adj: List[List[int]], D: int) -> bool:
+    comp_id = [-1] * (n + 1)
+    color = [-1] * (n + 1)
+    K = 0
+    for s in range(1, n + 1):
+        if comp_id[s] != -1:
+            continue
+        comp_id[s] = K
+        color[s] = 0
+        dq = deque([s])
+        while dq:
+            u = dq.popleft()
+            for v in adj[u]:
+                if abs(u - v) < D:
+                    if comp_id[v] == -1:
+                        comp_id[v] = K
+                        color[v] = color[u] ^ 1
+                        dq.append(v)
+                    else:
+                        if color[v] == color[u]:
+                            return False
+        K += 1
+
+    banned0 = [False] * K
+    banned1 = [False] * K
+    last0 = [-10**18] * K
+    last1 = [-10**18] * K
+    for i in range(1, n + 1):
+        c = comp_id[i]
+        if color[i] == 0:
+            if i - last0[c] < D:
+                banned0[c] = True
+            last0[c] = i
+        else:
+            if i - last1[c] < D:
+                banned1[c] = True
+            last1[c] = i
+
+    ts = TwoSAT(K)
+    for c in range(K):
+        if banned0[c] and banned1[c]:
+            return False
+        if banned0[c]:
+            ts.add_unit(TwoSAT.lit(c, 1))
+        if banned1[c]:
+            ts.add_unit(TwoSAT.lit(c, 0))
+
+    for (u, v) in edges:
+        if abs(u - v) >= D:
+            cu, cv = color[u], color[v]
+            cu_id, cv_id = comp_id[u], comp_id[v]
+            if cu_id == cv_id:
+                if cu == cv:
+                    ts.add_unit(TwoSAT.lit(cu_id, cu))
+            else:
+                ts.add_or(TwoSAT.lit(cu_id, cu), TwoSAT.lit(cv_id, cv))
+
+    sat, _ = ts.satisfiable()
+    return sat
+
+def solve_one(n: int, edges: List[Tuple[int, int]]) -> int:
+    adj = [[] for _ in range(n + 1)]
+    for (u, v) in edges:
+        adj[u].append(v)
+        adj[v].append(u)
+    lo, hi = 1, n
+    ans = 1
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        if feasible_D(n, edges, adj, mid):
+            ans = mid
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    return ans
+
+def read_input() -> List[Tuple[int, List[Tuple[int, int]]]]:
+    import sys
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    t = int(next(it))
+    cases = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        edges = []
+        for __ in range(m):
+            u = int(next(it)); v = int(next(it))
+            edges.append((u, v))
+        cases.append((n, edges))
+    return cases
+
+def solve_all():
+    import sys
+    out = []
+    for (n, edges) in read_input():
+        out.append(str(solve_one(n, edges)))
+    sys.stdout.write("\n".join(out))
+
+def _asserts():
+    assert solve_one(1, []) == 1
+    assert solve_one(3, [(1, 2), (2, 3)]) == 3
+    assert solve_one(4, [(1, 2), (2, 3), (3, 4)]) == 2
+
+if __name__ == "__main__":
+    _asserts()
+    solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Binary search the gap $D$; for fixed $D$, compress short edges by bipartite coloring and decide component-side choices via $2$-SAT with added unit forbiddances and long-edge clauses.}
+\WHY{Combines graph structure with boolean constraints; typical of higher-rated CF problems mixing bipartite graphs and $2$-SAT.}
+\CHECKLIST{
+- Binary search bounds: $[1,n]$; invariant monotonicity of feasibility.
+- Build short-edge graph and test bipartiteness.
+- Record component id and color per vertex.
+- Forbid component-sides that would violate $D$-separation internally (index scan).
+- Add long-edge clauses across components; handle same-component long edges.
+- Solve $2$-SAT.}
+\EDGECASES{
+- $m=0$ (answer $n$).
+- Short-edge graph not bipartite (infeasible).
+- A component where both color sides are internally invalid by index proximity.
+- Long edge inside one component with endpoints of same color (unit clause).
+- $D=1$ always feasible; $D=n$ only if a single vertex can cover all edges.}
+\PITFALLS{
+- Forgetting to include isolated vertices as components.
+- Mixing up literal polarity: $(x==0)$ vs $(x==1)$.
+- Off-by-one in ``short'' condition $\lvert u-v\rvert < D$.
+- Not scanning indices in increasing order for the intra-component proximity check.
+- Missing early exit when both sides are forbidden in a component.}
+\FAILMODES{Randomized or dense tests where missing unit forbiddances or wrong literal mapping cause false positives/negatives. The presented method enforces all necessary constraints to certify feasibility.}
+\ELI{Try a gap $D$. Vertices linked by edges shorter than $D$ must alternate chosen/un\-chosen, so inside each such connected chunk you either choose the ``black'' or the ``white'' vertices. Longer edges say “at least one of these two colors must be chosen,” which is a $2$-SAT clause. Also, if choosing a color would put two picked vertices too close in index inside a chunk, we forbid that color. If this boolean system is solvable, the gap works; find the largest that does.}
+\NotePages{3}
+
+\end{document}

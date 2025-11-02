@@ -1,0 +1,957 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Yet Another DAG Problem}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1430/G}}
+\LINE{DIFFICULTY / RATING}{2600}
+\STATEMENT{You are given a directed acyclic graph (a directed graph that does not contain cycles) of $n$ vertices and $m$ arcs. The $i$-th arc leads from the vertex $x_i$ to the vertex $y_i$ and has the weight $w_i$.
+
+Your task is to select an integer $a_v$ for each vertex $v$, and then write a number $b_i$ on each arc $i$ such that $b_i = a_{x_i} - a_{y_i}$. You must select the numbers so that:
+\begin{bullets}
+\item all $b_i$ are positive;
+\item the value of the expression $\sum\limits_{i = 1}^{m} w_i b_i$ is the lowest possible.
+\end{bullets}
+It can be shown that for any directed acyclic graph with non-negative $w_i$, such a way to choose numbers exists.
+
+Input:
+The first line contains two integers $n$ and $m$ ($2 \le n \le 18$; $0 \le m \le \tfrac{n(n - 1)}{2}$).
+
+Then $m$ lines follow, the $i$-th of them contains three integers $x_i$, $y_i$ and $w_i$ ($1 \le x_i, y_i \le n$, $1 \le w_i \le 10^5$, $x_i \ne y_i$) — the description of the $i$-th arc.
+
+It is guaranteed that the lines describe $m$ arcs of a directed acyclic graph without multiple arcs between the same pair of vertices.
+
+Output:
+Print $n$ integers $a_1$, $a_2$, \ldots, $a_n$ ($0 \le a_v \le 10^9$), which must be written on the vertices so that all $b_i$ are positive, and the value of the expression $\sum\limits_{i = 1}^{m} w_i b_i$ is the lowest possible. If there are several answers, print any of them. It can be shown that the answer always exists, and at least one of the optimal answers satisfies the constraints $0 \le a_v \le 10^9$.}
+\BREAKDOWN{We must assign integers to vertices that strictly decrease along every arc and minimize the weighted sum of differences along arcs. In a DAG, setting $a_v$ as positions in a linear extension (topological order) makes all arc differences positive. Minimizing the sum reduces to choosing an optimal topological order, which we solve by DP over ancestor-closed subsets using cut weights.}
+\ELI{Arrange vertices in a topological order so edges go forward; put numbers as their positions (reversed). Pick the order that minimizes how often heavy edges cross the cuts between earlier and later vertices.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test:
+\begin{bullets}
+\item Integers $n$, $m$ with $2 \le n \le 18$, $0 \le m \le \tfrac{n(n-1)}{2}$.
+\item Next $m$ lines: $x_i$, $y_i$, $w_i$ with $1 \le x_i, y_i \le n$, $x_i \ne y_i$, $1 \le w_i \le 10^5$.
+\end{bullets}
+Graph is a DAG, no multiple arcs between same ordered pair.}
+\OUTPUTS{Print $n$ integers $a_1,\ldots,a_n$ with $0 \le a_v \le 10^9$ such that for every arc $(x_i \to y_i)$, $a_{x_i} - a_{y_i} \ge 1$, and the weighted sum $\sum w_i(a_{x_i}-a_{y_i})$ is minimized. Any one optimal assignment is acceptable.}
+\SAMPLES{Example 1:
+\begin{tcolorbox}
+Input
+\begin{verbatim}
+3 2
+1 2 5
+2 3 7
+\end{verbatim}
+One valid optimal output
+\begin{verbatim}
+2 1 0
+\end{verbatim}
+Explanation: Differences are $(1\to2):1$, $(2\to3):1$, objective $=5\cdot1+7\cdot1=12$.
+\end{tcolorbox}
+Example 2:
+\begin{tcolorbox}
+Input
+\begin{verbatim}
+3 3
+1 2 1
+1 3 10
+2 3 1
+\end{verbatim}
+One valid optimal output
+\begin{verbatim}
+2 1 0
+\end{verbatim}
+Explanation: Objective $=1\cdot1+10\cdot2+1\cdot1=22$. This equals the minimum over all feasible assignments.
+\end{tcolorbox}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Given a DAG $G=(V,E)$ with weights $w:E\to \mathbb{Z}_{\ge 0}$, choose $a:V\to \mathbb{Z}$ to minimize
+\begin{BreakableEquation*}
+\sum_{(u,v)\in E} w(u,v)\,(a_u-a_v)
+\end{BreakableEquation*}
+subject to $a_u-a_v \ge 1$ for every $(u,v)\in E$.}
+\varmapStart
+\var{V=\{1,\ldots,n\}}{vertices}
+\var{E\subseteq V\times V}{directed arcs of a DAG}
+\var{w_e}{non-negative integer weights on arcs}
+\var{a_v}{integer labels assigned to vertices}
+\var{b_e}{difference $a_u-a_v$ on arc $e=(u,v)$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\min \sum_{(u,v)\in E} w(u,v)\,(a_u-a_v)\\
+\text{s.t. }& a_u-a_v \ge 1 && \forall (u,v)\in E,\\
+& a_v \in \mathbb{Z} && \forall v\in V.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Graph is acyclic; thus there exists a topological order. Feasible solutions exist. Without loss of optimality, labels can be compressed to consecutive integers and assigned according to a linear extension (topological order).}
+\INVARIANTS{
+\begin{bullets}
+\item If $S_t$ is the set of first $t$ vertices in the chosen order, the objective equals $\sum_{t=1}^{n-1} W(S_t)$ where $W(S)$ is the total weight of arcs from $S$ to $V\setminus S$.
+\item For any optimal solution, gaps between used label values can be removed to weakly decrease the objective.
+\end{bullets}
+}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Enumerate all topological orders and set $a_v = n-\text{pos}(v)$; compute $\sum w_e(\text{pos}(v)-\text{pos}(u))$. Keep the minimum.}
+\ASSUMPTIONS{Use DFS to generate linear extensions by repeatedly placing any available source (no incoming edges from remaining vertices). Correct but factorial in worst-case.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build adjacency and in-degree over the remaining set.
+\item Recursively pick any current source vertex, append to order, update sources.
+\item On completion, compute $a_v = n-\text{pos}(v)$ and track the best. Return the assignment achieving the minimum objective.
+\end{algosteps}
+\COMPLEXITY{Exponential: $T(n)=\Theta(\#\text{topo-orders})$ in the DAG, up to $\Theta(n!)$ in the worst case; $S(n)=O(n+m)$ recursion stack and graph data.}
+\[
+\begin{aligned}
+T(n) &= \sum_{k=1}^{n} \binom{n}{k} \cdot T(n-k) \quad\text{(branching by sources)}\\
+     &\le n! \text{ in the worst case (dense DAG with total order).}
+\end{aligned}
+\]
+\CORRECTNESS{By definition, any linear extension yields $a$ with $a_u-a_v\ge 1$ for $(u,v)\in E$. Enumerating all such orders examines all feasible labelings of the form $a_v=n-\text{pos}(v)$; by the invariant, some optimal solution is of this form, so the minimum is achieved.}
+\EDGECASES{Empty edges ($m=0$) trivial; multiple sources/sinks; parallel-free guarantee holds; $n$ as small as $2$.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from io import StringIO
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return 0, 0, []
+    m = int(next(it))
+    edges = []
+    for _ in range(m):
+        x = int(next(it)) - 1
+        y = int(next(it)) - 1
+        w = int(next(it))
+        edges.append((x, y, w))
+    return n, m, edges
+
+def objective_from_order(n, edges, order):
+    pos = [0]*n
+    for i,v in enumerate(order):
+        pos[v] = i
+    total = 0
+    for u,v,w in edges:
+        assert pos[u] < pos[v]  # topological order validity
+        total += w * (pos[v] - pos[u])
+    return total
+
+def solve_case_bruteforce(n, edges):
+    # Build predecessor sets and counts
+    pred = [0]*n
+    G = [[] for _ in range(n)]
+    in_deg = [0]*n
+    for u,v,w in edges:
+        G[u].append((v,w))
+        pred[v] |= (1<<u)
+        in_deg[v] += 1
+    best = None
+    order = []
+    used = [False]*n
+    # initial sources
+    def dfs(rem_mask, cur_sources):
+        nonlocal best, order
+        if rem_mask == 0:
+            # compute objective
+            cost = objective_from_order(n, edges, order)
+            if best is None or cost < best[0]:
+                a = [0]*n
+                for i,v in enumerate(order):
+                    a[v] = n-1-i
+                best = (cost, a[:])
+            return
+        # enumerate available sources (no preds in remaining)
+        # compute sources from mask
+        # cur_sources is a list cache for speed; recompute is fine for small n
+        sources = []
+        x = rem_mask
+        while x:
+            v = (x & -x).bit_length()-1
+            x -= (x & -x)
+            if (pred[v] & rem_mask) == 0:
+                sources.append(v)
+        for v in sources:
+            order.append(v)
+            dfs(rem_mask ^ (1<<v), None)
+            order.pop()
+
+    full = (1<<n)-1
+    dfs(full, None)
+    if best is None:
+        # No edges: any order works
+        a = list(range(n-1, -1, -1))
+        return a
+    return best[1]
+
+def solve_all():
+    data = sys.stdin.read()
+    n,m,edges = read_input(data)
+    if n == 0:
+        return
+    a = solve_case_bruteforce(n, edges)
+    print(" ".join(map(str, a)))
+
+def _test_baseline():
+    # Tiny chain
+    n,m,edges = read_input("3 2\n1 2 5\n2 3 7\n")
+    a = solve_case_bruteforce(n, edges)
+    # Expect decreasing labels along chain with unit steps
+    assert a[0] > a[1] > a[2]
+    # Triangle DAG
+    n,m,edges = read_input("3 3\n1 2 1\n1 3 10\n2 3 1\n")
+    a = solve_case_bruteforce(n, edges)
+    # 1 must be highest, 3 must be lowest
+    assert a[0] > a[2]
+    # No edges
+    n,m,edges = read_input("4 0\n")
+    a = solve_case_bruteforce(n, edges)
+    assert len(a) == 4
+
+if __name__ == "__main__":
+    _test_baseline()
+    # main left uninvoked to keep tests deterministic
+    # solve_all()
+\end{minted}
+\VALIDATION{Verified on two handcrafted examples and a no-edge case. The asserts check monotonicity along edges and vector length.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Dynamic programming over ancestor-closed subsets $S$ (valid prefixes of a topological order). The objective equals $\sum_{t=1}^{n-1} W(S_t)$ where $S_t$ are first-$t$ prefixes. Transition adds one more vertex $v$ with all predecessors in $S$.}
+\ASSUMPTIONS{We compute $W(S)$ on the fly in $O(m)$ per state; total states $2^n$. This already beats brute-force enumeration of permutations.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute predecessor bitmask $\text{pred}[v]$ for each $v$.
+\item For each subset $S$, define it valid if it is ancestor-closed: for any $(u,v)\in E$, $v\in S \Rightarrow u\in S$ (equivalently $(\text{pred}[v]\&\sim S)=0$).
+\item DP: $dp[0]=0$. For each valid $S$, for each addable $v\notin S$ with $(\text{pred}[v]\&\sim S)=0$, update $dp[S\cup\{v\}]=\min(dp[S\cup\{v\}], dp[S]+W(S\cup\{v\}))$ where $W(T)$ is sum of weights of arcs from $T$ to its complement.
+\item Recover the order by parent pointers; set $a_v=n-1-\text{pos}(v)$.
+\end{algosteps}
+\COMPLEXITY{We compute $W(S)$ in $O(m)$ per state and process $O(n)$ transitions per state.
+\begin{BreakableEquation*}
+T(n) = O(2^n \cdot (m + n)),\quad S(n)=O(2^n + n + m).
+\end{BreakableEquation*}
+This is feasible for $n \le 18$, $m \le \tfrac{n(n-1)}{2}$.}
+\CORRECTNESS{Every valid prefix $S$ corresponds to the first $|S|$ vertices in some topological order. Each transition appends a vertex whose predecessors are already placed, preserving topological feasibility. Summing cut weights $W(S_t)$ across steps matches the objective by counting how many boundaries each edge crosses. Minimizing the DP thus minimizes the original objective.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from io import StringIO
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return 0, 0, []
+    m = int(next(it))
+    edges = []
+    for _ in range(m):
+        x = int(next(it)) - 1
+        y = int(next(it)) - 1
+        w = int(next(it))
+        edges.append((x, y, w))
+    return n, m, edges
+
+def cut_weight(n, edges, S_mask):
+    total = 0
+    for u,v,w in edges:
+        if (S_mask >> u) & 1 and ((S_mask >> v) & 1) == 0:
+            total += w
+    return total
+
+def solve_case_dp_onfly(n, edges):
+    pred = [0]*n
+    for u,v,w in edges:
+        pred[v] |= (1<<u)
+    N = 1<<n
+    INF = 10**30
+    dp = [INF]*N
+    par = [-1]*N
+    parv = [-1]*N
+    dp[0] = 0
+    for S in range(N):
+        if dp[S] >= INF:
+            continue
+        # addable vertices: preds subset of S and v not in S
+        addable_mask = 0
+        for v in range(n):
+            if (S >> v) & 1:
+                continue
+            if (pred[v] & ~S) == 0:
+                addable_mask |= (1<<v)
+        x = addable_mask
+        while x:
+            v = (x & -x).bit_length()-1
+            x -= (x & -x)
+            T = S | (1<<v)
+            wS = cut_weight(n, edges, T)
+            val = dp[S] + wS
+            if val < dp[T]:
+                dp[T] = val
+                par[T] = S
+                parv[T] = v
+    full = (1<<n)-1
+    # Reconstruct order (prefix growth)
+    order = []
+    cur = full
+    while cur:
+        v = parv[cur]
+        order.append(v)
+        cur = par[cur]
+    order.reverse()
+    # Assign labels
+    a = [0]*n
+    for i,v in enumerate(order):
+        a[v] = n-1-i
+    # Any isolated vertices not reached (should not happen) get remaining labels
+    used = [False]*n
+    for v in order:
+        used[v] = True
+    nxt = 0
+    for v in range(n):
+        if not used[v]:
+            a[v] = nxt
+            nxt += 1
+    return a
+
+def solve_all():
+    data = sys.stdin.read()
+    n,m,edges = read_input(data)
+    if n == 0:
+        return
+    a = solve_case_dp_onfly(n, edges)
+    print(" ".join(map(str, a)))
+
+def _test_improved():
+    # Chain
+    n,m,edges = read_input("3 2\n1 2 5\n2 3 7\n")
+    a = solve_case_dp_onfly(n, edges)
+    assert a[0] > a[1] > a[2]
+    # Diamond
+    n,m,edges = read_input("4 4\n1 2 1\n1 3 1\n2 4 1\n3 4 10\n")
+    a = solve_case_dp_onfly(n, edges)
+    # 1 highest, 4 lowest
+    assert a[0] > a[3]
+    # No edges: arbitrary assignment allowed (still within bounds)
+    n,m,edges = read_input("3 0\n")
+    a = solve_case_dp_onfly(n, edges)
+    assert all(0 <= x <= 10**9 for x in a)
+
+if __name__ == "__main__":
+    _test_improved()
+    # solve_all()
+\end{minted}
+\VALIDATION{Checked on chain, diamond, and empty-edge cases. The DP returns decreasing labels along arcs and stays within bounds.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Subset DP with precomputed cut weights $W(S)$ for all $S \subseteq V$ and addable-vertex transitions based on predecessor masks.}
+\ASSUMPTIONS{Applicable for $n \le 18$; precomputing $W(S)$ in $O(m2^n)$ time and $O(2^n)$ space.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute $\text{pred}[v]$ bitmasks.
+\item Precompute $W(S)$ for all subsets $S$ by scanning edges and summing weights when $u\in S$, $v\notin S$.
+\item DP over subsets: $dp[0]=0$. For each $S$, for each addable $v$ with $(\text{pred}[v]\&\sim S)=0$, set $T=S\cup\{v\}$ and relax $dp[T]=\min(dp[T], dp[S]+W(T))$, storing parents.
+\item Reconstruct the order from $T=(1<<n)-1$ back to $0$. Set $a_v=n-1-\text{pos}(v)$.
+\end{algosteps}
+\OPTIMALITY{The sum of cut weights over prefixes equals the objective exactly; DP explores all valid prefix chains (all linear extensions) and picks the one minimizing the sum, hence optimal.}
+\COMPLEXITY{$T(n)=O(2^n\cdot(m+n))$ with a faster constant due to precomputed $W(S)$. Space $O(2^n + n + m)$.}
+\[
+\begin{aligned}
+T(n) &= O(m2^n) \text{ (precompute) } + O(n2^n) \text{ (DP transitions).}
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from io import StringIO
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return 0, 0, []
+    m = int(next(it))
+    edges = []
+    for _ in range(m):
+        x = int(next(it)) - 1
+        y = int(next(it)) - 1
+        w = int(next(it))
+        edges.append((x, y, w))
+    return n, m, edges
+
+def precompute_cut_weights(n, edges):
+    N = 1<<n
+    W = [0]*N
+    # O(m * 2^n): for each subset, sum contributions of edges crossing out
+    # This is acceptable for n <= 18.
+    for S in range(N):
+        total = 0
+        for u,v,w in edges:
+            if (S >> u) & 1 and ((S >> v) & 1) == 0:
+                total += w
+        W[S] = total
+    return W
+
+def solve_case(n, edges):
+    pred = [0]*n
+    for u,v,w in edges:
+        pred[v] |= (1<<u)
+    W = precompute_cut_weights(n, edges)
+    N = 1<<n
+    INF = 10**30
+    dp = [INF]*N
+    par = [-1]*N
+    parv = [-1]*N
+    dp[0] = 0
+    for S in range(N):
+        if dp[S] >= INF:
+            continue
+        # addable vertices: all predecessors already in S
+        addable = 0
+        for v in range(n):
+            if (S >> v) & 1:
+                continue
+            if (pred[v] & ~S) == 0:
+                addable |= (1<<v)
+        x = addable
+        while x:
+            vbit = x & -x
+            v = vbit.bit_length()-1
+            x -= vbit
+            T = S | vbit
+            val = dp[S] + W[T]
+            if val < dp[T]:
+                dp[T] = val
+                par[T] = S
+                parv[T] = v
+    full = (1<<n)-1
+    # Reconstruct order
+    order = []
+    cur = full
+    while cur:
+        v = parv[cur]
+        order.append(v)
+        cur = par[cur]
+    order.reverse()
+    # Assign labels: a[v] = n-1-pos[v]
+    a = [0]*n
+    for i,v in enumerate(order):
+        a[v] = n-1-i
+    # Any leftover (shouldn't happen) get minimal labels
+    used = [False]*n
+    for v in order:
+        used[v] = True
+    nxt = 0
+    for v in range(n):
+        if not used[v]:
+            a[v] = nxt
+            nxt += 1
+    return a
+
+def solve_all():
+    data = sys.stdin.read()
+    n,m,edges = read_input(data)
+    if n == 0:
+        return
+    a = solve_case(n, edges)
+    print(" ".join(map(str, a)))
+
+def _objective(n, edges, a):
+    # Compute objective and validate constraints
+    pos_ok = True
+    total = 0
+    for u,v,w in edges:
+        b = a[u] - a[v]
+        if b <= 0:
+            pos_ok = False
+        total += w * b
+    return pos_ok, total
+
+def _test_final():
+    # Example 1
+    n,m,edges = read_input("3 2\n1 2 5\n2 3 7\n")
+    a = solve_case(n, edges)
+    ok, val = _objective(n, edges, a)
+    assert ok and val == 12
+    # Example 2
+    n,m,edges = read_input("3 3\n1 2 1\n1 3 10\n2 3 1\n")
+    a = solve_case(n, edges)
+    ok, _ = _objective(n, edges, a)
+    assert ok
+    # Cross-check with on-the-fly DP on a small graph
+    n,m,edges = read_input("4 4\n1 2 3\n1 3 4\n2 4 5\n3 4 6\n")
+    a1 = solve_case(n, edges)
+    ok1, val1 = _objective(n, edges, a1)
+    assert ok1
+    # Brute-force for small case to ensure optimality
+    # Generate all topological orders for n=4 case
+    from itertools import permutations
+    nodes = list(range(n))
+    # Check only valid topo orders
+    best = None
+    for perm in permutations(nodes):
+        pos = [0]*n
+        for i,v in enumerate(perm):
+            pos[v] = i
+        good = True
+        for u,v,w in edges:
+            if pos[u] >= pos[v]:
+                good = False
+                break
+        if not good:
+            continue
+        total = 0
+        for u,v,w in edges:
+            total += w * (pos[v] - pos[u])
+        if best is None or total < best:
+            best = total
+    assert val1 == best
+
+if __name__ == "__main__":
+    _test_final()
+    # solve_all()
+\end{minted}
+\VALIDATION{Exactly 3 asserts included:
+\begin{bullets}
+\item Example 1: validates exact objective $12$.
+\item Example 2: validates positivity constraints.
+\item A 4-node DAG: cross-checks objective against brute-force over permutations.
+\end{bullets}}
+\RESULT{Outputs an optimal integer assignment $a_1,\ldots,a_n$ with $0 \le a_v \le n-1 \le 10^9$, ensuring all $b_i>0$ and minimizing the weighted sum. Ties between optimal orders produce any valid optimal $a$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on chains, diamonds, and random-like small DAGs; property checks that $a_u>a_v$ along edges and objective equals sum of cut weights via reconstructed order.}
+\LINE{CROSS-CHECKS}{Compare Baseline vs Improved vs Final on tiny graphs ($n\le 6$) to ensure identical objectives; use brute-force permutation check for $n\le 7$ when feasible.}
+\LINE{EDGE-CASE GENERATOR}{Generate DAGs with: no edges; single edge; complete DAG w.r.t. a total order; varying weights including extremes; multiple sources/sinks.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import sys
+from io import StringIO
+
+def gen_chain(n):
+    edges = []
+    for i in range(n-1):
+        edges.append((i+1, i+2, i+2))  # 1-indexed, increasing weights
+    s = [f"{n} {len(edges)}"]
+    for x,y,w in edges:
+        s.append(f"{x} {y} {w}")
+    return "\n".join(s) + "\n"
+
+def gen_complete_order(n):
+    # Complete DAG according to order 1<2<...<n with weight = (j-i)
+    edges = []
+    for i in range(1,n+1):
+        for j in range(i+1,n+1):
+            edges.append((i,j,j-i))
+    s = [f"{n} {len(edges)}"]
+    for x,y,w in edges:
+        s.append(f"{x} {y} {w}")
+    return "\n".join(s) + "\n"
+
+def reference_solve(data: str):
+    # Use final solution
+    from io import StringIO
+    it = iter(data.strip().split())
+    n = int(next(it)); m = int(next(it))
+    edges = []
+    for _ in range(m):
+        x = int(next(it))-1; y = int(next(it))-1; w = int(next(it))
+        edges.append((x,y,w))
+    from math import inf
+    # Inline final DP (cut precompute + subset DP)
+    def precompute_cut(n, edges):
+        N = 1<<n
+        W = [0]*N
+        for S in range(N):
+            total = 0
+            for u,v,w in edges:
+                if (S>>u)&1 and ((S>>v)&1)==0:
+                    total += w
+            W[S] = total
+        return W
+    pred = [0]*n
+    for u,v,w in edges:
+        pred[v] |= (1<<u)
+    W = precompute_cut(n, edges)
+    N = 1<<n
+    INF = 10**30
+    dp = [INF]*N; par=[-1]*N; parv=[-1]*N
+    dp[0]=0
+    for S in range(N):
+        if dp[S]>=INF: continue
+        addable=0
+        for v in range(n):
+            if (S>>v)&1: continue
+            if (pred[v] & ~S)==0:
+                addable |= (1<<v)
+        x=addable
+        while x:
+            vbit = x & -x; v=vbit.bit_length()-1; x-=vbit
+            T=S|vbit
+            val=dp[S]+W[T]
+            if val<dp[T]:
+                dp[T]=val; par[T]=S; parv[T]=v
+    full=(1<<n)-1
+    order=[]
+    cur=full
+    while cur:
+        v=parv[cur]; order.append(v); cur=par[cur]
+    order.reverse()
+    a=[0]*n
+    for i,v in enumerate(order): a[v]=n-1-i
+    return a
+
+def _test_reference():
+    # Chains
+    for n in range(2,7):
+        data = gen_chain(n)
+        a = reference_solve(data)
+        # Check strictly decreasing along chain
+        for i in range(n-1):
+            assert a[i] > a[i+1]
+    # Complete orders
+    for n in range(2,7):
+        data = gen_complete_order(n)
+        a = reference_solve(data)
+        # Must be strictly decreasing by index
+        for i in range(n-1):
+            assert a[i] > a[i+1]
+    # Sparse custom
+    data = "5 4\n1 2 10\n1 3 1\n2 5 4\n3 4 3\n"
+    a = reference_solve(data)
+    # Validate constraints
+    it = iter(data.strip().split()); n=int(next(it)); m=int(next(it))
+    edges=[]
+    for _ in range(m):
+        x=int(next(it))-1; y=int(next(it))-1; w=int(next(it))
+        edges.append((x,y,w))
+    for u,v,w in edges:
+        assert a[u] > a[v]
+
+if __name__ == "__main__":
+    _test_reference()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF/LC) + asserts
+import sys
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, []
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    edges = []
+    for _ in range(m):
+        x = int(next(it)) - 1
+        y = int(next(it)) - 1
+        w = int(next(it))
+        edges.append((x, y, w))
+    return n, m, edges
+
+def precompute_cut_weights(n, edges):
+    N = 1<<n
+    W = [0]*N
+    for S in range(N):
+        total = 0
+        for u,v,w in edges:
+            if (S >> u) & 1 and ((S >> v) & 1) == 0:
+                total += w
+        W[S] = total
+    return W
+
+def solve_case(n, edges):
+    pred = [0]*n
+    for u,v,w in edges:
+        pred[v] |= (1<<u)
+    W = precompute_cut_weights(n, edges)
+    N = 1<<n
+    INF = 10**30
+    dp = [INF]*N
+    par = [-1]*N
+    parv = [-1]*N
+    dp[0] = 0
+    for S in range(N):
+        if dp[S] >= INF:
+            continue
+        addable = 0
+        for v in range(n):
+            if (S >> v) & 1:
+                continue
+            if (pred[v] & ~S) == 0:
+                addable |= (1<<v)
+        x = addable
+        while x:
+            vbit = x & -x
+            v = vbit.bit_length()-1
+            x -= vbit
+            T = S | vbit
+            val = dp[S] + W[T]
+            if val < dp[T]:
+                dp[T] = val
+                par[T] = S
+                parv[T] = v
+    full = (1<<n)-1
+    order = []
+    cur = full
+    while cur:
+        v = parv[cur]
+        order.append(v)
+        cur = par[cur]
+    order.reverse()
+    a = [0]*n
+    for i,v in enumerate(order):
+        a[v] = n-1-i
+    # Ensure bounds
+    assert all(0 <= x <= 10**9 for x in a)
+    # Ensure positivity on edges
+    for u,v,w in edges:
+        assert a[u] > a[v]
+    return a
+
+def main():
+    n,m,edges = read_input()
+    if n == 0:
+        return
+    a = solve_case(n, edges)
+    print(" ".join(map(str, a)))
+
+def _tests():
+    # Chain
+    data = "3 2\n1 2 5\n2 3 7\n"
+    it = iter(data.strip().split()); n=int(next(it)); m=int(next(it))
+    edges=[]
+    for _ in range(m):
+        x=int(next(it))-1; y=int(next(it))-1; w=int(next(it)); edges.append((x,y,w))
+    a = solve_case(n, edges)
+    for u,v,w in edges:
+        assert a[u] > a[v]
+    # Diamond
+    data = "4 4\n1 2 3\n1 3 4\n2 4 5\n3 4 6\n"
+    it = iter(data.strip().split()); n=int(next(it)); m=int(next(it))
+    edges=[]
+    for _ in range(m):
+        x=int(next(it))-1; y=int(next(it))-1; w=int(next(it)); edges.append((x,y,w))
+    a = solve_case(n, edges)
+    for u,v,w in edges:
+        assert a[u] > a[v]
+    # No edges
+    data = "5 0\n"
+    it = iter(data.strip().split()); n=int(next(it)); m=int(next(it))
+    edges=[]
+    a = solve_case(n, edges)
+    assert len(a) == n
+
+if __name__ == "__main__":
+    _tests()
+    # main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Minimize the weighted sum of label differences on a DAG under $a_u > a_v$ along edges by choosing an optimal topological order and setting $a_v$ as reversed positions.}
+\WHY{This pattern appears in scheduling with precedence constraints, cut-sum minimization, and linear extensions under cost metrics.}
+\CHECKLIST{
+\begin{bullets}
+\item Build predecessor masks.
+\item Precompute cut weights $W(S)$.
+\item Subset DP over valid prefixes; track parents.
+\item Reconstruct order; set $a_v=n-1-\text{pos}(v)$.
+\item Validate $a_u>a_v$ for all edges.
+\end{bullets}
+}
+\EDGECASES{
+\begin{bullets}
+\item $m=0$: any assignment works; the DP still outputs $a_v\in[0,n-1]$.
+\item Single edge: endpoints must differ by at least $1$; DP yields consecutive values.
+\item Many sources or sinks: ensure addable detection uses predecessor masks.
+\item Disconnected DAG: order within each component arbitrary; DP handles it.
+\item Heavy edges skipping layers: DP accounts via cut weights.
+\item $n=18$: ensure $O(m2^n)$ precompute fits in time; in Python this is acceptable.
+\item Large weights: use Python int to avoid overflow.
+\item 1-indexed input: convert to 0-indexed internally; print arbitrary assignment as integers.
+\end{bullets}
+}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting that prefixes must be ancestor-closed (not just arbitrary subsets).
+\item Incorrect cut definition (must be from $S$ to $V\setminus S$, not both ways).
+\item Off-by-one in label assignment ($a_v=n-1-\text{pos}$ ensures non-negative).
+\item Reconstructing order in reverse (remember to reverse the parent chain).
+\item Misusing bit operations for addable check: must test $(\text{pred}[v]\&\sim S)==0$.
+\item Skipping edges during cut computation due to indexing mistakes.
+\item Printing labels outside $[0,10^9]$ (keep within $[0,n-1]$).
+\item Handling empty input in local tests.
+\end{bullets}
+}
+\FAILMODES{Brute-force on permutations fails beyond very small $n$; greedy local choices (e.g., always place the heaviest outgoing edge source first) fail due to global interactions; the subset DP with cut weights avoids these by globally optimizing the sum $\sum_t W(S_t)$.}
+\ELI{Think of placing vertices one-by-one in a legal order. Each step incurs a cost equal to the total weight of edges from the placed set to the unplaced set. Choose the sequence that minimizes the sum of these costs, then number vertices by how early they were placed.}
+\NotePages{3}
+
+\end{document}

@@ -1,0 +1,2454 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]
+\setlength{\jot}{7pt}
+\setlength{\emergencystretch}{8em}
+\sloppy
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Linear Independence and Basis}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+
+\WHAT{
+Let $V$ be a vector space over a field $\mathbb{F}$. A finite list
+$(v_1,\dots,v_k)\in V^k$ is linearly independent if
+$\sum_{i=1}^k c_i v_i=0$ implies $c_i=0$ for all $i$ with $c_i\in\mathbb{F}$.
+A set $S\subseteq V$ is independent if every finite list of distinct elements
+of $S$ is independent. A basis of $V$ is a set $B=\{b_1,\dots,b_n\}\subset V$
+that is linearly independent and spans $V$. The dimension $\dim V$ is the
+cardinality $n$ of any basis of $V$.
+}
+
+\WHY{
+Linear independence isolates nonredundant directions. A basis provides the
+minimal building blocks for all vectors via unique coordinates, enabling
+computation, proofs, and modeling. Dimension quantifies degrees of freedom and
+underlies rank, change of coordinates, and decomposition (e.g., QR).
+}
+
+\HOW{
+1. Start with vector space axioms. 2. Define span and independence from the
+linear combination equation. 3. Prove that maximal independent sets equal
+minimal spanning sets (exchange lemma), so any basis has the same size. 4.
+From a basis $B$, define the coordinate isomorphism $[\,\cdot\,]_B$ via
+solving $Bc=x$, and show uniqueness by independence.
+}
+
+\ELI{
+Think of vectors as directions and amounts. Linear independence means none of
+the directions is secretly obtainable by mixing the others. A basis is a
+just-enough toolbox of directions to reach every point exactly one way.
+}
+
+\SCOPE{
+Finite-dimensional vector spaces over arbitrary fields $\mathbb{F}$ are the
+focus. For infinite sets or infinite-dimensional spaces, independence and span
+remain valid, but cardinalities can be infinite and some finite arguments
+require Zorn\textquotesingle s lemma. Determinant tests require square matrices.
+Orthogonality-based constructions need inner products.
+}
+
+\CONFUSIONS{
+Independence vs. orthogonality: orthogonal nonzero vectors are independent,
+but independent vectors need not be orthogonal. Rank vs. dimension:
+rank is the dimension of an image or span of columns; dimension is for a
+space. Full rank square matrix means invertible, not necessarily orthogonal.
+}
+
+\APPLICATIONS{
+\begin{bullets}
+\item Mathematical foundations: dimension theory, isomorphisms, linear maps.
+\item Computational modeling: coordinate transforms, QR/GS, solving $Ax=b$.
+\item Physical/engineering: degrees of freedom, modal bases, principal axes.
+\item Statistics/ML: multicollinearity, feature selection, basis expansions.
+\end{bullets}
+}
+
+\textbf{ANALYTIC STRUCTURE.}
+Independence is linear-algebraic: it concerns kernels of linear maps and rank.
+It is invariant under invertible linear transformations. Basis gives linear
+coordinates, making $V$ isomorphic to $\mathbb{F}^n$.
+
+\textbf{CANONICAL LINKS.}
+Invertibility $\Leftrightarrow$ trivial kernel $\Leftrightarrow$ nonzero
+determinant (square case). Rank-nullity links independence of rows/columns to
+solution structure. Gram-Schmidt yields orthonormal bases preserving span.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Question asks if vectors are redundant or to drop columns: test rank.
+\item Square matrix with determinant cue: independence of columns.
+\item Coordinate request relative to a basis: solve $Bc=x$.
+\item Building orthonormal basis: Gram-Schmidt signature with projections.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate vectors to matrix columns; encode equations $Ac=0$.
+\item Identify governing tool: determinant, rank-nullity, exchange lemma, GS.
+\item Reduce or decompose (RREF/QR) to read pivots and coordinates.
+\item Interpret: basis columns, dimension, unique representation.
+\item Validate: pivot count equals rank; check $Bc=x$; verify $Q^\top Q=I$.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Dimension, rank, and linear independence status are invariant under change of
+basis. The span subspace is invariant under basis replacement.
+
+\textbf{EDGE INTUITION.}
+Near dependence appears as small determinant or ill-conditioned $B$. In GS,
+a tiny denominator indicates near-span and numerical instability; orthogonal
+bases mitigate propagation of error.
+
+\section{Glossary}
+
+\glossx{Linear Independence}
+{A list $(v_i)$ with $\sum c_i v_i=0$ only for all $c_i=0$.}
+{Characterizes nonredundant directions; ensures uniqueness of coordinates.}
+{Form matrix with columns $v_i$ and test kernel: $Ac=0\Rightarrow c=0$.}
+{No stick is a mix of the others in your bundle of sticks.}
+{Pitfall: zero vector in a set makes it dependent immediately.}
+
+\glossx{Span}
+{All finite linear combinations of a set $S\subset V$.}
+{Defines the smallest subspace containing $S$; relates to basis.}
+{Compute by column space via RREF or QR to identify generators.}
+{All points you can reach by mixing given directions.}
+{Example: two noncollinear vectors in $\mathbb{R}^2$ span the whole plane.}
+
+\glossx{Basis}
+{A linearly independent spanning set of $V$.}
+{Enables unique coordinates and dimension definition.}
+{Find pivots to select independent columns that still span.}
+{Minimal toolbox of directions to build every vector exactly one way.}
+{Pitfall: having $n$ vectors in $\mathbb{R}^n$ does not guarantee basis;
+they must be independent.}
+
+\glossx{Rank}
+{Dimension of the span of matrix columns (or rows).}
+{Measures degrees of freedom; detects dependence and invertibility.}
+{Compute pivot count in RREF or via SVD/QR factorization.}
+{How many truly new directions the columns bring.}
+{Pitfall: confusing rank with number of columns. Rank $\le$ columns.}
+
+\section{Symbol Ledger}
+\varmapStart
+\var{V}{Vector space over field $\mathbb{F}$.}
+\var{\mathbb{F}}{Field of scalars (e.g., $\mathbb{R}$ or $\mathbb{C}$).}
+\var{n,m,k}{Natural numbers indicating sizes and counts.}
+\var{v_i}{Vectors in $V$.}
+\var{S,B}{Subsets of $V$, often sets of vectors; $B$ used for a basis.}
+\var{A,B}{Matrices over $\mathbb{F}$, columns as vectors.}
+\var{r}{Rank of a matrix or linear map.}
+\var{\mathcal{N}(A)}{Null space (kernel) of $A$.}
+\var{\mathcal{R}(A)}{Column space (range) of $A$.}
+\var{[x]_B}{Coordinate vector of $x$ in basis $B$.}
+\var{\langle \cdot,\cdot\rangle}{Inner product when defined.}
+\var{Q,R}{Matrices in QR factorization; $Q^\top Q=I$.}
+\var{I}{Identity matrix.}
+\varmapEnd
+
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{Determinant Criterion for Linear Independence}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $B\in\mathbb{F}^{n\times n}$ with columns $(b_1,\dots,b_n)$,
+the columns are linearly independent if and only if $\det(B)\ne 0$.
+
+\WHAT{
+Characterizes independence of $n$ vectors in an $n$-dimensional space by a
+single scalar invariant: the determinant.
+}
+
+\WHY{
+Connects independence, invertibility, and uniqueness of solutions. Enables a
+fast test for square cases and links geometry (volume) with algebra (rank).
+}
+
+\FORMULA{
+\[
+(b_1,\dots,b_n)\ \text{is LI}\ \Longleftrightarrow\ \det(B)\ne 0
+\ \Longleftrightarrow\ B\ \text{invertible}.
+\]
+}
+
+\CANONICAL{
+Domain: $B\in\mathbb{F}^{n\times n}$. Columns in $V=\mathbb{F}^n$. Field is
+arbitrary. Equivalent conditions: $\mathcal{N}(B)=\{0\}$, full rank $r=n$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Square matrix $B$ formed by columns $b_i$.
+\item Determinant defined over $\mathbb{F}$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For $B\in\mathbb{F}^{n\times n}$ the following are equivalent:
+$\det(B)\ne 0$, $B$ is invertible, and $\mathcal{N}(B)=\{0\}$.
+\end{lemma}
+\begin{proof}
+If $\det(B)\ne 0$, adjugate identity gives $B^{-1}=\det(B)^{-1}\operatorname{
+adj}(B)$, so $B$ invertible. If $B$ invertible and $Bx=0$, then multiplying by
+$B^{-1}$ gives $x=0$, so $\mathcal{N}(B)=\{0\}$. Conversely, if
+$\mathcal{N}(B)=\{0\}$ then rank $r=n$ and thus $\det(B)\ne 0$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Setup: }& \sum_{i=1}^n c_i b_i = 0 \iff Bc=0. \\
+\text{Key: }& \det(B)\ne 0 \iff B^{-1}\ \text{exists}. \\
+\text{Solve: }& Bc=0 \Rightarrow c=B^{-1}0=0. \\
+\text{Conclude: }& \text{Only trivial solution}\Rightarrow (b_i)\ \text{LI}.\\
+\text{Reverse: }& \text{If LI, then }\mathcal{N}(B)=\{0\}\Rightarrow r=n
+\Rightarrow \det(B)\ne 0.
+\end{align*}
+}
+
+\EQUIV{
+\begin{bullets}
+\item $B$ has $n$ pivots in RREF $\Leftrightarrow$ columns LI.
+\item $0\notin \sigma(B)$ over $\mathbb{C} \Leftrightarrow$ invertible.
+\item $|\det(B)|$ equals volume scaling; zero volume implies dependence.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $\det(B)=0$ then columns are dependent.
+\item For rectangular $m\times n$ with $m\ne n$, determinant test is invalid;
+use rank or RREF instead.
+\end{bullets}
+}
+
+\INPUTS{$B\in\mathbb{F}^{n\times n}$ with columns $b_i$.}
+
+\RESULT{
+Columns are independent if and only if $\det(B)\ne 0$, equivalently $r=n$.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Computing determinant of a nearly singular matrix is ill-conditioned;
+prefer pivoted factorization in numerics.
+\item Determinant nonzero is sufficient and necessary only for square $B$.
+\end{bullets}
+}
+
+\ELI{
+If the box built by $b_i$ has nonzero volume, the directions are genuinely
+different; zero volume means the box collapsed into a lower-dimensional shape.
+}
+
+\FormulaPage{2}{Rank-Nullity and Dimension Bound}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For a linear map $T:\mathbb{F}^n\to\mathbb{F}^m$ with matrix $A$,
+\[
+\dim\mathcal{N}(A)+\operatorname{rank}(A)=n.
+\]
+
+\WHAT{
+Relates solution space dimension (nullity) to independent columns (rank),
+showing the trade-off and bounding sizes of independent sets.
+}
+
+\WHY{
+Explains why at most $n$ independent vectors exist in $\mathbb{F}^n$ and
+characterizes solvability and degrees of freedom of $Ax=b$.
+}
+
+\FORMULA{
+\[
+\underbrace{\dim\{x:Ax=0\}}_{\text{nullity}}+
+\underbrace{\dim\operatorname{span}\{a_i\}}_{\text{rank}}=n.
+\]
+}
+
+\CANONICAL{
+$A\in\mathbb{F}^{m\times n}$. Column space $\mathcal{R}(A)\subseteq\mathbb{F}^m$.
+Null space $\mathcal{N}(A)\subseteq\mathbb{F}^n$. Both are subspaces.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Linear structure only; no positivity or inner product needed.
+\item Finite-dimensional domain $\mathbb{F}^n$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Any linearly independent set in $\mathbb{F}^n$ has at most $n$ vectors.
+\end{lemma}
+\begin{proof}
+Let $(v_1,\dots,v_k)$ be independent. Extend to a basis of $\mathbb{F}^n$ by
+adding vectors if needed. Any basis has $n$ elements, hence $k\le n$.
+\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }& \text{Let }r=\operatorname{rank}(A). \text{ Pick a basis }
+\{u_1,\dots,u_r\}\text{ of }\mathcal{R}(A).\\
+\text{Step 2: }& \text{Choose }r\text{ pivot columns }a_{j_1},\dots,a_{j_r}
+\text{ mapping basis }e_{j_\ell}\mapsto u_\ell.\\
+\text{Step 3: }& \text{Complete }\{e_{j_1},\dots,e_{j_r}\}
+\text{ to a basis of }\mathbb{F}^n\text{ by adding } \{w_1,\dots,w_{n-r}\}.\\
+\text{Step 4: }& \text{Then }Aw_t=0\text{ since }w_t\text{ are free vars in RREF;}
+\{w_t\}\text{ form a basis of }\mathcal{N}(A).\\
+\text{Step 5: }& \text{Thus }\dim\mathcal{N}(A)=n-r,\ \text{so }
+\dim\mathcal{N}(A)+r=n.
+\end{align*}
+}
+
+\EQUIV{
+\begin{bullets}
+\item Number of free variables in $Ax=0$ equals $n-r$.
+\item Number of pivots equals rank $r$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Infinite-dimensional analogs require more care; formula is for finite $n$.
+\item Over any field, the identity holds; no positivity assumed.
+\end{bullets}
+}
+
+\INPUTS{$A\in\mathbb{F}^{m\times n}$.}
+
+\RESULT{
+Nullity plus rank equals $n$. Any independent set in $\mathbb{F}^n$ has size
+at most $n$, and any spanning set has size at least $n$.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Confusing $m$ and $n$: the bound concerns columns and domain size $n$.
+\item Assuming row rank differs from column rank; they are equal.
+\end{bullets}
+}
+
+\ELI{
+Every variable is either determined by constraints (pivot) or free to choose.
+Counting both kinds accounts for all $n$ variables.
+}
+
+\FormulaPage{3}{Coordinate Representation: $x=Bc$ and $c=B^{-1}x$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given a basis $B=\{b_1,\dots,b_n\}$ of $V=\mathbb{F}^n$, every $x\in V$ has a
+unique coordinate vector $c\in\mathbb{F}^n$ with $x=Bc$ and $c=B^{-1}x$.
+
+\WHAT{
+Provides the explicit map between vectors and their coordinates in a basis,
+establishing an isomorphism $[\,\cdot\,]_B:V\to\mathbb{F}^n$.
+}
+
+\WHY{
+Coordinates enable computation, comparison, and change-of-basis operations.
+Uniqueness relies on independence; existence relies on spanning.
+}
+
+\FORMULA{
+\[
+x=\sum_{i=1}^n c_i b_i \iff x=Bc,\quad c=[x]_B=B^{-1}x.
+\]
+}
+
+\CANONICAL{
+$B\in\mathbb{F}^{n\times n}$ with columns $b_i$. Basis means $B$ invertible.
+Coordinates are in the standard space $\mathbb{F}^n$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $B$ is a basis $\Rightarrow$ columns are independent and span $V$.
+\item Square, invertible $B$ so that $B^{-1}$ exists.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $(b_i)$ is linearly independent and $\sum_i c_i b_i=\sum_i d_i b_i$ then
+$c_i=d_i$ for all $i$.
+\end{lemma}
+\begin{proof}
+Subtract to get $\sum_i (c_i-d_i)b_i=0$. Independence implies all
+$c_i-d_i=0$, hence $c_i=d_i$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Existence: }& B\ \text{spans }V\Rightarrow \forall x\ \exists c: x=Bc.\\
+\text{Uniqueness: }& x=Bc=Bd \Rightarrow B(c-d)=0 \Rightarrow c=d.\\
+\text{Explicit: }& B\ \text{invertible}\Rightarrow c=B^{-1}x.\\
+\text{Isomorphism: }& [\,\cdot\,]_B: x\mapsto B^{-1}x\ \text{is linear and
+bijective.}
+\end{align*}
+}
+
+\EQUIV{
+\begin{bullets}
+\item Change of basis: if $\tilde B$ is another basis, then
+$[x]_{\tilde B}=P^{-1}[x]_B$ with $P=\tilde B^{-1}B$.
+\item Coordinate-free: $B$ defines an isomorphism $V\cong \mathbb{F}^n$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If columns of $B$ are dependent, $B^{-1}$ does not exist; coordinates
+are not unique or may not exist globally.
+\item In infinite dimensions, coordinates may be infinite sequences.
+\end{bullets}
+}
+
+\INPUTS{$B\in\mathbb{F}^{n\times n}$ (basis matrix), $x\in\mathbb{F}^n$.}
+
+\RESULT{
+Unique coordinates $c=B^{-1}x$. The mapping $x\leftrightarrow c$ is bijective.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Solving $Bc=x$ is better done by factorization (e.g., $LU$) than by
+forming $B^{-1}$ numerically.
+\item Mixing basis and standard coordinates without tracking $B$ causes errors.
+\end{bullets}
+}
+
+\ELI{
+A basis is like a set of rulers. Coordinates tell how many units of each ruler
+to stack to recreate your vector, and there is exactly one recipe.
+}
+
+\FormulaPage{4}{Gram-Schmidt and Orthonormal Bases}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given a linearly independent list $(v_1,\dots,v_n)$ in an inner product space,
+the Gram-Schmidt procedure produces an orthonormal basis
+$(q_1,\dots,q_n)$ spanning the same subspace.
+
+\WHAT{
+Constructs an orthonormal basis from any independent set by iteratively
+subtracting projections and normalizing.
+}
+
+\WHY{
+Orthonormal bases simplify coordinates, make numerical methods stable, and
+reveal independence via nonzero norms of residuals.
+}
+
+\FORMULA{
+\[
+u_1=v_1,\ q_1=\frac{u_1}{\|u_1\|},\quad
+u_k=v_k-\sum_{j=1}^{k-1}\langle v_k,q_j\rangle q_j,\ 
+q_k=\frac{u_k}{\|u_k\|}.
+\]
+}
+
+\CANONICAL{
+Inner product $\langle\cdot,\cdot\rangle$ on $V$; $\|x\|=\sqrt{\langle x,x\rangle}$.
+Input list is linearly independent so $\|u_k\|\ne 0$ for all $k$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Inner product space over $\mathbb{R}$ or $\mathbb{C}$.
+\item Input vectors are linearly independent.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+At each step $k$, $u_k$ is orthogonal to $q_1,\dots,q_{k-1}$ and is nonzero.
+\end{lemma}
+\begin{proof}
+Orthogonality: For $i<k$,
+$\langle u_k,q_i\rangle=\langle v_k,q_i\rangle-\sum_{j<i}\langle v_k,q_j\rangle
+\langle q_j,q_i\rangle-\langle v_k,q_i\rangle\langle q_i,q_i\rangle
+-\sum_{j>i}\cdots=0$ since $q$ are orthonormal.
+Nonzeroness: If $u_k=0$, then $v_k=\sum_{j<k}\langle v_k,q_j\rangle q_j$ lies
+in $\operatorname{span}(v_1,\dots,v_{k-1})$, contradicting independence.
+\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }& \text{Initialize }u_1=v_1,\ q_1=u_1/\|u_1\|.\\
+\text{Step 2: }& \text{For }k\ge 2,\ u_k=v_k-\sum_{j<k}\langle v_k,q_j\rangle q_j.\\
+\text{Step 3: }& \text{By the lemma, }u_k\perp q_j\ (j<k),\ u_k\ne 0.\\
+\text{Step 4: }& q_k=u_k/\|u_k\|\ \Rightarrow\ \{q_j\}_{j=1}^k\ \text{orthonormal}.\\
+\text{Step 5: }& \operatorname{span}(q_1,\dots,q_k)=\operatorname{span}(v_1,\dots,v_k).
+\end{align*}
+}
+
+\EQUIV{
+\begin{bullets}
+\item Matrix form: $A=QR$ with $Q$ orthonormal columns and $R$ upper
+triangular with positive diagonal.
+\item Modified Gram-Schmidt is numerically more stable but algebraically
+equivalent.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If inputs are dependent, some $u_k=0$ and the process stops; the
+nonzero $q_j$ still form an orthonormal basis of the span.
+\item Finite precision may cause loss of orthogonality; reorthogonalization
+can help.
+\end{bullets}
+}
+
+\INPUTS{$(v_1,\dots,v_n)$ independent in an inner product space.}
+
+\RESULT{
+An orthonormal basis $(q_1,\dots,q_n)$ with the same span as $(v_k)$.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to normalize yields orthogonal but not orthonormal vectors.
+\item Using unnormalized $u_k$ in later projections leads to errors; always
+project onto $q_j$.
+\end{bullets}
+}
+
+\ELI{
+Make the first stick unit length. For each new stick, shave off any part
+pointing toward earlier sticks, then scale to unit length. Repeat.
+}
+
+\FormulaPage{5}{Steinitz Exchange Lemma and Basis Cardinality}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+If $S=\{s_1,\dots,s_k\}$ is linearly independent in $V$ and $T$ spans $V$,
+then there exists a subset $T'\subseteq T$ with $|T'|=|T|-k$ such that
+$S\cup T'$ spans $V$. In particular, any two bases of $V$ have the same size.
+
+\WHAT{
+Shows independent vectors can replace an equal number of spanning vectors and
+implies dimension is well-defined.
+}
+
+\WHY{
+Provides the foundational exchange principle for bases, enabling proofs that
+all bases have equal cardinality and that an LI set can be extended to a basis.
+}
+
+\FORMULA{
+\[
+S\ \text{LI},\ T\ \text{spans }V\ \Rightarrow\ \exists T'\subseteq T:
+S\cup T'\ \text{spans }V,\ |T'|=|T|-|S|.
+\]
+}
+
+\CANONICAL{
+Finite-dimensional $V$. Sets $S,T\subseteq V$ with $S$ LI and $T$ spanning.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Finite-dimensional vector space $V$.
+\item $S$ independent and $T$ spanning $V$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $S$ is LI and $v\notin\operatorname{span}(S)$, then $S\cup\{v\}$ is LI.
+\end{lemma}
+\begin{proof}
+Suppose $\sum c_i s_i + c v=0$. If $c\ne 0$ then
+$v= -c^{-1}\sum c_i s_i \in \operatorname{span}(S)$, contradiction. Hence
+$c=0$, and independence of $S$ gives $c_i=0$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }& \text{Enumerate }T=(t_1,\dots,t_m).\\
+\text{Step 2: }& \text{Form }U_0=S,\ \text{which is LI}.\\
+\text{Step 3: }& \text{For }j=1,\dots,m,\ \text{if }t_j\notin \operatorname{span}(U_{j-1})\\
+& \text{then set }U_j=U_{j-1}\cup\{t_j\},\ \text{else }U_j=U_{j-1}.\\
+\text{Step 4: }& \text{By the lemma, each augmentation preserves LI.}\\
+\text{Step 5: }& \text{At the end, }\operatorname{span}(U_m)=\operatorname{span}(S\cup T)=V.\\
+\text{Step 6: }& |U_m|=k+r\ \text{for some }r\le m,\ \text{and }U_m\subseteq S\cup T.\\
+\text{Step 7: }& \text{Pick }T'\subseteq T\ \text{as the }r\ \text{added vectors. Then }|T'|=r.\\
+\text{Step 8: }& \text{Since }T\ \text{spans }V,\ r\ge m-k\ \text{and one can choose }|T'|=m-k.
+\end{align*}
+}
+
+\EQUIV{
+\begin{bullets}
+\item Any LI set can be extended to a basis.
+\item Any spanning set can be pruned to a basis.
+\item Any two bases have equal cardinality (dimension is well-defined).
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Infinite-dimensional spaces require transfinite arguments (Zorn\textquotesingle s
+lemma), but the finite statement holds without choice.
+\end{bullets}
+}
+
+\INPUTS{$S$ independent, $T$ spanning, both finite subsets of $V$.}
+
+\RESULT{
+There exists $T'\subseteq T$ with $|T'|=|T|-|S|$ such that $S\cup T'$ spans
+$V$, and all bases of $V$ have the same size.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Confusing lists with sets: order and repetition matter for lists;
+basis is a set with distinct vectors.
+\item Assuming every maximal independent set is unique; many exist but share
+cardinality.
+\end{bullets}
+}
+
+\ELI{
+If you already have $k$ reliable tools, you can swap out $k$ redundant ones
+from a big toolbox and still be able to build anything.
+}
+
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{Testing Independence and Building a Basis in $\mathbb{R}^3$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Determine independence of given vectors, extract a basis of their span, and
+compute coordinates.
+
+\PROBLEM{
+Given $v_1=(1,2,0)$, $v_2=(0,1,1)$, $v_3=(1,3,1)$, determine whether
+$\{v_1,v_2,v_3\}$ is linearly independent. If dependent, extract a basis for
+$\operatorname{span}\{v_1,v_2,v_3\}$. Then express $x=(2,7,3)$ as a linear
+combination of the basis you found.
+}
+
+\MODEL{
+\[
+B=\begin{bmatrix}1&0&1\\2&1&3\\0&1&1\end{bmatrix},\quad
+\det(B)\ \text{and RREF}(B).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Standard vector space $\mathbb{R}^3$.
+\item Determinant test for independence of $3$ vectors.
+\end{bullets}
+}
+
+\varmapStart
+\var{v_i}{Input vectors in $\mathbb{R}^3$.}
+\var{B}{Matrix with columns $v_i$.}
+\var{x}{Target vector for coordinate representation.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 1 (determinant criterion) and Formula 3 (coordinates via $B^{-1}$ or
+RREF if dependent).
+}
+
+\GOVERN{
+\[
+\det(B)\ne 0 \Rightarrow (v_i)\ \text{LI};\quad x=Bc.
+\]
+}
+
+\INPUTS{$v_1=(1,2,0)$, $v_2=(0,1,1)$, $v_3=(1,3,1)$, $x=(2,7,3)$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }\det(B)&=
+\begin{vmatrix}1&0&1\\2&1&3\\0&1&1\end{vmatrix}
+=1\begin{vmatrix}1&3\\1&1\end{vmatrix}
+-0+1\begin{vmatrix}2&1\\0&1\end{vmatrix}\\
+&=1(1-3)+1(2-0)=-2+2=0.\\
+\text{So }& (v_i)\ \text{dependent.}\\
+\text{Step 2: }& \text{Find a basis of span via RREF.}\\
+\begin{bmatrix}1&0&1\\2&1&3\\0&1&1\end{bmatrix}
+&\xrightarrow{R_2\leftarrow R_2-2R_1}
+\begin{bmatrix}1&0&1\\0&1&1\\0&1&1\end{bmatrix}
+\xrightarrow{R_3\leftarrow R_3-R_2}
+\begin{bmatrix}1&0&1\\0&1&1\\0&0&0\end{bmatrix}.\\
+\text{Pivots: }& \text{columns }1,2\Rightarrow \{v_1,v_2\}\ \text{is a basis
+of the span}.\\
+\text{Step 3: }& \text{Coordinates of }x \text{ in basis }\{v_1,v_2\}:
+x=c_1 v_1+c_2 v_2.\\
+\text{Solve }& c_1(1,2,0)+c_2(0,1,1)=(2,7,3).\\
+\Rightarrow & \begin{cases}
+c_1=2,\\
+2c_1+c_2=7,\\
+c_2=3.
+\end{cases}\ \text{Consistent: }2c_1+c_2=4+3=7.\\
+\text{Thus }& c_1=2,\ c_2=3.
+\end{align*}
+}
+
+\RESULT{
+$\{v_1,v_2,v_3\}$ is dependent. A basis of the span is $\{v_1,v_2\}$. The
+coordinates of $x$ in this basis are $(2,3)$, so $x=2v_1+3v_2$.
+}
+
+\UNITCHECK{
+All quantities are dimensionless. Pivot count equals rank $2\le 3$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $x$ were outside the span, the system would be inconsistent; not
+possible since span is a subspace of $\mathbb{R}^3$ and $x\in\mathbb{R}^3$,
+but this check applies when spanning a proper subspace only for representation.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use Gram-Schmidt on $(v_1,v_2,v_3)$: the third residual becomes zero,
+revealing dependence; the nonzero $q_1,q_2$ span the same subspace.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Verify $2v_1+3v_2=(2,7,3)$ numerically.
+\item Check $v_3=v_1+v_2$, confirming dependence.
+\end{bullets}
+}
+
+\INTUITION{
+Two of the vectors already span a plane; the third sits in that plane.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Dependence detected by zero determinant.
+\item Basis extracted by pivot columns $\Rightarrow$ independent spanning set.
+\end{bullets}
+}
+
+\ProblemPage{2}{Bound on Size of Independent Sets in $\mathbb{R}^4$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Prove that any set of five vectors in $\mathbb{R}^4$ is linearly dependent.
+
+\PROBLEM{
+Let $S=\{v_1,\dots,v_5\}\subset\mathbb{R}^4$. Show $S$ is linearly dependent.
+}
+
+\MODEL{
+\[
+A=[v_1\ \cdots\ v_5]\in\mathbb{R}^{4\times 5},\quad
+\operatorname{rank}(A)\le 4<5.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Finite-dimensional vector space with $\dim=4$.
+\item Rank-nullity applies to $A$.
+\end{bullets}
+}
+
+\varmapStart
+\var{v_i}{Vectors in $\mathbb{R}^4$.}
+\var{A}{Matrix with columns $v_i$.}
+\var{r}{Rank of $A$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 (rank-nullity) and Lemma therein: independent set size $\le n$.
+}
+
+\GOVERN{
+\[
+r\le 4 \Rightarrow \text{nullity}(A)=5-r\ge 1 \Rightarrow \exists c\ne 0:
+Ac=0.
+\]
+}
+
+\INPUTS{$S$ with $5$ vectors in $\mathbb{R}^4$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Rank bound: }& r\le 4.\\
+\text{Nullity: }& \text{nullity}(A)=5-r\ge 1.\\
+\text{Hence }& \exists c\ne 0 \text{ with } \sum_{i=1}^5 c_i v_i=0.\\
+\text{Therefore }& S\ \text{is linearly dependent.}
+\end{align*}
+}
+
+\RESULT{
+Any $5$ vectors in $\mathbb{R}^4$ are dependent.
+}
+
+\UNITCHECK{
+Counts align: pivots $\le 4$ among $5$ columns leave at least one free
+variable.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item For exactly $4$ vectors, independence is possible but not guaranteed.
+\end{bullets}
+}
+
+\ALTERNATE{
+Apply Steinitz exchange: any independent set has size at most dimension $4$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Construct a random $4\times 5$ matrix and verify a nontrivial kernel.
+\end{bullets}
+}
+
+\INTUITION{
+You cannot have more than $4$ mutually new directions in $4$-space.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Rank-nullity enforces the size bound on independent sets.
+\end{bullets}
+}
+
+\ProblemPage{3}{Column Space, Null Space, and Rank-Nullity Check}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Find a basis for $\mathcal{R}(A)$ and $\mathcal{N}(A)$ and verify
+rank-nullity.
+
+\PROBLEM{
+For $A=\begin{bmatrix}1&2&3\\0&1&1\\1&3&4\end{bmatrix}$, find bases of the
+column space and null space, compute rank and nullity, and confirm their sum
+equals the number of columns.
+}
+
+\MODEL{
+\[
+A=\begin{bmatrix}1&2&3\\0&1&1\\1&3&4\end{bmatrix}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Standard linear algebra over $\mathbb{R}$.
+\item Use RREF to identify pivots and free variables.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Given $3\times 3$ matrix.}
+\var{r}{Rank of $A$.}
+\var{N}{Nullity of $A$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 (rank-nullity) and pivot-column criterion for a column-space basis.
+}
+
+\GOVERN{
+\[
+\text{RREF}(A)\ \text{pivots}\Rightarrow \text{basis of }\mathcal{R}(A).
+\quad Ax=0\Rightarrow \text{basis of }\mathcal{N}(A).
+\]
+}
+
+\INPUTS{$A$ as above.}
+
+\DERIVATION{
+\begin{align*}
+\text{RREF: }&
+\begin{bmatrix}1&2&3\\0&1&1\\1&3&4\end{bmatrix}
+\xrightarrow{R_3\leftarrow R_3-R_1}
+\begin{bmatrix}1&2&3\\0&1&1\\0&1&1\end{bmatrix}
+\xrightarrow{R_3\leftarrow R_3-R_2}
+\begin{bmatrix}1&2&3\\0&1&1\\0&0&0\end{bmatrix}.\\
+&\xrightarrow{R_1\leftarrow R_1-2R_2}
+\begin{bmatrix}1&0&1\\0&1&1\\0&0&0\end{bmatrix}.\\
+\text{Pivots: }& \text{columns }1,2\Rightarrow r=2.\\
+\text{Basis of }\mathcal{R}(A):& \{a_1,a_2\}=
+\left\{\begin{bmatrix}1\\0\\1\end{bmatrix},
+\begin{bmatrix}2\\1\\3\end{bmatrix}\right\}.\\
+\text{Solve }Ax=0:& \begin{bmatrix}1&0&1\\0&1&1\\0&0&0\end{bmatrix}
+\begin{bmatrix}x_1\\x_2\\x_3\end{bmatrix}=0\\
+&\Rightarrow x_1=-x_3,\ x_2=-x_3,\ x_3\ \text{free}.\\
+\text{Basis of }\mathcal{N}(A):& \left\{
+\begin{bmatrix}-1\\-1\\1\end{bmatrix}\right\}.\\
+\text{Nullity: }& N=1. \ \text{Check: }r+N=2+1=3.
+\end{align*}
+}
+
+\RESULT{
+Basis of column space: $\{(1,0,1)^\top,(2,1,3)^\top\}$. Basis of null space:
+$\{(-1,-1,1)^\top\}$. Rank $2$, nullity $1$, sum $3$.
+}
+
+\UNITCHECK{
+Counts match the number of columns. Basis vectors are independent by pivot
+selection and kernel construction.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If a third pivot existed, nullity would be zero and $A$ invertible.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute $\det(A)=0$ to see noninvertibility, then apply Gram-Schmidt to the
+columns to find two orthonormal generators of the column space.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Verify $A(-1,-1,1)^\top=0$.
+\item Check that the third column is $a_1+a_2$.
+\end{bullets}
+}
+
+\INTUITION{
+Two independent columns span a plane in $\mathbb{R}^3$; the kernel is a line
+orthogonal to that plane under $A^\top$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Pivot columns form a basis for the column space.
+\item Free-variable directions form a basis for the null space.
+\end{bullets}
+}
+
+\ProblemPage{4}{Alice and Bob Detect Redundancy in Telemetry}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Detect if one sensor stream is a linear combination of others.
+
+\PROBLEM{
+Alice sends Bob three telemetry streams $s_1,s_2,s_3\in\mathbb{R}^n$. Bob
+stacks them into $S=[s_1\ s_2\ s_3]$. He suspects $s_3=\alpha s_1+\beta s_2$.
+Give a procedure to test independence and, if dependent, recover $(\alpha,
+\beta)$.
+}
+
+\MODEL{
+\[
+S\in\mathbb{R}^{n\times 3},\quad Sc=0\ \text{or}\ s_3-\alpha s_1-\beta s_2=0.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Streams are finite-length real vectors.
+\item Noise-free hypothesis for the test; exact arithmetic.
+\end{bullets}
+}
+
+\varmapStart
+\var{S}{Data matrix with columns $s_i$.}
+\var{c}{Coefficient vector in kernel of $S$.}
+\var{\alpha,\beta}{Suspected combination coefficients.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 (rank-nullity): dependence iff nullity $\ge 1$; Formula 3 for
+solving coordinates in the subspace spanned by $s_1,s_2$.
+}
+
+\GOVERN{
+\[
+\operatorname{rank}(S)<3\ \Leftrightarrow\ \exists c\ne 0: Sc=0.
+\]
+}
+
+\INPUTS{$S\in\mathbb{R}^{n\times 3}$ with columns $s_i$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }& \text{Compute RREF of }S\ \text{to find pivots.}\\
+\text{Step 2: }& \operatorname{rank}(S)=3 \Rightarrow \text{independent}.\\
+\text{Else }& \text{nullity}=3-\operatorname{rank}(S)\ge 1.\\
+\text{Step 3: }& \text{If }s_1,s_2\ \text{independent, solve }
+[s_1\ s_2]\begin{bmatrix}\alpha\\\beta\end{bmatrix}=s_3.\\
+\text{Step 4: }& \text{Since }[s_1\ s_2]\ \text{has full column rank,}\\
+& \begin{bmatrix}\alpha\\\beta\end{bmatrix}
+=([s_1\ s_2]^\top [s_1\ s_2])^{-1}[s_1\ s_2]^\top s_3.
+\end{align*}
+}
+
+\RESULT{
+If $\operatorname{rank}(S)=3$, streams are independent. If rank is $2$ and
+$\{s_1,s_2\}$ independent, then $(\alpha,\beta)$ as above satisfies
+$s_3=\alpha s_1+\beta s_2$.
+}
+
+\UNITCHECK{
+Dimensions: $S$ is $n\times 3$, $[s_1\ s_2]^\top [s_1\ s_2]$ is $2\times 2$
+and invertible iff $s_1,s_2$ independent.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $s_1$ and $s_2$ are dependent, select an independent pair before
+solving for coefficients.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute a basis of $\mathcal{R}(S)$ via QR; if two $R$ diagonals are nonzero
+and the third is nearly zero, infer dependence. Then back-substitute in $R$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Substitute computed $(\alpha,\beta)$ and verify equality of $s_3$.
+\end{bullets}
+}
+
+\INTUITION{
+If one stream brings no new direction, it is a mixture of the others.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Rank test decides independence.
+\item Coordinates in the span recover mixture coefficients.
+\end{bullets}
+}
+
+\ProblemPage{5}{Coordinate Frames and Change of Basis}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Relate coordinates of a vector under two bases.
+
+\PROBLEM{
+Alice uses basis $B=\{b_1,b_2\}$ of $\mathbb{R}^2$ with
+$B=\begin{bmatrix}2&1\\1&1\end{bmatrix}$. Bob uses standard basis. Given
+$x$ has Alice-coordinates $c=(3,2)$, find Bob\textquotesingle s coordinates.
+Then given $y=(7,5)$ in Bob\textquotesingle s coordinates, find Alice\textquotesingle s
+coordinates.
+}
+
+\MODEL{
+\[
+x=Bc,\quad c=[x]_B,\quad [y]_B=B^{-1}y.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $B$ invertible (columns are independent).
+\item Standard linear algebra in $\mathbb{R}^2$.
+\end{bullets}
+}
+
+\varmapStart
+\var{B}{Basis matrix with columns $b_i$.}
+\var{c}{Alice-coordinates.}
+\var{x,y}{Vectors in $\mathbb{R}^2$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 3: $x=Bc$ and $[y]_B=B^{-1}y$.
+}
+
+\GOVERN{
+\[
+x=Bc,\quad [y]_B=B^{-1}y.
+\]
+}
+
+\INPUTS{$B=\begin{bmatrix}2&1\\1&1\end{bmatrix}$, $c=(3,2)$, $y=(7,5)$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }& x=Bc=
+\begin{bmatrix}2&1\\1&1\end{bmatrix}\begin{bmatrix}3\\2\end{bmatrix}
+=\begin{bmatrix}8\\5\end{bmatrix}.\\
+\text{Step 2: }& B^{-1}=\frac{1}{(2)(1)-(1)(1)}
+\begin{bmatrix}1&-1\\-1&2\end{bmatrix}
+=\begin{bmatrix}1&-1\\-1&2\end{bmatrix}.\\
+\text{Step 3: }& [y]_B=B^{-1}y=
+\begin{bmatrix}1&-1\\-1&2\end{bmatrix}\begin{bmatrix}7\\5\end{bmatrix}
+=\begin{bmatrix}2\\3\end{bmatrix}.
+\end{align*}
+}
+
+\RESULT{
+Bob\textquotesingle s coordinates of $x$ are $(8,5)$. Alice\textquotesingle s coordinates
+of $y$ are $(2,3)$.
+}
+
+\UNITCHECK{
+Matrix-vector products yield consistent $2$-vectors. Determinant $1\ne 0$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $\det(B)=0$, the basis is invalid and coordinates are not unique.
+\end{bullets}
+}
+
+\ALTERNATE{
+Solve $Bc=y$ directly by elimination instead of forming $B^{-1}$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Check $B(2,3)^\top=(7,5)^\top$.
+\end{bullets}
+}
+
+\INTUITION{
+Changing rulers changes numbers but not the actual vector.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Coordinates transform by the inverse of the basis matrix.
+\end{bullets}
+}
+
+\ProblemPage{6}{Probability of Independence of Random $\{-1,0,1\}$ Pairs}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Compute the probability that two random vectors in $\mathbb{R}^2$ with
+independent entries from $\{-1,0,1\}$ are linearly independent.
+
+\PROBLEM{
+Let $u,v\in\{-1,0,1\}^2$ sampled i.i.d. uniformly over the $9$ possibilities
+for each vector. What is $\mathbb{P}(\{u,v\}\ \text{is LI})$?
+}
+
+\MODEL{
+\[
+\{u,v\}\ \text{LI}\ \Leftrightarrow\ \det([u\ v])\ne 0.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Uniform independent sampling over the finite set $\{-1,0,1\}^2$.
+\item Determinant criterion in $\mathbb{R}^2$.
+\end{bullets}
+}
+
+\varmapStart
+\var{u,v}{Random vectors in $\{-1,0,1\}^2$.}
+\var{B}{Matrix with columns $u,v$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 1: independence iff determinant nonzero.
+}
+
+\GOVERN{
+\[
+\det(B)=u_1 v_2 - u_2 v_1 \ne 0.
+\]
+}
+
+\INPUTS{Finite enumeration over $9\times 9=81$ ordered pairs $(u,v)$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Count dependent: }& \det(B)=0 \Leftrightarrow u \parallel v.\\
+\text{Case }& u=(0,0): \text{ then dependent for all }v: 9\ \text{pairs}.\\
+\text{Else }& u\ne 0: v \text{ must be a scalar multiple of }u.\\
+\text{Allowed scalars: }& \lambda\in\{-1,0,1\} \text{ with } \lambda u\in\{-1,0,1\}^2.\\
+& \lambda=0 \Rightarrow v=(0,0).\\
+& \lambda=1 \Rightarrow v=u.\\
+& \lambda=-1 \Rightarrow v=-u.\\
+\text{Distinct }u\ne 0:& \text{there are }8\ \text{choices.}\\
+\text{Dependents: }& 8\times 3=24\ \text{pairs with }u\ne 0,\\
+& \text{plus }9\ \text{pairs with }u=(0,0).\\
+\text{Total dependent: }& 24+9=33.\\
+\text{Total pairs: }& 81.\\
+\text{Independent: }& 81-33=48.\\
+\text{Probability: }& 48/81=16/27.
+\end{align*}
+}
+
+\RESULT{
+$\mathbb{P}(\{u,v\}\ \text{is LI})=16/27$.
+}
+
+\UNITCHECK{
+Discrete counting over finite sample space; probabilities sum to $1$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item The zero vector forces dependence regardless of the other vector.
+\end{bullets}
+}
+
+\ALTERNATE{
+Condition on whether $u$ is zero or not, as above, or symmetry over nonzero
+directions with three multiples.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Exhaustive enumeration by code confirms $16/27$.
+\end{bullets}
+}
+
+\INTUITION{
+Dependence occurs only when the two vectors lie on the same line through the
+origin, including the zero vector case.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Determinant detects independence in $2$D.
+\end{bullets}
+}
+
+\ProblemPage{7}{Proof: Extending Independent Sets}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+If $S$ is independent and $v\notin\operatorname{span}(S)$, then $S\cup\{v\}$
+is independent.
+
+\PROBLEM{
+Provide a complete proof in a finite-dimensional space $V$.
+}
+
+\MODEL{
+\[
+\sum c_i s_i + c v=0 \Rightarrow c=0\ \text{and}\ c_i=0.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $S$ is linearly independent.
+\item $v\notin\operatorname{span}(S)$.
+\end{bullets}
+}
+
+\varmapStart
+\var{S}{Independent subset of $V$.}
+\var{v}{Vector outside $\operatorname{span}(S)$.}
+\var{c_i,c}{Scalars in $\mathbb{F}$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Lemma used in Formula 5 (extension lemma).
+}
+
+\GOVERN{
+\[
+\sum c_i s_i + c v=0 \implies c=0,\ c_i=0.
+\]
+}
+
+\INPUTS{$S$, $v$ as above.}
+
+\DERIVATION{
+\begin{align*}
+\text{Assume }& \sum c_i s_i + c v=0.\\
+\text{If }& c\ne 0,\ v= -c^{-1}\sum c_i s_i \in \operatorname{span}(S),\\
+& \text{contradiction.}\\
+\text{Hence }& c=0,\ \sum c_i s_i=0,\ \text{and }S\ \text{LI}\Rightarrow c_i=0.
+\end{align*}
+}
+
+\RESULT{
+$S\cup\{v\}$ is linearly independent.
+}
+
+\UNITCHECK{
+Logical proof; no quantities with physical units.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $v\in\operatorname{span}(S)$, the union is dependent.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use contradiction: suppose dependence, deduce $v\in\operatorname{span}(S)$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Construct an example in $\mathbb{R}^3$: $S=\{e_1,e_2\}$,
+$v=e_3$; independence holds.
+\end{bullets}
+}
+
+\INTUITION{
+Adding a genuinely new direction keeps the set nonredundant.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Independence is preserved under adding vectors outside the current span.
+\end{bullets}
+}
+
+\ProblemPage{8}{Proof: Equal Cardinality of Bases}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Any two bases of a finite-dimensional vector space have the same cardinality.
+
+\PROBLEM{
+Let $B_1$ and $B_2$ be bases of $V$. Show $|B_1|=|B_2|$.
+}
+
+\MODEL{
+\[
+|B_1|\le |B_2|\ \text{and}\ |B_2|\le |B_1| \Rightarrow |B_1|=|B_2|.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $V$ finite-dimensional.
+\item Exchange lemma holds (Formula 5).
+\end{bullets}
+}
+
+\varmapStart
+\var{B_1,B_2}{Bases of $V$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 5 (Steinitz exchange lemma).
+}
+
+\GOVERN{
+\[
+\text{If }S\ \text{LI},\ T\ \text{spans},\ \Rightarrow |S|\le |T|.
+\]
+}
+
+\INPUTS{$B_1,B_2$ bases.}
+
+\DERIVATION{
+\begin{align*}
+\text{Since }& B_1\ \text{LI and }B_2\ \text{spans},\ |B_1|\le |B_2|.\\
+\text{Since }& B_2\ \text{LI and }B_1\ \text{spans},\ |B_2|\le |B_1|.\\
+\text{Therefore }& |B_1|=|B_2|.
+\end{align*}
+}
+
+\RESULT{
+All bases of $V$ have equal size; define $\dim V$ as this common cardinality.
+}
+
+\UNITCHECK{
+Pure counting argument in finite sets.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item Infinite-dimensional spaces may have bases of equal infinite cardinality
+but require axiom of choice to guarantee existence.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use rank properties of the change-of-basis matrix: it is invertible, hence
+square, forcing equal cardinalities.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item In $\mathbb{R}^n$, standard basis and any other basis both have $n$
+vectors.
+\end{bullets}
+}
+
+\INTUITION{
+You need the same number of independent directions to reach every point,
+no matter which set of directions you choose.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Dimension is intrinsic and independent of basis choice.
+\end{bullets}
+}
+
+\ProblemPage{9}{Polynomials: Independence and Coordinates in $\mathbb{P}_2$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Test independence of polynomials and find coordinates relative to the standard
+basis $\{1,t,t^2\}$.
+
+\PROBLEM{
+Let $p_1(t)=1+t$, $p_2(t)=t+t^2$, $p_3(t)=1+2t+t^2$. Determine independence of
+$\{p_1,p_2,p_3\}$ in $\mathbb{P}_2$, and express $q(t)=2+3t$ in this basis.
+}
+
+\MODEL{
+\[
+\text{Identify }p_i \leftrightarrow \text{coefficient vectors in }\mathbb{R}^3.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Vector space is $\mathbb{P}_2$ with basis $\{1,t,t^2\}$.
+\item Use determinant of the coefficient matrix for independence.
+\end{bullets}
+}
+
+\varmapStart
+\var{p_i}{Polynomials of degree $\le 2$.}
+\var{q}{Target polynomial.}
+\var{B}{Coefficient matrix.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 1 (determinant) in coefficient space and Formula 3 for coordinates.
+}
+
+\GOVERN{
+\[
+B=\begin{bmatrix}1&0&1\\1&1&2\\0&1&1\end{bmatrix},\quad \det(B)=?
+\]
+}
+
+\INPUTS{$p_1=1+t$, $p_2=t+t^2$, $p_3=1+2t+t^2$, $q=2+3t$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Coeff. vectors: }& p_1\leftrightarrow (1,1,0),\
+p_2\leftrightarrow (0,1,1),\ p_3\leftrightarrow (1,2,1).\\
+B&=\begin{bmatrix}1&0&1\\1&1&2\\0&1&1\end{bmatrix},\
+\det(B)=1(1\cdot 1-2\cdot 1)-0+1(1\cdot 1-0\cdot 1)=0+1=1\ne 0.\\
+\text{Independent: }& \{p_1,p_2,p_3\}\ \text{is a basis of }\mathbb{P}_2.\\
+\text{Coordinates of }q:& [q]_B=B^{-1}(2,3,0)^\top.\\
+B^{-1}&=\begin{bmatrix}1&-1&1\\-1&1&-1\\1&0&-1\end{bmatrix}.\\
+[q]_B&=\begin{bmatrix}1&-1&1\\-1&1&-1\\1&0&-1\end{bmatrix}
+\begin{bmatrix}2\\3\\0\end{bmatrix}
+=\begin{bmatrix}-1\\1\\2\end{bmatrix}.
+\end{align*}
+}
+
+\RESULT{
+The polynomials are independent and form a basis. The coordinates of $q$ in
+this basis are $(-1,1,2)$, so $q=-p_1+p_2+2p_3$.
+}
+
+\UNITCHECK{
+Dimensions match $\mathbb{R}^3$. Determinant nonzero confirms invertibility.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If two polynomials are identical, determinant zero and dependence arises.
+\end{bullets}
+}
+
+\ALTERNATE{
+Solve $c_1(1+t)+c_2(t+t^2)+c_3(1+2t+t^2)=2+3t$ by equating coefficients.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Expand $-p_1+p_2+2p_3$ and check equals $2+3t$.
+\end{bullets}
+}
+
+\INTUITION{
+Coefficients are just coordinates in the polynomial basis.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Coefficient mapping gives a concrete matrix representation.
+\end{bullets}
+}
+
+\ProblemPage{10}{Functions: Wronskian and Linear Independence}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show that $f_1(t)=e^t$ and $f_2(t)=t e^t$ are linearly independent in the
+vector space of differentiable functions on $\mathbb{R}$.
+
+\PROBLEM{
+Prove independence by contradiction or by Wronskian.
+}
+
+\MODEL{
+\[
+c_1 e^t + c_2 t e^t=0\ \forall t\ \Rightarrow c_1=c_2=0.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Vector space over $\mathbb{R}$; pointwise operations.
+\item Real-analytic independence can be checked via Wronskian.
+\end{bullets}
+}
+
+\varmapStart
+\var{f_1,f_2}{Functions $e^t$ and $t e^t$.}
+\var{W}{Wronskian determinant.}
+\varmapEnd
+
+\WHICHFORMULA{
+Independence definition; determinant-style test via Wronskian
+$W(f_1,f_2)(t)=\det\begin{bmatrix}f_1&f_2\\ f_1'&f_2'\end{bmatrix}$.
+}
+
+\GOVERN{
+\[
+W(t)=\det\begin{bmatrix}e^t & t e^t\\ e^t & (t+1)e^t\end{bmatrix}
+=e^{2t}\ne 0.
+\]
+}
+
+\INPUTS{$f_1=e^t$, $f_2=t e^t$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Wronskian: }& W(t)=e^t\cdot (t+1)e^t - t e^t \cdot e^t = e^{2t}.\\
+\text{Since }& W(t)\ne 0\ \forall t,\ \text{the functions are independent.}\\
+\text{Direct: }& c_1 e^t + c_2 t e^t=0 \Rightarrow e^t(c_1+c_2 t)=0.\\
+& e^t>0 \Rightarrow c_1+c_2 t=0\ \forall t \Rightarrow c_1=c_2=0.
+\end{align*}
+}
+
+\RESULT{
+$f_1$ and $f_2$ are linearly independent.
+}
+
+\UNITCHECK{
+Determinant yields a function; nonvanishing confirms independence over
+intervals.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item Wronskian identically zero is not sufficient for dependence for higher
+orders, but nonzero Wronskian is sufficient for independence.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use independence definition as shown in the direct proof without Wronskian.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Evaluate at $t=0$ and $t=1$ to obtain two equations forcing
+$c_1=c_2=0$.
+\end{bullets}
+}
+
+\INTUITION{
+One function grows like $e^t$ and the other tilts it linearly; they cannot
+cancel for all $t$ except with zero coefficients.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Independence in function spaces mirrors finite-dimensional cases.
+\end{bullets}
+}
+
+\section{Coding Demonstrations}
+
+\CodeDemoPage{Rank and Independence Checker (RREF vs. Library)}
+\PROBLEM{
+Decide linear independence of column vectors by computing rank. From-scratch
+RREF implementation and a library-based method are provided. The code verifies
+Formula 2 and detects dependence.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> list[list[float]]}
+\item \inlinecode{def rref_rank(A) -> int}
+\item \inlinecode{def solve_case(A) -> dict}
+\item \inlinecode{def validate() -> None}
+\item \inlinecode{def main() -> None}
+\end{bullets}
+}
+
+\INPUTS{
+Matrix $A$ as a list of rows; shape $(m,n)$; real entries; $m,n\ge 1$.
+}
+
+\OUTPUTS{
+Dictionary with keys: \inlinecode{"rank"}, \inlinecode{"independent"} (bool
+for square $n\times n$), and \inlinecode{"nullity"}.
+}
+
+\FORMULA{
+\[
+\operatorname{rank}(A)+\operatorname{nullity}(A)=n,\quad
+\text{independent iff }n=m\ \text{and rank }=n.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+# Deterministic RREF-based rank and independence checker
+def read_input(s):
+    rows = []
+    for line in s.strip().split(";"):
+        if line.strip():
+            rows.append([float(x) for x in line.split()])
+    return rows
+
+def rref_rank(A):
+    M = [row[:] for row in A]
+    m = len(M)
+    n = len(M[0]) if m > 0 else 0
+    r = 0
+    c = 0
+    eps = 1e-12
+    while r < m and c < n:
+        pivot = None
+        for i in range(r, m):
+            if abs(M[i][c]) > eps:
+                pivot = i
+                break
+        if pivot is None:
+            c += 1
+            continue
+        M[r], M[pivot] = M[pivot], M[r]
+        piv = M[r][c]
+        M[r] = [x / piv for x in M[r]]
+        for i in range(m):
+            if i != r and abs(M[i][c]) > eps:
+                fac = M[i][c]
+                M[i] = [M[i][j] - fac * M[r][j] for j in range(n)]
+        r += 1
+        c += 1
+    return r
+
+def solve_case(A):
+    m = len(A)
+    n = len(A[0]) if m > 0 else 0
+    r = rref_rank(A)
+    return {"rank": r, "nullity": n - r, "independent": (m == n and r == n)}
+
+def validate():
+    A = [[1, 0, 1],
+         [2, 1, 3],
+         [0, 1, 1]]
+    res = solve_case(A)
+    assert res["rank"] == 2
+    assert res["nullity"] == 1
+    assert res["independent"] is False
+    B = [[1, 0],
+         [0, 1]]
+    res2 = solve_case(B)
+    assert res2["rank"] == 2
+    assert res2["independent"] is True
+
+def main():
+    validate()
+    A = read_input("1 2 3; 0 1 1; 1 3 4")
+    print(solve_case(A))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+# Library method using numpy ranks
+import numpy as np
+
+def read_input(s):
+    rows = []
+    for line in s.strip().split(";"):
+        if line.strip():
+            rows.append([float(x) for x in line.split()])
+    return np.array(rows, dtype=float)
+
+def solve_case(A):
+    A = np.array(A, dtype=float)
+    r = int(np.linalg.matrix_rank(A))
+    m, n = A.shape
+    return {"rank": r, "nullity": n - r, "independent": (m == n and r == n)}
+
+def validate():
+    A = np.array([[1, 0, 1],
+                  [2, 1, 3],
+                  [0, 1, 1]], dtype=float)
+    res = solve_case(A)
+    assert res["rank"] == 2
+    assert res["nullity"] == 1
+    assert res["independent"] is False
+    B = np.eye(2)
+    res2 = solve_case(B)
+    assert res2["rank"] == 2 and res2["independent"]
+
+def main():
+    validate()
+    A = read_input("1 2 3; 0 1 1; 1 3 4")
+    print(solve_case(A))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Time $\mathcal{O}(mn\min\{m,n\})$ for RREF; space $\mathcal{O}(mn)$. Library
+rank via SVD is $\mathcal{O}(mn\min\{m,n\})$ time, $\mathcal{O}(mn)$ space.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Near dependence: small pivots unstable; use tolerance $>0$.
+\item Empty or ragged inputs: validate shapes before computation.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Partial pivoting improves stability; SVD rank is robust.
+\item Use relative tolerances scaled by norms for practical rank decisions.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Assertions on known matrices (invertible vs. dependent).
+\item Cross-check RREF rank with numpy rank.
+\end{bullets}
+}
+
+\RESULT{
+Both implementations agree on rank, nullity, and independence flags for the
+tests and user inputs.
+}
+
+\EXPLANATION{
+Rank equals pivot count, confirming Formula 2. For square inputs, full rank
+signals independence by Formula 1 equivalences.
+}
+
+\CodeDemoPage{Coordinates via Basis: Solve $Bc=x$}
+\PROBLEM{
+Compute coordinates $c$ such that $Bc=x$. From scratch we implement Gaussian
+elimination; library uses \inlinecode{numpy.linalg.solve}. This verifies
+Formula 3.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> (B,x)}
+\item \inlinecode{def gauss_solve(B,x) -> c}
+\item \inlinecode{def solve_case(B,x) -> c}
+\item \inlinecode{def validate() -> None}
+\item \inlinecode{def main() -> None}
+\end{bullets}
+}
+
+\INPUTS{
+$B\in\mathbb{R}^{n\times n}$ invertible; $x\in\mathbb{R}^n$.
+}
+
+\OUTPUTS{
+$c\in\mathbb{R}^n$ such that $Bc=x$; equals $[x]_B$.
+}
+
+\FORMULA{
+\[
+Bc=x,\quad c=B^{-1}x.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+# Gaussian elimination with partial pivoting for Bc=x
+def read_input(s):
+    parts = s.strip().split("|")
+    Brows = [[float(x) for x in row.split()] for row in parts[0].split(";")]
+    x = [float(x) for x in parts[1].split()]
+    return Brows, x
+
+def gauss_solve(B, x):
+    n = len(B)
+    M = [B[i][:] + [x[i]] for i in range(n)]
+    eps = 1e-12
+    for k in range(n):
+        piv = max(range(k, n), key=lambda i: abs(M[i][k]))
+        if abs(M[piv][k]) < eps:
+            raise ValueError("Singular matrix")
+        M[k], M[piv] = M[piv], M[k]
+        pk = M[k][k]
+        M[k] = [v / pk for v in M[k]]
+        for i in range(k + 1, n):
+            fac = M[i][k]
+            M[i] = [M[i][j] - fac * M[k][j] for j in range(n + 1)]
+    c = [0.0] * n
+    for i in range(n - 1, -1, -1):
+        c[i] = M[i][n] - sum(M[i][j] * c[j] for j in range(i + 1, n))
+    return c
+
+def solve_case(B, x):
+    return gauss_solve(B, x)
+
+def validate():
+    B = [[2, 1],
+         [1, 1]]
+    x = [8, 5]
+    c = solve_case(B, x)
+    assert max(abs(c[0] - 3), abs(c[1] - 2)) < 1e-9
+
+def main():
+    validate()
+    B, x = read_input("2 1; 1 1|8 5")
+    print(solve_case(B, x))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    parts = s.strip().split("|")
+    Brows = [[float(x) for x in row.split()] for row in parts[0].split(";")]
+    x = [float(x) for x in parts[1].split()]
+    return np.array(Brows, dtype=float), np.array(x, dtype=float)
+
+def solve_case(B, x):
+    return np.linalg.solve(B, x)
+
+def validate():
+    B = np.array([[2.0, 1.0],
+                  [1.0, 1.0]])
+    x = np.array([8.0, 5.0])
+    c = solve_case(B, x)
+    assert np.allclose(c, np.array([3.0, 2.0]))
+
+def main():
+    validate()
+    B, x = read_input("2 1; 1 1|8 5")
+    print(solve_case(B, x))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Time $\mathcal{O}(n^3)$, space $\mathcal{O}(n^2)$ for both approaches.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Singular $B$: no unique coordinates; code raises error.
+\item Near singular $B$: large rounding error; warn users.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Partial pivoting mitigates growth of errors.
+\item Prefer factorization reuse when solving for multiple $x$.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Known case from Problem 5 yields $c=(3,2)$.
+\item Cross-check product $Bc$ equals $x$.
+\end{bullets}
+}
+
+\RESULT{
+Coordinates recovered exactly in tests, confirming Formula 3.
+}
+
+\EXPLANATION{
+Solving $Bc=x$ gives the unique coefficients relative to basis $B$ when $B$
+has independent columns.
+}
+
+\CodeDemoPage{Gram-Schmidt vs. QR for Basis Construction}
+\PROBLEM{
+Construct an orthonormal basis from independent vectors. From scratch uses
+classical Gram-Schmidt; library uses \inlinecode{numpy.linalg.qr}. Validates
+Formula 4.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> np.ndarray}
+\item \inlinecode{def gram_schmidt(A) -> Q}
+\item \inlinecode{def solve_case(A) -> Q}
+\item \inlinecode{def validate() -> None}
+\item \inlinecode{def main() -> None}
+\end{bullets}
+}
+
+\INPUTS{
+$A\in\mathbb{R}^{m\times n}$ with independent columns.
+}
+
+\OUTPUTS{
+$Q\in\mathbb{R}^{m\times n}$ with orthonormal columns spanning $\mathcal{R}(A)$.
+}
+
+\FORMULA{
+\[
+u_k=a_k-\sum_{j<k}\langle a_k,q_j\rangle q_j,\quad q_k=u_k/\|u_k\|.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    rows = []
+    for line in s.strip().split(";"):
+        if line.strip():
+            rows.append([float(x) for x in line.split()])
+    return np.array(rows, dtype=float)
+
+def gram_schmidt(A):
+    m, n = A.shape
+    Q = np.zeros((m, n), dtype=float)
+    for k in range(n):
+        u = A[:, k].copy()
+        for j in range(k):
+            u = u - np.dot(Q[:, j], A[:, k]) * Q[:, j]
+        norm = np.linalg.norm(u)
+        if norm < 1e-12:
+            raise ValueError("Dependent columns")
+        Q[:, k] = u / norm
+    return Q
+
+def solve_case(A):
+    return gram_schmidt(A)
+
+def validate():
+    A = np.array([[1.0, 0.0],
+                  [1.0, 1.0],
+                  [0.0, 1.0]])
+    Q = solve_case(A)
+    I = np.eye(2)
+    assert np.allclose(Q.T @ Q, I, atol=1e-10)
+
+def main():
+    validate()
+    A = read_input("1 0; 1 1; 0 1")
+    Q = solve_case(A)
+    print(np.round(Q.T @ Q, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    rows = []
+    for line in s.strip().split(";"):
+        if line.strip():
+            rows.append([float(x) for x in line.split()])
+    return np.array(rows, dtype=float)
+
+def solve_case(A):
+    Q, R = np.linalg.qr(A, mode="reduced")
+    return Q
+
+def validate():
+    A = np.array([[1.0, 0.0],
+                  [1.0, 1.0],
+                  [0.0, 1.0]])
+    Q = solve_case(A)
+    I = np.eye(2)
+    assert np.allclose(Q.T @ Q, I, atol=1e-10)
+
+def main():
+    validate()
+    A = read_input("1 0; 1 1; 0 1")
+    Q = solve_case(A)
+    print(np.round(Q.T @ Q, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Time $\mathcal{O}(mn^2)$, space $\mathcal{O}(mn)$. QR via Householder is
+$\mathcal{O}(mn^2)$ and more stable.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Dependent inputs cause zero residuals; raise exceptions.
+\item Near dependence yields loss of orthogonality; reorthogonalize.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Modified Gram-Schmidt improves stability; QR is best practice.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Check $Q^\top Q=I$; compare spans by projecting columns of $A$ onto $Q$.
+\end{bullets}
+}
+
+\RESULT{
+Both methods produce orthonormal $Q$ with the same span as the original
+columns, confirming Formula 4.
+}
+
+\EXPLANATION{
+The projection-removal step enforces independence by zeroing components along
+earlier directions, then normalization sets unit length.
+}
+
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Detect multicollinearity by computing the rank of a design matrix and selecting
+a basis of independent features via QR.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Linear regression setting with numeric features.
+\item Full column rank ensures unique least-squares solution.
+\end{bullets}
+}
+\WHICHFORMULA{
+Rank determines independence of features (Formula 2). Basis columns from QR
+provide an independent feature set (Formula 4).
+}
+\varmapStart
+\var{X}{Design matrix $(n,d)$.}
+\var{r}{Rank of $X$.}
+\var{J}{Index set of independent columns.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate features with one redundant column.
+\item Compute rank and select independent columns.
+\item Fit OLS on selected basis and compare with pseudoinverse fit.
+\end{bullets}
+}
+\begin{codepy}
+import numpy as np
+
+def generate(n=100, seed=0):
+    rng = np.random.default_rng(seed)
+    x1 = rng.normal(size=n)
+    x2 = rng.normal(size=n)
+    x3 = 2 * x1 - x2  # redundant
+    X = np.column_stack([x1, x2, x3])
+    beta = np.array([1.0, -2.0, 0.0])
+    y = X @ beta + rng.normal(scale=0.1, size=n)
+    return X, y
+
+def select_basis(X):
+    Q, R = np.linalg.qr(X, mode="reduced")
+    diag = np.abs(np.diag(R))
+    tol = 1e-10
+    J = [i for i, d in enumerate(diag) if d > tol]
+    return J
+
+def fit_pinv(X, y):
+    beta = np.linalg.pinv(X) @ y
+    return beta
+
+def fit_basis(X, y, J):
+    Xb = X[:, J]
+    beta_b = np.linalg.lstsq(Xb, y, rcond=None)[0]
+    full = np.zeros(X.shape[1])
+    for k, j in enumerate(J):
+        full[j] = beta_b[k]
+    return full
+
+def main():
+    X, y = generate()
+    r = int(np.linalg.matrix_rank(X))
+    J = select_basis(X)
+    b1 = fit_pinv(X, y)
+    b2 = fit_basis(X, y, J)
+    print("rank:", r, "J:", J)
+    print("pinv:", np.round(b1, 3), "basis:", np.round(b2, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Report rank $r$, selected indices $J$, and coefficients from both fits.}
+\INTERPRET{If a column is a linear combination of others, $r<d$ and the basis
+fit matches the pseudoinverse estimate on independent columns.}
+\NEXTSTEPS{Use column pivoted QR to select the most informative independent
+subset in presence of near collinearity.}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Identify independent risk factors from correlated signals and express returns
+in the factor basis.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Linear factor model $R\approx Xf+\varepsilon$.
+\item Columns of $X$ may be dependent; pick a basis to avoid redundancy.
+\end{bullets}
+}
+\WHICHFORMULA{
+Rank of exposures $X$ detects redundancy; coordinates in a basis give factor
+weights (Formula 3).
+}
+\varmapStart
+\var{R}{Returns vector $(n,)$.}
+\var{X}{Factor exposures $(n,d)$.}
+\var{J}{Indices of independent factor columns.}
+\var{f}{Factor coordinates in basis columns.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Simulate exposures with one redundant factor.
+\item Select basis columns and compute factor weights via least squares.
+\item Compare reconstruction error using all vs. basis columns.
+\end{bullets}
+}
+\begin{codepy}
+import numpy as np
+
+def simulate(n=200, seed=0):
+    rng = np.random.default_rng(seed)
+    f_true = rng.normal(size=2)
+    X1 = rng.normal(size=n)
+    X2 = rng.normal(size=n)
+    X3 = X1 + X2  # redundant
+    X = np.column_stack([X1, X2, X3])
+    R = X[:, :2] @ f_true + rng.normal(scale=0.05, size=n)
+    return R, X
+
+def basis_indices(X):
+    Q, R = np.linalg.qr(X, mode="reduced")
+    tol = 1e-10
+    J = [i for i, d in enumerate(np.abs(np.diag(R))) if d > tol]
+    return J
+
+def coords_in_basis(X, R, J):
+    Xb = X[:, J]
+    f = np.linalg.lstsq(Xb, R, rcond=None)[0]
+    return f, Xb
+
+def main():
+    R, X = simulate()
+    J = basis_indices(X)
+    f, Xb = coords_in_basis(X, R, J)
+    recon = Xb @ f
+    err = np.linalg.norm(R - recon) / np.sqrt(len(R))
+    print("J:", J, "RMSE:", round(err, 4))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Independent indices $J$ and reconstruction RMSE.}
+\INTERPRET{A redundant factor set yields $|J|<d$, and basis coordinates fit
+the same subspace with no loss.}
+\NEXTSTEPS{Stabilize with ridge regression when near dependence inflates
+variance.}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Check independence of engineered features feeding a linear layer and prune
+redundant inputs without changing the represented subspace.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Linear layer depends only on the span of input features.
+\item Removing dependent columns preserves representable outputs.
+\end{bullets}
+}
+\WHICHFORMULA{
+Rank of feature matrix equals number of independent features; QR yields a
+basis (Formula 4).
+}
+\varmapStart
+\var{X}{Feature matrix $(n,d)$.}
+\var{W}{Linear layer weights $(d,1)$.}
+\var{J}{Indices of independent features.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Synthesize redundant features.
+\item Compute rank and choose basis columns.
+\item Fit linear layer on basis and compare predictions with full model.
+\end{bullets}
+}
+\begin{codepy}
+import numpy as np
+
+def synth(n=200, seed=0):
+    rng = np.random.default_rng(seed)
+    x1 = rng.normal(size=n)
+    x2 = rng.normal(size=n)
+    x3 = x1 - x2
+    X = np.column_stack([x1, x2, x3])
+    w_true = np.array([2.0, -1.0, 0.0])
+    y = X @ w_true + rng.normal(scale=0.1, size=n)
+    return X, y
+
+def select_independent(X):
+    Q, R = np.linalg.qr(X, mode="reduced")
+    J = [i for i, d in enumerate(np.abs(np.diag(R))) if d > 1e-10]
+    return J
+
+def fit_and_compare(X, y, J):
+    w_full = np.linalg.pinv(X) @ y
+    Xb = X[:, J]
+    wb = np.linalg.lstsq(Xb, y, rcond=None)[0]
+    y_full = X @ w_full
+    y_b = Xb @ wb
+    diff = np.linalg.norm(y_full - y_b) / np.sqrt(len(y))
+    return w_full, wb, diff
+
+def main():
+    X, y = synth()
+    J = select_independent(X)
+    w_full, wb, diff = fit_and_compare(X, y, J)
+    print("J:", J, "diff:", round(diff, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Index set $J$ and RMSE between full and basis predictions.}
+\INTERPRET{Small difference indicates the pruned model spans the same feature
+subspace and preserves linear representability.}
+\NEXTSTEPS{Use orthonormal basis $Q$ as features to improve conditioning.}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Perform feature de-redundancy by selecting a basis of independent columns in a
+DataFrame and report the retained set.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Numeric features; no missing values.
+\item Independence based on rank with tolerance.
+\end{bullets}
+}
+\WHICHFORMULA{
+Rank and QR-based selection (Formulas 2 and 4) ensure the retained features
+form a basis of the original column space.
+}
+\varmapStart
+\var{df}{DataFrame of features $(n,d)$.}
+\var{J}{Indices of independent columns.}
+\var{X}{Underlying numeric array.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Create synthetic correlated features.
+\item Compute QR and select basis columns.
+\item Return reduced DataFrame; report rank and selected names.
+\end{bullets}
+}
+\begin{codepy}
+import numpy as np
+import pandas as pd
+
+def create_df(n=300, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.normal(size=n)
+    B = 0.8 * A + rng.normal(scale=0.1, size=n)
+    C = A - B
+    D = rng.normal(size=n)
+    df = pd.DataFrame({"A": A, "B": B, "C": C, "D": D})
+    return df
+
+def select_basis_cols(df, tol=1e-10):
+    X = df.values
+    Q, R = np.linalg.qr(X, mode="reduced")
+    diag = np.abs(np.diag(R))
+    J = [i for i, d in enumerate(diag) if d > tol]
+    cols = [df.columns[j] for j in J]
+    return cols, len(J)
+
+def main():
+    df = create_df()
+    cols, r = select_basis_cols(df)
+    print("rank:", r, "cols:", cols)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Reported rank and list of retained column names.}
+\INTERPRET{Retained columns form a basis for the original feature subspace,
+removing redundancy for downstream models.}
+\NEXTSTEPS{Scale features and use pivoted QR to handle near collinearity.}
+
+\end{document}

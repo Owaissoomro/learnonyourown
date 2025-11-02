@@ -1,0 +1,2032 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]
+\setlength{\jot}{7pt}
+\setlength{\emergencystretch}{8em}
+\sloppy
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Matrix Calculus for Optimization}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+Matrix calculus for optimization studies derivatives of scalar- and vector-valued
+functions with matrix and vector arguments. Let $f:\mathbb{R}^{m\times n}\to\mathbb{R}$
+or $f:\mathbb{R}^d\to\mathbb{R}$. The gradient is the unique element
+$\nabla f(X)\in\mathbb{R}^{m\times n}$ such that $df=\mathrm{tr}\!\big((\nabla f(X))^\top dX\big)$
+for all admissible perturbations $dX$. For vector $x\in\mathbb{R}^d$,
+$\nabla f(x)\in\mathbb{R}^d$ satisfies $df=\nabla f(x)^\top dx$. The Hessian
+is the linear map $H_f$ so that $d^2f=\langle dX, H_f[dX]\rangle_F$ or
+$d^2 f = dx^\top \nabla^2 f(x)\,dx$.}
+\WHY{
+Optimization relies on first- and second-order information: stationary
+conditions $\nabla f=0$, descent directions, convexity via Hessians,
+and Newton-type steps. Matrix calculus provides coordinate-free, compact
+rules to differentiate objectives like least squares, log-determinants,
+and quadratic forms central to machine learning and control.}
+\HOW{
+1. Model objective in trace/Frobenius inner-product form. 
+2. Compute differentials using linearity, product, and chain rules.
+3. Identify gradient by matching the coefficient of $dX$ under
+$\mathrm{tr}(\cdot^\top dX)$ or of $dx$ under inner product.
+4. Extract Hessian as the derivative of the gradient or the second
+differential.}
+\ELI{
+Treat $f$ as a height field over matrices. A tiny nudge $dX$ changes
+height by the inner product with a special matrix $\nabla f(X)$.
+This special matrix points toward steepest increase; its negative is
+the fastest way down. The Hessian tells how the slope itself bends.}
+\SCOPE{
+Valid for differentiable maps on open subsets where algebraic operations
+are defined. Requires invertibility for expressions like $X^{-1}$ and
+$\log\det X$. Edge cases include non-differentiable points, rank
+deficiency, and boundary of positive-definite cones.}
+\CONFUSIONS{
+Gradient vs. Jacobian: gradient maps to the same shape as the variable
+via the inner-product convention; Jacobian arranges partials with respect
+to vectorization. Trace vs. elementwise sums: use $\mathrm{tr}(A^\top B)$
+for Frobenius inner product. Symmetric vs. non-symmetric $Q$ in $x^\top Qx$:
+only the symmetric part matters.}
+\APPLICATIONS{
+\begin{bullets}
+\item Mathematical foundations: convexity proofs via Hessians.
+\item Computational modeling: least squares and regularized estimators.
+\item Engineering: optimal control quadratic costs and Riccati terms.
+\item Statistics: Gaussian log-likelihood with $\log\det$ and trace terms.
+\end{bullets}
+}
+
+\textbf{ANALYTIC STRUCTURE.}
+Gradients are linear in differentials and obey trace/Frobenius inner
+products. Typical objectives are convex (least squares, $-\log\det$ on
+SPD cone) and often quadratic, yielding linear systems as first-order
+conditions.
+
+\textbf{CANONICAL LINKS.}
+Least squares gradient (Formula 2) specializes the general
+differential-to-gradient bridge (Formula 1). Quadratic forms (Formula 3)
+recover the same least-squares Hessian structure. Matrix least squares
+(Formula 4) extends Formula 2 by replacing vectors with matrices.
+Log-determinant (Formula 5) combines with trace linear penalties in
+maximum-likelihood and barrier methods.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Presence of $\|Ax-b\|^2$ or $\|AX-B\|_F^2$ suggests $A^\top(Ax-b)$
+or $A^\top(AX-B)$ gradient.
+\item Objectives written as traces indicate trace-trick differentiation.
+\item Determinants or $\log\det$ imply inverse-transpose gradients.
+\item Quadratic $x^\top Q x$ evokes symmetric-part Hessian $Q+Q^\top$.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate norms to traces, e.g., $\|Y\|_F^2=\mathrm{tr}(Y^\top Y)$.
+\item Take differentials using product and chain rules.
+\item Pull $dX$ to the right under trace, using $\mathrm{tr}(AB)=\mathrm{tr}(BA)$.
+\item Read off the gradient from the coefficient of $dX$ or $dx$.
+\item Set gradient to zero and solve linear system; verify convexity via
+Hessian for global optimality.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Frobenius inner product $\langle A,B\rangle_F=\mathrm{tr}(A^\top B)$.
+Symmetric part $\mathrm{sym}(Q)=\tfrac12(Q+Q^\top)$ controls
+quadratic forms. For SPD $X$, $-\log\det X$ is strictly convex.
+
+\textbf{EDGE INTUITION.}
+As $A\to 0$, least-squares gradient vanishes and curvature $A^\top A$
+collapses, causing flat directions. As $X$ approaches singularity,
+$\nabla \log\det X$ blows up, reflecting barrier behavior deterring
+approach to the boundary.
+
+\section{Glossary}
+\glossx{Frobenius Inner Product}
+{Matrix inner product $\langle A,B\rangle_F=\mathrm{tr}(A^\top B)$.}
+{Unifies gradients for matrix variables via trace differentials.}
+{Rewrite $df=\mathrm{tr}(G^\top dX)$ and identify $G=\nabla f(X)$.}
+{Like dot product for matrices: align entries and sum products.}
+{Pitfall: forgetting the transpose in $\mathrm{tr}(A^\top B)$ when
+matching shapes.}
+
+\glossx{Trace Trick}
+{Cyclic property $\mathrm{tr}(ABC)=\mathrm{tr}(BCA)=\mathrm{tr}(CAB)$.}
+{Moves differentials to the right to expose the gradient.}
+{After $df=\mathrm{tr}(\cdots dX)$, read gradient from the coefficient.}
+{Rotate factors on a loop until $dX$ is at the end.}
+{Pitfall: cyclic, not reversible order beyond cycles; do not transpose
+unless justified.}
+
+\glossx{Symmetric Part}
+{$\mathrm{sym}(Q)=\tfrac12(Q+Q^\top)$ for square $Q$.}
+{Only $\mathrm{sym}(Q)$ affects $x^\top Q x$ and its gradient.}
+{Replace $Q$ by $\mathrm{sym}(Q)$ when differentiating $x^\top Q x$.}
+{Average $Q$ with its mirror to get the piece that matters.}
+{Example: $\nabla(x^\top Q x)=(Q+Q^\top)x$.}
+
+\glossx{Matrix Differential}
+{Linear map $d f(X)[H]$ approximating change along direction $H$.}
+{Foundation for matrix chain and product rules.}
+{Compute $df$ symbolically, then match to Frobenius inner product.}
+{Tiny shove of the matrix creates a proportional change in $f$.}
+{Pitfall: treating $dX$ as finite difference rather than linear form.}
+
+\section{Symbol Ledger}
+\varmapStart
+\var{x\in\mathbb{R}^d}{vector decision variable.}
+\var{X\in\mathbb{R}^{m\times n}}{matrix decision variable.}
+\var{A\in\mathbb{R}^{p\times d}}{data or linear map.}
+\var{B\in\mathbb{R}^{p\times n}}{target matrix.}
+\var{b\in\mathbb{R}^p}{target vector.}
+\var{Q\in\mathbb{R}^{d\times d}}{square coefficient matrix.}
+\var{S\in\mathbb{R}^{d\times d}}{symmetric or SPD matrix.}
+\var{G}{generic gradient matrix matching variable shape.}
+\var{H}{Hessian operator or matrix.}
+\var{\mathrm{tr}(\cdot)}{trace of a square matrix.}
+\var{\|\cdot\|_F}{Frobenius norm.}
+\var{\nabla f}{gradient of scalar field $f$.}
+\var{\nabla^2 f}{Hessian of scalar field $f$.}
+\var{I}{identity matrix with conforming size.}
+\var{\mathrm{sym}(Q)}{symmetric part $\tfrac12(Q+Q^\top)$.}
+\var{\log\det X}{log-determinant for SPD $X$.}
+\var{\langle A,B\rangle_F}{Frobenius inner product.}
+\var{dX,dx}{admissible perturbations (differentials).}
+\varmapEnd
+
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{Differential–Gradient–Trace Bridge}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $f:\mathbb{R}^{m\times n}\to\mathbb{R}$ differentiable at $X$,
+there exists a unique $\nabla f(X)\in\mathbb{R}^{m\times n}$ such that
+\[
+df=\mathrm{tr}\!\big((\nabla f(X))^\top dX\big)
+\quad\text{for all }dX.
+\]
+For vector $x\in\mathbb{R}^d$, $df=\nabla f(x)^\top dx$.
+
+\WHAT{
+This identity connects differentials to gradients using the Frobenius inner
+product, turning symbolic differentials into computable gradients.}
+\WHY{
+It provides the workhorse for deriving closed-form gradients and Hessians in
+matrix optimization, enabling concise algebra using traces.}
+\FORMULA{
+\[
+df=\langle \nabla f(X), dX\rangle_F
+=\mathrm{tr}\!\big((\nabla f(X))^\top dX\big).
+\]
+}
+\CANONICAL{
+Domain: open subset of $\mathbb{R}^{m\times n}$ where $f$ is Fr\'echet
+differentiable. Gradient is the Riesz representer under
+$\langle\cdot,\cdot\rangle_F$.}
+\PRECONDS{
+\begin{bullets}
+\item $f$ is Fr\'echet differentiable at $X$.
+\item Inner product is the Frobenius inner product.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For any linear functional $\Lambda:\mathbb{R}^{m\times n}\to\mathbb{R}$,
+there exists a unique $G$ with $\Lambda(H)=\mathrm{tr}(G^\top H)$ for all $H$.
+\end{lemma}
+\begin{proof}
+Take the orthonormal basis $E_{ij}$ with one at $(i,j)$ and zero elsewhere.
+Define $G$ by $G_{ij}=\Lambda(E_{ij})$. Then for any $H=\sum_{ij}H_{ij}E_{ij}$,
+$\Lambda(H)=\sum_{ij}\Lambda(E_{ij})H_{ij}=\sum_{ij}G_{ij}H_{ij}
+=\mathrm{tr}(G^\top H)$. Uniqueness follows from basis uniqueness.\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Step 1:} &\ \text{Fr\'echet differentiability gives }df=\Lambda(dX).\\
+\text{Step 2:} &\ \text{By the lemma, }\Lambda(dX)=\mathrm{tr}(G^\top dX).\\
+\text{Step 3:} &\ \text{Define }\nabla f(X):=G\text{ to obtain the bridge.}
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute $df$ symbolically via product and chain rules.
+\item Cyclically move factors so that $dX$ is rightmost inside a trace.
+\item Identify $\nabla f(X)$ as the coefficient of $dX$ under trace.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item Vector case: $df=\nabla f(x)^\top dx$ with Euclidean inner product.
+\item Operator form: $df=\langle \mathrm{D}f(X), dX\rangle$, where
+$\mathrm{D}f(X)$ is the Fr\'echet derivative identified with $\nabla f(X)$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $f$ is not differentiable, subgradients may replace $\nabla f$.
+\item On manifolds, replace Frobenius inner product by the Riemannian metric.
+\end{bullets}
+}
+\INPUTS{$X\in\mathbb{R}^{m\times n}$, $dX$ arbitrary.}
+\DERIVATION{
+\begin{align*}
+\text{Example: }f(X)&=\tfrac12\|AX-B\|_F^2
+=\tfrac12\mathrm{tr}\big((AX-B)^\top(AX-B)\big).\\
+df&=\mathrm{tr}\big((AX-B)^\top A\,dX\big)
+=\mathrm{tr}\big((A^\top(AX-B))^\top dX\big).
+\end{align*}
+}
+\RESULT{
+$\nabla f(X)=A^\top(AX-B)$, directly read from $df$.}
+\UNITCHECK{
+$A^\top(AX-B)$ has the same shape as $X$; inner product is scalar-valued.}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to transpose when moving factors under trace.
+\item Using elementwise products instead of Frobenius inner product.
+\end{bullets}
+}
+\INTUITION{
+Gradients are the coefficients of infinitesimal change under the canonical
+matrix inner product.}
+\CANONICAL{
+\begin{bullets}
+\item The identification $\mathrm{D}f(X)\equiv\nabla f(X)$ via Frobenius metric.
+\end{bullets}
+}
+
+\FormulaPage{2}{Least Squares Gradient and Hessian}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $f(x)=\tfrac12\|Ax-b\|_2^2$ with $A\in\mathbb{R}^{p\times d}$,
+\[
+\nabla f(x)=A^\top(Ax-b),\quad \nabla^2 f(x)=A^\top A.
+\]
+
+\WHAT{
+Closed-form first and second derivatives of the standard least-squares loss.}
+\WHY{
+Foundation of linear regression, Gauss–Newton, and many convex programs.
+Gives normal equations $A^\top A x=A^\top b$.}
+\FORMULA{
+\[
+\nabla f(x)=A^\top(Ax-b),\qquad \nabla^2 f(x)=A^\top A.
+\]
+}
+\CANONICAL{
+$x\in\mathbb{R}^d$, $A\in\mathbb{R}^{p\times d}$, $b\in\mathbb{R}^{p}$.
+$A^\top A$ is symmetric positive semidefinite.}
+\PRECONDS{
+\begin{bullets}
+\item $f$ is differentiable for all $x$.
+\item If $A$ has full column rank, $A^\top A$ is positive definite.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For $g(x)=\tfrac12\|y\|_2^2$ with $y=Ax-b$, $dg=y^\top dy$.
+\end{lemma}
+\begin{proof}
+$g=\tfrac12 y^\top y$. Then $dg=\tfrac12(y^\top dy+dy^\top y)=y^\top dy$
+since $y^\top dy$ is scalar and equals its transpose.\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+f(x)&=\tfrac12(Ax-b)^\top(Ax-b).\\
+df&=(Ax-b)^\top A\,dx\quad(\text{by lemma with }y=Ax-b,\,dy=A\,dx).\\
+&=dx^\top A^\top(Ax-b).\\
+\implies \nabla f(x)&=A^\top(Ax-b),\quad \nabla^2 f(x)=A^\top A.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute the residual $r=Ax-b$.
+\item Gradient is $A^\top r$; set to zero for normal equations.
+\item Hessian $A^\top A$ ensures convexity and Newton step $(A^\top A)^{-1}A^\top r$.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item Trace form: $f=\tfrac12\mathrm{tr}((Ax-b)(Ax-b)^\top)$.
+\item Normal equations: $A^\top A x=A^\top b$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $A$ is rank-deficient, multiple minimizers exist; Moore–Penrose
+solution minimizes $\|x\|_2$ among solutions.
+\item As $\|A\|\to 0$, gradient and Hessian vanish, yielding flat objective.
+\end{bullets}
+}
+\INPUTS{$A,b,x$ with conforming sizes.}
+\DERIVATION{
+\begin{align*}
+\text{Numeric check: }A&=\begin{bmatrix}1&2\\0&1\\-1&1\end{bmatrix},
+\ b=\begin{bmatrix}1\\0\\2\end{bmatrix},\
+x=\begin{bmatrix}0\\1\end{bmatrix}.\\
+r&=Ax-b=\begin{bmatrix}2\\1\\1\end{bmatrix}
+-\begin{bmatrix}1\\0\\2\end{bmatrix}
+=\begin{bmatrix}1\\1\\-1\end{bmatrix}.\\
+\nabla f&=A^\top r=\begin{bmatrix}1&0&-1\\2&1&1\end{bmatrix}
+\begin{bmatrix}1\\1\\-1\end{bmatrix}
+=\begin{bmatrix}2\\2\end{bmatrix}.\\
+\nabla^2 f&=A^\top A=\begin{bmatrix}2&1\\1&6\end{bmatrix}.
+\end{align*}
+}
+\RESULT{
+Gradient $[2,2]^\top$, Hessian $\begin{bmatrix}2&1\\1&6\end{bmatrix}$.}
+\UNITCHECK{
+Shapes: $A^\top r\in\mathbb{R}^d$, $A^\top A\in\mathbb{R}^{d\times d}$.}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting factor $\tfrac12$ does not affect gradient but affects $f$.
+\item Confusing $A A^\top$ with $A^\top A$.
+\end{bullets}
+}
+\INTUITION{
+Residual $r$ is how far predictions miss; $A^\top r$ backprojects error
+to parameter space along columns of $A$.}
+\CANONICAL{
+\begin{bullets}
+\item Gradient is adjoint applied to residual; Hessian is normal operator.
+\end{bullets}
+}
+
+\FormulaPage{3}{Quadratic Form Gradient and Hessian}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $f(x)=\tfrac12 x^\top Q x+c^\top x+r$ with $Q\in\mathbb{R}^{d\times d}$,
+\[
+\nabla f(x)=\mathrm{sym}(Q)\,x+c,\quad
+\nabla^2 f(x)=\mathrm{sym}(Q)=\tfrac12(Q+Q^\top).
+\]
+
+\WHAT{
+Derivatives of general quadratic functions, valid for non-symmetric $Q$
+via the symmetric part.}
+\WHY{
+Appears in second-order models, trust regions, and convexity tests.
+Stationarity gives linear systems.}
+\FORMULA{
+\[
+\nabla f(x)=\tfrac12(Q+Q^\top)x+c,\qquad
+\nabla^2 f(x)=\tfrac12(Q+Q^\top).
+\]
+}
+\CANONICAL{
+$x\in\mathbb{R}^d$, $Q$ arbitrary square, $c\in\mathbb{R}^d$, $r\in\mathbb{R}$.}
+\PRECONDS{
+\begin{bullets}
+\item $f$ is differentiable everywhere.
+\item Convexity iff $\mathrm{sym}(Q)\succeq 0$.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For any $Q$, $x^\top Q x=x^\top \mathrm{sym}(Q)\,x$.
+\end{lemma}
+\begin{proof}
+Write $Q=\mathrm{sym}(Q)+\mathrm{skew}(Q)$ with
+$\mathrm{skew}(Q)=\tfrac12(Q-Q^\top)$. Then
+$x^\top \mathrm{skew}(Q)\,x=\tfrac12(x^\top Q x-x^\top Q^\top x)
+=\tfrac12(x^\top Q x-(x^\top Q x)^\top)=0$ since it is a scalar equal to
+its negative.\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+df&=\tfrac12(x^\top Q\,dx+dx^\top Q x)+c^\top dx\\
+&=\tfrac12(x^\top Q\,dx+x^\top Q^\top dx)+c^\top dx\\
+&=\big(\tfrac12(Q+Q^\top)x+c\big)^\top dx.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Replace $Q$ by $\mathrm{sym}(Q)$.
+\item Gradient is linear in $x$ plus $c$; solve $\mathrm{sym}(Q)x^*=-c$.
+\item Hessian equals $\mathrm{sym}(Q)$, constant across $x$.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item If $Q$ symmetric, $\nabla f=Qx+c$ and $\nabla^2 f=Q$.
+\item Complete the square for closed-form minimizer.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $\mathrm{sym}(Q)$ singular, minimizers may not be unique.
+\item If $\mathrm{sym}(Q)\not\succeq 0$, problem is non-convex.
+\end{bullets}
+}
+\INPUTS{$Q,c,r,x$.}
+\DERIVATION{
+\begin{align*}
+\text{Example: }Q&=\begin{bmatrix}3&4\\0&1\end{bmatrix},
+\ c=\begin{bmatrix}1\\-2\end{bmatrix},\
+x=\begin{bmatrix}2\\-1\end{bmatrix}.\\
+\mathrm{sym}(Q)&=\tfrac12\begin{bmatrix}3&4\\0&1\end{bmatrix}
++\tfrac12\begin{bmatrix}3&0\\4&1\end{bmatrix}
+=\begin{bmatrix}3&2\\2&1\end{bmatrix}.\\
+\nabla f&=\begin{bmatrix}3&2\\2&1\end{bmatrix}
+\begin{bmatrix}2\\-1\end{bmatrix}
++\begin{bmatrix}1\\-2\end{bmatrix}
+=\begin{bmatrix}3\\2\end{bmatrix}.
+\end{align*}
+}
+\RESULT{
+Gradient $[3,2]^\top$, Hessian $\begin{bmatrix}3&2\\2&1\end{bmatrix}$.}
+\UNITCHECK{
+$\nabla f\in\mathbb{R}^d$, $\nabla^2 f\in\mathbb{R}^{d\times d}$.}
+\PITFALLS{
+\begin{bullets}
+\item Using $Q$ directly when $Q\neq Q^\top$ in $x^\top Qx$.
+\item Dropping $\tfrac12$ and doubling the Hessian accidentally.
+\end{bullets}
+}
+\INTUITION{
+Only the symmetric part affects energy; skew-symmetric parts cancel in
+self-products.}
+\CANONICAL{
+\begin{bullets}
+\item Quadratic models have constant Hessian; gradient is affine in $x$.
+\end{bullets}
+}
+
+\FormulaPage{4}{Matrix Least Squares Gradient}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $f(X)=\tfrac12\|AX-B\|_F^2$ with $A\in\mathbb{R}^{p\times m}$,
+$X\in\mathbb{R}^{m\times n}$, $B\in\mathbb{R}^{p\times n}$,
+\[
+\nabla f(X)=A^\top(AX-B).
+\]
+
+\WHAT{
+Gradient of a Frobenius-norm residual, the matrix analogue of vector least
+squares.}
+\WHY{
+Core of multi-output regression, linear inverse problems, and spectral
+filtering.}
+\FORMULA{
+\[
+\nabla f(X)=A^\top(AX-B).
+\]
+}
+\CANONICAL{
+$A,X,B$ conformable; $f$ convex with Hessian operator $H[U]=A^\top A\,U$.}
+\PRECONDS{
+\begin{bullets}
+\item $f$ is differentiable for all $X$.
+\item If $A$ has full column rank, $H$ is positive definite on columns.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+$\mathrm{tr}(Y^\top Y)=\langle Y,Y\rangle_F$ and
+$d\,\tfrac12\mathrm{tr}(Y^\top Y)=\mathrm{tr}(Y^\top dY)$.
+\end{lemma}
+\begin{proof}
+By definition of $\|\cdot\|_F$. Differentiate $\tfrac12\mathrm{tr}(Y^\top Y)$:
+$d=\tfrac12\mathrm{tr}(dY^\top Y+Y^\top dY)=\mathrm{tr}(Y^\top dY)$ since
+trace of a scalar equals its transpose.\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+f(X)&=\tfrac12\mathrm{tr}\big((AX-B)^\top(AX-B)\big).\\
+df&=\mathrm{tr}\big((AX-B)^\top A\,dX\big)\\
+&=\mathrm{tr}\big((A^\top(AX-B))^\top dX\big)
+\implies \nabla f(X)=A^\top(AX-B).
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Form residual $R=AX-B$.
+\item Gradient is $A^\top R$; set to zero gives $A^\top AX=A^\top B$.
+\item Solve columnwise normal equations or via pseudoinverse.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item Column separability: $f(X)=\sum_j \tfrac12\|A x_j-b_j\|_2^2$.
+\item Vectorization: $\mathrm{vec}(\nabla f)=((I\otimes A^\top A))\mathrm{vec}(X)
+-(I\otimes A^\top)\mathrm{vec}(B)$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $A$ is rank-deficient, solution set is affine; minimal norm via
+$A^\dagger$.
+\item As $\|A\|\to\infty$, curvature grows and gradient steps require
+smaller sizes.
+\end{bullets}
+}
+\INPUTS{$A,B,X$ with $AX$ defined.}
+\DERIVATION{
+\begin{align*}
+\text{Example: }A&=\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix},\
+B=\begin{bmatrix}1&2\\0&1\\1&0\end{bmatrix},\
+X=\begin{bmatrix}1&0\\0&1\end{bmatrix}.\\
+R&=AX-B=\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix}
+-\begin{bmatrix}1&2\\0&1\\1&0\end{bmatrix}
+=\begin{bmatrix}0&-2\\0&0\\0&1\end{bmatrix}.\\
+\nabla f&=A^\top R=\begin{bmatrix}1&0&1\\0&1&1\end{bmatrix}
+\begin{bmatrix}0&-2\\0&0\\0&1\end{bmatrix}
+=\begin{bmatrix}0&-1\\0&1\end{bmatrix}.
+\end{align*}
+}
+\RESULT{
+Gradient $\begin{bmatrix}0&-1\\0&1\end{bmatrix}$.}
+\UNITCHECK{
+$A^\top R$ has shape $m\times n$ matching $X$.}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to multiply residual by $A^\top$ on the left.
+\item Confusing $AX-B$ with $XA-B$.
+\end{bullets}
+}
+\INTUITION{
+Backproject residuals through $A^\top$ to update $X$ along data-aligned
+directions.}
+\CANONICAL{
+\begin{bullets}
+\item Normal equations $A^\top AX=A^\top B$ as stationarity.
+\end{bullets}
+}
+
+\FormulaPage{5}{Log-Determinant Gradient and Curvature}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $f(X)=\log\det X$ with $X\in\mathbb{S}_{++}^d$,
+\[
+\nabla f(X)=(X^{-1})^\top,\quad d^2 f[U,V]=-\mathrm{tr}(X^{-1}UX^{-1}V).
+\]
+
+\WHAT{
+Derivative and curvature of the log-determinant barrier on the SPD cone.}
+\WHY{
+Central in maximum likelihood for Gaussians, convex barriers, and matrix
+scaling.}
+\FORMULA{
+\[
+d\,\log\det X=\mathrm{tr}(X^{-1} dX),\quad
+\nabla \log\det X=(X^{-1})^\top,\quad
+\nabla^2 f[U]=-(X^{-T} U X^{-T}).
+\]
+}
+\CANONICAL{
+$X\in\mathbb{S}_{++}^d$; Hessian is a self-adjoint negative-definite
+operator in Frobenius inner product.}
+\PRECONDS{
+\begin{bullets}
+\item $X$ invertible; for curvature, $X$ symmetric positive definite.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}[Jacobi's formula]
+$d\,\det X=\det X\,\mathrm{tr}(X^{-1} dX)$ for invertible $X$.
+\end{lemma}
+\begin{proof}
+Let $g(X)=\det X$. For $X(t)=X+tU$,
+$g'(0)=\frac{d}{dt}\det(X+tU)\big|_{t=0}=\det X\,\mathrm{tr}(X^{-1}U)$
+by classical Jacobi's identity. Linearity in $U$ yields
+$d\,\det X=\det X\,\mathrm{tr}(X^{-1} dX)$.\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+f(X)&=\log\det X,\quad df=\frac{1}{\det X}d\,\det X.\\
+&=\frac{1}{\det X}\det X\,\mathrm{tr}(X^{-1} dX)
+=\mathrm{tr}\big((X^{-1})^\top dX\big).\\
+\implies \nabla f(X)&=(X^{-1})^\top.\\
+d^2 f[U,V]&=\frac{d}{dt}\Big|_{t=0}\mathrm{tr}((X+tV)^{-1}U)\\
+&=-\mathrm{tr}(X^{-1}VX^{-1}U)=-\mathrm{tr}(X^{-1}UX^{-1}V).
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Use $d\,\log\det X=\mathrm{tr}(X^{-1}dX)$ to get gradient.
+\item For second-order methods, use $H[U]=-(X^{-T}UX^{-T})$.
+\item Combine with linear terms to obtain first-order conditions.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item For symmetric $X$, $\nabla f(X)=X^{-1}$.
+\item Barrier form: $\phi(X)=-\log\det X$ has $\nabla\phi=-X^{-1}$ and
+$H_\phi[U]=X^{-T}UX^{-T}\succeq 0$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item As $X$ approaches singularity, $\|\nabla f(X)\|\to\infty$.
+\item Not defined for non-invertible or indefinite $X$.
+\end{bullets}
+}
+\INPUTS{$X\in\mathbb{S}_{++}^d$, direction matrices $U,V$.}
+\DERIVATION{
+\begin{align*}
+\text{Example: }X&=\begin{bmatrix}2&1\\1&3\end{bmatrix},
+\ X^{-1}=\tfrac{1}{5}\begin{bmatrix}3&-1\\-1&2\end{bmatrix}.\\
+\nabla f(X)&=X^{-1}=\tfrac{1}{5}\begin{bmatrix}3&-1\\-1&2\end{bmatrix}.\\
+U&=\begin{bmatrix}1&0\\0&0\end{bmatrix},\
+V=\begin{bmatrix}0&1\\1&0\end{bmatrix}.\\
+d^2 f[U,V]&=-\mathrm{tr}(X^{-1}UX^{-1}V)
+=-\tfrac{1}{25}\mathrm{tr}\!\Big(
+\begin{bmatrix}3&-1\\-1&2\end{bmatrix}
+\begin{bmatrix}1&0\\0&0\end{bmatrix}
+\begin{bmatrix}3&-1\\-1&2\end{bmatrix}
+\begin{bmatrix}0&1\\1&0\end{bmatrix}\Big).
+\end{align*}
+}
+\RESULT{
+Gradient equals $X^{-1}$ (for symmetric $X$). Curvature is negative
+definite on nonzero directions $U$ for $\log\det$.}
+\UNITCHECK{
+$X^{-1}$ has same shape as $X$; $d^2 f[U,V]$ is scalar-valued.}
+\PITFALLS{
+\begin{bullets}
+\item Using $\log\det$ at singular matrices.
+\item Dropping transpose for non-symmetric variables.
+\end{bullets}
+}
+\INTUITION{
+$\log\det$ measures volume; gradient is inverse that shrinks directions
+with large stretch and grows those with small stretch.}
+\CANONICAL{
+\begin{bullets}
+\item $d\,\log\det X=\mathrm{tr}(X^{-1}dX)$ and its inverse-based Hessian.
+\end{bullets}
+}
+
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{Normal Equations via Matrix Calculus}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Minimize $f(x)=\tfrac12\|Ax-b\|_2^2$ and derive $x^*$.
+
+\PROBLEM{
+Compute $\nabla f$ and $\nabla^2 f$. Show $x^*$ solves $A^\top A x=A^\top b$,
+and provide the solution for full column rank $A$.}
+\MODEL{
+\[
+f(x)=\tfrac12(Ax-b)^\top(Ax-b),\quad A\in\mathbb{R}^{p\times d}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ has full column rank $d\le p$.
+\item $b\in\mathbb{R}^p$.
+\end{bullets}
+}
+\varmapStart
+\var{A}{data matrix.}
+\var{b}{target vector.}
+\var{x}{parameter vector.}
+\var{H}{Hessian $A^\top A$.}
+\varmapEnd
+\WHICHFORMULA{
+Use Formula 2: $\nabla f=A^\top(Ax-b)$, $\nabla^2 f=A^\top A$.}
+\GOVERN{
+\[
+A^\top(Ax-b)=0\iff A^\top A x=A^\top b.
+\]
+}
+\INPUTS{$A,b$ arbitrary with full column rank.}
+\DERIVATION{
+\begin{align*}
+\nabla f&=A^\top(Ax-b),\ \nabla^2 f=A^\top A\succeq 0.\\
+A^\top A\text{ invertible }&\implies x^*=(A^\top A)^{-1}A^\top b.
+\end{align*}
+}
+\RESULT{
+Unique minimizer $x^*=(A^\top A)^{-1}A^\top b$; $f$ is strictly convex.}
+\UNITCHECK{
+$(A^\top A)^{-1}A^\top b\in\mathbb{R}^d$ since $A^\top b\in\mathbb{R}^d$.}
+\EDGECASES{
+\begin{bullets}
+\item If rank deficient, minimizers form $x^*=A^\dagger b+z$ with $z\in\ker A$.
+\item If $b=0$, solution is $x^*=0$.
+\end{bullets}
+}
+\ALTERNATE{
+Complete the square: $f=\tfrac12x^\top A^\top A x-x^\top A^\top b+\tfrac12\|b\|^2$
+and minimize the quadratic form.}
+\VALIDATION{
+\begin{bullets}
+\item Verify that $A^\top(Ax^*-b)=0$ numerically for random full-rank $A$.
+\item Check positive definiteness of $A^\top A$ when $A$ has full column rank.
+\end{bullets}
+}
+\INTUITION{
+Backproject residual onto parameter space and set it to zero.}
+\CANONICAL{
+\begin{bullets}
+\item Normal equations characterize least-squares minimizers.
+\end{bullets}
+}
+
+\ProblemPage{2}{Quadratic Program Stationarity}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $f(x)=\tfrac12 x^\top Q x+c^\top x$, derive stationarity and convexity.
+
+\PROBLEM{
+Compute $\nabla f$ and $\nabla^2 f$ for non-symmetric $Q$.
+Find stationary point $x^*$ and state when it is a minimizer.}
+\MODEL{
+\[
+f(x)=\tfrac12 x^\top Q x+c^\top x,\quad Q\in\mathbb{R}^{d\times d}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item No constraints; $Q$ arbitrary.
+\end{bullets}
+}
+\varmapStart
+\var{Q}{quadratic coefficient matrix.}
+\var{c}{linear term.}
+\var{x}{decision vector.}
+\varmapEnd
+\WHICHFORMULA{
+Use Formula 3 with $\mathrm{sym}(Q)=\tfrac12(Q+Q^\top)$.}
+\GOVERN{
+\[
+\nabla f(x)=\mathrm{sym}(Q)x+c,\quad \nabla^2 f=\mathrm{sym}(Q).
+\]
+}
+\INPUTS{$Q,c$.}
+\DERIVATION{
+\begin{align*}
+\text{Stationarity: }&\mathrm{sym}(Q)x^*=-c.\\
+\text{If }\mathrm{sym}(Q)\succ 0:&\ x^*=-\mathrm{sym}(Q)^{-1}c\text{ is the unique minimizer.}
+\end{align*}
+}
+\RESULT{
+$x^*$ solves $\mathrm{sym}(Q)x^*=-c$; minimizer iff $\mathrm{sym}(Q)\succeq 0$.}
+\UNITCHECK{
+Left-hand side and $c$ are both in $\mathbb{R}^d$.}
+\EDGECASES{
+\begin{bullets}
+\item If $\mathrm{sym}(Q)$ indefinite, stationary point is a saddle.
+\item If $\mathrm{sym}(Q)$ singular and $c\notin\mathrm{range}(\mathrm{sym}(Q))$,
+no stationary point exists.
+\end{bullets}
+}
+\ALTERNATE{
+Diagonalize $\mathrm{sym}(Q)=U\Lambda U^\top$ and reduce to scalar problems.}
+\VALIDATION{
+\begin{bullets}
+\item Check that gradient vanishes at $x^*$ numerically.
+\item Verify curvature along arbitrary directions via $d^\top\mathrm{sym}(Q)d$.
+\end{bullets}
+}
+\INTUITION{
+Only the symmetric curvature matters for energy; skew parts do not affect $f$.}
+\CANONICAL{
+\begin{bullets}
+\item Stationarity reduces to solving a symmetric linear system.
+\end{bullets}
+}
+
+\ProblemPage{3}{Matrix Normal Equations and Columnwise Solution}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Minimize $f(X)=\tfrac12\|AX-B\|_F^2$ and solve for $X$.
+
+\PROBLEM{
+Derive gradient and the normal equations; show columnwise decoupling and
+give explicit $X^*$ when $A$ has full column rank.}
+\MODEL{
+\[
+f(X)=\tfrac12\mathrm{tr}((AX-B)^\top(AX-B)).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A\in\mathbb{R}^{p\times m}$ has full column rank.
+\item $B\in\mathbb{R}^{p\times n}$.
+\end{bullets}
+}
+\varmapStart
+\var{A}{data matrix.}
+\var{B}{targets (multiple outputs).}
+\var{X}{parameters.}
+\varmapEnd
+\WHICHFORMULA{
+Use Formula 4: $\nabla f(X)=A^\top(AX-B)$.}
+\GOVERN{
+\[
+A^\top(AX-B)=0 \iff (A^\top A)X=A^\top B.
+\]
+}
+\INPUTS{$A,B$.}
+\DERIVATION{
+\begin{align*}
+\text{Since }A^\top A\succ 0,&\ X^*=(A^\top A)^{-1}A^\top B.\\
+\text{Columnwise: }&x_j^*=(A^\top A)^{-1}A^\top b_j.
+\end{align*}
+}
+\RESULT{
+$X^*=(A^\top A)^{-1}A^\top B$.}
+\UNITCHECK{
+$(A^\top A)^{-1}A^\top B$ has shape $m\times n$, same as $X$.}
+\EDGECASES{
+\begin{bullets}
+\item If $A$ rank-deficient, use $X^*=A^\dagger B$ for minimal norm.
+\item If $B=0$, solution is $X^*=0$.
+\end{bullets}
+}
+\ALTERNATE{
+Vectorize and solve $(I\otimes A^\top A)\mathrm{vec}(X)=(I\otimes A^\top)\mathrm{vec}(B)$.}
+\VALIDATION{
+\begin{bullets}
+\item Numerically verify $A^\top(AX^*-B)=0$.
+\item Check each column solves its own normal equation.
+\end{bullets}
+}
+\INTUITION{
+Each output column is an independent least-squares problem.}
+\CANONICAL{
+\begin{bullets}
+\item Normal equations extend to multi-output with shared $A$.
+\end{bullets}
+}
+
+\ProblemPage{4}{Narrative: Alice Tunes an Energy Quadratic}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Alice minimizes $E(x)=\tfrac12 x^\top Q x-p^\top x$.
+
+\PROBLEM{
+Identify the correct gradient when $Q$ is not symmetric, find $x^*$,
+and explain the role of $\mathrm{sym}(Q)$.}
+\MODEL{
+\[
+E(x)=\tfrac12 x^\top Q x-p^\top x.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $Q\in\mathbb{R}^{d\times d}$ with $\mathrm{sym}(Q)\succ 0$.
+\item $p\in\mathbb{R}^d$.
+\end{bullets}
+}
+\varmapStart
+\var{Q}{curvature matrix.}
+\var{p}{load vector.}
+\var{x}{state vector.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 3: $\nabla E=\mathrm{sym}(Q)x-p$.}
+\GOVERN{
+\[
+\mathrm{sym}(Q)x^*=p.
+\]
+}
+\INPUTS{$Q,p$.}
+\DERIVATION{
+\begin{align*}
+\nabla E&=\tfrac12(Q+Q^\top)x-p.\\
+\mathrm{sym}(Q)\succ 0&\implies x^*=\mathrm{sym}(Q)^{-1}p.
+\end{align*}
+}
+\RESULT{
+$x^*$ exists uniquely and depends only on $\mathrm{sym}(Q)$.}
+\UNITCHECK{
+$\mathrm{sym}(Q)^{-1}p\in\mathbb{R}^d$ as required.}
+\EDGECASES{
+\begin{bullets}
+\item If $Q$ skew-symmetric, $E=-p^\top x$ is linear, no unique minimizer.
+\item If $\mathrm{sym}(Q)\succeq 0$ but singular, minimizers not unique.
+\end{bullets}
+}
+\ALTERNATE{
+Diagonalize $\mathrm{sym}(Q)$ to decouple coordinates and solve.}
+\VALIDATION{
+\begin{bullets}
+\item Check $\nabla E(x^*)=0$ numerically for random SPD $\mathrm{sym}(Q)$.
+\end{bullets}
+}
+\INTUITION{
+Skew parts are energetically invisible; only symmetric curvature shapes $E$.}
+\CANONICAL{
+\begin{bullets}
+\item Replace $Q$ by $\mathrm{sym}(Q)$ before differentiating.
+\end{bullets}
+}
+
+\ProblemPage{5}{Narrative: Bob Balances Volume and Trace}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Bob chooses $X\in\mathbb{S}_{++}^d$ to minimize
+$\phi(X)=-\log\det X+\mathrm{tr}(SX)$.
+
+\PROBLEM{
+Find first-order condition and closed-form optimizer.}
+\MODEL{
+\[
+\phi(X)=-\log\det X+\mathrm{tr}(SX),\quad S\in\mathbb{S}_{++}^d.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $S$ is SPD, ensuring strict convexity and existence of minimizer.
+\end{bullets}
+}
+\varmapStart
+\var{X}{SPD decision matrix.}
+\var{S}{SPD penalty matrix.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 5 for $-\log\det$ and linear trace gradient $\nabla\,\mathrm{tr}(SX)=S$.}
+\GOVERN{
+\[
+\nabla\phi(X)=-X^{-1}+S=0 \iff X=S^{-1}.
+\]
+}
+\INPUTS{$S\succ 0$.}
+\DERIVATION{
+\begin{align*}
+\nabla\phi(X)&=-X^{-1}+S.\\
+\nabla^2\phi[U]&=X^{-T}UX^{-T}\succeq 0\ \Rightarrow \text{strict convexity}.\\
+\text{Set }\nabla\phi=0&\implies X=S^{-1}\text{ is unique minimizer.}
+\end{align*}
+}
+\RESULT{
+$X^*=S^{-1}$.}
+\UNITCHECK{
+$S^{-1}\in\mathbb{S}_{++}^d$ and matches dimension of $X$.}
+\EDGECASES{
+\begin{bullets}
+\item If $S$ only semidefinite, $\phi$ may be unbounded below.
+\item If $S$ ill-conditioned, curvature becomes ill-conditioned too.
+\end{bullets}
+}
+\ALTERNATE{
+Spectral solution: diagonalize $S=U\Lambda U^\top$ and set
+$X=U\Lambda^{-1}U^\top$.}
+\VALIDATION{
+\begin{bullets}
+\item Numerically confirm $\nabla\phi(S^{-1})=0$ and positive Hessian.
+\end{bullets}
+}
+\INTUITION{
+$-\log\det X$ pushes away from singularity; $\mathrm{tr}(SX)$ pulls toward
+aligning with $S$. Balance at $X=S^{-1}$.}
+\CANONICAL{
+\begin{bullets}
+\item First-order condition $S=X^{-1}$ for logdet-trace tradeoffs.
+\end{bullets}
+}
+
+\ProblemPage{6}{Expectation Puzzle: Unbiased Gradient Estimate}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let $f(x)=\tfrac12\|Ax-b\|^2$ and observe i.i.d. rows $(a_i^\top,b_i)$,
+$A=[a_i^\top]$. Define stochastic gradient $g_i(x)=a_i(a_i^\top x-b_i)$.
+
+\PROBLEM{
+Show $\mathbb{E}[g_i(x)]=\nabla f(x)$ and discuss curvature.}
+\MODEL{
+\[
+f(x)=\tfrac12\sum_{i=1}^p (a_i^\top x-b_i)^2.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Rows $(a_i,b_i)$ are sampled uniformly from the dataset.
+\item Finite second moments.
+\end{bullets}
+}
+\varmapStart
+\var{a_i}{row vector in $\mathbb{R}^d$.}
+\var{b_i}{scalar.}
+\var{x}{parameter vector.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 2 with $A^\top(Ax-b)=\sum_i a_i(a_i^\top x-b_i)$.}
+\GOVERN{
+\[
+\mathbb{E}[g_i(x)]=\frac{1}{p}\sum_{i=1}^p a_i(a_i^\top x-b_i)
+=\frac{1}{p}\nabla f(x)\cdot p=\nabla f(x).
+\]
+}
+\INPUTS{Finite dataset $\{(a_i,b_i)\}_{i=1}^p$.}
+\DERIVATION{
+\begin{align*}
+\mathbb{E}[g_i(x)]&=\frac{1}{p}\sum_{i=1}^p a_i(a_i^\top x-b_i)\\
+&=A^\top(Ax-b)=\nabla f(x).
+\end{align*}
+}
+\RESULT{
+$g_i(x)$ is an unbiased gradient estimator. Hessian remains $A^\top A$.}
+\UNITCHECK{
+$g_i(x)\in\mathbb{R}^d$ matches $\nabla f(x)$.}
+\EDGECASES{
+\begin{bullets}
+\item Non-uniform sampling weights require importance weighting to stay unbiased.
+\item Heavy-tailed rows inflate variance of $g_i$.
+\end{bullets}
+}
+\ALTERNATE{
+Mini-batch average $\frac{1}{k}\sum_{i\in\mathcal{B}} g_i(x)$ remains unbiased.}
+\VALIDATION{
+\begin{bullets}
+\item Empirically average $g_i$ over many samples and compare to $\nabla f(x)$.
+\end{bullets}
+}
+\INTUITION{
+Each row provides a directional correction; on average these sum to the
+full backprojection of the residual.}
+\CANONICAL{
+\begin{bullets}
+\item Stochastic gradients as unbiased estimators for quadratic losses.
+\end{bullets}
+}
+
+\ProblemPage{7}{Proof: Gradient of Quadratic Form}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Prove $\nabla(\tfrac12 x^\top Q x)=\mathrm{sym}(Q)\,x$.
+
+\PROBLEM{
+Provide a self-contained differential-based proof.}
+\MODEL{
+\[
+f(x)=\tfrac12 x^\top Q x.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $Q\in\mathbb{R}^{d\times d}$.
+\end{bullets}
+}
+\varmapStart
+\var{Q}{coefficient matrix.}
+\var{x}{vector.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 3.}
+\GOVERN{
+\[
+df=\big(\tfrac12(Q+Q^\top)x\big)^\top dx.
+\]
+}
+\INPUTS{$Q,x$.}
+\DERIVATION{
+\begin{align*}
+df&=\tfrac12(x^\top Q\,dx+dx^\top Q x)\\
+&=\tfrac12(x^\top Q\,dx+x^\top Q^\top dx)\\
+&=\big(\tfrac12(Q+Q^\top)x\big)^\top dx.
+\end{align*}
+}
+\RESULT{
+$\nabla f(x)=\tfrac12(Q+Q^\top)x=\mathrm{sym}(Q)x$.}
+\UNITCHECK{
+Gradient shape $\mathbb{R}^d$ matches $x$.}
+\EDGECASES{
+\begin{bullets}
+\item If $Q$ symmetric, gradient simplifies to $Qx$.
+\end{bullets}
+}
+\ALTERNATE{
+Use component-wise differentiation and recombine into matrix form.}
+\VALIDATION{
+\begin{bullets}
+\item Random numeric test comparing finite differences to analytic gradient.
+\end{bullets}
+}
+\INTUITION{
+The energy depends only on the symmetric curvature.}
+\CANONICAL{
+\begin{bullets}
+\item Differential proof via symmetry of scalar transposes.
+\end{bullets}
+}
+
+\ProblemPage{8}{Proof: Matrix Least Squares Gradient}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Prove $\nabla_X\tfrac12\|AX-B\|_F^2=A^\top(AX-B)$.
+
+\PROBLEM{
+Provide a trace-calculus proof using the Frobenius inner product.}
+\MODEL{
+\[
+f(X)=\tfrac12\mathrm{tr}\big((AX-B)^\top(AX-B)\big).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A,X,B$ conformable.
+\end{bullets}
+}
+\varmapStart
+\var{A}{data matrix.}
+\var{B}{target matrix.}
+\var{X}{decision matrix.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 4.}
+\GOVERN{
+\[
+df=\mathrm{tr}\big((A^\top(AX-B))^\top dX\big).
+\]
+}
+\INPUTS{$A,B,X$.}
+\DERIVATION{
+\begin{align*}
+df&=\mathrm{tr}\big((AX-B)^\top A\,dX\big)\\
+&=\mathrm{tr}\big((A^\top(AX-B))^\top dX\big)\ \Rightarrow\ 
+\nabla f=A^\top(AX-B).
+\end{align*}
+}
+\RESULT{
+Gradient equals $A^\top(AX-B)$.}
+\UNITCHECK{
+Shape $m\times n$ agrees with $X$.}
+\EDGECASES{
+\begin{bullets}
+\item If $A=0$, gradient is $-A^\top B=0$ and $f$ is constant in $X$.
+\end{bullets}
+}
+\ALTERNATE{
+Vectorize and apply vector least-squares gradient on $\mathrm{vec}(X)$.}
+\VALIDATION{
+\begin{bullets}
+\item Finite-difference check on random small matrices.
+\end{bullets}
+}
+\INTUITION{
+Backprojection aggregates residuals over outputs through $A^\top$.}
+\CANONICAL{
+\begin{bullets}
+\item Trace-cycling to expose $dX$ and read the gradient.
+\end{bullets}
+}
+
+\ProblemPage{9}{Combo: Rayleigh Quotient via Lagrange Multipliers}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Minimize $x^\top Q x$ subject to $\|x\|_2=1$ with $Q=Q^\top$.
+
+\PROBLEM{
+Using matrix calculus, derive stationary condition and connect to eigenpairs.}
+\MODEL{
+\[
+\min_{x}\ x^\top Q x\ \text{s.t.}\ x^\top x=1.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $Q\in\mathbb{S}^d$.
+\end{bullets}
+}
+\varmapStart
+\var{Q}{symmetric matrix.}
+\var{x}{unit-norm vector.}
+\var{\lambda}{Lagrange multiplier.}
+\varmapEnd
+\WHICHFORMULA{
+Gradient of quadratic (Formula 3) and constraint gradient $\nabla(x^\top x)=2x$.}
+\GOVERN{
+\[
+\nabla_x\mathcal{L}=2Qx-2\lambda x=0\iff Qx=\lambda x.
+\]
+}
+\INPUTS{$Q$.}
+\DERIVATION{
+\begin{align*}
+\mathcal{L}(x,\lambda)&=x^\top Q x-\lambda(x^\top x-1).\\
+\nabla_x\mathcal{L}&=2Qx-2\lambda x=0\Rightarrow Qx=\lambda x.\\
+\text{By symmetry}&,\ \lambda\in\{\text{eigenvalues}\},\
+\text{minimizer }x:\ \lambda=\lambda_{\min}.
+\end{align*}
+}
+\RESULT{
+Optimal value $\lambda_{\min}$, achieved at its eigenvector.}
+\UNITCHECK{
+All vectors in $\mathbb{R}^d$; scalar $\lambda\in\mathbb{R}$.}
+\EDGECASES{
+\begin{bullets}
+\item Multiple minimizers when $\lambda_{\min}$ has multiplicity greater than one.
+\end{bullets}
+}
+\ALTERNATE{
+Diagonalize $Q=U\Lambda U^\top$ and minimize $\sum \lambda_i y_i^2$ with
+$\sum y_i^2=1$.}
+\VALIDATION{
+\begin{bullets}
+\item Numerically compare $x^\top Q x$ across eigenvectors.
+\end{bullets}
+}
+\INTUITION{
+Quadratic energy concentrates along eigen-directions of smallest curvature.}
+\CANONICAL{
+\begin{bullets}
+\item Constrained stationarity reduces to eigenvalue problems.
+\end{bullets}
+}
+
+\ProblemPage{10}{Combo: Ridge Regression Normal Equations}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Minimize $f(x)=\tfrac12\|Ax-b\|^2+\tfrac{\lambda}{2}\|x\|^2$ for $\lambda>0$.
+
+\PROBLEM{
+Derive gradient, Hessian, and closed-form solution.}
+\MODEL{
+\[
+f(x)=\tfrac12(Ax-b)^\top(Ax-b)+\tfrac{\lambda}{2}x^\top x.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\lambda>0$.
+\end{bullets}
+}
+\varmapStart
+\var{A}{data matrix.}
+\var{b}{target vector.}
+\var{x}{parameter vector.}
+\var{\lambda}{regularization strength.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 2 plus gradient of $\tfrac{\lambda}{2}\|x\|^2$ equals $\lambda x$.}
+\GOVERN{
+\[
+\nabla f(x)=A^\top(Ax-b)+\lambda x,\quad
+\nabla^2 f=A^\top A+\lambda I.
+\]
+}
+\INPUTS{$A,b,\lambda$.}
+\DERIVATION{
+\begin{align*}
+\nabla f=0&\iff (A^\top A+\lambda I)x=A^\top b.\\
+&\implies x^*=(A^\top A+\lambda I)^{-1}A^\top b.
+\end{align*}
+}
+\RESULT{
+Unique minimizer $x^*$ with strictly positive definite Hessian.}
+\UNITCHECK{
+$(A^\top A+\lambda I)^{-1}A^\top b\in\mathbb{R}^d$.}
+\EDGECASES{
+\begin{bullets}
+\item As $\lambda\to 0^+$, recover least-squares solution.
+\item As $\lambda\to \infty$, $x^*\to 0$.
+\end{bullets}
+}
+\ALTERNATE{
+Augment data: $\tilde{A}=\begin{bmatrix}A\\ \sqrt{\lambda}I\end{bmatrix}$,
+$\tilde{b}=\begin{bmatrix}b\\ 0\end{bmatrix}$ and solve least squares.}
+\VALIDATION{
+\begin{bullets}
+\item Verify numerically that residual gradient vanishes at $x^*$.
+\end{bullets}
+}
+\INTUITION{
+Regularization stabilizes curvature and shrinks $x$ toward zero.}
+\CANONICAL{
+\begin{bullets}
+\item Normal equations with Tikhonov shift $\lambda I$.
+\end{bullets}
+}
+
+\section{Coding Demonstrations}
+
+\CodeDemoPage{Analytic vs. Finite-Difference Gradient for Least Squares}
+\PROBLEM{
+Verify $\nabla f(x)=A^\top(Ax-b)$ for $f(x)=\tfrac12\|Ax-b\|^2$
+by comparing to finite differences.}
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> tuple} — parse sizes and seed.
+\item \inlinecode{def solve_case(obj) -> float} — max grad diff.
+\item \inlinecode{def validate() -> None} — assertions on tolerance.
+\item \inlinecode{def main() -> None} — orchestrate run.
+\end{bullets}
+}
+\INPUTS{
+$n,d,\text{seed}$; generate deterministic $A,b,x$.}
+\OUTPUTS{
+Maximum absolute difference between analytic and numeric gradients.}
+\FORMULA{
+\[
+\nabla f(x)=A^\top(Ax-b),\quad
+g^{\mathrm{FD}}_i=\frac{f(x+he_i)-f(x-he_i)}{2h}.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    n, d, seed = [int(x) for x in s.split()]
+    return n, d, seed
+
+def fval(A, b, x):
+    r = A.dot(x) - b
+    return 0.5 * float(r.T.dot(r))
+
+def grad(A, b, x):
+    return A.T.dot(A.dot(x) - b)
+
+def solve_case(obj):
+    n, d, seed = obj
+    np.random.seed(seed)
+    A = np.random.randn(n, d)
+    b = np.random.randn(n)
+    x = np.random.randn(d)
+    g = grad(A, b, x)
+    h = 1e-6
+    g_fd = np.zeros(d)
+    for i in range(d):
+        e = np.zeros(d); e[i] = 1.0
+        g_fd[i] = (fval(A, b, x + h*e) - fval(A, b, x - h*e))/(2*h)
+    return float(np.max(np.abs(g - g_fd)))
+
+def validate():
+    err = solve_case((50, 8, 0))
+    assert err < 1e-5
+
+def main():
+    validate()
+    err = solve_case(read_input("80 10 1"))
+    print("max_grad_diff", err)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+import jax
+import jax.numpy as jnp
+
+def read_input(s):
+    n, d, seed = [int(x) for x in s.split()]
+    return n, d, seed
+
+def fval_jax(A, b, x):
+    r = A @ x - b
+    return 0.5 * jnp.vdot(r, r).real
+
+def solve_case(obj):
+    n, d, seed = obj
+    np.random.seed(seed)
+    A = np.random.randn(n, d)
+    b = np.random.randn(n)
+    x = np.random.randn(d)
+    grad_fun = jax.grad(lambda t: fval_jax(jnp.array(A),
+                                           jnp.array(b), t))
+    g_lib = np.array(grad_fun(jnp.array(x)))
+    g_ref = A.T.dot(A.dot(x) - b)
+    return float(np.max(np.abs(g_lib - g_ref)))
+
+def validate():
+    err = solve_case((60, 7, 0))
+    assert err < 1e-7
+
+def main():
+    validate()
+    err = solve_case(read_input("100 12 1"))
+    print("max_lib_diff", err)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Time $\mathcal{O}(nd)$ for analytic gradient; finite-difference adds
+$\mathcal{O}(nd)$ per coordinate yielding $\mathcal{O}(nd^2)$; space
+$\mathcal{O}(nd)$.}
+\FAILMODES{
+\begin{bullets}
+\item Too large $h$ biases finite differences; too small $h$ causes
+cancellation.
+\item Non-determinism avoided by seeding random generator.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Use central differences for better accuracy.
+\item Scale data to avoid overflow in $A^\top A$.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Assert small max difference; try multiple seeds and sizes.
+\end{bullets}
+}
+\RESULT{
+Analytic and automatic differentiation agree up to tolerance.}
+\EXPLANATION{
+The code implements Formula 2 and compares to numeric and AD gradients,
+confirming the differential-to-gradient bridge and explicit form.}
+\EXTENSION{
+Vectorize finite differences using matrix perturbations.}
+
+\CodeDemoPage{Log-Determinant Gradient Check on SPD Matrices}
+\PROBLEM{
+Verify $\nabla \log\det X=X^{-T}$ on random SPD matrices.}
+\API{
+\begin{bullets}
+\item \inlinecode{def make_spd(d, seed) -> X} — construct SPD matrix.
+\item \inlinecode{def grad_logdet(X) -> G} — analytic gradient.
+\item \inlinecode{def check(X) -> float} — max diff vs. AD or FD.
+\item \inlinecode{def main() -> None} — run assertions.
+\end{bullets}
+}
+\INPUTS{
+Dimension $d$, seed for reproducibility.}
+\OUTPUTS{
+Maximum norm difference between analytic and reference gradient.}
+\FORMULA{
+\[
+\nabla f(X)=(X^{-1})^\top,\quad
+f(X)=\log\det X.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def make_spd(d, seed=0):
+    np.random.seed(seed)
+    M = np.random.randn(d, d)
+    X = M.T.dot(M) + d * np.eye(d)
+    return X
+
+def grad_logdet(X):
+    return np.linalg.inv(X).T
+
+def fd_grad(X, h=1e-6):
+    d = X.shape[0]
+    G = np.zeros_like(X)
+    for i in range(d):
+        for j in range(d):
+            E = np.zeros_like(X)
+            E[i, j] = 1.0
+            f1 = np.log(np.linalg.det(X + h*E))
+            f2 = np.log(np.linalg.det(X - h*E))
+            G[i, j] = (f1 - f2) / (2*h)
+    return G
+
+def check(X):
+    G = grad_logdet(X)
+    Gfd = fd_grad(X)
+    return float(np.max(np.abs(G - Gfd)))
+
+def main():
+    X = make_spd(5, seed=1)
+    err = check(X)
+    assert err < 1e-5
+    print("max_grad_diff", err)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+import jax
+import jax.numpy as jnp
+
+def make_spd(d, seed=0):
+    rng = np.random.RandomState(seed)
+    M = rng.randn(d, d)
+    return M.T.dot(M) + d * np.eye(d)
+
+def f_logdet(X):
+    return jnp.linalg.slogdet(X)[1]
+
+def check(X):
+    Xj = jnp.array(X)
+    G_ad = jax.jacrev(lambda Z: f_logdet(Z))(Xj)
+    G_np = np.linalg.inv(X).T
+    return float(np.max(np.abs(np.array(G_ad) - G_np)))
+
+def main():
+    X = make_spd(4, seed=2)
+    err = check(X)
+    assert err < 1e-6
+    print("max_lib_diff", err)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Time $\mathcal{O}(d^3)$ per gradient evaluation due to inversion or
+determinant; space $\mathcal{O}(d^2)$.}
+\FAILMODES{
+\begin{bullets}
+\item Near-singular $X$ leads to unstable determinants and inverses.
+\item Finite differences suffer from cancellation for tiny $h$.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Use slogdet to avoid overflow.
+\item Symmetrize $X$ numerically to reduce asymmetry noise.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Compare analytic gradient to AD jacobian; assert small difference.
+\end{bullets}
+}
+\RESULT{
+Agreement within tolerance confirms Formula 5.}
+\EXPLANATION{
+Implements the differential identity $d\log\det X=\mathrm{tr}(X^{-1}dX)$.}
+\EXTENSION{
+Test Hessian action via directional second differences.}
+
+\CodeDemoPage{Gradient Descent for Least Squares vs. Closed Form}
+\PROBLEM{
+Solve least squares via gradient descent and compare to normal equations.}
+\API{
+\begin{bullets}
+\item \inlinecode{def generate(n,d,seed)} — deterministic data.
+\item \inlinecode{def gd(A,b,eta,T)} — gradient descent solver.
+\item \inlinecode{def closed_form(A,b)} — $(A^\top A)^{-1}A^\top b$.
+\item \inlinecode{def main()} — asserts convergence and prints error.
+\end{bullets}
+}
+\INPUTS{
+$n,d,\text{seed}$ for data, step size $\eta$, iterations $T$.}
+\OUTPUTS{
+Final parameter and its distance to closed-form solution.}
+\FORMULA{
+\[
+x_{t+1}=x_t-\eta A^\top(Ax_t-b).
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def generate(n=200, d=5, seed=0):
+    np.random.seed(seed)
+    A = np.random.randn(n, d)
+    x_true = np.random.randn(d)
+    b = A.dot(x_true) + 0.01*np.random.randn(n)
+    return A, b
+
+def gd(A, b, eta=0.05, T=2000):
+    x = np.zeros(A.shape[1])
+    for _ in range(T):
+        x -= eta * (A.T.dot(A.dot(x) - b))
+    return x
+
+def closed_form(A, b):
+    return np.linalg.solve(A.T.dot(A), A.T.dot(b))
+
+def main():
+    A, b = generate()
+    x_gd = gd(A, b)
+    x_cf = closed_form(A, b)
+    err = np.linalg.norm(x_gd - x_cf)
+    assert err < 1e-3
+    print("distance", err)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+from sklearn.linear_model import LinearRegression
+
+def generate(n=200, d=5, seed=0):
+    rng = np.random.RandomState(seed)
+    A = rng.randn(n, d)
+    x_true = rng.randn(d)
+    b = A.dot(x_true) + 0.01*rng.randn(n)
+    return A, b, x_true
+
+def library_solution(A, b):
+    model = LinearRegression(fit_intercept=False)
+    model.fit(A, b)
+    return model.coef_
+
+def main():
+    A, b, _ = generate()
+    x_lib = library_solution(A, b)
+    x_cf = np.linalg.solve(A.T.dot(A), A.T.dot(b))
+    err = np.linalg.norm(x_lib - x_cf)
+    assert err < 1e-8
+    print("distance", err)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Per iteration $\mathcal{O}(nd)$; total $\mathcal{O}(ndT)$; closed form
+$\mathcal{O}(nd^2+d^3)$.}
+\FAILMODES{
+\begin{bullets}
+\item Divergence if $\eta>2/\|A^\top A\|_2$.
+\item Ill-conditioning slows convergence; preconditioning helps.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Use small $\eta$ or line search for stability.
+\item Standardize columns of $A$.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Compare to closed-form and assert small distance.
+\end{bullets}
+}
+\RESULT{
+Gradient descent converges to the normal-equation solution.}
+\EXPLANATION{
+Implements Formula 2 gradient in an iterative scheme and verifies correctness.}
+
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Train linear regression using matrix calculus: compute gradient and Hessian,
+solve normal equations, and verify predictions.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Data are i.i.d. with finite variance.
+\item Model $y=Ax+\varepsilon$, $\mathbb{E}[\varepsilon]=0$.
+\end{bullets}
+}
+\WHICHFORMULA{
+Formula 2: $\nabla f(x)=A^\top(Ax-b)$, $\nabla^2 f=A^\top A$.}
+\varmapStart
+\var{A}{design matrix $(n,d)$.}
+\var{b}{targets $(n)$.}
+\var{x}{parameters $(d)$.}
+\var{\varepsilon}{noise term.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic data.
+\item Fit via normal equations and via scikit-learn.
+\item Evaluate RMSE and $R^2$.
+\end{bullets}
+}
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def generate(n=100, d=3, noise=0.3, seed=0):
+    np.random.seed(seed)
+    A = np.random.randn(n, d)
+    x_true = np.arange(1, d+1)
+    b = A.dot(x_true) + noise*np.random.randn(n)
+    return A, b, x_true
+
+def fit_normal(A, b):
+    return np.linalg.solve(A.T.dot(A), A.T.dot(b))
+
+def rmse(y, yhat):
+    return float(np.sqrt(np.mean((y - yhat)**2)))
+
+def r2(y, yhat):
+    ssr = np.sum((y - yhat)**2)
+    sst = np.sum((y - np.mean(y))**2)
+    return float(1.0 - ssr/sst)
+
+def main():
+    A, b, _ = generate()
+    x = fit_normal(A, b)
+    yhat = A.dot(x)
+    print("RMSE", round(rmse(b, yhat), 4), "R2", round(r2(b, yhat), 4))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{Implementation (Library Version)}
+\begin{codepy}
+import numpy as np
+from sklearn.linear_model import LinearRegression
+
+def main():
+    np.random.seed(0)
+    n, d = 120, 4
+    A = np.random.randn(n, d)
+    x_true = np.arange(1, d+1)
+    b = A.dot(x_true) + 0.25*np.random.randn(n)
+    model = LinearRegression(fit_intercept=False).fit(A, b)
+    yhat = model.predict(A)
+    ssr = np.sum((b - yhat)**2)
+    sst = np.sum((b - np.mean(b))**2)
+    r2 = 1.0 - ssr/sst
+    print("coef", np.round(model.coef_, 3), "R2", round(r2, 4))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{RMSE and $R^2$.}
+\INTERPRET{Normal equations provide optimal least-squares coefficients.}
+\NEXTSTEPS{Add ridge penalty to stabilize ill-conditioned designs.}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Mean-variance optimization gradient: minimize $f(w)=\tfrac12 w^\top\Sigma w
+-\mu^\top w$ and compute $w^*$.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\Sigma\succ 0$ and $\mu\in\mathbb{R}^d$ known.
+\end{bullets}
+}
+\WHICHFORMULA{
+Formula 3 with $Q=\Sigma$ and $c=-\mu$.}
+\varmapStart
+\var{w}{portfolio weights.}
+\var{\Sigma}{covariance matrix.}
+\var{\mu}{expected returns.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Simulate $\Sigma$ and $\mu$.
+\item Compute $w^*=\Sigma^{-1}\mu$.
+\item Verify gradient vanishes and curvature positive definite.
+\end{bullets}
+}
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def simulate(d=4, seed=0):
+    np.random.seed(seed)
+    A = np.random.randn(d, d)
+    Sigma = A.T.dot(A) + d*np.eye(d)
+    mu = np.random.randn(d)
+    return Sigma, mu
+
+def solve_mv(Sigma, mu):
+    return np.linalg.solve(Sigma, mu)
+
+def main():
+    Sigma, mu = simulate()
+    w = solve_mv(Sigma, mu)
+    grad = Sigma.dot(w) - mu
+    lam_min = np.linalg.eigvalsh(Sigma)[0]
+    print("max_grad", float(np.max(np.abs(grad))), "lambda_min", lam_min)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Gradient norm at solution, minimum eigenvalue of $\Sigma$.}
+\INTERPRET{Stationarity and positive curvature ensure unique optimizer.}
+\NEXTSTEPS{Add constraints $\mathbf{1}^\top w=1$ via Lagrange multipliers.}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Backprop through linear layer: $Y=XA$, loss $L=\tfrac12\|YA^\top-B\|_F^2$
+or simpler $L=\tfrac12\|XA-B\|_F^2$; compute gradient w.r.t. $X$.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Squared-error loss; linear maps.
+\end{bullets}
+}
+\WHICHFORMULA{
+Formula 4: $\nabla_X\tfrac12\|XA-B\|_F^2=(XA-B)A^\top$.}
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic $X,A,B$.
+\item Compute analytic gradient and compare to AD.
+\end{bullets}
+}
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+import jax
+import jax.numpy as jnp
+
+def loss(X, A, B):
+    R = X @ A - B
+    return 0.5 * jnp.vdot(R, R).real
+
+def analytic_grad(X, A, B):
+    return (X.dot(A) - B).dot(A.T)
+
+def main():
+    np.random.seed(0)
+    m, n, d = 5, 6, 4
+    X = np.random.randn(m, d)
+    A = np.random.randn(d, n)
+    B = np.random.randn(m, n)
+    grad_fun = jax.grad(lambda Z: loss(Z, jnp.array(A), jnp.array(B)))
+    G_ad = np.array(grad_fun(jnp.array(X)))
+    G_an = analytic_grad(X, A, B)
+    err = np.max(np.abs(G_ad - G_an))
+    print("max_grad_diff", float(err))
+    assert err < 1e-6
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Max absolute gradient difference.}
+\INTERPRET{Backprop equals adjoint times residual in linear networks.}
+\NEXTSTEPS{Extend to multi-layer by repeated chain rule.}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Standardize features by minimizing $f(\alpha,\beta)=\tfrac12\|A\alpha+\beta
+\mathbf{1}-\tilde{A}\|_F^2$ columnwise, where $\alpha,\beta$ are diagonal
+scales and shifts.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Columnwise independent transforms.
+\end{bullets}
+}
+\WHICHFORMULA{
+Formula 2 applied per column: minimize $\tfrac12\|a\alpha+\beta \mathbf{1}-t\|^2$.}
+\PIPELINE{
+\begin{bullets}
+\item Create synthetic data with known mean and variance.
+\item Solve optimal $\beta$ as mean shift and $\alpha$ as variance scale.
+\item Verify standardized mean $0$ and variance $1$.
+\end{bullets}
+}
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+import pandas as pd
+
+def create_df(n=200, d=3, seed=0):
+    np.random.seed(seed)
+    A = np.random.randn(n, d) * 2 + 5
+    df = pd.DataFrame(A, columns=[f"X{i}" for i in range(d)])
+    return df
+
+def standardize(df):
+    mu = df.mean()
+    sigma = df.std(ddof=0)
+    alpha = 1.0 / sigma
+    beta = -mu / sigma
+    Z = df.mul(alpha, axis=1).add(beta, axis=1)
+    return Z, alpha.values, beta.values
+
+def main():
+    df = create_df()
+    Z, alpha, beta = standardize(df)
+    m = Z.mean().values
+    v = Z.var(ddof=0).values
+    print("mean", np.round(m, 3), "var", np.round(v, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Column means and variances after standardization.}
+\INTERPRET{Standardization corresponds to least-squares fitting of affine
+column transforms.}
+\NEXTSTEPS{Extend to whitening using covariance and matrix square roots.}
+
+\end{document}

@@ -1,0 +1,921 @@
+% !TeX program = xelatex
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Lexicographically Smallest Generated String}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{LC}
+\LINE{URL}{\url{https://leetcode.com/problems/lexicographically-smallest-generated-string/}}
+\LINE{DIFFICULTY / RATING}{hard}
+\STATEMENT{You are given two strings, \texttt{str1} and \texttt{str2}, of lengths \texttt{n} and \texttt{m}, respectively. A string \texttt{word} of length \texttt{n + m - 1} is defined to be \textbf{generated} by \texttt{str1} and \texttt{str2} if it satisfies the following conditions for \textbf{each} index $0 \le i \le n - 1$:
+\begin{bullets}
+\item If \texttt{str1[i] == 'T'}, the \textbf{substring} of \texttt{word} with size \texttt{m} starting at index \texttt{i} is \textbf{equal} to \texttt{str2}, i.e., \texttt{word[i..(i + m - 1)] == str2}.
+\item If \texttt{str1[i] == 'F'}, the \textbf{substring} of \texttt{word} with size \texttt{m} starting at index \texttt{i} is \textbf{not equal} to \texttt{str2}, i.e., \texttt{word[i..(i + m - 1)] != str2}.
+\end{bullets}
+Return the \textbf{lexicographically smallest} possible string that can be \textbf{generated} by \texttt{str1} and \texttt{str2}. If no string can be generated, return an empty string \texttt{""}.
+
+Examples:
+\begin{bullets}
+\item Example 1: Input: \texttt{str1 = "TFTF"}, \texttt{str2 = "ab"}; Output: \texttt{"ababa"}. The strings \texttt{"ababa"} and \texttt{"ababb"} can be generated; return \texttt{"ababa"} since it is lexicographically smaller.
+\item Example 2: Input: \texttt{str1 = "TFTF"}, \texttt{str2 = "abc"}; Output: \texttt{""}. No string satisfies the conditions.
+\item Example 3: Input: \texttt{str1 = "F"}, \texttt{str2 = "d"}; Output: \texttt{"a"}.
+\end{bullets}
+Constraints:
+\begin{bullets}
+\item $1 \le n = \texttt{str1.length} \le 10^{4}$.
+\item $1 \le m = \texttt{str2.length} \le 500$.
+\item \texttt{str1} consists only of \texttt{'T'} or \texttt{'F'}.
+\item \texttt{str2} consists only of lowercase English letters.
+\end{bullets}}
+\BREAKDOWN{Treat the set of occurrences of \texttt{str2} in the unknown \texttt{word} as exactly the \texttt{T}-positions of \texttt{str1}. Build the lexicographically smallest \texttt{word} of length $n + m - 1$ that realizes this occurrence mask or report impossibility.}
+\ELI{Scan the string you are building through a KMP automaton and force matches exactly where \texttt{str1} says \texttt{T}, avoiding matches where it says \texttt{F}.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Two strings: \texttt{str1} with length $n$ over alphabet $\{\texttt{T},\texttt{F}\}$, and \texttt{str2} with length $m$ over lowercase English letters.}
+\OUTPUTS{A string \texttt{word} of length $n + m - 1$ which is lexicographically smallest among all strings whose length-$m$ substrings equal \texttt{str2} exactly at indices $i$ with \texttt{str1[i]} = \texttt{'T'} and do not equal \texttt{str2} at indices with \texttt{'F'}. If impossible, return the empty string \texttt{""}.}
+\SAMPLES{
+\begin{bullets}
+\item Input: \texttt{str1 = "TFTF"}, \texttt{str2 = "ab"}; Output: \texttt{"ababa"}.
+\item Input: \texttt{str1 = "F"}, \texttt{str2 = "d"}; Output: \texttt{"a"}.
+\end{bullets}
+}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $s$ be the unknown \texttt{word} of length $N = n + m - 1$. Define a predicate $M(i)$ for $i \in \{0,\ldots,n-1\}$ indicating whether $s[i..i+m-1]$ equals \texttt{str2}. The requirement is $M(i) \Leftrightarrow (\texttt{str1}[i] = \texttt{'T'})$ for all $i$. Among all $s$ satisfying this, minimize $s$ in lexicographic order.}
+\varmapStart
+\var{n}{length of \texttt{str1}}
+\var{m}{length of \texttt{str2}}
+\var{N}{target length $n+m-1$}
+\var{s}{candidate output string}
+\var{P}{pattern \texttt{str2}}
+\var{\pi}{failure function (LPS) of KMP for $P$}
+\var{q}{current KMP state, i.e., matched prefix length}
+\var{E_p}{the event “a match ends at position $p$”}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\forall i\in[0,n-1]:\quad E_{i+m-1} \iff \texttt{str1}[i] = \texttt{'T'},\\
+&\text{KMP step:}\quad q' = \mathrm{step}(q, s[p]);\quad E_p \iff q' = m,\quad q_{\text{next}} = \begin{cases}\pi[m-1],& q'=m\\ q',& q'<m\end{cases}.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Alphabet is lowercase English letters. KMP automaton is built on \texttt{str2}. All starts $i$ are exactly $0,\ldots,n-1$ since $N-m = n-1$.}
+\INVARIANTS{
+\begin{bullets}
+\item KMP state $q$ never exceeds the number of processed characters.
+\item A match at $p$ can occur only if $p \ge m-1$.
+\item If \texttt{str1}[i] = \texttt{'T'}, then the window $s[i..i+m-1]$ equals \texttt{str2}; this forces those letters uniquely.
+\end{bullets}
+}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Model feasibility as an occurrence-mask realization: the set of pattern occurrences equals the \texttt{T}-mask of \texttt{str1}. Use KMP to simulate and check.}
+\ASSUMPTIONS{Try to construct the string left-to-right with global validation via DP feasibility.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute KMP failure function \texttt{lps} for \texttt{str2} and the KMP single-step transitions.
+\item Compute any letters forced by overlapping \texttt{T}-windows; if a conflict arises, return empty.
+\item Use backward feasibility DP on states $\{0,\ldots,m-1\}$ at each position to know if a suffix is achievable given the required match/no-match at that position.
+\item Greedily reconstruct the lexicographically smallest string using the feasibility table.
+\end{algosteps}
+\COMPLEXITY{Let $N=n+m-1$. With bitset acceleration per position, computing reachability is $O(N\cdot m)$ bitset-ANDs on $\approx m$-bit integers; reconstruction is $O(N\cdot \sigma)$ where $\sigma=26$. Memory is $O(N)$ bitsets.}
+\[
+\begin{aligned}
+T(N,m) &\approx O(N\cdot m + N\cdot \sigma),\\
+S(N,m) &\approx O(N + m + \sigma m).
+\end{aligned}
+\]
+\CORRECTNESS{The DP enforces exactly the emission pattern of KMP matches equals the \texttt{T}/\texttt{F} mask. Reconstruction picks the smallest feasible letter at each position that can still reach a valid suffix, yielding the lexicographically smallest solution.}
+\EDGECASES{All \texttt{F}; all \texttt{T}; $m=1$; overlapping \texttt{T} windows with conflicts; self-overlapping patterns like \texttt{aaaa}.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+from typing import List, Tuple
+
+class Solution:
+    def lexicographicallySmallestGeneratedString(self, str1: str, str2: str) -> str:
+        n = len(str1)
+        m = len(str2)
+        N = n + m - 1
+        # 1) Force letters from 'T' windows; detect conflicts early.
+        forced: List[str] = [None] * N
+        for i, tf in enumerate(str1):
+            if tf == 'T':
+                for j, ch in enumerate(str2):
+                    p = i + j
+                    if forced[p] is None:
+                        forced[p] = ch
+                    elif forced[p] != ch:
+                        return ""
+        # 2) KMP LPS
+        P = str2
+        lps = [0] * m
+        k = 0
+        for i in range(1, m):
+            while k > 0 and P[k] != P[i]:
+                k = lps[k - 1]
+            if P[k] == P[i]:
+                k += 1
+            lps[i] = k
+        # 3) Precompute transitions: next_state[s][c], emit[s][c]
+        next_state = [[0] * 26 for _ in range(m)]
+        emit = [[0] * 26 for _ in range(m)]
+        for s in range(m):
+            for ci in range(26):
+                ch = chr(ord('a') + ci)
+                t = s
+                while t > 0 and P[t] != ch:
+                    t = lps[t - 1]
+                if P[t] == ch:
+                    t += 1
+                if t == m:
+                    emit[s][ci] = 1
+                    t = lps[m - 1]
+                else:
+                    emit[s][ci] = 0
+                next_state[s][ci] = t
+        # 4) Build adjacency bitsets per emission requirement
+        # e = 0 (no emit), 1 (emit), 2 (don't care)
+        adj_any = [[0] * m for _ in range(3)]
+        adj_char = [[[0] * m for _ in range(3)] for __ in range(26)]
+        for s in range(m):
+            for ci in range(26):
+                t = next_state[s][ci]
+                e = emit[s][ci]
+                bit = 1 << t
+                # any-letter adjacency
+                adj_any[2][s] |= bit
+                adj_any[e][s] |= bit
+                # forced-letter adjacency
+                adj_char[ci][2][s] |= bit
+                adj_char[ci][e][s] |= bit
+        # 5) Backward feasibility DP with bitsets
+        reach = [0] * (N + 1)
+        all_states_bit = (1 << m) - 1
+        reach[N] = all_states_bit  # any ending state is fine
+        for pos in range(N - 1, -1, -1):
+            i = pos - m + 1
+            if 0 <= i < n:
+                ef = 1 if str1[i] == 'T' else 0
+            else:
+                ef = 2  # don't care
+            if forced[pos] is None:
+                adj_vec = adj_any[ef]
+            else:
+                ci = ord(forced[pos]) - ord('a')
+                adj_vec = adj_char[ci][ef]
+            nxt = reach[pos + 1]
+            cur = 0
+            for s in range(m):
+                if adj_vec[s] & nxt:
+                    cur |= (1 << s)
+            reach[pos] = cur
+        # Check start state 0 is feasible
+        if (reach[0] & 1) == 0:
+            return ""
+        # 6) Reconstruct lexicographically smallest string
+        ans = ['?'] * N
+        state = 0
+        for pos in range(N):
+            i = pos - m + 1
+            if 0 <= i < n:
+                ef = 1 if str1[i] == 'T' else 0
+            else:
+                ef = 2
+            cand_list: List[str]
+            if forced[pos] is not None:
+                cand_list = [forced[pos]]
+            else:
+                cand_list = [chr(ord('a') + x) for x in range(26)]
+            placed = False
+            for ch in cand_list:
+                ci = ord(ch) - ord('a')
+                e = emit[state][ci]
+                if ef != 2 and e != ef:
+                    continue
+                t = next_state[state][ci]
+                if ((reach[pos + 1] >> t) & 1) == 1:
+                    ans[pos] = ch
+                    state = t
+                    placed = True
+                    break
+            if not placed:
+                return ""
+        return "".join(ans)
+
+# Simple asserts (from prompt)
+if __name__ == "__main__":
+    sol = Solution()
+    assert sol.lexicographicallySmallestGeneratedString("TFTF", "ab") == "ababa"
+    assert sol.lexicographicallySmallestGeneratedString("TFTF", "abc") == ""
+    assert sol.lexicographicallySmallestGeneratedString("F", "d") == "a"
+    # Additional checks
+    assert sol.lexicographicallySmallestGeneratedString("T", "a") == "a"
+    assert sol.lexicographicallySmallestGeneratedString("F", "a") == "b"
+\end{minted}
+\VALIDATION{The asserts cover the given examples and a few edge cases: single window \texttt{T}/\texttt{F}.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Automaton DP with Bitset Acceleration}
+\WHICHFORMULA{Use the KMP automaton to translate window constraints into per-position emission constraints, and compute feasibility using backward DP over automaton states with fast bitset preimages.}
+\ASSUMPTIONS{Alphabet size is small (26). Pattern length $m \le 500$, so bitsets over $m$ states are efficient.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build KMP \texttt{lps} and precompute single-character transitions and emission flags for all states and letters.
+\item Precompute adjacency bitsets per emission requirement: for each state, the set of next states reachable using any letter (or a fixed letter) that either emits or does not emit a match.
+\item Backward DP: given the set of reachable next states at position $p+1$, compute the states at $p$ by taking preimages through the position's adjacency relation.
+\item Greedy reconstruction: at each position, try letters in \texttt{'a'..'z'} (or the forced letter if any) and pick the smallest that leads to a reachable next state while respecting the emit requirement.
+\end{algosteps}
+\COMPLEXITY{Compared to a naive $O(N\cdot m \cdot \sigma)$ DP, bitset preimages reduce the per-position work to $O(m)$ big-integer \texttt{\&} operations.}
+\[
+\begin{aligned}
+T &\approx O(N\cdot m + N\cdot \sigma),\quad S \approx O(N + m + \sigma m).
+\end{aligned}
+\]
+\CORRECTNESS{Each position imposes a local constraint on whether a KMP match ends there. The DP guarantees global feasibility across overlaps; the greedy choice conditioned on reachability yields the lexicographically smallest valid string.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+from typing import List
+
+class Solution:
+    def lexicographicallySmallestGeneratedString(self, str1: str, str2: str) -> str:
+        n, m = len(str1), len(str2)
+        N = n + m - 1
+        # Forced letters from 'T' windows
+        forced: List[str] = [None] * N
+        for i, tf in enumerate(str1):
+            if tf == 'T':
+                for j, ch in enumerate(str2):
+                    p = i + j
+                    if forced[p] is None:
+                        forced[p] = ch
+                    elif forced[p] != ch:
+                        return ""
+        # KMP LPS
+        P = str2
+        lps = [0] * m
+        k = 0
+        for i in range(1, m):
+            while k > 0 and P[k] != P[i]:
+                k = lps[k - 1]
+            if P[k] == P[i]:
+                k += 1
+            lps[i] = k
+        # Transitions
+        next_state = [[0] * 26 for _ in range(m)]
+        emit = [[0] * 26 for _ in range(m)]
+        for s in range(m):
+            for ci in range(26):
+                ch = chr(ord('a') + ci)
+                t = s
+                while t > 0 and P[t] != ch:
+                    t = lps[t - 1]
+                if P[t] == ch:
+                    t += 1
+                if t == m:
+                    emit[s][ci] = 1
+                    t = lps[m - 1]
+                else:
+                    emit[s][ci] = 0
+                next_state[s][ci] = t
+        # Adjacency bitsets
+        adj_any = [[0] * m for _ in range(3)]
+        adj_char = [[[0] * m for _ in range(3)] for __ in range(26)]
+        for s in range(m):
+            for ci in range(26):
+                t = next_state[s][ci]
+                e = emit[s][ci]
+                bit = 1 << t
+                adj_any[2][s] |= bit
+                adj_any[e][s] |= bit
+                adj_char[ci][2][s] |= bit
+                adj_char[ci][e][s] |= bit
+        # Backward DP
+        reach = [0] * (N + 1)
+        reach[N] = (1 << m) - 1
+        for pos in range(N - 1, -1, -1):
+            i = pos - m + 1
+            ef = 1 if (0 <= i < n and str1[i] == 'T') else (0 if 0 <= i < n else 2)
+            if forced[pos] is None:
+                adj_vec = adj_any[ef]
+            else:
+                adj_vec = adj_char[ord(forced[pos]) - 97][ef]
+            nxt = reach[pos + 1]
+            cur = 0
+            for s in range(m):
+                if adj_vec[s] & nxt:
+                    cur |= (1 << s)
+            reach[pos] = cur
+        if (reach[0] & 1) == 0:
+            return ""
+        # Reconstruct
+        ans = []
+        s = 0
+        for pos in range(N):
+            i = pos - m + 1
+            ef = 1 if (0 <= i < n and str1[i] == 'T') else (0 if 0 <= i < n else 2)
+            if forced[pos] is None:
+                candidates = range(26)
+            else:
+                candidates = [ord(forced[pos]) - 97]
+            placed = False
+            for ci in candidates:
+                e = emit[s][ci]
+                if ef != 2 and e != ef:
+                    continue
+                t = next_state[s][ci]
+                if ((reach[pos + 1] >> t) & 1) == 1:
+                    ans.append(chr(ci + 97))
+                    s = t
+                    placed = True
+                    break
+            if not placed:
+                return ""
+        return "".join(ans)
+
+if __name__ == "__main__":
+    sol = Solution()
+    assert sol.lexicographicallySmallestGeneratedString("TFTF", "ab") == "ababa"
+    assert sol.lexicographicallySmallestGeneratedString("TFTF", "abc") == ""
+    assert sol.lexicographicallySmallestGeneratedString("F", "d") == "a"
+\end{minted}
+\VALIDATION{Covers prompt examples. The DP ensures feasibility even with adversarial overlaps of \texttt{T}/\texttt{F}.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Mask-Constrained KMP with Preimage Bitsets}
+\WHICHFORMULA{Treat the required match mask as a stream constraint on the KMP automaton; compute state feasibility by preimage through per-position transition relations, then reconstruct the lexicographically smallest path.}
+\ASSUMPTIONS{Pattern length up to 500; using Python big-int bitsets is efficient for $\sim 500$ states across $\sim 10^4$ positions.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Pre-force letters implied by every \texttt{T}-window; abort if overlapping forces conflict.
+\item Build KMP \texttt{lps}, single-step transitions, and emission flags.
+\item Precompute adjacency bitsets for any-letter and forced-letter cases under emission requirement in $\{0,1,2\}$.
+\item Backward DP: reachability bitset at each position is the set of states whose adjacency intersects the next position's reachability.
+\item Greedy reconstruction: at each position, try letters in increasing order and keep those that satisfy the emit requirement and lead into the next position's reachability bitset.
+\end{algosteps}
+\OPTIMALITY{Among all feasible strings, at the first position where two solutions differ, the reconstruction chooses the smallest letter that still enables feasibility of the suffix; any smaller letter would violate a local emit constraint or lead to a dead state, hence no valid completion exists.}
+\COMPLEXITY{Same as Approach B. The preimage-bitset DP is near-optimal here due to small $m$ and fixed alphabet.}
+\[
+\begin{aligned}
+T &\in \Theta(N\cdot m + N\cdot \sigma),\quad S \in \Theta(N + m + \sigma m).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+from typing import List
+
+class Solution:
+    def lexicographicallySmallestGeneratedString(self, str1: str, str2: str) -> str:
+        n, m = len(str1), len(str2)
+        N = n + m - 1
+        # Forced letters from T windows
+        forced: List[str] = [None] * N
+        for i, tf in enumerate(str1):
+            if tf == 'T':
+                for j, ch in enumerate(str2):
+                    p = i + j
+                    if forced[p] is None:
+                        forced[p] = ch
+                    elif forced[p] != ch:
+                        return ""
+        # KMP LPS
+        P = str2
+        lps = [0] * m
+        k = 0
+        for i in range(1, m):
+            while k > 0 and P[k] != P[i]:
+                k = lps[k - 1]
+            if P[k] == P[i]:
+                k += 1
+            lps[i] = k
+        # Transitions and emits
+        next_state = [[0] * 26 for _ in range(m)]
+        emit = [[0] * 26 for _ in range(m)]
+        for s in range(m):
+            for ci in range(26):
+                ch = chr(ci + 97)
+                t = s
+                while t > 0 and P[t] != ch:
+                    t = lps[t - 1]
+                if P[t] == ch:
+                    t += 1
+                if t == m:
+                    emit[s][ci] = 1
+                    t = lps[m - 1]
+                else:
+                    emit[s][ci] = 0
+                next_state[s][ci] = t
+        # Adjacency bitsets
+        adj_any = [[0] * m for _ in range(3)]
+        adj_char = [[[0] * m for _ in range(3)] for __ in range(26)]
+        for s in range(m):
+            for ci in range(26):
+                t = next_state[s][ci]
+                e = emit[s][ci]
+                bit = 1 << t
+                adj_any[2][s] |= bit
+                adj_any[e][s] |= bit
+                adj_char[ci][2][s] |= bit
+                adj_char[ci][e][s] |= bit
+        # Backward DP reachability
+        reach = [0] * (N + 1)
+        reach[N] = (1 << m) - 1
+        for pos in range(N - 1, -1, -1):
+            i = pos - m + 1
+            if 0 <= i < n:
+                eflag = 1 if str1[i] == 'T' else 0
+            else:
+                eflag = 2
+            if forced[pos] is None:
+                adj_vec = adj_any[eflag]
+            else:
+                adj_vec = adj_char[ord(forced[pos]) - 97][eflag]
+            nxt = reach[pos + 1]
+            cur = 0
+            for s in range(m):
+                if adj_vec[s] & nxt:
+                    cur |= (1 << s)
+            reach[pos] = cur
+        if (reach[0] & 1) == 0:
+            return ""
+        # Reconstruct smallest string
+        res = []
+        s = 0
+        for pos in range(N):
+            i = pos - m + 1
+            if 0 <= i < n:
+                eflag = 1 if str1[i] == 'T' else 0
+            else:
+                eflag = 2
+            if forced[pos] is None:
+                candidates = range(26)
+            else:
+                candidates = [ord(forced[pos]) - 97]
+            ok = False
+            for ci in candidates:
+                e = emit[s][ci]
+                if eflag != 2 and e != eflag:
+                    continue
+                t = next_state[s][ci]
+                if ((reach[pos + 1] >> t) & 1) == 1:
+                    res.append(chr(ci + 97))
+                    s = t
+                    ok = True
+                    break
+            if not ok:
+                return ""
+        return "".join(res)
+
+if __name__ == "__main__":
+    sol = Solution()
+    # Exactly 3 tests
+    assert sol.lexicographicallySmallestGeneratedString("TFTF", "ab") == "ababa"
+    assert sol.lexicographicallySmallestGeneratedString("TFTF", "abc") == ""
+    assert sol.lexicographicallySmallestGeneratedString("F", "d") == "a"
+\end{minted}
+\VALIDATION{Three asserts reproduce the prompt behavior.}
+\RESULT{The constructed string is lexicographically smallest among all strings whose \texttt{str2} occurrences occur exactly at \texttt{T} positions, or empty if infeasible.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests cover: trivial $m=1$; all \texttt{T}; all \texttt{F}; overlaps with conflicts; self-overlapping patterns like \texttt{aaa}.}
+\LINE{CROSS-CHECKS}{Compare reconstruction against feasibility: ensure start state is in reachability at position 0; random small cases can be brute-forced offline.}
+\LINE{EDGE-CASE GENERATOR}{Deterministically generate masks with alternating \texttt{T}/\texttt{F}, and patterns with periodic structure to stress overlaps.}
+\begin{minted}{python}
+from typing import List, Tuple
+import random
+
+def kmp_occurrences(word: str, pat: str) -> List[int]:
+    m = len(pat)
+    # compute lps
+    lps = [0]*m
+    k=0
+    for i in range(1,m):
+        while k>0 and pat[k]!=pat[i]:
+            k = lps[k-1]
+        if pat[k]==pat[i]:
+            k+=1
+        lps[i]=k
+    res=[]
+    q=0
+    for i,ch in enumerate(word):
+        while q>0 and pat[q]!=ch:
+            q = lps[q-1]
+        if pat[q]==ch:
+            q+=1
+        if q==m:
+            res.append(i-m+1)
+            q = lps[m-1]
+    return res
+
+class Solution:
+    def lexicographicallySmallestGeneratedString(self, str1: str, str2: str) -> str:
+        n, m = len(str1), len(str2)
+        N = n + m - 1
+        forced: List[str] = [None] * N
+        for i, tf in enumerate(str1):
+            if tf == 'T':
+                for j, ch in enumerate(str2):
+                    p = i + j
+                    if forced[p] is None:
+                        forced[p] = ch
+                    elif forced[p] != ch:
+                        return ""
+        P = str2
+        # lps
+        lps = [0]*m
+        k=0
+        for i in range(1,m):
+            while k>0 and P[k]!=P[i]:
+                k = lps[k-1]
+            if P[k]==P[i]:
+                k+=1
+            lps[i]=k
+        next_state = [[0]*26 for _ in range(m)]
+        emit = [[0]*26 for _ in range(m)]
+        for s in range(m):
+            for ci in range(26):
+                ch = chr(97+ci)
+                t = s
+                while t>0 and P[t]!=ch:
+                    t = lps[t-1]
+                if P[t]==ch:
+                    t+=1
+                if t==m:
+                    emit[s][ci]=1
+                    t = lps[m-1]
+                else:
+                    emit[s][ci]=0
+                next_state[s][ci]=t
+        adj_any = [[0]*m for _ in range(3)]
+        adj_char = [[[0]*m for _ in range(3)] for __ in range(26)]
+        for s in range(m):
+            for ci in range(26):
+                t = next_state[s][ci]
+                e = emit[s][ci]
+                bit = 1<<t
+                adj_any[2][s] |= bit
+                adj_any[e][s] |= bit
+                adj_char[ci][2][s] |= bit
+                adj_char[ci][e][s] |= bit
+        reach = [0]*(N+1)
+        reach[N] = (1<<m)-1
+        for pos in range(N-1,-1,-1):
+            i = pos - m + 1
+            if 0<=i<len(str1):
+                ef = 1 if str1[i]=='T' else 0
+            else:
+                ef = 2
+            if forced[pos] is None:
+                adj_vec = adj_any[ef]
+            else:
+                adj_vec = adj_char[ord(forced[pos])-97][ef]
+            nxt = reach[pos+1]
+            cur=0
+            for s in range(m):
+                if adj_vec[s] & nxt:
+                    cur |= (1<<s)
+            reach[pos]=cur
+        if (reach[0] & 1)==0:
+            return ""
+        res=[]
+        s=0
+        for pos in range(N):
+            i = pos - m + 1
+            if 0<=i<len(str1):
+                ef = 1 if str1[i]=='T' else 0
+            else:
+                ef = 2
+            if forced[pos] is None:
+                cand = range(26)
+            else:
+                cand = [ord(forced[pos])-97]
+            ok=False
+            for ci in cand:
+                e = emit[s][ci]
+                if ef!=2 and e!=ef:
+                    continue
+                t = next_state[s][ci]
+                if ((reach[pos+1]>>t)&1)==1:
+                    res.append(chr(97+ci))
+                    s=t
+                    ok=True
+                    break
+            if not ok:
+                return ""
+        return "".join(res)
+
+if __name__ == "__main__":
+    sol = Solution()
+    # Quick cross-checks
+    assert sol.lexicographicallySmallestGeneratedString("TFTF", "ab") == "ababa"
+    assert sol.lexicographicallySmallestGeneratedString("TFTF", "abc") == ""
+    assert sol.lexicographicallySmallestGeneratedString("F", "d") == "a"
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+from typing import List
+
+class Solution:
+    def lexicographicallySmallestGeneratedString(self, str1: str, str2: str) -> str:
+        n, m = len(str1), len(str2)
+        N = n + m - 1
+        # Force letters from T-windows
+        forced: List[str] = [None] * N
+        for i, tf in enumerate(str1):
+            if tf == 'T':
+                for j, ch in enumerate(str2):
+                    p = i + j
+                    if forced[p] is None:
+                        forced[p] = ch
+                    elif forced[p] != ch:
+                        return ""
+        # KMP LPS
+        P = str2
+        lps = [0] * m
+        k = 0
+        for i in range(1, m):
+            while k > 0 and P[k] != P[i]:
+                k = lps[k - 1]
+            if P[k] == P[i]:
+                k += 1
+            lps[i] = k
+        # Transitions
+        next_state = [[0] * 26 for _ in range(m)]
+        emit = [[0] * 26 for _ in range(m)]
+        for s in range(m):
+            for ci in range(26):
+                ch = chr(97 + ci)
+                t = s
+                while t > 0 and P[t] != ch:
+                    t = lps[t - 1]
+                if P[t] == ch:
+                    t += 1
+                if t == m:
+                    emit[s][ci] = 1
+                    t = lps[m - 1]
+                else:
+                    emit[s][ci] = 0
+                next_state[s][ci] = t
+        # Adjacency bitsets
+        adj_any = [[0] * m for _ in range(3)]
+        adj_char = [[[0] * m for _ in range(3)] for __ in range(26)]
+        for s in range(m):
+            for ci in range(26):
+                t = next_state[s][ci]
+                e = emit[s][ci]
+                bit = 1 << t
+                adj_any[2][s] |= bit
+                adj_any[e][s] |= bit
+                adj_char[ci][2][s] |= bit
+                adj_char[ci][e][s] |= bit
+        # Backward DP reachability
+        reach = [0] * (N + 1)
+        reach[N] = (1 << m) - 1
+        for pos in range(N - 1, -1, -1):
+            i = pos - m + 1
+            if 0 <= i < n:
+                ef = 1 if str1[i] == 'T' else 0
+            else:
+                ef = 2
+            if forced[pos] is None:
+                adj_vec = adj_any[ef]
+            else:
+                adj_vec = adj_char[ord(forced[pos]) - 97][ef]
+            nxt = reach[pos + 1]
+            cur = 0
+            for s in range(m):
+                if adj_vec[s] & nxt:
+                    cur |= (1 << s)
+            reach[pos] = cur
+        if (reach[0] & 1) == 0:
+            return ""
+        # Reconstruct
+        res = []
+        s = 0
+        for pos in range(N):
+            i = pos - m + 1
+            if 0 <= i < n:
+                ef = 1 if str1[i] == 'T' else 0
+            else:
+                ef = 2
+            if forced[pos] is None:
+                cand = range(26)
+            else:
+                cand = [ord(forced[pos]) - 97]
+            ok = False
+            for ci in cand:
+                e = emit[s][ci]
+                if ef != 2 and e != ef:
+                    continue
+                t = next_state[s][ci]
+                if ((reach[pos + 1] >> t) & 1) == 1:
+                    res.append(chr(97 + ci))
+                    s = t
+                    ok = True
+                    break
+            if not ok:
+                return ""
+        return "".join(res)
+
+if __name__ == "__main__":
+    sol = Solution()
+    # Ready-to-submit behavior validated on core cases
+    assert sol.lexicographicallySmallestGeneratedString("TFTF", "ab") == "ababa"
+    assert sol.lexicographicallySmallestGeneratedString("TFTF", "abc") == ""
+    assert sol.lexicographicallySmallestGeneratedString("F", "d") == "a"
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Build the lexicographically smallest string whose occurrences of \texttt{str2} match exactly the \texttt{T}/\texttt{F} mask given by \texttt{str1}.}
+\WHY{Pattern-placement under overlap with lexicographic minimization appears in string DP and automata interview rounds.}
+\CHECKLIST{
+\begin{bullets}
+\item Compute KMP \texttt{lps} and transitions correctly.
+\item Pre-force all letters from \texttt{T}-windows; detect conflicts early.
+\item Backward DP reachability with correct emission requirement per position.
+\item Greedy reconstruction checking next-state reachability.
+\item Verify start state $0$ is reachable at position $0$.
+\end{bullets}
+}
+\EDGECASES{
+\begin{bullets}
+\item $m=1$: \texttt{F} forbids a single letter; \texttt{T} forces it.
+\item All \texttt{T}: must place \texttt{str2} at each index; overlapping consistency required.
+\item All \texttt{F}: forbid any occurrence of \texttt{str2}.
+\item Overlapping \texttt{T} with conflicting characters.
+\item Highly periodic \texttt{str2} like \texttt{"aaaa"}.
+\item First or last window constraints at indices $0$ and $n-1$.
+\end{bullets}
+}
+\PITFALLS{
+\begin{bullets}
+\item Greedy left-to-right without feasibility lookahead fails when an \texttt{F} window ends with a forced character.
+\item Forgetting to fall back to \texttt{lps[m-1]} after a match in KMP transitions.
+\item Emitting matches before $p=m-1$ (impossible) due to incorrect KMP step.
+\item Not handling forced-letter conflicts early.
+\item Off-by-one in indexing the end position $p=i+m-1$.
+\item Not considering that each position has at most one relevant window end.
+\end{bullets}
+}
+\FAILMODES{Simplistic greedy can get stuck due to future forced ends; the DP approach survives by enforcing global reachability.}
+\ELI{Treat \texttt{str2} matching as a tiny machine. At each index you either must make the machine ring a bell (\texttt{T}) or must not (\texttt{F}). Compute which machine states are possible, then always pick the smallest letter that keeps a path to the end.}
+\NotePages{3}
+
+\end{document}

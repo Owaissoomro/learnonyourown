@@ -1,0 +1,980 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Add on a Tree: Revolution}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1188/A2}}
+\LINE{DIFFICULTY / RATING}{2500}
+\STATEMENT{Note that this is the second problem of the two similar problems. You can hack this problem if you solve it. But you can hack the previous problem only if you solve both problems.
+
+You are given a tree with $n$ nodes. In the beginning, $0$ is written on all edges. In one operation, you can choose any $2$ distinct leaves $u$, $v$ and any integer number $x$ and add $x$ to values written on all edges on the simple path between $u$ and $v$. Note that in previous subtask $x$ was allowed to be any real, here it has to be integer.
+
+For example, on the picture below you can see the result of applying two operations to the graph: adding $2$ on the path from $7$ to $6$, and then adding $-1$ on the path from $4$ to $5$.
+
+You are given some configuration of nonnegative integer pairwise different even numbers, written on the edges. For a given configuration determine if it is possible to achieve it with these operations, and, if it is possible, output the sequence of operations that leads to the given configuration. Constraints on the operations are listed in the output format section.
+
+Leaf is a node of a tree of degree $1$. Simple path is a path that does not contain any node twice.
+
+Input:
+The first line contains a single integer $n$ ($2 \le n \le 1000$) — the number of nodes in a tree.
+
+Each of the next $n-1$ lines contains three integers $u$, $v$, $val$ ($1 \le u, v \le n$, $u \ne v$, $0 \le val \le 10{,}000$), meaning that there is an edge between nodes $u$ and $v$ with $val$ written on it. It is guaranteed that these edges form a tree. It is guaranteed that all $val$ numbers are pairwise different and even.
+
+Output:
+If there are not any sequences of operations which lead to the given configuration, output ``NO''.
+
+If it exists, output ``YES'' in the first line. In the second line output $m$ — number of operations you are going to apply ($0 \le m \le 10^5$). Note that you do not have to minimize the number of the operations.
+
+In the next $m$ lines output the operations in the following format:
+
+$u, v, x$ ($1 \le u, v \le n$, $u \ne v$, $x$ — integer, $-10^9 \le x \le 10^9$), where $u, v$ — leaves, $x$ — number we are adding.
+
+It is guaranteed that if there exists a sequence of operations producing given configuration, then there exists a sequence of operations producing given configuration, satisfying all the conditions above.
+
+Note:
+The configuration from the first sample is drawn below, and it is impossible to achieve.
+
+The sequence of operations from the second sample is illustrated below.}
+\BREAKDOWN{We must check feasibility and construct leaf-to-leaf path additions that yield exactly the given edge values. The key necessary and sufficient condition is that no node has degree $2$ (except the trivial $n=2$ case). For each edge, we decompose its weight into a small number of leaf-pair operations that only affect that edge in net.}
+\ELI{If no node has degree $2$, then we can ``route'' half-weights between carefully chosen leaves to make every edge get exactly its target value while other edges cancel out; otherwise it is impossible.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test.\\
+- Integer $n$ ($2 \le n \le 1000$).\\
+- Then $n-1$ lines: $u~v~val$ describing an undirected edge $(u,v)$ with nonnegative even $val$, all $val$ pairwise distinct.}
+\OUTPUTS{If impossible, print NO. Otherwise:\\
+- Print YES.\\
+- Print $m$ ($0 \le m \le 10^5$).\\
+- Then $m$ lines: $u~v~x$ where $u$ and $v$ are leaves in the original tree, $u \ne v$, and integer $x$ with $-10^9 \le x \le 10^9$. Applying each operation adds $x$ to all edges on the unique simple path between $u$ and $v$.}
+\SAMPLES{Example 1 (impossible): $n=3$, edges $1$--$2$ with $2$, $2$--$3$ with $4$ (node $2$ has degree $2$). Output: NO.\\
+Example 2 (possible): $n=3$, edges $1$--$2$ with $2$, $1$--$3$ with $4$ (a star). One valid construction exists; output YES and some sequence of operations that produces the weights.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $T=(V,E)$ be a tree. Let the target weight function be $w:E \to 2\mathbb{Z}_{\ge 0}$ (even, nonnegative, pairwise distinct). For any unordered pair of distinct leaves $\{a,b\}$ we may choose an integer $x_{a,b}$ and add $x_{a,b}$ to every edge on the unique path $P(a,b)$. We seek integers $x_{a,b}$ such that for each edge $e\in E$,
+\begin{BreakableEquation*}
+\sum_{\{a,b\}\text{ leaves}} x_{a,b}\cdot \mathbf{1}[e\in P(a,b)] \;=\; w(e).
+\end{BreakableEquation*}%
+Equivalently, an edge $e$ partitions leaves into two sides; $e\in P(a,b)$ iff $a$ and $b$ lie on different sides.}
+\varmapStart
+\var{T=(V,E)}{given tree}
+\var{w(e)}{target even weight on edge $e$}
+\var{L}{set of leaves of $T$}
+\var{x_{a,b}}{integer added along path between leaves $a$ and $b$}
+\varmapEnd
+\GOVERN{
+\begin{BreakableEquation*}
+\forall e\in E:\quad \sum_{\{a,b\}\subseteq L} x_{a,b}\cdot \mathbf{1}\big[(a,b) \text{ are separated by } e\big] \;=\; w(e).
+\end{BreakableEquation*}
+}
+\ASSUMPTIONS{The tree is connected and acyclic. All $w(e)$ are even. Pairwise distinctness does not affect feasibility, only avoids ambiguity in illustrations.}
+\INVARIANTS{Adding an operation affects every cut exactly by $\pm x$ depending on the leaf sides; linearity allows per-edge superposition. Removing an edge splits the tree into two components; any path between leaves in different components crosses that edge exactly once.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Use a constructive superposition per edge. If $n=2$, use one operation $(u,v,w)$. Otherwise, if any node has degree $2$, it is impossible. If no node has degree $2$, for each edge $(u,v)$ with weight $w$ we can find leaves on each side and combine three or four leaf-path operations whose net effect is $w$ on $(u,v)$ and $0$ elsewhere.}
+\ASSUMPTIONS{No node has degree $2$ (except the trivial $n=2$ case). Leaf set is taken with respect to the original tree.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Read the tree and degrees. If $n=2$, output one operation: the two nodes with $x=w$.
+\item If any node has degree $2$, output NO.
+\item For each edge $(u,v)$ with weight $w$:
+  \begin{bullets}
+  \item If both $u$ and $v$ are leaves: add $(u,v,w)$.
+  \item If exactly one endpoint is a leaf, say $u$ leaf: pick two distinct leaves $c,d$ in the $v$-side; add $(u,c,\tfrac{w}{2})$, $(u,d,\tfrac{w}{2})$, $(c,d,-\tfrac{w}{2})$.
+  \item If neither endpoint is a leaf: pick two leaves $a,b$ on the $u$-side and two leaves $c,d$ on the $v$-side; add $(a,c,\tfrac{w}{2})$, $(b,d,\tfrac{w}{2})$, $(a,b,-\tfrac{w}{2})$, $(c,d,-\tfrac{w}{2})$.
+  \end{bullets}
+\item Omit zero-$x$ operations to keep $m$ small.
+\end{algosteps}
+\COMPLEXITY{For each edge, collect up to two leaves per side by a DFS/BFS ignoring the opposite endpoint. With $n\le 1000$, this $O(n)$ scan per edge yields $O(n^2)$ total time and $O(n)$ space.}
+\[
+\begin{aligned}
+T(n) &\le \sum_{e\in E} O(n) \;=\; O(n^2), \\
+S(n) &= O(n).
+\end{aligned}
+\]
+\CORRECTNESS{Linearity ensures per-edge constructions superpose. In each case, edges strictly inside one side of $(u,v)$ see two $+\tfrac{w}{2}$ additions canceled by one $-\tfrac{w}{2}$ on an internal leaf-pair path; edges across the cut see exactly two $+\tfrac{w}{2}$ crossings and zero internal subtractions, summing to $w$. The absence of degree-$2$ nodes guarantees that every non-leaf side contains at least two leaves, enabling the construction.}
+\EDGECASES{Handle $n=2$ directly. Weights can be $0$ (skip zero ops). Distinct even weights are guaranteed; still, the method depends only on evenness.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+from typing import List, Tuple
+import sys
+from collections import deque, defaultdict
+
+def read_input() -> Tuple[int, List[Tuple[int,int,int]]]:
+    data = sys.stdin.read().strip().split()
+    assert data, "Empty input"
+    it = iter(data)
+    n = int(next(it))
+    edges = []
+    for _ in range(n-1):
+        u = int(next(it)); v = int(next(it)); w = int(next(it))
+        edges.append((u, v, w))
+    return n, edges
+
+def find_leaves_from(start: int, forbid: int, deg: List[int], adj: List[List[int]], need: int = 2) -> List[int]:
+    # DFS avoiding 'forbid'; returns up to 'need' distinct leaves in this component
+    res = []
+    seen = [False] * (len(adj))
+    if forbid != -1:
+        seen[forbid] = True
+    stack = [start]
+    while stack and len(res) < need:
+        u = stack.pop()
+        if seen[u]:
+            continue
+        seen[u] = True
+        if deg[u] == 1:
+            res.append(u)
+            if len(res) >= need:
+                break
+        for v in adj[u]:
+            if not seen[v]:
+                stack.append(v)
+    return res
+
+def solve_case(n: int, edges: List[Tuple[int,int,int]]) -> str:
+    if n == 2:
+        u, v, w = edges[0]
+        out = ["YES", "1", f"{u} {v} {w}"]
+        return "\n".join(out)
+
+    adj = [[] for _ in range(n+1)]
+    deg = [0] * (n+1)
+    for u, v, w in edges:
+        adj[u].append(v)
+        adj[v].append(u)
+        deg[u] += 1
+        deg[v] += 1
+
+    for i in range(1, n+1):
+        if deg[i] == 2:
+            return "NO"
+
+    ops: List[Tuple[int,int,int]] = []
+
+    def add_op(a: int, b: int, x: int):
+        if x != 0:
+            ops.append((a, b, x))
+
+    for (u, v, w) in edges:
+        if deg[u] == 1 and deg[v] == 1:
+            add_op(u, v, w)
+            continue
+        if deg[u] == 1 and deg[v] > 1:
+            cd = find_leaves_from(v, u, deg, adj, need=2)
+            assert len(cd) >= 2, "Should have two leaves on v-side"
+            c, d = cd[0], cd[1]
+            add_op(u, c, w // 2)
+            add_op(u, d, w // 2)
+            add_op(c, d, -w // 2)
+            continue
+        if deg[v] == 1 and deg[u] > 1:
+            ab = find_leaves_from(u, v, deg, adj, need=2)
+            assert len(ab) >= 2, "Should have two leaves on u-side"
+            a, b = ab[0], ab[1]
+            add_op(v, a, w // 2)
+            add_op(v, b, w // 2)
+            add_op(a, b, -w // 2)
+            continue
+        # both internal
+        ab = find_leaves_from(u, v, deg, adj, need=2)
+        cd = find_leaves_from(v, u, deg, adj, need=2)
+        assert len(ab) >= 2 and len(cd) >= 2, "Two leaves per side required"
+        a, b = ab[0], ab[1]
+        c, d = cd[0], cd[1]
+        add_op(a, c, w // 2)
+        add_op(b, d, w // 2)
+        add_op(a, b, -w // 2)
+        add_op(c, d, -w // 2)
+
+    out_lines = ["YES", str(len(ops))]
+    out_lines += [f"{u} {v} {x}" for (u, v, x) in ops]
+    return "\n".join(out_lines)
+
+def solve_all() -> None:
+    n, edges = read_input()
+    print(solve_case(n, edges))
+
+def _apply_ops_and_check(n: int, edges: List[Tuple[int,int,int]], ops: List[Tuple[int,int,int]]) -> bool:
+    # Build adjacency with edge indices
+    adj = [[] for _ in range(n+1)]
+    idx_of = dict()
+    for i, (u, v, w) in enumerate(edges):
+        adj[u].append((v, i))
+        adj[v].append((u, i))
+        idx_of[(min(u,v), max(u,v))] = i
+    vals = [0] * (n-1)
+    # For each op, find path and add x along edges
+    for (s, t, x) in ops:
+        # BFS to parent
+        par = [-1] * (n+1)
+        pare = [-1] * (n+1)
+        q = deque([s])
+        par[s] = s
+        while q and par[t] == -1:
+            u = q.popleft()
+            for v, ei in adj[u]:
+                if par[v] == -1:
+                    par[v] = u
+                    pare[v] = ei
+                    q.append(v)
+        assert par[t] != -1
+        cur = t
+        while cur != s:
+            ei = pare[cur]
+            vals[ei] += x
+            cur = par[cur]
+    # Compare
+    for i, (u, v, w) in enumerate(edges):
+        if vals[i] != w:
+            return False
+    return True
+
+def _self_test():
+    # 1) n=2 trivial
+    n = 2
+    edges = [(1,2,8)]
+    out = solve_case(n, edges).splitlines()
+    assert out[0] == "YES"
+    m = int(out[1]); assert m == 1
+    u, v, x = map(int, out[2].split())
+    assert {u, v} == {1, 2} and x == 8
+
+    # 2) degree-2 impossible
+    n = 3
+    edges = [(1,2,2),(2,3,4)]
+    assert solve_case(n, edges) == "NO"
+
+    # 3) star, feasible
+    n = 4
+    edges = [(1,2,2),(1,3,4),(1,4,6)]
+    res = solve_case(n, edges).splitlines()
+    assert res[0] == "YES"
+    m = int(res[1]); assert 0 <= m <= 100000
+    ops = [tuple(map(int, line.split())) for line in res[2:]]
+    assert _apply_ops_and_check(n, edges, ops)
+
+if __name__ == "__main__":
+    if sys.stdin.isatty():
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Verified on:\\
+- Trivial $n=2$ case.\\
+- A path of length $2$ (node of degree $2$) returns NO.\\
+- A small star checks via simulation that operations reconstruct the targets.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Same construction, but we can precompute up to two representative leaves for each directed edge-side to avoid repeated DFS per edge, reducing hidden constants. With $n\le 1000$ this is not essential, but it conceptually streamlines the search.}
+\ASSUMPTIONS{No degree-$2$ node (except $n=2$). We retain the same feasibility criterion.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute for every directed edge $(u\to v)$ two leaves from the component of $u$ in $T - \{(u,v)\}$ via one DFS per direction; cache them.
+\item Apply the same per-edge combination rules using the cached leaves.
+\item Skip zero-$x$ operations.
+\end{algosteps}
+\COMPLEXITY{Precomputation visits each directed edge once: $O(n^2)$ in worst case. Construction emits at most $4(n-1)$ operations.}
+\[
+\begin{aligned}
+T(n) &= O(n^2), \\
+S(n) &= O(n).
+\end{aligned}
+\]
+\CORRECTNESS{Identical to Approach A; only leaf selection is memoized.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+from typing import List, Tuple, Dict
+import sys
+from collections import deque
+
+def read_input() -> Tuple[int, List[Tuple[int,int,int]]]:
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    n = int(next(it))
+    edges = []
+    for _ in range(n-1):
+        u = int(next(it)); v = int(next(it)); w = int(next(it))
+        edges.append((u, v, w))
+    return n, edges
+
+def _collect_two_leaves(start: int, forbid: int, deg: List[int], adj: List[List[int]]) -> List[int]:
+    seen = [False]*(len(adj))
+    if forbid != -1:
+        seen[forbid] = True
+    res = []
+    stack = [start]
+    while stack and len(res) < 2:
+        u = stack.pop()
+        if seen[u]: continue
+        seen[u] = True
+        if deg[u] == 1:
+            res.append(u)
+            if len(res) >= 2:
+                break
+        for v in adj[u]:
+            if not seen[v]:
+                stack.append(v)
+    return res
+
+def solve_case(n: int, edges: List[Tuple[int,int,int]]) -> str:
+    if n == 2:
+        u, v, w = edges[0]
+        return "YES\n1\n{} {} {}".format(u, v, w)
+    adj = [[] for _ in range(n+1)]
+    deg = [0]*(n+1)
+    for u, v, w in edges:
+        adj[u].append(v); adj[v].append(u)
+        deg[u]+=1; deg[v]+=1
+    for i in range(1, n+1):
+        if deg[i] == 2:
+            return "NO"
+    # Precompute two leaves per directed edge-side
+    cache: Dict[Tuple[int,int], List[int]] = {}
+    for u in range(1, n+1):
+        for v in adj[u]:
+            cache[(u,v)] = _collect_two_leaves(u, v, deg, adj)
+    ops: List[Tuple[int,int,int]] = []
+    def add(a: int, b: int, x: int):
+        if x != 0:
+            ops.append((a,b,x))
+    for (u, v, w) in edges:
+        if deg[u]==1 and deg[v]==1:
+            add(u,v,w)
+        elif deg[u]==1:
+            cd = cache[(v,u)]
+            assert len(cd) >= 2
+            c, d = cd[0], cd[1]
+            add(u,c,w//2); add(u,d,w//2); add(c,d,-w//2)
+        elif deg[v]==1:
+            ab = cache[(u,v)]
+            assert len(ab) >= 2
+            a, b = ab[0], ab[1]
+            add(v,a,w//2); add(v,b,w//2); add(a,b,-w//2)
+        else:
+            ab = cache[(u,v)]; cd = cache[(v,u)]
+            assert len(ab) >= 2 and len(cd) >= 2
+            a,b = ab[0], ab[1]
+            c,d = cd[0], cd[1]
+            add(a,c,w//2); add(b,d,w//2); add(a,b,-w//2); add(c,d,-w//2)
+    out = ["YES", str(len(ops))]
+    out += [f"{u} {v} {x}" for (u,v,x) in ops]
+    return "\n".join(out)
+
+def solve_all() -> None:
+    n, edges = read_input()
+    print(solve_case(n, edges))
+
+def _apply_ops(n: int, edges: List[Tuple[int,int,int]], ops: List[Tuple[int,int,int]]) -> bool:
+    adj = [[] for _ in range(n+1)]
+    for i,(u,v,w) in enumerate(edges):
+        adj[u].append((v,i)); adj[v].append((u,i))
+    vals = [0]*(n-1)
+    for (s,t,x) in ops:
+        par=[-1]*(n+1); pe=[-1]*(n+1)
+        q=deque([s]); par[s]=s
+        while q and par[t]==-1:
+            u=q.popleft()
+            for v,i in adj[u]:
+                if par[v]==-1:
+                    par[v]=u; pe[v]=i; q.append(v)
+        assert par[t]!=-1
+        cur=t
+        while cur!=s:
+            vals[pe[cur]]+=x
+            cur=par[cur]
+    return all(vals[i]==edges[i][2] for i in range(n-1))
+
+def _tests():
+    # NO for degree-2
+    n=3; edges=[(1,2,2),(2,3,4)]
+    assert solve_case(n,edges)=="NO"
+    # YES for star
+    n=4; edges=[(1,2,2),(1,3,4),(1,4,6)]
+    out=solve_case(n,edges).splitlines()
+    assert out[0]=="YES"
+    m=int(out[1]); ops=[tuple(map(int,s.split())) for s in out[2:]]
+    assert _apply_ops(n,edges,ops)
+
+if __name__=="__main__":
+    if sys.stdin.isatty():
+        _tests()
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Same checks as Approach A; caching does not change results.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{The constructive cut-decomposition with three or four leaf-pair operations per edge is optimal up to constants under the requirement that operations must be between leaves. It achieves at most $4(n-1)$ operations, well within limits.}
+\ASSUMPTIONS{Feasible iff no node has degree $2$ or $n=2$. Evenness of $w(e)$ ensures that $\tfrac{w(e)}{2}$ is integral for the half-weights used.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Check $n=2$ and degree-$2$ nodes.
+\item For each edge $(u,v)$ with $w$:
+\begin{bullets}
+\item both leaves: $(u,v,w)$;
+\item one leaf: $(u,c,\tfrac{w}{2})$, $(u,d,\tfrac{w}{2})$, $(c,d,-\tfrac{w}{2})$;
+\item both internal: $(a,c,\tfrac{w}{2})$, $(b,d,\tfrac{w}{2})$, $(a,b,-\tfrac{w}{2})$, $(c,d,-\tfrac{w}{2})$.
+\end{bullets}
+\item Output all nonzero operations.
+\end{algosteps}
+\OPTIMALITY{Lower bounds: any edge requires at least one net crossing by leaf-pair paths, so $\Omega(n)$ total is unavoidable in worst-case trees for naive per-edge isolation. Using four operations per edge is tight for this local cancellation scheme and standard in editorial solutions.}
+\COMPLEXITY{$O(n^2)$ time and $O(n)$ space, producing at most $4(n-1)$ operations.}
+\[
+\begin{aligned}
+T(n) &= O(n^2), \\
+S(n) &= O(n).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+from typing import List, Tuple
+import sys
+from collections import deque
+
+def read_input() -> Tuple[int, List[Tuple[int,int,int]]]:
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    n = int(next(it))
+    edges = []
+    for _ in range(n-1):
+        u = int(next(it)); v = int(next(it)); w = int(next(it))
+        edges.append((u, v, w))
+    return n, edges
+
+def _two_leaves(start: int, forbid: int, deg: List[int], adj: List[List[int]]) -> List[int]:
+    seen = [False]*(len(adj))
+    if forbid != -1:
+        seen[forbid] = True
+    res = []
+    stack = [start]
+    while stack and len(res) < 2:
+        u = stack.pop()
+        if seen[u]: continue
+        seen[u] = True
+        if deg[u] == 1:
+            res.append(u)
+            if len(res) >= 2: break
+        for v in adj[u]:
+            if not seen[v]:
+                stack.append(v)
+    return res
+
+def solve_case(n: int, edges: List[Tuple[int,int,int]]) -> str:
+    if n == 2:
+        u, v, w = edges[0]
+        return "YES\n1\n{} {} {}".format(u, v, w)
+    adj = [[] for _ in range(n+1)]
+    deg = [0]*(n+1)
+    for u, v, w in edges:
+        adj[u].append(v); adj[v].append(u)
+        deg[u]+=1; deg[v]+=1
+    for i in range(1, n+1):
+        if deg[i] == 2:
+            return "NO"
+    ops: List[Tuple[int,int,int]] = []
+    def add(a: int, b: int, x: int):
+        if x != 0:
+            ops.append((a,b,x))
+    for (u, v, w) in edges:
+        if deg[u]==1 and deg[v]==1:
+            add(u, v, w)
+        elif deg[u]==1:
+            leaves = _two_leaves(v, u, deg, adj)
+            assert len(leaves) >= 2
+            c, d = leaves[0], leaves[1]
+            add(u, c, w//2); add(u, d, w//2); add(c, d, -w//2)
+        elif deg[v]==1:
+            leaves = _two_leaves(u, v, deg, adj)
+            assert len(leaves) >= 2
+            a, b = leaves[0], leaves[1]
+            add(v, a, w//2); add(v, b, w//2); add(a, b, -w//2)
+        else:
+            ab = _two_leaves(u, v, deg, adj)
+            cd = _two_leaves(v, u, deg, adj)
+            assert len(ab) >= 2 and len(cd) >= 2
+            a, b = ab[0], ab[1]
+            c, d = cd[0], cd[1]
+            add(a, c, w//2); add(b, d, w//2); add(a, b, -w//2); add(c, d, -w//2)
+    out = ["YES", str(len(ops))] + [f"{u} {v} {x}" for (u,v,x) in ops]
+    return "\n".join(out)
+
+def solve_all() -> None:
+    n, edges = read_input()
+    print(solve_case(n, edges))
+
+def _apply_ops(n: int, edges: List[Tuple[int,int,int]], ops: List[Tuple[int,int,int]]) -> bool:
+    adj = [[] for _ in range(n+1)]
+    for i,(u,v,w) in enumerate(edges):
+        adj[u].append((v,i)); adj[v].append((u,i))
+    vals = [0]*(n-1)
+    for (s,t,x) in ops:
+        par=[-1]*(n+1); pe=[-1]*(n+1)
+        q=deque([s]); par[s]=s
+        while q and par[t]==-1:
+            u=q.popleft()
+            for v,i in adj[u]:
+                if par[v]==-1:
+                    par[v]=u; pe[v]=i; q.append(v)
+        assert par[t]!=-1
+        cur=t
+        while cur!=s:
+            vals[pe[cur]]+=x
+            cur=par[cur]
+    return all(vals[i]==edges[i][2] for i in range(n-1))
+
+def _mini_tests():
+    # 3 quick asserts
+    # 1) n=2
+    n=2; edges=[(1,2,10)]
+    out=solve_case(n,edges).splitlines()
+    assert out[0]=="YES" and int(out[1])==1
+    # 2) degree-2 -> NO
+    n=3; edges=[(1,2,2),(2,3,4)]
+    assert solve_case(n,edges)=="NO"
+    # 3) star -> simulate
+    n=4; edges=[(1,2,2),(1,3,6),(1,4,8)]
+    out=solve_case(n,edges).splitlines()
+    assert out[0]=="YES"
+    ops=[tuple(map(int,s.split())) for s in out[2:]]
+    assert _apply_ops(n,edges,ops)
+
+if __name__=="__main__":
+    if sys.stdin.isatty():
+        _mini_tests()
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Three asserts: $n=2$ trivial; degree-$2$ rejection; star tree simulation to confirm the operations reconstruct the target edge weights.}
+\RESULT{Outputs either NO, or a valid sequence of at most $4(n-1)$ operations between leaves whose application yields exactly the given even edge weights.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests cover: trivial $n=2$; rejection when a degree-$2$ node exists; random small trees without degree-$2$ nodes with even weights by simulation. Property check: applying emitted operations reproduces target edge weights.}
+\LINE{CROSS-CHECKS}{Compare outputs of Approaches A, B, C on small crafted cases; the sequences may differ but all simulate to the same edge weights.}
+\LINE{EDGE-CASE GENERATOR}{Generate stars (center degree $\ge 3$), combs without degree-$2$ nodes, and include zero-weight edges to ensure zero operations are skipped.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+from typing import List, Tuple
+import random
+
+def gen_star(n: int) -> Tuple[int, List[Tuple[int,int,int]]]:
+    assert n >= 3
+    edges = []
+    w = 2
+    for v in range(2, n+1):
+        edges.append((1, v, w))
+        w += 2
+    return n, edges
+
+def gen_no_deg2_tree(n: int) -> Tuple[int, List[Tuple[int,int,int]]]:
+    # Build a tree with no degree-2 by connecting in a star-like fashion,
+    # then attach extra leaves to nodes of degree >=3.
+    assert n >= 3
+    edges = []
+    # start with a 3-star
+    edges.append((1,2,2)); edges.append((1,3,4)); used = 3; w = 6
+    for v in range(4, n+1):
+        # attach new leaf to node 1 or 2 or 3 to keep deg != 2
+        attach = random.choice([1,2,3])
+        edges.append((attach, v, w))
+        w += 2
+    return n, edges
+
+def check_ops(n: int, edges: List[Tuple[int,int,int]], solver) -> bool:
+    out = solver(n, edges).splitlines()
+    if out[0] == "NO":
+        # must have some degree-2 node (except n==2)
+        deg = [0]*(n+1)
+        for u,v,w in edges:
+            deg[u]+=1; deg[v]+=1
+        return any(d==2 for d in deg[1:])
+    m = int(out[1])
+    ops = [tuple(map(int, s.split())) for s in out[2:]]
+    # simulate
+    from collections import deque
+    adj = [[] for _ in range(n+1)]
+    for i,(u,v,w) in enumerate(edges):
+        adj[u].append((v,i)); adj[v].append((u,i))
+    vals = [0]*(n-1)
+    for (s,t,x) in ops:
+        par=[-1]*(n+1); pe=[-1]*(n+1)
+        q=deque([s]); par[s]=s
+        while q and par[t]==-1:
+            u=q.popleft()
+            for v,i in adj[u]:
+                if par[v]==-1:
+                    par[v]=u; pe[v]=i; q.append(v)
+        assert par[t]!=-1
+        cur=t
+        while cur!=s:
+            vals[pe[cur]]+=x
+            cur=par[cur]
+    return all(vals[i]==edges[i][2] for i in range(n-1))
+
+# Reference solution hook (Approach C)
+def reference_solver(n, edges):
+    from collections import deque
+    def _two_leaves(start, forbid, deg, adj):
+        seen = [False]*(len(adj))
+        if forbid != -1: seen[forbid]=True
+        res = []; stack=[start]
+        while stack and len(res)<2:
+            u=stack.pop()
+            if seen[u]: continue
+            seen[u]=True
+            if deg[u]==1:
+                res.append(u)
+                if len(res)>=2: break
+            for v in adj[u]:
+                if not seen[v]: stack.append(v)
+        return res
+    if n==2:
+        u,v,w = edges[0]
+        return "YES\n1\n{} {} {}".format(u,v,w)
+    adj=[[] for _ in range(n+1)]; deg=[0]*(n+1)
+    for u,v,w in edges:
+        adj[u].append(v); adj[v].append(u); deg[u]+=1; deg[v]+=1
+    for i in range(1,n+1):
+        if deg[i]==2: return "NO"
+    ops=[]
+    def add(a,b,x):
+        if x!=0: ops.append((a,b,x))
+    for (u,v,w) in edges:
+        if deg[u]==1 and deg[v]==1:
+            add(u,v,w)
+        elif deg[u]==1:
+            c,d = _two_leaves(v,u,deg,adj)
+            add(u,c,w//2); add(u,d,w//2); add(c,d,-w//2)
+        elif deg[v]==1:
+            a,b = _two_leaves(u,v,deg,adj)
+            add(v,a,w//2); add(v,b,w//2); add(a,b,-w//2)
+        else:
+            a,b = _two_leaves(u,v,deg,adj)
+            c,d = _two_leaves(v,u,deg,adj)
+            add(a,c,w//2); add(b,d,w//2); add(a,b,-w//2); add(c,d,-w//2)
+    out=["YES", str(len(ops))]
+    out += [f"{a} {b} {x}" for a,b,x in ops]
+    return "\n".join(out)
+
+# Deterministic tests
+random.seed(0)
+n, edges = gen_star(6)
+assert check_ops(n, edges, reference_solver)
+n, edges = gen_no_deg2_tree(10)
+assert check_ops(n, edges, reference_solver)
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Final reference solution (Approach C)
+from typing import List, Tuple
+import sys
+from collections import deque
+
+def read_input() -> Tuple[int, List[Tuple[int,int,int]]]:
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    n = int(next(it))
+    edges = []
+    for _ in range(n-1):
+        u = int(next(it)); v = int(next(it)); w = int(next(it))
+        edges.append((u, v, w))
+    return n, edges
+
+def _two_leaves(start: int, forbid: int, deg: List[int], adj: List[List[int]]) -> List[int]:
+    seen = [False]*(len(adj))
+    if forbid != -1:
+        seen[forbid] = True
+    res = []
+    stack = [start]
+    while stack and len(res) < 2:
+        u = stack.pop()
+        if seen[u]:
+            continue
+        seen[u] = True
+        if deg[u] == 1:
+            res.append(u)
+            if len(res) >= 2:
+                break
+        for v in adj[u]:
+            if not seen[v]:
+                stack.append(v)
+    return res
+
+def solve_case(n: int, edges: List[Tuple[int,int,int]]) -> str:
+    if n == 2:
+        u, v, w = edges[0]
+        return "YES\n1\n{} {} {}".format(u, v, w)
+    adj = [[] for _ in range(n+1)]
+    deg = [0]*(n+1)
+    for u, v, w in edges:
+        adj[u].append(v); adj[v].append(u)
+        deg[u]+=1; deg[v]+=1
+    for i in range(1, n+1):
+        if deg[i] == 2:
+            return "NO"
+    ops: List[Tuple[int,int,int]] = []
+    def add(a: int, b: int, x: int):
+        if x != 0:
+            ops.append((a,b,x))
+    for (u, v, w) in edges:
+        if deg[u]==1 and deg[v]==1:
+            add(u, v, w)
+        elif deg[u]==1:
+            c, d = _two_leaves(v, u, deg, adj)
+            add(u, c, w//2); add(u, d, w//2); add(c, d, -w//2)
+        elif deg[v]==1:
+            a, b = _two_leaves(u, v, deg, adj)
+            add(v, a, w//2); add(v, b, w//2); add(a, b, -w//2)
+        else:
+            a, b = _two_leaves(u, v, deg, adj)
+            c, d = _two_leaves(v, u, deg, adj)
+            add(a, c, w//2); add(b, d, w//2); add(a, b, -w//2); add(c, d, -w//2)
+    out = ["YES", str(len(ops))]
+    out += [f"{a} {b} {x}" for (a,b,x) in ops]
+    return "\n".join(out)
+
+def solve_all() -> None:
+    n, edges = read_input()
+    print(solve_case(n, edges))
+
+def _apply_ops(n: int, edges: List[Tuple[int,int,int]], ops: List[Tuple[int,int,int]]) -> bool:
+    adj = [[] for _ in range(n+1)]
+    for i,(u,v,w) in enumerate(edges):
+        adj[u].append((v,i)); adj[v].append((u,i))
+    vals = [0]*(n-1)
+    for (s,t,x) in ops:
+        par=[-1]*(n+1); pe=[-1]*(n+1)
+        q=deque([s]); par[s]=s
+        while q and par[t]==-1:
+            u=q.popleft()
+            for v,i in adj[u]:
+                if par[v]==-1:
+                    par[v]=u; pe[v]=i; q.append(v)
+        assert par[t]!=-1
+        cur=t
+        while cur!=s:
+            vals[pe[cur]]+=x
+            cur=par[cur]
+    return all(vals[i]==edges[i][2] for i in range(n-1))
+
+def _tests():
+    # Trivial
+    n=2; edges=[(1,2,12)]
+    out=solve_case(n,edges).splitlines()
+    assert out[0]=="YES" and int(out[1])==1
+    # Degree-2 rejection
+    n=3; edges=[(1,2,2),(2,3,4)]
+    assert solve_case(n,edges)=="NO"
+    # Star simulate
+    n=5; edges=[(1,2,2),(1,3,4),(1,4,6),(1,5,8)]
+    out=solve_case(n,edges).splitlines()
+    assert out[0]=="YES"
+    ops=[tuple(map(int,s.split())) for s in out[2:]]
+    assert _apply_ops(n,edges,ops)
+
+if __name__=="__main__":
+    if sys.stdin.isatty():
+        _tests()
+    else:
+        solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Construct per-edge leaf-pair operations; feasible iff no node has degree $2$ (except $n=2$).}
+\WHY{This problem tests constructive thinking on trees, cut reasoning, and linear superposition under path-add operations.}
+\CHECKLIST{%
+\begin{bullets}
+\item Check $n=2$ trivial case.
+\item Scan degrees; if any degree $2$, print NO.
+\item For each edge, find $1$ or $2$ leaves per side as required.
+\item Emit $3$ or $4$ ops with $\pm \tfrac{w}{2}$ or one op with $w$.
+\item Skip zero-$x$ ops.
+\item Ensure leaf-pair endpoints are leaves in the original tree.
+\end{bullets}
+}
+\EDGECASES{%
+\begin{bullets}
+\item $n=2$.
+\item Trees with a degree-$2$ node anywhere.
+\item Edges with $w=0$.
+\item Both endpoints are leaves.
+\item One endpoint leaf, other high degree.
+\item Highly unbalanced trees (long branches) but without degree-$2$ nodes.
+\item Multiple components cannot occur (input is a tree).
+\end{bullets}
+}
+\PITFALLS{%
+\begin{bullets}
+\item Accidentally using a non-leaf as an operation endpoint.
+\item Forgetting to handle the $n=2$ special case.
+\item Emitting operations with non-integer $\tfrac{w}{2}$ when $w$ odd (ruled out here).
+\item Infinite loops or revisiting the forbidden neighbor when searching leaves.
+\item Not skipping zero-$x$ operations and exceeding the $10^5$ limit in contrived cases.
+\item Off-by-one in $1$-indexed nodes.
+\end{bullets}
+}
+\FAILMODES{Paths with degree-$2$ nodes break the availability of two leaves on a side, making the local cancellation construction impossible; the solution correctly rejects such inputs.}
+\ELI{We can ``push'' half the weight from each side of an edge between pairs of leaves so that only the edge in question gets a net addition while all other edges see cancellations. This works everywhere in a tree with no degree-$2$ nodes and fails otherwise.}
+\NotePages{3}
+
+\end{document}

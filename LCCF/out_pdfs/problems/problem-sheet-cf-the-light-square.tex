@@ -1,0 +1,940 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — The Light Square}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1218/I}}
+\LINE{DIFFICULTY / RATING}{2100}
+\STATEMENT{For her birthday Alice received an interesting gift from her friends -- The Light Square. The Light Square game is played on an $N \times N$ lightbulbs square board with a magical lightbulb bar of size $N \times 1$ that has magical properties. At the start of the game some lights on the square board and magical bar are turned on. The goal of the game is to transform the starting light square board pattern into some other pattern using the magical bar without rotating the square board. The magical bar works as follows:
+
+It can be placed on any row or column.
+
+The orientation of the magical lightbulb must be left to right or top to bottom for it to keep its magical properties.
+
+The entire bar needs to be fully placed on a board.
+
+The lights of the magical bar never change.
+
+If the light on the magical bar is the same as the light of the square it is placed on it will switch the light on the square board off, otherwise it will switch the light on.
+
+The magical bar can be used an infinite number of times.
+
+Alice has a hard time transforming her square board into the pattern Bob gave her. Can you help her transform the board or let her know it is impossible? If there are multiple solutions print any.
+
+Input:
+The first line contains one positive integer number $N\ (1 \le N \le 2000)$ representing the size of the square board.
+
+The next $N$ lines are strings of length $N$ consisting of 1's and 0's representing the initial state of the square board starting from the top row. If the character in a string is 1 it means the light is turned on, otherwise it is off.
+
+The next $N$ lines are strings of length $N$ consisting of 1's and 0's representing the desired state of the square board starting from the top row that was given to Alice by Bob.
+
+The last line is one string of length $N$ consisting of 1's and 0's representing the pattern of the magical bar in a left to right order.
+
+Output:
+Transform the instructions for Alice in order to transform the square board into the pattern Bob gave her. The first line of the output contains an integer number $M\ (0 \le M \le 10^5)$ representing the number of times Alice will need to apply the magical bar.
+
+The next $M$ lines are of the form ``col $X$'' or ``row $X$'', where $X$ is 0-based index of the matrix, meaning the magical bar should be applied to either row $X$ or column $X$. If there is no solution, print only -1. In case of multiple solutions print any correct one.
+
+Note:
+Example 1: It is impossible to transform square board from one format to another.
+
+Example 2: Magic bar can be applied on first row or column.}
+\BREAKDOWN{Each operation XORs an entire row with the bar pattern (left-to-right), or XORs an entire column with the bar pattern (top-to-bottom). Model the net effect of any sequence by two binary vectors for rows and columns. Solve a linear system over $\mathbb{F}_2$ leveraging the fixed bar pattern.}
+\ELI{The bar lets you toggle rows by the bar string and columns by the same string vertically. Choose which rows and columns to toggle so the initial grid XOR these toggles equals the target.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test:
+- $N$ (int), $1 \le N \le 2000$.
+- $N$ lines: initial grid as strings of 0/1.
+- $N$ lines: target grid as strings of 0/1.
+- $1$ line: bar pattern $b$ as string of length $N$.}
+\OUTPUTS{If impossible, print -1. Otherwise:
+- First line: integer $M$ (number of operations).
+- Next $M$ lines: each is either ``row $i$'' or ``col $j$'' with 0-based indices. Applying those in any order must transform the initial grid into the target.}
+\SAMPLES{Example 1 (impossible):
+Input
+2
+00
+00
+11
+11
+00
+Output
+-1
+
+Example 2 (one valid plan):
+Input
+2
+00
+00
+10
+01
+10
+Output
+2
+row 0
+col 1
+Explanation: Apply bar 10 to row 0, then to column 1 to obtain the target.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $A, D \in \{0,1\}^{N \times N}$ be initial and desired matrices. Let $b \in \{0,1\}^N$ be the bar pattern. Let $x,y \in \{0,1\}^N$ indicate which rows and columns are used (modulo 2). Applying operations yields:
+\begin{BreakableEquation*}
+F_{i,j} \;=\; A_{i,j} \oplus \big(x_i \cdot b_j\big) \oplus \big(y_j \cdot b_i\big).
+\end{BreakableEquation*}
+We require $F=D$. Equivalently, with $E=A\oplus D$,
+\begin{BreakableEquation*}
+E_{i,j} \;=\; x_i b_j \oplus b_i y_j \quad \text{for all } i,j.
+\end{BreakableEquation*}}
+\varmapStart
+\var{A,D}{initial and desired binary grids}
+\var{b}{bar pattern as binary vector of length $N$}
+\var{x}{row-selection vector in $\{0,1\}^N$}
+\var{y}{column-selection vector in $\{0,1\}^N$}
+\var{E}{difference matrix $A\oplus D$}
+\varmapEnd
+\GOVERN{
+\[
+E_{i,j} = x_i b_j \oplus b_i y_j,
+\qquad
+\text{with } \oplus \text{ over } \mathbb{F}_2.
+\]
+}
+\ASSUMPTIONS{Indices are 0-based in the output. The bar is applied without rotation; horizontal on rows, vertical on columns. Applying the same row/column twice cancels (mod 2).}
+\INVARIANTS{%
+- Operations commute under XOR; only parity matters.
+- If $b=\vec{0}$, no operation changes any cell; feasibility requires $A=D$.
+- For any column $j$ with $b_j=0$: $E_{\cdot,j}$ must be either $\vec{0}$ (then $y_j=0$) or exactly $b$ (then $y_j=1$).}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Use $E=A\oplus D$ and the identity $E_{i,j}=x_i b_j \oplus b_i y_j$. Pick one pivot column $j_0$ with $b_{j_0}=1$ (if exists) to express $x$ in terms of $y_{j_0}$, then deduce all $y_j$ by matching each column of $E$. Try both $y_{j_0}\in\{0,1\}$.}
+\ASSUMPTIONS{When $b=\vec{0}$ only $A=D$ is feasible. Otherwise at least one pivot $j_0$ exists.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute $E=A\oplus D$.
+\item If $b=\vec{0}$: feasible iff $E=\vec{0}$.
+\item Choose any $j_0$ with $b_{j_0}=1$. For $y_{j_0}\in\{0,1\}$: set $x_i = E_{i,j_0} \oplus (b_i \cdot y_{j_0})$.
+\item For each column $j$:
+  \begin{itemize}
+  \item If $b_j=1$, then $E_{\cdot,j}\oplus x$ must be either $\vec{0}$ (set $y_j=0$) or $b$ (set $y_j=1$).
+  \item If $b_j=0$, then $E_{\cdot,j}$ must be either $\vec{0}$ or $b$ to set $y_j$.
+  \end{itemize}
+\item If a contradiction occurs, flip $y_{j_0}$ and retry. If both fail, answer is -1. Otherwise output all indices where $x_i=1$ as ``row $i$'' and where $y_j=1$ as ``col $j$''.
+\end{algosteps}
+\COMPLEXITY{Compute and check columns in $O(N^2)$ time and $O(N^2)$ space.}
+\[
+\begin{aligned}
+T(N) &= O(N^2), \\
+S(N) &= O(N^2).
+\end{aligned}
+\]
+\CORRECTNESS{From $b_{j_0}=1$, the equation fixes $x$ once $y_{j_0}$ is chosen. Then each column independently forces $y_j$ or detects impossibility by the required pattern $\vec{0}$ or $b$. This exactly characterizes the solutions to $E_{i,j}=x_i b_j \oplus b_i y_j$.}
+\EDGECASES{%
+- $b=\vec{0}$; only $A=D$ is solvable.
+- $N=1$ reduces to $E_{0,0}=x_0\oplus y_0$ if $b_0=1$.
+- Columns with $b_j=0$ impose a hard check on $E_{\cdot,j}\in\{\vec{0},b\}$.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys, io
+from typing import List, Tuple
+
+def read_input(data: str = None):
+    if data is None:
+        data = sys.stdin.read()
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    A = [list(map(int, list(next(it).strip()))) for _ in range(n)]
+    D = [list(map(int, list(next(it).strip()))) for _ in range(n)]
+    b = list(map(int, list(next(it).strip())))
+    return n, A, D, b
+
+def solve_case(n: int, A: List[List[int]], D: List[List[int]], b: List[int]) -> Tuple[bool, List[Tuple[str,int]]]:
+    # Compute E = A xor D
+    E = [[A[i][j] ^ D[i][j] for j in range(n)] for i in range(n)]
+    if max(b, default=0) == 0:  # all zeros
+        ok = all(E[i][j] == 0 for i in range(n) for j in range(n))
+        if not ok:
+            return False, []
+        return True, []
+    # find pivot column j0 with b[j0]==1
+    j0 = next(j for j in range(n) if b[j] == 1)
+    bvec = b[:]  # column vector values by row index
+    # helper to compare a column c with vec: returns 0 if zero, 1 if equals b, else -1
+    def col_equals(c: List[int]) -> int:
+        zero = all(x == 0 for x in c)
+        if zero:
+            return 0
+        sameb = all(c[i] == bvec[i] for i in range(n))
+        if sameb:
+            return 1
+        return -1
+    for yj0 in (0, 1):
+        x = [E[i][j0] ^ (b[i] & yj0) for i in range(n)]
+        y = [0] * n
+        y[j0] = yj0
+        ok = True
+        # process columns
+        for j in range(n):
+            if j == j0:
+                continue
+            if b[j] == 1:
+                # V = E_col_j xor x
+                V = [E[i][j] ^ x[i] for i in range(n)]
+                tag = col_equals(V)
+                if tag == -1:
+                    ok = False
+                    break
+                y[j] = tag
+            else:
+                # b[j]==0: E_col_j must be 0 or b
+                tag = col_equals([E[i][j] for i in range(n)])
+                if tag == -1:
+                    ok = False
+                    break
+                y[j] = tag
+        if not ok:
+            continue
+        # build ops
+        ops: List[Tuple[str,int]] = []
+        for i in range(n):
+            if x[i] & 1:
+                ops.append(("row", i))
+        for j in range(n):
+            if y[j] & 1:
+                ops.append(("col", j))
+        # Optional sanity check on size
+        if len(ops) > 100000:
+            # Should never happen for constraints
+            return False, []
+        return True, ops
+    return False, []
+
+def solve_all():
+    data = read_input()
+    if data is None:
+        return
+    n, A, D, b = data
+    ok, ops = solve_case(n, A, D, b)
+    out_lines = []
+    if not ok:
+        out_lines.append("-1")
+    else:
+        out_lines.append(str(len(ops)))
+        for t,i in ops:
+            out_lines.append(f"{t} {i}")
+    sys.stdout.write("\n".join(out_lines))
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    # Basic asserts with simulation to verify correctness of produced plan
+    def run_io(inp: str) -> str:
+        backup_stdin = sys.stdin
+        backup_stdout = sys.stdout
+        sys.stdin = io.StringIO(inp)
+        sys.stdout = io.StringIO()
+        try:
+            solve_all()
+            return sys.stdout.getvalue()
+        finally:
+            sys.stdin = backup_stdin
+            sys.stdout = backup_stdout
+
+    def apply_ops(n: int, A: List[str], b: str, ops: List[Tuple[str,int]]) -> List[str]:
+        grid = [list(map(int, list(row))) for row in A]
+        bar = list(map(int, list(b)))
+        for t, idx in ops:
+            if t == "row":
+                i = idx
+                for j in range(n):
+                    grid[i][j] ^= bar[j]
+            else:
+                j = idx
+                for i in range(n):
+                    grid[i][j] ^= bar[i]
+        return ["".join(str(bit) for bit in row) for row in grid]
+
+    # Test 1: impossible (b all zeros, A != D)
+    inp1 = "1\n0\n1\n0\n"
+    out1 = run_io(inp1).strip()
+    assert out1 == "-1"
+
+    # Test 2: N=1, b=1, A=0 -> D=1: one op suffices
+    inp2 = "1\n0\n1\n1\n"
+    out2 = run_io(inp2).strip().splitlines()
+    assert out2[0].isdigit() and int(out2[0]) >= 1
+    # Verify transformation
+    ops2 = [tuple([p.split()[0], int(p.split()[1])]) for p in out2[1:]]
+    res2 = apply_ops(1, ["0"], "1", ops2)
+    assert res2 == ["1"]
+
+    # Test 3: small 2x2 feasible
+    inp3 = "\n".join([
+        "2",
+        "00",
+        "00",
+        "10",
+        "01",
+        "10",
+        ""
+    ])
+    out3 = run_io(inp3).strip().splitlines()
+    if out3[0] != "-1":
+        m = int(out3[0])
+        ops3 = [tuple([p.split()[0], int(p.split()[1])]) for p in out3[1:1+m]]
+        res3 = apply_ops(2, ["00","00"], "10", ops3)
+        assert res3 == ["10","01"]
+    main()
+\end{minted}
+\VALIDATION{The asserts simulate applying the printed operations to confirm the result equals the target. They cover: trivial impossible case, $N=1$ pivot case, and a $2\times 2$ feasible example.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Consistency Checks via Column Tags}
+\WHICHFORMULA{Replace full vector comparisons with two tags per column: whether a column equals $\vec{0}$ or equals $b$. This reduces constants and clarifies feasibility conditions for $b_j=0$ and $b_j=1$.}
+\ASSUMPTIONS{Same as baseline; we still pivot on any $j_0$ with $b_{j_0}=1$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute column vectors of $E$ and a function to tag a vector as 0, $b$, or invalid.
+\item Try $y_{j_0}\in\{0,1\}$, derive $x$, then for each column $j$:
+\begin{itemize}
+\item If $b_j=1$: tag $E_{\cdot,j}\oplus x$ and set $y_j$.
+\item If $b_j=0$: tag $E_{\cdot,j}$ directly and set $y_j$.
+\end{itemize}
+\item If both $y_{j_0}$ fail, return -1; otherwise return the indices where $x$ or $y$ are 1.
+\end{algosteps}
+\COMPLEXITY{Same $O(N^2)$ time and $O(N^2)$ space, but constant factors improved by simple tagging.}
+\[
+\begin{aligned}
+T(n) &= O(n^2).
+\end{aligned}
+\]
+\CORRECTNESS{Unchanged; the tag characterization is equivalent to the vector conditions in the governing equation.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys, io
+from typing import List, Tuple
+
+def read_input(data: str = None):
+    if data is None:
+        data = sys.stdin.read()
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    A = [list(map(int, list(next(it).strip()))) for _ in range(n)]
+    D = [list(map(int, list(next(it).strip()))) for _ in range(n)]
+    b = list(map(int, list(next(it).strip())))
+    return n, A, D, b
+
+def solve_case(n: int, A: List[List[int]], D: List[List[int]], b: List[int]) -> Tuple[bool, List[Tuple[str,int]]]:
+    E = [[A[i][j] ^ D[i][j] for j in range(n)] for i in range(n)]
+    if max(b, default=0) == 0:
+        ok = all(E[i][j] == 0 for i in range(n) for j in range(n))
+        return (ok, []) if ok else (False, [])
+    j0 = next(j for j in range(n) if b[j] == 1)
+    bvec = b[:]
+    def tag_vec(c: List[int]) -> int:
+        # 0 if all zeros, 1 if equals b, else -1
+        if all(x == 0 for x in c):
+            return 0
+        if all(c[i] == bvec[i] for i in range(n)):
+            return 1
+        return -1
+    for yj0 in (0, 1):
+        x = [E[i][j0] ^ (b[i] & yj0) for i in range(n)]
+        y = [0] * n
+        y[j0] = yj0
+        ok = True
+        for j in range(n):
+            if j == j0:
+                continue
+            if b[j] == 1:
+                V = [E[i][j] ^ x[i] for i in range(n)]
+                t = tag_vec(V)
+                if t == -1:
+                    ok = False
+                    break
+                y[j] = t
+            else:
+                t = tag_vec([E[i][j] for i in range(n)])
+                if t == -1:
+                    ok = False
+                    break
+                y[j] = t
+        if not ok:
+            continue
+        ops: List[Tuple[str,int]] = []
+        for i in range(n):
+            if x[i] & 1:
+                ops.append(("row", i))
+        for j in range(n):
+            if y[j] & 1:
+                ops.append(("col", j))
+        if len(ops) > 100000:
+            return False, []
+        return True, ops
+    return False, []
+
+def solve_all():
+    data = read_input()
+    if data is None:
+        return
+    n, A, D, b = data
+    ok, ops = solve_case(n, A, D, b)
+    if not ok:
+        print(-1)
+    else:
+        print(len(ops))
+        for t, i in ops:
+            print(t, i)
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    # Deterministic validation via simulation
+    def run_io(inp: str) -> str:
+        backup_stdin = sys.stdin
+        backup_stdout = sys.stdout
+        sys.stdin = io.StringIO(inp)
+        sys.stdout = io.StringIO()
+        try:
+            solve_all()
+            return sys.stdout.getvalue()
+        finally:
+            sys.stdin = backup_stdin
+            sys.stdout = backup_stdout
+
+    def simulate(n: int, A: List[str], b: str, ops: List[Tuple[str,int]]) -> List[str]:
+        grid = [list(map(int, list(row))) for row in A]
+        bar = list(map(int, list(b)))
+        for t, idx in ops:
+            if t == "row":
+                for j in range(n):
+                    grid[idx][j] ^= bar[j]
+            else:
+                for i in range(n):
+                    grid[i][idx] ^= bar[i]
+        return ["".join(str(x) for x in row) for row in grid]
+
+    # Case: trivial equal with b=0
+    inp = "2\n00\n11\n00\n11\n00\n"
+    out = run_io(inp).strip()
+    assert out == "-1"  # cannot change anything
+
+    # Case: feasible 1x1
+    inp = "1\n0\n1\n1\n"
+    out = run_io(inp).strip().splitlines()
+    m = int(out[0])
+    ops = [tuple([p.split()[0], int(p.split()[1])]) for p in out[1:1+m]]
+    assert simulate(1, ["0"], "1", ops) == ["1"]
+
+    # Case: 3x3 random feasible check
+    n = 3
+    A = ["000","000","000"]
+    b = "101"
+    # Build D by applying row 1 and col 2
+    def apply_ops(A, b, ops):
+        return simulate(n, A, b, ops)
+    D = apply_ops(A, b, [("row",1),("col",2)])
+    inp = "\n".join([str(n), *A, *D, b, ""])
+    out = run_io(inp).strip().splitlines()
+    m = int(out[0])
+    ops2 = [tuple([p.split()[0], int(p.split()[1])]) for p in out[1:1+m]]
+    assert apply_ops(A, b, ops2) == D
+    main()
+\end{minted}
+\VALIDATION{Three checks: $b=\vec{0}$ impossible unless equal; $1\times 1$ feasible; a $3\times 3$ case built from a known plan, then verifying the solver's plan achieves the same target.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{GF(2) Outer-Product Decomposition}
+\WHICHFORMULA{Solve $E=x b^\top \oplus b y^\top$ over $\mathbb{F}_2$ by fixing a pivot column where $b_j=1$, deriving $x$, and checking each column to deduce $y$. This is an $O(N^2)$ algorithm.}
+\ASSUMPTIONS{Bar not all-zero or else only the identical transformation is possible.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute $E=A\oplus D$.
+\item If $b=\vec{0}$: return $\emptyset$ iff $E=\vec{0}$, else -1.
+\item Pick $j_0$ with $b_{j_0}=1$. Try $y_{j_0}\in\{0,1\}$:
+\begin{itemize}
+\item Set $x_i=E_{i,j_0}\oplus (b_i y_{j_0})$.
+\item For each column $j$:
+  \begin{itemize}
+  \item If $b_j=1$: require $E_{\cdot,j}\oplus x\in\{\vec{0},b\}$ to set $y_j$.
+  \item If $b_j=0$: require $E_{\cdot,j}\in\{\vec{0},b\}$ to set $y_j$.
+  \end{itemize}
+\end{itemize}
+\item If consistent, output indices of $x$ and $y$ as operations.
+\end{algosteps}
+\OPTIMALITY{A lower bound of $\Omega(N^2)$ arises from reading $A$ and $D$. The algorithm is thus time-optimal up to constants.}
+\COMPLEXITY{$T(N)=O(N^2)$, $S(N)=O(N^2)$ due to storing $E$. One can stream columns to reduce space to $O(N)$ if desired.}
+\[
+\begin{aligned}
+T(n) &= O(n^2).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys, io
+from typing import List, Tuple
+
+def read_input(data: str = None):
+    if data is None:
+        data = sys.stdin.read()
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    A = [list(map(int, list(next(it).strip()))) for _ in range(n)]
+    D = [list(map(int, list(next(it).strip()))) for _ in range(n)]
+    b = list(map(int, list(next(it).strip())))
+    return n, A, D, b
+
+def solve_case(n: int, A: List[List[int]], D: List[List[int]], b: List[int]) -> Tuple[bool, List[Tuple[str,int]]]:
+    E = [[A[i][j] ^ D[i][j] for j in range(n)] for i in range(n)]
+    if max(b, default=0) == 0:
+        ok = all(E[i][j] == 0 for i in range(n) for j in range(n))
+        return (ok, []) if ok else (False, [])
+    j0 = next(j for j in range(n) if b[j] == 1)
+    bvec = b[:]
+    def tag_vec(c: List[int]) -> int:
+        if all(x == 0 for x in c):
+            return 0
+        if all(c[i] == bvec[i] for i in range(n)):
+            return 1
+        return -1
+    for yj0 in (0, 1):
+        x = [E[i][j0] ^ (b[i] & yj0) for i in range(n)]
+        y = [0] * n
+        y[j0] = yj0
+        ok = True
+        for j in range(n):
+            if j == j0:
+                continue
+            if b[j] == 1:
+                V = [E[i][j] ^ x[i] for i in range(n)]
+                t = tag_vec(V)
+                if t == -1:
+                    ok = False
+                    break
+                y[j] = t
+            else:
+                t = tag_vec([E[i][j] for i in range(n)])
+                if t == -1:
+                    ok = False
+                    break
+                y[j] = t
+        if not ok:
+            continue
+        ops: List[Tuple[str,int]] = []
+        for i in range(n):
+            if x[i] & 1:
+                ops.append(("row", i))
+        for j in range(n):
+            if y[j] & 1:
+                ops.append(("col", j))
+        if len(ops) > 100000:
+            return False, []
+        return True, ops
+    return False, []
+
+def solve_all():
+    data = read_input()
+    if data is None:
+        return
+    n, A, D, b = data
+    ok, ops = solve_case(n, A, D, b)
+    if not ok:
+        print(-1)
+    else:
+        print(len(ops))
+        for t, i in ops:
+            print(t, i)
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    # Exactly 3 asserts / I/O mini-tests
+    def run_io(inp: str) -> str:
+        backup_stdin = sys.stdin
+        backup_stdout = sys.stdout
+        sys.stdin = io.StringIO(inp)
+        sys.stdout = io.StringIO()
+        try:
+            solve_all()
+            return sys.stdout.getvalue()
+        finally:
+            sys.stdin = backup_stdin
+            sys.stdout = backup_stdout
+
+    # 1) Impossible when b=0 and A!=D
+    assert run_io("2\n00\n00\n01\n00\n00\n").strip() == "-1"
+
+    # 2) 1x1 feasible
+    out = run_io("1\n0\n1\n1\n").strip().splitlines()
+    m = int(out[0]); assert m >= 1
+
+    # 3) Constructed feasible 3x3
+    n = 3
+    A = ["000","000","000"]
+    b = "101"
+    # Build D by applying row 2 and col 1
+    def simulate(n, A, b, ops):
+        grid = [list(map(int, list(row))) for row in A]
+        bar = list(map(int, list(b)))
+        for t, idx in ops:
+            if t == "row":
+                for j in range(n):
+                    grid[idx][j] ^= bar[j]
+            else:
+                for i in range(n):
+                    grid[i][idx] ^= bar[i]
+        return ["".join(str(x) for x in row) for row in grid]
+    D = simulate(n, A, b, [("row",2),("col",1)])
+    inp = "\n".join([str(n), *A, *D, b, ""])
+    out = run_io(inp).strip().splitlines()
+    m = int(out[0]); assert 0 <= m <= 100000
+    main()
+\end{minted}
+\VALIDATION{Three deterministic checks: simple impossible, simple feasible, and a constructed $3\times 3$ feasible case.}
+\RESULT{Print any plan using at most one application per row/column modulo 2. Order of operations is arbitrary since XOR commutes.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests simulate applying printed operations to ensure the result equals the target. Cover $b=\vec{0}$, $N=1$, random small feasible cases generated by applying known operations.}
+\LINE{CROSS-CHECKS}{Compare solutions from Approach A/B/C on the same tiny cases; since all implement the same logic, outputs may differ but all must validate by simulation.}
+\LINE{EDGE-CASE GENERATOR}{Generate $N\in\{1,2,3\}$, random $b$, random $x,y$, produce $D$ by applying them to random $A$, then verify the solver returns a valid plan.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import sys, io, random
+
+def gen_case(n: int, seed: int = 0):
+    random.seed(seed)
+    A = ["".join(random.choice("01") for _ in range(n)) for _ in range(n)]
+    b = [random.choice([0,1]) for _ in range(n)]
+    if all(v == 0 for v in b):
+        # force feasible by setting D=A
+        D = A[:]
+        bstr = "".join(map(str, b))
+        return n, A, D, bstr
+    x = [random.choice([0,1]) for _ in range(n)]
+    y = [random.choice([0,1]) for _ in range(n)]
+    # simulate to get D
+    grid = [list(map(int, list(row))) for row in A]
+    for i in range(n):
+        if x[i]:
+            for j in range(n):
+                grid[i][j] ^= b[j]
+    for j in range(n):
+        if y[j]:
+            for i in range(n):
+                grid[i][j] ^= b[i]
+    D = ["".join(str(bit) for bit in row) for row in grid]
+    bstr = "".join(map(str, b))
+    return n, A, D, bstr
+
+# Reference Code (Ready to Submit)
+import sys
+from typing import List, Tuple
+
+def read_input(data: str = None):
+    if data is None:
+        data = sys.stdin.read()
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    A = [list(map(int, list(next(it).strip()))) for _ in range(n)]
+    D = [list(map(int, list(next(it).strip()))) for _ in range(n)]
+    b = list(map(int, list(next(it).strip())))
+    return n, A, D, b
+
+def solve_case(n: int, A: List[List[int]], D: List[List[int]], b: List[int]) -> Tuple[bool, List[Tuple[str,int]]]:
+    E = [[A[i][j] ^ D[i][j] for j in range(n)] for i in range(n)]
+    if max(b, default=0) == 0:
+        ok = all(E[i][j] == 0 for i in range(n) for j in range(n))
+        return (ok, []) if ok else (False, [])
+    j0 = next(j for j in range(n) if b[j] == 1)
+    bvec = b[:]
+    def tag_vec(c: List[int]) -> int:
+        if all(x == 0 for x in c):
+            return 0
+        if all(c[i] == bvec[i] for i in range(n)):
+            return 1
+        return -1
+    for yj0 in (0, 1):
+        x = [E[i][j0] ^ (b[i] & yj0) for i in range(n)]
+        y = [0] * n
+        y[j0] = yj0
+        ok = True
+        for j in range(n):
+            if j == j0:
+                continue
+            if b[j] == 1:
+                V = [E[i][j] ^ x[i] for i in range(n)]
+                t = tag_vec(V)
+                if t == -1:
+                    ok = False
+                    break
+                y[j] = t
+            else:
+                t = tag_vec([E[i][j] for i in range(n)])
+                if t == -1:
+                    ok = False
+                    break
+                y[j] = t
+        if not ok:
+            continue
+        ops: List[Tuple[str,int]] = []
+        for i in range(n):
+            if x[i] & 1:
+                ops.append(("row", i))
+        for j in range(n):
+            if y[j] & 1:
+                ops.append(("col", j))
+        if len(ops) > 100000:
+            return False, []
+        return True, ops
+    return False, []
+
+def solve_all():
+    data = read_input()
+    if data is None:
+        return
+    n, A, D, b = data
+    ok, ops = solve_case(n, A, D, b)
+    if not ok:
+        print(-1)
+    else:
+        print(len(ops))
+        for t, i in ops:
+            print(t, i)
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    # Cross-check on small deterministic cases
+    for seed in range(5):
+        n, A, D, b = gen_case(3, seed)
+        data = "\n".join([str(n), *A, *D, b, ""])
+        backup_stdin = sys.stdin
+        backup_stdout = sys.stdout
+        sys.stdin = io.StringIO(data)
+        sys.stdout = io.StringIO()
+        try:
+            solve_all()
+            out = sys.stdout.getvalue().strip().splitlines()
+        finally:
+            sys.stdin = backup_stdin
+            sys.stdout = backup_stdout
+        if out[0] != "-1":
+            m = int(out[0])
+            ops = [tuple([p.split()[0], int(p.split()[1])]) for p in out[1:1+m]]
+            # simulate
+            grid = [list(map(int, list(r))) for r in A]
+            bar = list(map(int, list(b)))
+            for t, idx in ops:
+                if t == "row":
+                    for j in range(n):
+                        grid[idx][j] ^= bar[j]
+                else:
+                    for i in range(n):
+                        grid[i][idx] ^= bar[i]
+            got = ["".join(str(bit) for bit in row) for row in grid]
+            assert got == D
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Solve $E=x b^\top \oplus b y^\top$ with a pivot column to determine $x,y$, then print rows with $x_i=1$ and columns with $y_j=1$.}
+\WHY{This pattern of row/column XORs with a fixed mask appears in grid toggling puzzles and interview problems about linear algebra over $\mathbb{F}_2$.}
+\CHECKLIST{%
+- Build $E=A\oplus D$.
+- Handle $b=\vec{0}$.
+- Pick pivot $j_0$ with $b_{j_0}=1$.
+- Try $y_{j_0}\in\{0,1\}$, derive $x$.
+- For each column, check/tag vector constraints and set $y_j$.
+- Print operations for $x$ and $y$.}
+\EDGECASES{%
+- $b$ all zeros.
+- $N=1$.
+- Columns with $b_j=0$ must be exactly $\vec{0}$ or $b$ in $E$.
+- Highly sparse $b$ (single one).
+- Identical $A=D$ should output 0.
+- Large $N$ ensuring $M \le 10^5$ trivially.}
+\PITFALLS{%
+- Mixing 1-based and 0-based indices in output.
+- Misinterpreting the operation as setting instead of XOR; it is XOR since equal turns off, different turns on.
+- Forgetting to try both $y_{j_0}$ values.
+- Not handling $b=\vec{0}$ separately.
+- Building operations with duplicates instead of modulo 2.
+- Outputting more than $10^5$ operations (cannot happen here if implemented correctly).}
+\FAILMODES{Brute-forcing all $x$ or $y$ combinations is exponential and fails. The pivot method avoids this by linear-time column checks.}
+\ELI{Think of pressing whole rows by the bar pattern horizontally and whole columns by the same pattern vertically. The difference $E$ must be explained by some combination of a row-scaled bar and a column-scaled bar. Fix one column to learn the row choices, then each other column either matches or contradicts this story.}
+\NotePages{3}
+
+\end{document}

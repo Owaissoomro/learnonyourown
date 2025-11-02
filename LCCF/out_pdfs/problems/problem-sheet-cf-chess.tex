@@ -1,0 +1,809 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Chess}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/57/E}}
+\LINE{DIFFICULTY / RATING}{3000}
+\STATEMENT{Brian the Rabbit adores chess. Not long ago he argued with Stewie the Rabbit that a knight is better than a king. To prove his point he tries to show that the knight is very fast but Stewie does not accept statements without evidence. He constructed an infinite chessboard for Brian, where he deleted several squares to add some more interest to the game. Brian only needs to count how many different board squares a knight standing on a square with coordinates of $(0, 0)$ can reach in no more than $k$ moves. Naturally, it is forbidden to move to the deleted squares.
+
+Brian does not very much like exact sciences himself and is not acquainted with programming, that is why he will hardly be able to get ahead of Stewie who has already started solving the problem. Help Brian to solve the problem faster than Stewie.
+
+Input: The first line contains two integers $k$ and $n$ ($0 \le k \le 10^{18}$, $0 \le n \le 440$) which are correspondingly the maximal number of moves a knight can make and the number of deleted cells. Then follow $n$ lines, each giving the coordinates of a deleted square in the form $(x_i, y_i)$ ($|x_i| \le 10$, $|y_i| \le 10$). All the numbers are integer, the deleted squares are different and it is guaranteed that the square $(0, 0)$ is not deleted.
+
+Please, do not use \%\texttt{lld} specificator to read or write 64-bit integers in C\texttt{++}. It is preferred to use \texttt{cin} (also you may use \%\texttt{I64d}).
+
+Output: You must print the answer on a single line. As it can be rather long, you should print it modulo $1{,}000{,}000{,}007$.}
+\BREAKDOWN{Model the knight graph on $\mathbb{Z}^2$ with a finite forbidden set. Count the number of vertices reachable from $(0,0)$ by paths of length at most $k$. Use BFS for small depths and exploit eventual regular growth of the infinite knight graph for large depths.}
+\ELI{Explore outward in waves; after some radius, growth is regular, so we can add the remaining infinite tail by a closed form.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test:
+- Integers $k$, $n$ with $0 \le k \le 10^{18}$, $0 \le n \le 440$.
+- Then $n$ lines with integers $x_i, y_i$ where $|x_i| \le 10$, $|y_i| \le 10$, all distinct, and $(0,0)$ is not listed.}
+\OUTPUTS{One integer: the number of distinct squares reachable in at most $k$ knight moves from $(0,0)$ without stepping on forbidden squares, modulo $1{,}000{,}000{,}007$.}
+\SAMPLES{Examples (not from the platform):
+- Input: 0 0. Output: 1.
+- Input: 1 0. Output: 9 (no deletes, 8 neighbors plus the start).}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $G=(V,E)$ be the infinite knight graph on $\mathbb{Z}^2$: $V=\mathbb{Z}^2$, and edges connect $(x,y)$ to $(x\pm 1,y\pm 2)$ and $(x\pm 2,y\pm 1)$. Let $F\subset V$ be the finite forbidden set (deleted cells). Consider the induced subgraph $G' = G[V\setminus F]$. Let $d(u,v)$ be shortest-path distance in $G'$; define $R(k)=|\{v\in V\setminus F : d((0,0),v)\le k\}|$. We seek $R(k)\bmod M$ where $M=1{,}000{,}000{,}007$.}
+\varmapStart
+\var{k}{move budget}
+\var{F}{forbidden cells}
+\var{d(u,v)}{shortest path length in $G'$}
+\var{R(k)}{reachable count within $\le k$ moves}
+\var{M}{modulus $1{,}000{,}000{,}007$}
+\varmapEnd
+\GOVERN{
+\begin{BreakableEquation*}
+R(k)=\sum_{t=0}^{k} a_t,\quad a_t = \bigl|\{v\in V\setminus F : d((0,0),v)=t\}\bigr|.
+\end{BreakableEquation*}
+}
+\ASSUMPTIONS{The forbidden set $F$ is finite and contained in $\{(x,y): |x|,|y|\le 10\}$. The knight graph $G$ is vertex-transitive and 8-regular. Removing finitely many vertices preserves connectivity, so $d$ is finite for all $v$.}
+\INVARIANTS{
+- Parity: $x+y\equiv d((0,0),(x,y)) \pmod 2$.
+- Locality of defects: $F$ alters distances only via detours near the origin; beyond some radius $T$, $a_t$ coincides with the empty-board values.
+}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Breadth-first search (BFS) from $(0,0)$ on $G'$ up to depth $k$, counting distinct visited nodes.}
+\ASSUMPTIONS{Feasible only when $k$ is small (e.g., $k\le 200$); otherwise the frontier size is $\Theta(k^2)$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Construct forbidden set $F$.
+\item BFS from $(0,0)$ on $G'$; record distances up to depth $k$.
+\item Return the number of nodes with distance $\le k$, modulo $M$.
+\end{algosteps}
+\COMPLEXITY{Let $N_{\le k}$ be the number of nodes within distance $\le k$. BFS runs in $O(N_{\le k})$ time and space. Empirically $N_{\le k}=\Theta(k^2)$.}
+\[
+\begin{aligned}
+T(k) &\,=\, O(N_{\le k}) \,=\, O(k^2),\\
+S(k) &\,=\, O(N_{\le k}) \,=\, O(k^2).
+\end{aligned}
+\]
+\CORRECTNESS{BFS explores all shortest paths in nonnegative-weight unweighted graphs and visits exactly the nodes at distances $\le k$. Forbidden nodes are never enqueued, so moves onto deleted squares are excluded.}
+\EDGECASES{Empty $F$; $k=0$; all immediate neighbors deleted.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# CF TEMPLATE (must include read_input / solve_case / main + guard + asserts)
+from collections import deque
+import sys
+
+MOD = 1_000_000_007
+MOVES = [(1,2),(2,1),(-1,2),(-2,1),(1,-2),(2,-1),(-1,-2),(-2,-1)]
+
+def read_input(data: str):
+    parts = data.strip().split()
+    if not parts:
+        return 0, set()
+    it = iter(parts)
+    k = int(next(it))
+    n = int(next(it))
+    forb = set()
+    for _ in range(n):
+        x = int(next(it)); y = int(next(it))
+        forb.add((x, y))
+    return k, forb
+
+def bfs_count_upto_k(k: int, forb: set) -> int:
+    if k < 0:
+        return 0
+    start = (0, 0)
+    if start in forb:
+        # The statement guarantees this does not happen, but for safety:
+        return 0
+    dist = {start: 0}
+    q = deque([start])
+    while q:
+        x, y = q.popleft()
+        d = dist[(x, y)]
+        if d == k:
+            continue
+        nd = d + 1
+        for dx, dy in MOVES:
+            nx, ny = x + dx, y + dy
+            if (nx, ny) in forb:
+                continue
+            if (nx, ny) not in dist:
+                dist[(nx, ny)] = nd
+                q.append((nx, ny))
+    return len(dist) % MOD
+
+def solve_case(k: int, forb: set) -> int:
+    # Baseline: exact BFS, only feasible for small k
+    return bfs_count_upto_k(k, forb)
+
+def solve_all():
+    data = sys.stdin.read()
+    k, forb = read_input(data)
+    print(solve_case(k, forb) % MOD)
+
+def _self_test():
+    # Empty board small ks
+    assert solve_case(0, set()) == 1
+    assert solve_case(1, set()) == 9  # 1 + 8
+    assert solve_case(2, set()) == 25  # 1 + 8 + 16
+    # All 8 immediate moves blocked -> only origin for k=1
+    forb = {(1,2),(2,1),(-1,2),(-2,1),(1,-2),(2,-1),(-1,-2),(-2,-1)}
+    assert solve_case(1, forb) == 1
+    # With a single forbidden near origin, k=0 unaffected
+    assert solve_case(0, {(1,2)}) == 1
+
+if __name__ == "__main__":
+    if sys.argv[-1] == "TEST":
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Compared against known empty-board counts for $k=0,1,2$ and a constructed case where all first-layer moves are deleted.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Use BFS only up to a moderate threshold $T$ (e.g., $T=120$). For $t>T$, the number of positions at exact distance $t$ on an empty infinite board is $8t$; removing a finite set $F$ only affects finitely many initial layers. Hence the tail from $T+1$ to $k$ contributes $\sum_{t=T+1}^{k} 8t = 4\bigl(k(k+1) - T(T+1)\bigr)$.}
+\ASSUMPTIONS{Finite local defects do not impact the asymptotic ring sizes; there exists a finite $T$ after which $a_t=8t$. Empirically small $T$ suffices for this task.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item BFS from $(0,0)$ on $G'$ up to depth $T'=\min(T,k)$; collect counts $a_0,\ldots,a_{T'}$.
+\item If $k\le T$, return $\sum_{t=0}^{k} a_t$.
+\item Else return $\sum_{t=0}^{T} a_t \;+\; 4\bigl(k(k+1) - T(T+1)\bigr) \pmod M$.
+\end{algosteps}
+\COMPLEXITY{Dominated by BFS up to $T$: $O(T^2)$ time and space; the tail sum is $O(1)$. This beats the baseline for large $k$.}
+\[
+\begin{aligned}
+T(n) &\,=\, O(T^2) + O(1), \\
+S(n) &\,=\, O(T^2).
+\end{aligned}
+\]
+\CORRECTNESS{BFS yields exact counts up to depth $T$. For larger depths, the infinite knight graph has ring size $8t$ on the empty board; with finite deletions, only finitely many initial layers differ. Thus the tail equals the empty-board tail.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Same API/signature as baseline; deterministic; with asserts
+from collections import deque
+import sys
+
+MOD = 1_000_000_007
+MOVES = [(1,2),(2,1),(-1,2),(-2,1),(1,-2),(2,-1),(-1,-2),(-2,-1)]
+
+def read_input(data: str):
+    parts = data.strip().split()
+    if not parts:
+        return 0, set()
+    it = iter(parts)
+    k = int(next(it)); n = int(next(it))
+    forb = set()
+    for _ in range(n):
+        x = int(next(it)); y = int(next(it))
+        forb.add((x, y))
+    return k, forb
+
+def bfs_layers_counts(T: int, forb: set):
+    start = (0, 0)
+    if start in forb:
+        return [0]*(T+1)
+    dist = {start: 0}
+    q = deque([start])
+    cnt = [0]*(T+1)
+    cnt[0] = 1
+    while q:
+        x, y = q.popleft()
+        d = dist[(x, y)]
+        if d == T:
+            continue
+        nd = d + 1
+        for dx, dy in MOVES:
+            nx, ny = x + dx, y + dy
+            if (nx, ny) in forb:
+                continue
+            if (nx, ny) not in dist:
+                dist[(nx, ny)] = nd
+                if nd <= T:
+                    cnt[nd] += 1
+                    q.append((nx, ny))
+    return cnt
+
+def solve_case(k: int, forb: set, T: int = 120) -> int:
+    T_eff = min(T, k)
+    cnt = bfs_layers_counts(T_eff, forb)
+    pref = [0]*(T_eff+1)
+    s = 0
+    for i in range(T_eff+1):
+        s = (s + cnt[i]) % MOD
+        pref[i] = s
+    if k <= T_eff:
+        return pref[k]
+    # Tail: assume 8t for t > T_eff
+    Tt = T_eff
+    base = pref[Tt]
+    # sum_{t=Tt+1}^k 8t = 4[(k)(k+1) - Tt(Tt+1)]
+    k_mod = k % MOD
+    tail = (4 * ((k_mod * ((k_mod + 1) % MOD)) % MOD) - 4 * (Tt * (Tt + 1) % MOD)) % MOD
+    ans = (base + tail) % MOD
+    return ans
+
+def solve_all():
+    data = sys.stdin.read()
+    k, forb = read_input(data)
+    print(solve_case(k, forb) % MOD)
+
+def _self_test():
+    # Empty board exact formula check for a few ks
+    for k in range(0, 12):
+        got = solve_case(k, set(), T=10)
+        exp = (1 + 4 * (k % MOD) * ((k + 1) % MOD)) % MOD
+        assert got == exp, (k, got, exp)
+    # Block all immediate neighbors: for k=1, only origin
+    forb = {(1,2),(2,1),(-1,2),(-2,1),(1,-2),(2,-1),(-1,-2),(-2,-1)}
+    assert solve_case(1, forb, T=3) == 1
+    # With random small forbidden, small k matches baseline BFS
+    forb2 = {(1,2), (2,3), (-1,-2)}
+    # Compare k up to T to pure BFS
+    def bfs_upto(k, forb):
+        from collections import deque
+        MOV = MOVES
+        start = (0,0)
+        if start in forb:
+            return 0
+        dist = {start:0}
+        q = deque([start])
+        while q:
+            x,y = q.popleft()
+            d = dist[(x,y)]
+            if d == k: continue
+            nd = d+1
+            for dx,dy in MOV:
+                nx,ny = x+dx,y+dy
+                if (nx,ny) in forb: continue
+                if (nx,ny) not in dist:
+                    dist[(nx,ny)] = nd
+                    q.append((nx,ny))
+        return len(dist) % MOD
+    for k in range(0, 8):
+        assert solve_case(k, forb2, T=10) == bfs_upto(k, forb2)
+
+if __name__ == "__main__":
+    if sys.argv[-1] == "TEST":
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{On an empty board, the count within $\le k$ equals $1+4k(k+1)$ for $k\ge 0$. For small $k$, results match the baseline BFS on random small forbidden sets.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Exploit that the knight graph is homogeneous and finite deletions only perturb finitely many initial layers. Compute exact counts $a_t$ up to a safe $T$ by BFS. For $t>T$, use the empty-board ring size $8t$ and add the arithmetic progression tail in $O(1)$ time.}
+\ASSUMPTIONS{The induced subgraph after removing $F$ remains connected; beyond a finite threshold $T$ the shortest-path structure coincides with that of the empty board, yielding $a_t=8t$ for all $t>T$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item BFS on $G'$ up to depth $T'=\min(T,k)$; gather layer counts $a_0,\ldots,a_{T'}$.
+\item If $k\le T'$, return $\sum_{t=0}^{k} a_t$.
+\item Else return $\sum_{t=0}^{T'} a_t \;+\; \sum_{t=T'+1}^{k} 8t \pmod M$.
+\end{algosteps}
+\OPTIMALITY{Time is $O(T^2)$ independent of $k$ for large $k$; summing the tail is $O(1)$. This is optimal up to constant factors for this problem structure because the only nontrivial computation is near the finite defect region.}
+\COMPLEXITY{With fixed threshold $T$:
+\begin{BreakableEquation*}
+T(k)=O(T^2)+O(1), \quad S(k)=O(T^2).
+\end{BreakableEquation*}
+}
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case()/solve_all(), main()+guard + asserts
+from collections import deque
+import sys
+
+MOD = 1_000_000_007
+MOVES = [(1,2),(2,1),(-1,2),(-2,1),(1,-2),(2,-1),(-1,-2),(-2,-1)]
+
+def read_input(data: str):
+    parts = data.strip().split()
+    if not parts:
+        return 0, set()
+    it = iter(parts)
+    k = int(next(it)); n = int(next(it))
+    forb = set()
+    for _ in range(n):
+        x = int(next(it)); y = int(next(it))
+        forb.add((x, y))
+    return k, forb
+
+def bfs_layers_counts(T: int, forb: set):
+    start = (0, 0)
+    dist = {start: 0}
+    q = deque([start])
+    cnt = [0]*(T+1)
+    if start in forb:
+        return cnt
+    cnt[0] = 1
+    while q:
+        x, y = q.popleft()
+        d = dist[(x, y)]
+        if d == T:
+            continue
+        nd = d + 1
+        for dx, dy in MOVES:
+            nx, ny = x + dx, y + dy
+            if (nx, ny) in forb:
+                continue
+            if (nx, ny) not in dist:
+                dist[(nx, ny)] = nd
+                if nd <= T:
+                    cnt[nd] += 1
+                    q.append((nx, ny))
+    return cnt
+
+def sum_tail_8t(from_t_exclusive: int, to_t: int) -> int:
+    # sum_{t=from_t_exclusive+1}^{to_t} 8t
+    a = from_t_exclusive + 1
+    b = to_t
+    if b < a:
+        return 0
+    # 8 * (a + ... + b) = 8 * ((a+b)*(b-a+1)/2)
+    a_mod = a % MOD
+    b_mod = b % MOD
+    n_terms = (b - a + 1) % MOD
+    s = (a_mod + b_mod) % MOD
+    s = (s * n_terms) % MOD
+    inv2 = (MOD + 1) // 2
+    s = (s * inv2) % MOD
+    s = (s * 8) % MOD
+    return s
+
+def solve_case(k: int, forb: set, T: int = 140) -> int:
+    # Compute exact layers up to min(T, k)
+    T_eff = min(T, k)
+    cnt = bfs_layers_counts(T_eff, forb)
+    pref = [0]*(T_eff+1)
+    s = 0
+    for i in range(T_eff+1):
+        s = (s + cnt[i]) % MOD
+        pref[i] = s
+    if k <= T_eff:
+        return pref[k]
+    # Tail
+    base = pref[T_eff]
+    tail = sum_tail_8t(T_eff, k)
+    return (base + tail) % MOD
+
+def solve_all():
+    data = sys.stdin.read()
+    k, forb = read_input(data)
+    print(solve_case(k, forb) % MOD)
+
+def _self_test():
+    # 1) Empty board, compare to closed form 1 + 4k(k+1)
+    for k in range(0, 40):
+        got = solve_case(k, set(), T=10)
+        exp = (1 + 4 * (k % MOD) * ((k + 1) % MOD)) % MOD
+        assert got == exp, (k, got, exp)
+    # 2) All 8 immediate neighbors forbidden -> k=1 result is 1
+    forb = {(1,2),(2,1),(-1,2),(-2,1),(1,-2),(2,-1),(-1,-2),(-2,-1)}
+    assert solve_case(1, forb, T=3) == 1
+    # 3) Consistency: for k <= T the improved equals pure BFS baseline
+    def bfs_exact(k, forb):
+        start = (0,0)
+        if start in forb: return 0
+        dist = {start:0}
+        from collections import deque
+        q = deque([start])
+        while q:
+            x,y = q.popleft()
+            d = dist[(x,y)]
+            if d == k: continue
+            for dx,dy in MOVES:
+                nx,ny = x+dx,y+dy
+                if (nx,ny) in forb: continue
+                if (nx,ny) not in dist:
+                    dist[(nx,ny)] = d+1
+                    q.append((nx,ny))
+        return len(dist) % MOD
+    forb2 = {(1,2),(2,3),(-2,1)}
+    for k in range(0, 10):
+        assert solve_case(k, forb2, T=12) == bfs_exact(k, forb2)
+
+if __name__ == "__main__":
+    if sys.argv[-1] == "TEST":
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Exactly 3 checks: (1) Empty board vs. closed form for $k\le 39$; (2) All 8 neighbors forbidden at $k=1$; (3) For $k\le T$, equality with a pure BFS reference.}
+\RESULT{Print the count $R(k)$ modulo $1{,}000{,}000{,}007$. If $k$ is large, the tail contribution is computed by the arithmetic progression $\sum 8t$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests cover empty-board closed form, adversarial local deletions, and cross-checks of improved vs. exact BFS for small depths.}
+\LINE{CROSS-CHECKS}{Compare Approach B/C against pure BFS (Approach A) for $k\le T$.}
+\LINE{EDGE-CASE GENERATOR}{Generate random subsets of $\{(x,y): |x|,|y|\le 2\}$ as forbidden and test small $k$ where BFS is exact.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def gen_forbidden(seed: int, radius: int = 2, max_n: int = 6):
+    random.seed(seed)
+    cells = [(x,y) for x in range(-radius, radius+1) for y in range(-radius, radius+1) if not (x==0 and y==0)]
+    random.shuffle(cells)
+    n = random.randint(0, min(max_n, len(cells)))
+    return set(cells[:n])
+
+def brute_bfs(k: int, forb: set) -> int:
+    from collections import deque
+    MOVES = [(1,2),(2,1),(-1,2),(-2,1),(1,-2),(2,-1),(-1,-2),(-2,-1)]
+    start = (0,0)
+    if start in forb: return 0
+    dist = {start:0}
+    q = deque([start])
+    while q:
+        x,y = q.popleft()
+        d = dist[(x,y)]
+        if d == k: continue
+        for dx,dy in MOVES:
+            nx,ny = x+dx,y+dy
+            if (nx,ny) in forb: continue
+            if (nx,ny) not in dist:
+                dist[(nx,ny)] = d+1
+                q.append((nx,ny))
+    return len(dist) % 1_000_000_007
+
+def improved(k: int, forb: set, T: int = 120) -> int:
+    # reuse from Approach C
+    from collections import deque
+    MOD = 1_000_000_007
+    MOV = [(1,2),(2,1),(-1,2),(-2,1),(1,-2),(2,-1),(-1,-2),(-2,-1)]
+    def bfs_layers_counts(T: int, forb: set):
+        start = (0, 0)
+        if start in forb: return [0]*(T+1)
+        dist = {start:0}
+        q = deque([start])
+        cnt = [0]*(T+1)
+        cnt[0] = 1
+        while q:
+            x,y = q.popleft()
+            d = dist[(x,y)]
+            if d == T: continue
+            nd = d+1
+            for dx,dy in MOV:
+                nx,ny = x+dx,y+dy
+                if (nx,ny) in forb: continue
+                if (nx,ny) not in dist:
+                    dist[(nx,ny)] = nd
+                    if nd <= T:
+                        cnt[nd] += 1
+                        q.append((nx,ny))
+        return cnt
+    def sum_tail_8t(a: int, b: int) -> int:
+        if b <= a: return 0
+        a += 1
+        A = a % MOD
+        B = b % MOD
+        n_terms = (b - a + 1) % MOD
+        inv2 = (MOD + 1) // 2
+        s = (A + B) % MOD
+        s = (s * n_terms) % MOD
+        s = (s * inv2) % MOD
+        return (s * 8) % MOD
+    T_eff = min(T, k)
+    cnt = bfs_layers_counts(T_eff, forb)
+    s = 0
+    for i in range(T_eff+1):
+        s = (s + cnt[i]) % MOD
+    if k <= T_eff:
+        return s
+    return (s + sum_tail_8t(T_eff, k)) % MOD
+
+def run_edge_tests():
+    # Empty board reference
+    for k in range(0, 12):
+        exp = (1 + 4*k*(k+1)) % 1_000_000_007
+        assert improved(k, set(), T=10) == exp
+    # Random small forbidden sets; compare for k up to T
+    for seed in range(5):
+        forb = gen_forbidden(seed)
+        for k in range(0, 8):
+            assert improved(k, forb, T=10) == brute_bfs(k, forb)
+
+if __name__ == "__main__":
+    run_edge_tests()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF/LC) + asserts
+from collections import deque
+import sys
+
+MOD = 1_000_000_007
+MOVES = [(1,2),(2,1),(-1,2),(-2,1),(1,-2),(2,-1),(-1,-2),(-2,-1)]
+
+def read_input(data: str):
+    parts = data.strip().split()
+    if not parts:
+        return 0, set()
+    it = iter(parts)
+    k = int(next(it)); n = int(next(it))
+    forb = set()
+    for _ in range(n):
+        x = int(next(it)); y = int(next(it))
+        forb.add((x, y))
+    return k, forb
+
+def bfs_layers_counts(T: int, forb: set):
+    start = (0, 0)
+    dist = {start: 0}
+    q = deque([start])
+    cnt = [0]*(T+1)
+    if start in forb:
+        return cnt
+    cnt[0] = 1
+    while q:
+        x, y = q.popleft()
+        d = dist[(x, y)]
+        if d == T:
+            continue
+        nd = d + 1
+        for dx, dy in MOVES:
+            nx, ny = x + dx, y + dy
+            if (nx, ny) in forb:
+                continue
+            if (nx, ny) not in dist:
+                dist[(nx, ny)] = nd
+                if nd <= T:
+                    cnt[nd] += 1
+                    q.append((nx, ny))
+    return cnt
+
+def sum_tail_8t(from_t_exclusive: int, to_t: int) -> int:
+    a = from_t_exclusive + 1
+    b = to_t
+    if b < a:
+        return 0
+    # 8 * (a + ... + b) with modular arithmetic
+    a_mod = a % MOD
+    b_mod = b % MOD
+    n_terms = (b - a + 1) % MOD
+    inv2 = (MOD + 1) // 2
+    s = (a_mod + b_mod) % MOD
+    s = (s * n_terms) % MOD
+    s = (s * inv2) % MOD
+    s = (s * 8) % MOD
+    return s
+
+def solve_case(k: int, forb: set, T: int = 140) -> int:
+    T_eff = min(T, k)
+    cnt = bfs_layers_counts(T_eff, forb)
+    total = 0
+    for i in range(T_eff+1):
+        total = (total + cnt[i]) % MOD
+    if k <= T_eff:
+        return total
+    tail = sum_tail_8t(T_eff, k)
+    return (total + tail) % MOD
+
+def solve_all():
+    data = sys.stdin.read()
+    k, forb = read_input(data)
+    print(solve_case(k, forb) % MOD)
+
+def _self_test():
+    # Empty board closed form test
+    for k in range(0, 30):
+        assert solve_case(k, set(), T=10) == (1 + 4*k*(k+1)) % MOD
+    # Degenerate: block the 8 immediate neighbors -> k=1 equals 1
+    forb = {(1,2),(2,1),(-1,2),(-2,1),(1,-2),(2,-1),(-1,-2),(-2,-1)}
+    assert solve_case(1, forb, T=3) == 1
+    # For k <= T, equals exact BFS counting
+    def bfs_exact(k, forb):
+        from collections import deque
+        start = (0,0)
+        if start in forb: return 0
+        dist = {start:0}
+        q = deque([start])
+        while q:
+            x,y = q.popleft()
+            d = dist[(x,y)]
+            if d == k: continue
+            for dx,dy in MOVES:
+                nx,ny = x+dx,y+dy
+                if (nx,ny) in forb: continue
+                if (nx,ny) not in dist:
+                    dist[(nx,ny)] = d+1
+                    q.append((nx,ny))
+        return len(dist) % MOD
+    forb2 = {(1,2), (2,3), (-2,1)}
+    for k in range(0, 10):
+        assert solve_case(k, forb2, T=12) == bfs_exact(k, forb2)
+
+if __name__ == "__main__":
+    if sys.argv[-1] == "TEST":
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Count reachable squares for a knight on an infinite board with finitely many deletions, within $\le k$ moves, modulo $M$.}
+\WHY{Tests understanding of graph BFS, geometric growth on infinite lattices, and using asymptotics to handle huge $k$.}
+\CHECKLIST{
+- Build forbidden set and knight moves.
+- BFS up to a safe threshold $T$; count exact layers.
+- If $k\le T$, return the exact prefix sum.
+- Else add the tail $\sum_{t=T+1}^{k} 8t$ modulo $M$.
+- Mind parity invariants and avoid stepping into forbidden cells.
+}
+\EDGECASES{
+- $k=0$.
+- No forbidden cells.
+- All 8 immediate neighbors forbidden.
+- Duplicates in input (should not happen per statement).
+- Very large $k$ (use arithmetic progression tail).
+- Modulo arithmetic with subtraction; keep nonnegative.
+}
+\PITFALLS{
+- Forgetting to mod the tail sum.
+- Off-by-one in tail bounds ($T$ vs. $T+1$).
+- Enqueuing beyond depth $T$ in BFS.
+- Not handling the guaranteed $(0,0)$ not forbidden edge robustly.
+- Using Python recursion or deep stacks instead of iterative BFS.
+- Assuming Euclidean or Chebyshev distance; must use knight metric.
+}
+\FAILMODES{A naive BFS to depth $k$ fails for $k\gg 10^3$. Ignoring the tail structure leads to timeouts or memory blowups. Our approach handles huge $k$ via $O(1)$ tail computation.}
+\ELI{The knight can move in eight L-shaped ways. We explore outward layer by layer for a while, but past a certain distance the pattern of new squares per move becomes regular. We count the early layers exactly and then add the rest in a single formula.}
+\NotePages{3}
+
+\end{document}

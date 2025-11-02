@@ -1,0 +1,2452 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]
+\setlength{\jot}{7pt}
+\setlength{\emergencystretch}{8em}
+\sloppy
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Matrix Differential Identities (Determinant and Log-Determinant)}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+A matrix differential identity relates the infinitesimal change of a scalar
+function of a matrix to the infinitesimal change of the matrix.
+For an invertible matrix $A\in\mathbb{R}^{n\times n}$, the determinant and
+log-determinant differentials are
+$d\,\det A=\det(A)\,\mathrm{tr}(A^{-1}dA)$ and
+$d\,\log\det A=\mathrm{tr}(A^{-1}dA)$.
+Gradients with respect to $A$ are
+$\nabla_A\det A=\det(A)A^{-T}$ and $\nabla_A\log\det A=A^{-T}$.
+}
+
+\WHY{
+These identities convert multiplicative volume change (determinant) into
+additive trace forms, enabling calculus on matrix manifolds.
+They underpin maximum likelihood for Gaussian models, convex optimization on
+symmetric positive definite matrices, stability and sensitivity analysis, and
+matrix calculus for machine learning and control.
+}
+
+\HOW{
+1. Start from the algebraic identity $A\,\mathrm{adj}(A)=\det(A)I$.
+2. Differentiate to relate $d\,\det(A)$ to $dA$ via the adjugate.
+3. Use $\mathrm{adj}(A)=\det(A)A^{-1}$ (or $A^{-T}$) when $A$ is invertible.
+4. Express differentials as Frobenius inner products to read off gradients.
+5. Differentiate again using $dA^{-1}=-A^{-1}(dA)A^{-1}$ for second-order forms.
+}
+
+\ELI{
+Determinant measures how a matrix scales volumes.
+If you nudge the matrix a little by $dA$, the volume scales by a factor
+roughly $1+\mathrm{tr}(A^{-1}dA)$.
+Taking a log turns products into sums, so $\log\det$ changes by exactly the
+trace term to first order.
+}
+
+\SCOPE{
+Valid for square matrices; formulas using $A^{-1}$ require $A$ invertible.
+On the symmetric positive definite cone the log-determinant is smooth and
+strictly concave; $-\log\det$ is convex.
+At singular $A$, $\det(A)=0$ and $\log\det$ is undefined; differentials blow up.
+}
+
+\CONFUSIONS{
+Determinant vs. permanent; trace vs. sum of eigenvalues of $A$ (not $A^{-1}H$);
+directional derivative $d\,\det(A)[H]$ vs. derivative along a curve
+$\frac{d}{dt}\det(A(t))$; gradient wrt $A$ vs. gradient wrt vectorized $A$.
+}
+
+\APPLICATIONS{
+\begin{bullets}
+\item Mathematical foundations: differential geometry on $\mathrm{GL}(n)$, $\mathrm{SPD}(n)$.
+\item Computational modeling: Gaussian log-likelihood and covariance estimation.
+\item Physical interpretation: local volume change in continuum mechanics.
+\item Algorithmic implications: Newton methods on $\mathrm{SPD}(n)$ via Hessians of $\log\det$.
+\end{bullets}
+}
+
+\textbf{ANALYTIC STRUCTURE.}
+The determinant is multiplicative and homogeneous of degree $n$.
+The log-determinant is additive over products and concave on $\mathrm{SPD}(n)$.
+Differentials are linear in the direction $H$, with symmetry captured by trace.
+
+\textbf{CANONICAL LINKS.}
+Jacobi's formula implies the gradient of $\det$ and of $\log\det$.
+Differentiating $A^{-1}$ yields the Hessian of $\log\det$.
+The matrix determinant lemma provides structured updates and their derivatives.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Presence of $\det(A(t))$ or $\log\det(A(t))$ and a small perturbation $H$.
+\item Rank-one updates $A+uv^T$ or block Gaussian models.
+\item Optimization objectives including $\pm\log\det$ on $\mathrm{SPD}(n)$.
+\item Expressions with $\mathrm{tr}(A^{-1}H)$ or $A^{-T}$ appearing.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate variation into a differential $dA$ or direction $H$.
+\item Invoke Jacobi's formula $d\,\det A=\det(A)\,\mathrm{tr}(A^{-1}dA)$.
+\item For $\log\det$, use $d\,\log\det A=\mathrm{tr}(A^{-1}dA)$.
+\item Read off gradients via $\langle G,H\rangle=\mathrm{tr}(G^TH)$.
+\item Validate with limiting cases and symmetry (similarity invariance).
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Similarity invariance of $\det$; additive property of $\log\det$ under products;
+trace invariance under cyclic permutations.
+
+\textbf{EDGE INTUITION.}
+As $A\to I$, $\det(A)\approx 1+\mathrm{tr}(A-I)$.
+As $A$ approaches singular, $\log\det(A)\to -\infty$ and gradients blow up with
+$A^{-1}$.
+
+\clearpage
+\section{Glossary}
+\glossx{Jacobi's Formula}
+{Differential identity $d\,\det A=\det(A)\,\mathrm{tr}(A^{-1}dA)$.}
+{Turns multiplicative determinant change into additive trace, enabling calculus.}
+{Differentiate $A\,\mathrm{adj}(A)=\det(A)I$ and use
+$\mathrm{adj}(A)=\det(A)A^{-1}$.}
+{Volume change rate equals trace of relative deformation $A^{-1}dA$.}
+{For singular $A$, $A^{-1}$ is undefined; restrict to invertible $A$ or limits.}
+
+\glossx{Log-Determinant Differential}
+{$d\,\log\det A=\mathrm{tr}(A^{-1}dA)$ for invertible $A$.}
+{Central to Gaussian likelihoods and convex analysis on $\mathrm{SPD}(n)$.}
+{Apply chain rule to $\log\det A$ using Jacobi's formula.}
+{Log turns products into sums; tiny relative changes add via a trace.}
+{Do not confuse with $\mathrm{tr}(A)$; the trace is of $A^{-1}dA$.}
+
+\glossx{Frobenius Gradient}
+{Matrix gradient $G=\nabla_A f$ satisfying $df=\mathrm{tr}(G^T dA)$.}
+{Connects differentials to computational gradients for optimization.}
+{Match coefficients of $dA$ in the differential to obtain $G$.}
+{Think: $df$ is the dot product between $G$ and the perturbation $dA$.}
+{Use $G^T$ inside the trace; forgetting transpose yields sign or shape errors.}
+
+\glossx{Adjugate Matrix}
+{$\mathrm{adj}(A)=\det(A)A^{-1}$ for invertible $A$.}
+{Bridges algebraic cofactor formulas and differential identities.}
+{From $A\,\mathrm{adj}(A)=\det(A)I$ and Cramer\textquotesingle s rule.}
+{Adjugate is the matrix of cofactors, scaled inverse when invertible.}
+{Mistaking $\mathrm{adj}(A)$ for $A^T$ leads to wrong gradients.}
+
+\clearpage
+\section{Symbol Ledger}
+\varmapStart
+\var{A\in\mathbb{R}^{n\times n}}{Square matrix variable (usually invertible).}
+\var{H\in\mathbb{R}^{n\times n}}{Directional perturbation (tangent).}
+\var{t\in\mathbb{R}}{Scalar parameter for curves $A(t)$.}
+\var{\det(A)}{Determinant (volume scaling).}
+\var{\log\det(A)}{Logarithm of determinant (additive volume).}
+\var{\mathrm{tr}(\cdot)}{Trace, sum of diagonal entries.}
+\var{A^{-1}}{Inverse of $A$ (if invertible).}
+\var{A^{-T}}{Inverse transpose $(A^{-1})^T$.}
+\var{\mathrm{adj}(A)}{Adjugate (matrix of cofactors).}
+\var{u,v}{Vectors for rank-one updates $uv^T$.}
+\var{U,V}{Matrices for low-rank updates $UV^T$.}
+\var{I}{Identity matrix of suitable size.}
+\varmapEnd
+
+\clearpage
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{Jacobi's Formula for the Determinant}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A\in\mathrm{GL}(n)$,
+\[
+d\,\det(A)=\det(A)\,\mathrm{tr}\!\big(A^{-1}dA\big),\quad
+\frac{d}{dt}\det(A(t))=\det(A(t))\,\mathrm{tr}\!\big(A(t)^{-1}\dot A(t)\big).
+\]
+
+\WHAT{
+Differential and time-derivative of $\det(A)$ in terms of $A^{-1}$ and $dA$ or
+$\dot A$.
+}
+
+\WHY{
+Provides a tractable linear form for sensitivity of determinant, the core
+primitive for gradients and linearizations involving volume change.
+}
+
+\FORMULA{
+\[
+d\,\det(A)=\mathrm{tr}\!\big(\mathrm{adj}(A)^T dA\big)
+=\det(A)\,\mathrm{tr}\!\big(A^{-1}dA\big).
+\]
+}
+
+\CANONICAL{
+$A\in\mathrm{GL}(n)$ (invertible); $dA$ arbitrary; time path $A(t)$ differentiable.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A$ is invertible to use $A^{-1}$.
+\item Differentiability of $A(t)$ for time derivative.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For any square matrix $A$, $A\,\mathrm{adj}(A)=\det(A)I$.
+If $A$ is invertible, then $\mathrm{adj}(A)=\det(A)A^{-1}$.
+\end{lemma}
+\begin{proof}
+The cofactor expansion of $\det(A)$ along columns implies
+$A\,\mathrm{adj}(A)=\det(A)I$.
+When $A$ is invertible, multiply on the left by $A^{-1}$ to obtain
+$\mathrm{adj}(A)=\det(A)A^{-1}$.\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }& A\,\mathrm{adj}(A)=\det(A)I.\\
+\text{Step 2: }& d(A\,\mathrm{adj}(A))
+= (dA)\,\mathrm{adj}(A)+A\,d(\mathrm{adj}(A)) \\
+&= d(\det(A))\,I.\\
+\text{Step 3: }& \mathrm{tr}\big((dA)\,\mathrm{adj}(A)\big)
++\mathrm{tr}\big(A\,d(\mathrm{adj}(A))\big)=n\,d(\det(A)).\\
+\text{Step 4: }& \mathrm{tr}\big(A\,d(\mathrm{adj}(A))\big)
+=\mathrm{tr}\big(d(\mathrm{adj}(A))A\big) \\
+&=\mathrm{tr}\big(d(\det(A))\,I-\,(dA)\,\mathrm{adj}(A)\big).\\
+\text{Step 5: }& \Rightarrow 2\,\mathrm{tr}\big((dA)\,\mathrm{adj}(A)\big)
+= n\,d(\det(A)) - d(\det(A))\,n = 0 + 2\,d(\det(A)).\\
+\text{Step 6: }& d(\det(A))=\mathrm{tr}\big(\mathrm{adj}(A)^T dA\big).\\
+\text{Step 7: }& \text{If }A\in\mathrm{GL}(n),\ \mathrm{adj}(A)=\det(A)A^{-1},\\
+&\Rightarrow d(\det(A))=\det(A)\,\mathrm{tr}\!\big(A^{-1}dA\big).
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Identify $A$ and the perturbation $H$ or $\dot A$.
+\item Compute $A^{-1}$ (or solve linear systems with $A$).
+\item Evaluate $\mathrm{tr}(A^{-1}H)$ and scale by $\det(A)$ if needed.
+\item For $\frac{d}{dt}$, set $H=\dot A(t)$.
+\item Validate with a finite-difference check.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $d\,\log\det(A)=\frac{d\,\det(A)}{\det(A)}
+=\mathrm{tr}(A^{-1}dA)$.
+\item Directional form: $d\,\det(A)[H]=\det(A)\,\mathrm{tr}(A^{-1}H)$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $A$ is near singular, $A^{-1}$ is ill-conditioned; derivatives blow up.
+\item For $A=I$, $d\,\det(I)[H]=\mathrm{tr}(H)$.
+\end{bullets}
+}
+
+\INPUTS{$A\in\mathbb{R}^{n\times n}$ invertible, $H\in\mathbb{R}^{n\times n}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Example: }& A=\begin{bmatrix}1&2\\3&5\end{bmatrix},\
+H=\begin{bmatrix}1&0\\0&-1\end{bmatrix}.\\
+& \det(A)= -1,\quad A^{-1}=\begin{bmatrix}5&-2\\-3&1\end{bmatrix}.\\
+& \mathrm{tr}(A^{-1}H)=\mathrm{tr}\!\Big(
+\begin{bmatrix}5&-2\\-3&1\end{bmatrix}
+\begin{bmatrix}1&0\\0&-1\end{bmatrix}\Big)
+=\mathrm{tr}\!\begin{bmatrix}5&2\\-3&-1\end{bmatrix}=4.\\
+& d\,\det(A)[H]=\det(A)\cdot 4 = -4.\\
+& \text{Check: }\det(A+\epsilon H)=\det\!\begin{bmatrix}
+1+\epsilon&2\\3&5-\epsilon\end{bmatrix}\\
+&=(1+\epsilon)(5-\epsilon)-6= -1+4\epsilon-\epsilon^2.\\
+& \frac{\det(A+\epsilon H)-\det(A)}{\epsilon}\to -4.
+\end{align*}
+}
+
+\RESULT{
+$d\,\det(A)[H]=\det(A)\,\mathrm{tr}(A^{-1}H)$ and
+$\frac{d}{dt}\det(A(t))=\det(A)\,\mathrm{tr}(A^{-1}\dot A)$.
+}
+
+\UNITCHECK{
+Both sides are scalars; invariant under similarity:
+$\mathrm{tr}(A^{-1}H)=\mathrm{tr}((PAP^{-1})^{-1}PH P^{-1})$.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Using $\mathrm{tr}(H)$ instead of $\mathrm{tr}(A^{-1}H)$.
+\item Forgetting $\det(A)$ factor for $d\,\det$ (not needed for $d\,\log\det$).
+\item Applying when $A$ is singular.
+\end{bullets}
+}
+
+\INTUITION{
+Relative volume change is $\mathrm{tr}(A^{-1}dA)$; multiply by current volume
+$\det(A)$ to obtain absolute change.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Core invariant: $d\,\log\det(A)=\mathrm{tr}(A^{-1}dA)$.
+\item Multiplicative-to-additive conversion via logarithm.
+\end{bullets}
+}
+
+\FormulaPage{2}{Gradient of Determinant}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A\in\mathrm{GL}(n)$,
+\[
+\nabla_A \det(A)=\det(A)\,A^{-T},\quad
+d\,\det(A)=\mathrm{tr}\big((\nabla_A\det(A))^T dA\big).
+\]
+
+\WHAT{
+Matrix gradient of $\det(A)$ under the Frobenius inner product.
+}
+
+\WHY{
+Connects analytic differential to computational gradients used in optimization
+and automatic differentiation.
+}
+
+\FORMULA{
+\[
+\nabla_A \det(A)=\det(A)\,A^{-T}.
+\]
+}
+
+\CANONICAL{
+Frobenius geometry with pairing $\langle X,Y\rangle=\mathrm{tr}(X^TY)$,
+$A$ invertible.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A$ invertible for $A^{-T}$ to exist.
+\item $f(A)=\det(A)$ differentiable on $\mathrm{GL}(n)$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For a scalar function $f(A)$, the gradient $G=\nabla_A f$ satisfies
+$df=\mathrm{tr}(G^T dA)$ for all $dA$.
+\end{lemma}
+\begin{proof}
+By definition of the Fr\'echet derivative under the Frobenius inner product,
+there exists a unique $G$ such that $df=\langle G,dA\rangle$ for all $dA$.
+Since $\langle G,dA\rangle=\mathrm{tr}(G^TdA)$, the claim follows.\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+& d\,\det(A)=\det(A)\,\mathrm{tr}(A^{-1}dA) \quad(\text{Jacobi}).\\
+& \mathrm{tr}(A^{-1}dA)=\mathrm{tr}((A^{-T})^T dA).\\
+& \Rightarrow \nabla_A \det(A)=\det(A)\,A^{-T}.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute $A^{-T}$ using a linear solve (avoid explicit inverse).
+\item Multiply by $\det(A)$.
+\item Use in gradient-based optimization or sensitivity analysis.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Directional derivative:
+$d\,\det(A)[H]=\langle \det(A)A^{-T}, H\rangle$.
+\item Componentwise:
+$\frac{\partial \det(A)}{\partial A_{ij}}=\det(A)\,(A^{-T})_{ij}$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item At singular $A$, gradient is unbounded in directions reducing rank.
+\item For orthogonal $Q$, $\nabla \det(Q)=\det(Q)\,Q$.
+\end{bullets}
+}
+
+\INPUTS{$A\in\mathbb{R}^{n\times n}$ invertible.}
+
+\DERIVATION{
+\begin{align*}
+\text{Example: }& A=\begin{bmatrix}2&1\\1&3\end{bmatrix},
+\ \det(A)=5,\\
+& A^{-T}=(A^{-1})^T=\frac{1}{5}\begin{bmatrix}3&-1\\-1&2\end{bmatrix}.\\
+& \nabla \det(A)=5\cdot A^{-T}=\begin{bmatrix}3&-1\\-1&2\end{bmatrix}.\\
+& \text{Check: } d\,\det(A)[H]=\mathrm{tr}(\nabla^T H).\\
+& H=\begin{bmatrix}1&0\\0&0\end{bmatrix}\Rightarrow
+d\,\det=3=\det(A)\,\mathrm{tr}(A^{-1}H)=5\cdot\frac{3}{5}.
+\end{align*}
+}
+
+\RESULT{
+The gradient is $\nabla_A\det(A)=\det(A)A^{-T}$.
+}
+
+\UNITCHECK{
+Both gradient and $A$ have same shape; inner product with $H$ is scalar.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Forgetting transpose: using $A^{-1}$ instead of $A^{-T}$.
+\item Computing explicit inverse; prefer linear solves for stability.
+\end{bullets}
+}
+
+\INTUITION{
+Gradient points in the direction that most increases volume per unit Frobenius
+step; that direction is $A^{-T}$ scaled by $\det(A)$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Inner-product identity: $df=\langle \nabla f, dA\rangle$.
+\item $\nabla\det=\det\cdot A^{-T}$.
+\end{bullets}
+}
+
+\FormulaPage{3}{Log-Determinant: Differential, Gradient, and Hessian}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A\in\mathrm{GL}(n)$,
+\[
+d\,\log\det(A)=\mathrm{tr}(A^{-1}dA),\quad
+\nabla_A \log\det(A)=A^{-T}.
+\]
+For directions $H,K$,
+\[
+d^2\,\log\det(A)[H,K]=-\,\mathrm{tr}(A^{-1}H\,A^{-1}K).
+\]
+
+\WHAT{
+First and second order variations of $\log\det$, with gradient and bilinear
+Hessian form.
+}
+
+\WHY{
+$-\log\det$ is a barrier and convex function on $\mathrm{SPD}(n)$, central in
+interior-point methods and information geometry.
+}
+
+\FORMULA{
+\[
+d\,\log\det(A)=\mathrm{tr}(A^{-1}dA),\quad
+d^2\,\log\det(A)[H,K]=-\,\mathrm{tr}(A^{-1}H\,A^{-1}K).
+\]
+}
+
+\CANONICAL{
+$A\in\mathrm{GL}(n)$; for convexity, restrict to $A\in\mathrm{SPD}(n)$ and
+$H=H^T$, $K=K^T$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A$ invertible; for convexity, $A\succ 0$.
+\item Differentiability of $A^{-1}$ map.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+$dA^{-1}=-A^{-1}(dA)A^{-1}$.
+\end{lemma}
+\begin{proof}
+Differentiate $A\,A^{-1}=I$ to get
+$(dA)A^{-1}+A\,dA^{-1}=0$.
+Multiply on the left by $A^{-1}$ to obtain
+$dA^{-1}=-A^{-1}(dA)A^{-1}$.\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+& d\,\log\det(A)=\frac{d\,\det(A)}{\det(A)}=\mathrm{tr}(A^{-1}dA).\\
+& d^2\,\log\det(A)[H,K]=d\big(\mathrm{tr}(A^{-1}H)\big)[K]\\
+&=\mathrm{tr}\big((dA^{-1}[K])\,H\big)
+=\mathrm{tr}\big(-A^{-1}K A^{-1}H\big)\\
+&=-\,\mathrm{tr}\big(A^{-1}H A^{-1}K\big)\quad(\text{cyclic trace}).
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute $A^{-1}$ or solve linear systems as needed.
+\item Evaluate first-order term via trace.
+\item For curvature, apply $-\,\mathrm{tr}(A^{-1}H A^{-1}K)$.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Quadratic form: $d^2\,\log\det(A)[H,H]=-\,\|A^{-1/2}HA^{-1/2}\|_F^2$.
+\item Concavity: $d^2\log\det\preceq 0$ on $\mathrm{SPD}(n)$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item As $A\to I$, $d\,\log\det(A)\to \mathrm{tr}(dA)$.
+\item As $A\to$ singular, $\|A^{-1}\|\to\infty$, curvature diverges.
+\end{bullets}
+}
+
+\INPUTS{$A\in\mathrm{SPD}(n)$ for curvature, $H,K\in\mathbb{S}^n$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Example: }& A=\begin{bmatrix}2&0\\0&3\end{bmatrix},\
+H=\begin{bmatrix}1&2\\2&-1\end{bmatrix}.\\
+& A^{-1}=\begin{bmatrix}1/2&0\\0&1/3\end{bmatrix}.\\
+& d\,\log\det(A)[H]=\mathrm{tr}(A^{-1}H)=1/2+(-1/3)=1/6.\\
+& d^2\,\log\det(A)[H,H]=-\mathrm{tr}(A^{-1}HA^{-1}H)\\
+&= -\mathrm{tr}\!\Big(\begin{bmatrix}1/2&0\\0&1/3\end{bmatrix}
+\begin{bmatrix}1&2\\2&-1\end{bmatrix}
+\begin{bmatrix}1/2&0\\0&1/3\end{bmatrix}
+\begin{bmatrix}1&2\\2&-1\end{bmatrix}\Big)\\
+&= -\Big(\frac{1}{4}\cdot 1^2 + \frac{1}{9}\cdot (-1)^2
++2\cdot\frac{1}{6}\cdot 2^2\Big)= -\Big(\frac{1}{4}+\frac{1}{9}+\frac{4}{3}\Big)
+= -\frac{49}{36}.
+\end{align*}
+}
+
+\RESULT{
+First and second order forms of $\log\det$ enable gradient and curvature
+computations; $-\log\det$ is convex on $\mathrm{SPD}(n)$.
+}
+
+\UNITCHECK{
+All expressions reduce to scalars; symmetry ensures real values on
+$\mathrm{SPD}(n)$.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Mixing $\mathrm{tr}(A^{-1}H)$ with $\mathrm{tr}(AH)$.
+\item Omitting the negative sign in the Hessian.
+\item Using non-symmetric directions when restricting to $\mathrm{SPD}(n)$.
+\end{bullets}
+}
+
+\INTUITION{
+Curvature penalizes directions that distort eigenvalues; it scales with the
+square of relative changes $A^{-1/2}HA^{-1/2}$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $d\,\log\det=\mathrm{tr}(A^{-1}dA)$.
+\item Hessian operator $H\mapsto -A^{-1}H A^{-1}$.
+\end{bullets}
+}
+
+\FormulaPage{4}{Derivative of the Matrix Inverse}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A\in\mathrm{GL}(n)$ and direction $H$,
+\[
+dA^{-1}[H]=-A^{-1}H A^{-1}.
+\]
+
+\WHAT{
+Linearization of the inverse map $A\mapsto A^{-1}$.
+}
+
+\WHY{
+Essential for second-order analysis of $\log\det$ and for sensitivity of
+solutions to linear systems.
+}
+
+\FORMULA{
+\[
+dA^{-1}=-A^{-1}(dA)A^{-1}.
+\]
+}
+
+\CANONICAL{
+$A$ invertible; $dA$ arbitrary.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A\in\mathrm{GL}(n)$.
+\item Differentiability of inversion on $\mathrm{GL}(n)$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $F(A)=A^{-1}$, then $dF_A[H]$ is the unique solution of
+$A\,X+H\,A^{-1}=0$ for $X=dA^{-1}[H]$.
+\end{lemma}
+\begin{proof}
+Differentiate $A\,A^{-1}=I$ to get $H\,A^{-1}+A\,X=0$.
+Solving for $X$ yields $X=-A^{-1}H A^{-1}$, which is unique.\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+& A\,A^{-1}=I \Rightarrow d(A\,A^{-1})=0.\\
+& (dA)A^{-1}+A\,dA^{-1}=0.\\
+& \Rightarrow dA^{-1}=-A^{-1}(dA)A^{-1}.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Express constraints through $A\,A^{-1}=I$.
+\item Differentiate and solve the resulting Sylvester equation.
+\item Use cyclic trace to simplify when inside traces.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Along $A(t)$: $\frac{d}{dt}A(t)^{-1}=-A(t)^{-1}\dot A(t)A(t)^{-1}$.
+\item Second-order: $d^2A^{-1}[H,K]=A^{-1}H A^{-1}K A^{-1}
++A^{-1}K A^{-1}H A^{-1}$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Ill-conditioned $A$ yields large $dA^{-1}$ for small $dA$.
+\item Not defined at singular $A$.
+\end{bullets}
+}
+
+\INPUTS{$A\in\mathrm{GL}(n)$, $H\in\mathbb{R}^{n\times n}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Example: }& A=\begin{bmatrix}2&1\\1&2\end{bmatrix},\
+H=\begin{bmatrix}0&1\\-1&0\end{bmatrix}.\\
+& A^{-1}=\frac{1}{3}\begin{bmatrix}2&-1\\-1&2\end{bmatrix}.\\
+& dA^{-1}[H]=-\frac{1}{3}\begin{bmatrix}2&-1\\-1&2\end{bmatrix}
+\begin{bmatrix}0&1\\-1&0\end{bmatrix}
+\frac{1}{3}\begin{bmatrix}2&-1\\-1&2\end{bmatrix}\\
+&=-\frac{1}{9}\begin{bmatrix}1&2\\-2&-1\end{bmatrix}
+\begin{bmatrix}2&-1\\-1&2\end{bmatrix}
+=-\frac{1}{9}\begin{bmatrix}0&3\\-3&0\end{bmatrix}.\\
+& \text{Check: } A+\epsilon H,\ (A+\epsilon H)^{-1}\approx
+A^{-1}+\epsilon dA^{-1}[H].
+\end{align*}
+}
+
+\RESULT{
+Inverse map linearization: $dA^{-1}=-A^{-1}(dA)A^{-1}$.
+}
+
+\UNITCHECK{
+Both sides have shape $n\times n$; linear in $dA$.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Forgetting the minus sign.
+\item Misplacing $A^{-1}$ factors; order matters.
+\end{bullets}
+}
+
+\INTUITION{
+To undo a small change $dA$, the inverse must compensate on both sides, hence
+the sandwich $A^{-1}(dA)A^{-1}$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Differentiation under constraints $A A^{-1}=I$.
+\item Sylvester form and solution by pre and post multiplication.
+\end{bullets}
+}
+
+\FormulaPage{5}{Matrix Determinant Lemma and Rank-One Derivatives}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A\in\mathrm{GL}(n)$ and $u,v\in\mathbb{R}^n$,
+\[
+\det(A+uv^T)=\det(A)\big(1+v^T A^{-1}u\big).
+\]
+For $A(t)=A+t\,uv^T$,
+\[
+\frac{d}{dt}\det(A(t))=\det(A(t))\,v^T A(t)^{-1}u.
+\]
+
+\WHAT{
+Determinant under rank-one update and its derivative along scalar $t$.
+}
+
+\WHY{
+Enables fast determinant updates and sensitivity for low-rank modifications,
+common in statistics and numerical linear algebra.
+}
+
+\FORMULA{
+\[
+\det(A+UV^T)=\det(A)\,\det(I+V^T A^{-1}U).
+\]
+For rank-one, $U=u$, $V=v$, reduces to the scalar formula above.
+}
+
+\CANONICAL{
+$A\in\mathrm{GL}(n)$, $U\in\mathbb{R}^{n\times r}$, $V\in\mathbb{R}^{n\times r}$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A$ invertible.
+\item $I+V^T A^{-1}U$ defined (always) and invertible if needed.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}[Sylvester]
+For conformable $U,V$, $\det(I+UV)=\det(I+VU)$.
+\end{lemma}
+\begin{proof}
+Consider the block matrices
+$M=\begin{bmatrix}I&U\\0&I\end{bmatrix}
+\begin{bmatrix}I&0\\-V&I\end{bmatrix}
+=\begin{bmatrix}I-UV&U\\-V&I\end{bmatrix}$ and
+$N=\begin{bmatrix}I&0\\V&I\end{bmatrix}
+\begin{bmatrix}I&U\\0&I\end{bmatrix}
+=\begin{bmatrix}I&U\\V&I+VU\end{bmatrix}$.
+Both products have determinant $1$.
+Using block determinant with Schur complements yields
+$\det(I-UV)=\det(I+VU)^{-1}$, hence $\det(I+UV)=\det(I+VU)$.\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+& \det(A+UV^T)=\det(A)\,\det\big(I+A^{-1}UV^T\big)\\
+&=\det(A)\,\det\big(I+V^T A^{-1}U\big)\quad(\text{Sylvester}).\\
+& \text{Rank-one: } \det(A+uv^T)=\det(A)\big(1+v^T A^{-1}u\big).\\
+& \text{Derivative: } \frac{d}{dt}\log\det(A+tuv^T)
+=\mathrm{tr}\big((A+tuv^T)^{-1}uv^T\big)\\
+&=v^T (A+tuv^T)^{-1}u.\\
+& \Rightarrow \frac{d}{dt}\det(A+tuv^T)
+=\det(A+tuv^T)\,v^T (A+tuv^T)^{-1}u.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Reduce to $\det(I+VU)$ form via Sylvester.
+\item For rank-one, compute $v^T A^{-1}u$ via solves.
+\item For derivatives, use Jacobi on $A(t)=A+tuv^T$.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Woodbury identity pairs with determinant lemma.
+\item At $t=0$, $\frac{d}{dt}\det(A+tuv^T)|_{0}=\det(A)\,v^T A^{-1}u.
+$
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $1+v^T A^{-1}u=0$, the update is singular.
+\item For small $t$, linear term dominates via $v^T A^{-1}u$.
+\end{bullets}
+}
+
+\INPUTS{$A\in\mathrm{GL}(n)$, $u,v\in\mathbb{R}^n$, scalar $t$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Example: }& A=\begin{bmatrix}2&0\\0&3\end{bmatrix},
+u=\begin{bmatrix}1\\2\end{bmatrix}, v=\begin{bmatrix}2\\-1\end{bmatrix}.\\
+& \det(A)=6,\ A^{-1}=\begin{bmatrix}1/2&0\\0&1/3\end{bmatrix}.\\
+& v^T A^{-1}u=\begin{bmatrix}2&-1\end{bmatrix}
+\begin{bmatrix}1/2&0\\0&1/3\end{bmatrix}
+\begin{bmatrix}1\\2\end{bmatrix}=1-\frac{2}{3}=\frac{1}{3}.\\
+& \det(A+uv^T)=6\Big(1+\frac{1}{3}\Big)=8.\\
+& \text{Direct: } A+uv^T=\begin{bmatrix}4&-1\\4&-1\end{bmatrix},\
+\det=4\cdot(-1)-(-1)\cdot 4=8.
+\end{align*}
+}
+
+\RESULT{
+Efficient determinant updates and their derivatives via inner products with
+$A^{-1}$.
+}
+
+\UNITCHECK{
+Scalars on both sides; rank-one update reduces to a scalar correction factor.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Using $u^T A^{-1}v$ instead of $v^T A^{-1}u$; order matters.
+\item Failing to detect singularity when $1+v^T A^{-1}u=0$.
+\end{bullets}
+}
+
+\INTUITION{
+A rank-one update modifies volume by the scalar factor $1+v^TA^{-1}u$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $\det(A+UV^T)=\det(A)\det(I+V^TA^{-1}U)$.
+\item Derivative via Jacobi along $t$.
+\end{bullets}
+}
+
+\clearpage
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{Directional Derivative of the Determinant (Classical)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Compute $d\,\det(A)[H]$ for given $A$ and $H$.
+
+\PROBLEM{
+Let $A=\begin{bmatrix}1&2&0\\0&1&3\\4&0&1\end{bmatrix}$ and
+$H=\begin{bmatrix}1&0&-1\\2&-1&0\\0&1&1\end{bmatrix}$.
+Compute the directional derivative of $\det(A)$ in direction $H$ and verify with
+a first-order finite-difference check.
+}
+
+\MODEL{
+\[
+d\,\det(A)[H]=\det(A)\,\mathrm{tr}(A^{-1}H).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A\in\mathrm{GL}(3)$ so that $A^{-1}$ exists.
+\item $H$ arbitrary.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Base matrix.}
+\var{H}{Perturbation direction.}
+\varmapEnd
+
+\WHICHFORMULA{
+Jacobi's formula $d\,\det(A)=\det(A)\,\mathrm{tr}(A^{-1}dA)$.
+}
+
+\GOVERN{
+\[
+d\,\det(A)[H]=\det(A)\,\mathrm{tr}(A^{-1}H).
+\]
+}
+
+\INPUTS{$A,H$ as above.}
+
+\DERIVATION{
+\begin{align*}
+& \det(A)=1\cdot\det\begin{bmatrix}1&3\\0&1\end{bmatrix}
+-2\cdot\det\begin{bmatrix}0&3\\4&1\end{bmatrix}\\
+&=1-2\cdot(-12)=25.\\
+& A^{-1}=\text{compute via Gaussian elimination}:\\
+& A^{-1}=\begin{bmatrix}
+1&-2&6\\
+12&-23&72\\
+-4&8&-23
+\end{bmatrix}\ \text{scaled by }1/25.\\
+& \mathrm{tr}(A^{-1}H)=\frac{1}{25}\mathrm{tr}\Big(
+\begin{bmatrix}
+1&-2&6\\12&-23&72\\-4&8&-23
+\end{bmatrix}
+\begin{bmatrix}1&0&-1\\2&-1&0\\0&1&1\end{bmatrix}\Big).\\
+& \text{Product diagonal: }(1\cdot 1+(-2)\cdot 2+6\cdot 0,\
+12\cdot 0+(-23)\cdot(-1)+72\cdot 1,\\
+&\quad -4\cdot(-1)+8\cdot 0+(-23)\cdot 1)\\
+&=(-3,\ 95,\ -19).\\
+& \mathrm{tr}=\frac{1}{25}(-3+95-19)=\frac{73}{25}.\\
+& d\,\det(A)[H]=25\cdot \frac{73}{25}=73.\\
+& \text{Check: }\det(A+\epsilon H)\approx 25+73\epsilon.
+\end{align*}
+}
+
+\RESULT{
+$d\,\det(A)[H]=73$.
+}
+
+\UNITCHECK{
+Scalar output; matches finite-difference linear term.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $A$ were singular, the formula would not apply.
+\end{bullets}
+}
+
+\ALTERNATE{
+Finite difference: compute
+$\frac{\det(A+\epsilon H)-\det(A-\epsilon H)}{2\epsilon}$ for small $\epsilon$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Use $\epsilon=10^{-6}$ to confirm $\approx 73$ numerically.
+\end{bullets}
+}
+
+\INTUITION{
+Scale by current volume then by relative trace change.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Directional derivative equals $\det(A)\,\mathrm{tr}(A^{-1}H)$.
+\end{bullets}
+}
+
+\ProblemPage{2}{Similarity Invariance of Determinant Derivative (Classical)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show $d\,\det(PAP^{-1})[PH P^{-1}]=d\,\det(A)[H]$.
+
+\PROBLEM{
+Let $P\in\mathrm{GL}(n)$ be fixed. Prove that the directional derivative of
+$\det$ is invariant under similarity transforms and verify numerically for a
+$2\times 2$ example.
+}
+
+\MODEL{
+\[
+d\,\det(B)[K]=\det(B)\,\mathrm{tr}(B^{-1}K),
+\quad B=PAP^{-1},\ K=PH P^{-1}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A,P\in\mathrm{GL}(n)$; $H$ arbitrary.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Base matrix.}
+\var{P}{Similarity transform.}
+\var{H}{Direction.}
+\varmapEnd
+
+\WHICHFORMULA{
+Jacobi's formula and similarity invariance:
+$\det(PAP^{-1})=\det(A)$, $(PAP^{-1})^{-1}=PA^{-1}P^{-1}$.
+}
+
+\GOVERN{
+\[
+d\,\det(PAP^{-1})[PH P^{-1}]
+=\det(A)\,\mathrm{tr}(A^{-1}H).
+\]
+}
+
+\INPUTS{$A,H,P$ as above.}
+
+\DERIVATION{
+\begin{align*}
+& d\,\det(PAP^{-1})[PH P^{-1}]\\
+&=\det(PAP^{-1})\,\mathrm{tr}\big((PAP^{-1})^{-1}(PH P^{-1})\big)\\
+&=\det(A)\,\mathrm{tr}\big(PA^{-1}P^{-1}PH P^{-1}\big)\\
+&=\det(A)\,\mathrm{tr}(PA^{-1}H P^{-1})
+=\det(A)\,\mathrm{tr}(A^{-1}H).
+\end{align*}
+}
+
+\RESULT{
+Directional derivative is similarity invariant.
+}
+
+\UNITCHECK{
+Trace invariance under cyclic permutations ensures equality.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $P$ is ill-conditioned, numerical evaluation may lose precision.
+\end{bullets}
+}
+
+\ALTERNATE{
+Diagonalize $A=P\Lambda P^{-1}$ when diagonalizable and compute in eigenbasis.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Example: $A=\begin{bmatrix}2&1\\0&3\end{bmatrix}$,
+$H=\begin{bmatrix}1&0\\0&-1\end{bmatrix}$,
+$P=\begin{bmatrix}1&1\\0&1\end{bmatrix}$ gives equal values.
+\end{bullets}
+}
+
+\INTUITION{
+Determinant depends only on eigenvalues; similarity does not change them.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $\det$ and its differential depend on similarity invariants.
+\end{bullets}
+}
+
+\ProblemPage{3}{Orthogonal Manifold: Constancy of Determinant Along Tangents (Classical)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For orthogonal $Q$ and tangent $H$ with $Q^T H$ skew-symmetric, show
+$d\,\det(Q)[H]=0$.
+
+\PROBLEM{
+Let $Q\in O(n)$ with $Q^TQ=I$ and $H$ satisfy $Q^T H+H^T Q=0$.
+Show the directional derivative of $\det$ at $Q$ along $H$ is zero.
+Verify at $Q=I$ and a skew-symmetric $H$.
+}
+
+\MODEL{
+\[
+d\,\det(Q)[H]=\det(Q)\,\mathrm{tr}(Q^{-1}H)=\det(Q)\,\mathrm{tr}(Q^TH).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $Q$ orthogonal.
+\item $Q^T H$ skew-symmetric.
+\end{bullets}
+}
+
+\varmapStart
+\var{Q}{Orthogonal base point.}
+\var{H}{Tangent direction on $O(n)$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Jacobi's formula and $\mathrm{tr}$ of skew-symmetric equals zero.
+}
+
+\GOVERN{
+\[
+\mathrm{tr}(Q^TH)=\mathrm{tr}((Q^TH)^T)=\mathrm{tr}(-Q^TH)=0.
+\]
+}
+
+\INPUTS{$Q,H$ as above.}
+
+\DERIVATION{
+\begin{align*}
+& d\,\det(Q)[H]=\det(Q)\,\mathrm{tr}(Q^TH).\\
+& Q^TH\ \text{skew-symmetric}\Rightarrow \mathrm{tr}(Q^TH)=0.\\
+& \Rightarrow d\,\det(Q)[H]=0.
+\end{align*}
+}
+
+\RESULT{
+Determinant is stationary along orthogonal tangent directions.
+}
+
+\UNITCHECK{
+Trace of any skew-symmetric matrix is zero.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $H$ not tangent, the result does not hold.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use $\det(Q)=\pm 1$ is constant on connected components $SO(n)$ and its
+complement; any smooth tangent stays within the component to first order.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item $Q=I$, $H=\begin{bmatrix}0&-1\\1&0\end{bmatrix}$ gives
+$\mathrm{tr}(H)=0$.
+\end{bullets}
+}
+
+\INTUITION{
+Orthogonal motion preserves volume to first order; it is a pure rotation or
+reflection.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Tangent space characterization $Q^TH$ skew-symmetric.
+\end{bullets}
+}
+
+\ProblemPage{4}{Alice's Volume Gauge (Narrative)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Rate of change of volume of the parallelepiped spanned by columns of $A(t)$.
+
+\PROBLEM{
+Alice monitors a deforming body with deformation gradient $A(t)$.
+Show that the instantaneous volumetric strain rate is
+$\mathrm{tr}(A^{-1}\dot A)$ and the volume change rate is
+$\frac{d}{dt}\det(A)=\det(A)\,\mathrm{tr}(A^{-1}\dot A)$.
+Compute at $A=\mathrm{diag}(1,2,3)$ with $\dot A=\mathrm{diag}(0.1,0,-0.2)$.
+}
+
+\MODEL{
+\[
+J(t)=\det(A(t)),\quad \dot J=J\,\mathrm{tr}(A^{-1}\dot A),\quad
+\text{volumetric strain rate }=\mathrm{tr}(A^{-1}\dot A).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A(t)\in\mathrm{GL}(3)$ and differentiable.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Deformation gradient.}
+\var{J}{Jacobian determinant (volume ratio).}
+\var{\dot A}{Rate of deformation.}
+\varmapEnd
+
+\WHICHFORMULA{
+Jacobi's formula and $d\,\log\det(A)=\mathrm{tr}(A^{-1}dA)$.
+}
+
+\GOVERN{
+\[
+\frac{d}{dt}\log J=\mathrm{tr}(A^{-1}\dot A),\quad \dot J=J\,\frac{d}{dt}\log J.
+\]
+}
+
+\INPUTS{$A=\mathrm{diag}(1,2,3)$, $\dot A=\mathrm{diag}(0.1,0,-0.2)$.}
+
+\DERIVATION{
+\begin{align*}
+& J=\det(A)=6,\quad A^{-1}=\mathrm{diag}(1,1/2,1/3).\\
+& \mathrm{tr}(A^{-1}\dot A)=0.1+0+(-0.2)/3=0.1-\frac{1}{15}
+=\frac{3}{30}-\frac{2}{30}=\frac{1}{30}.\\
+& \dot J=J\cdot \frac{1}{30}=6\cdot \frac{1}{30}=\frac{1}{5}=0.2.
+\end{align*}
+}
+
+\RESULT{
+Volumetric strain rate $=1/30$ and $\dot J=0.2$ at the given state.
+}
+
+\UNITCHECK{
+Consistent scaling: rate is per time, volume rate matches $J$ times rate.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If one principal rate is large negative and $A$ near singular, rate
+diverges.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute $J(t)=\prod_i \lambda_i(t)$ for diagonal $A$ and differentiate logs.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Finite difference $J(t+\epsilon)-J(t)$ with small $\epsilon$.
+\end{bullets}
+}
+
+\INTUITION{
+Relative rates add in log-domain; absolute rate scales with current volume.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $\dot J/J=\mathrm{tr}(A^{-1}\dot A)$.
+\end{bullets}
+}
+
+\ProblemPage{5}{Bob's Covariance Update (Narrative)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Effect on $\det(\Sigma)$ of a rank-one update $\Sigma+\alpha uu^T$.
+
+\PROBLEM{
+Bob updates covariance $\Sigma\succ 0$ by adding a new sample with weight
+$\alpha>0$ in direction $u$.
+Compute the determinant ratio and the derivative at $\alpha=0$.
+Let $\Sigma=\begin{bmatrix}2&0\\0&3\end{bmatrix}$, $u=\begin{bmatrix}1\\1\end{bmatrix}$.
+}
+
+\MODEL{
+\[
+\det(\Sigma+\alpha uu^T)=\det(\Sigma)\big(1+\alpha u^T\Sigma^{-1}u\big),\quad
+\frac{d}{d\alpha}\det(\Sigma+\alpha uu^T)=\det(\cdot)\,u^T(\cdot)^{-1}u.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\Sigma\succ 0$.
+\item $\alpha\ge 0$.
+\end{bullets}
+}
+
+\varmapStart
+\var{\Sigma}{Covariance matrix.}
+\var{u}{Update direction.}
+\var{\alpha}{Scalar weight.}
+\varmapEnd
+
+\WHICHFORMULA{
+Matrix determinant lemma and Jacobi's formula along $\alpha$.
+}
+
+\GOVERN{
+\[
+\det(\Sigma+\alpha uu^T)=\det(\Sigma)\big(1+\alpha u^T\Sigma^{-1}u\big).
+\]
+}
+
+\INPUTS{$\Sigma,u,\alpha$ as above.}
+
+\DERIVATION{
+\begin{align*}
+& \Sigma^{-1}=\begin{bmatrix}1/2&0\\0&1/3\end{bmatrix},\
+u^T\Sigma^{-1}u=1/2+1/3=5/6.\\
+& \det(\Sigma)=6,\ \det(\Sigma+\alpha uu^T)=6(1+\alpha\cdot 5/6)=6+5\alpha.\\
+& \left.\frac{d}{d\alpha}\det(\Sigma+\alpha uu^T)\right|_{\alpha=0}=5.
+\end{align*}
+}
+
+\RESULT{
+Determinant ratio $=1+\alpha\cdot 5/6$; initial slope $=5$.
+}
+
+\UNITCHECK{
+Linear in $\alpha$ at first order; units consistent.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $u=0$, no change; if $\alpha$ large, growth linear initially then
+nonlinear.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use eigen decomposition of $\Sigma^{-\frac12}u$ to get the same scalar factor.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute both sides directly for a few $\alpha$ values.
+\end{bullets}
+}
+
+\INTUITION{
+Adding variance along $u$ inflates volume by a scalar factor depending on the
+whitened length of $u$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Rank-one update factor $1+u^T\Sigma^{-1}u$.
+\end{bullets}
+}
+
+\ProblemPage{6}{Coin-Flips and Expected Log-Det Slope (Expectation Puzzle)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Compute $\mathbb{E}\big[\frac{d}{dt}\log\det(D+tI)\big]_{t=0}$ for random $D$.
+
+\PROBLEM{
+Let $D=\mathrm{diag}(X_1,X_2,X_3)$ where $X_i$ are i.i.d. with
+$\mathbb{P}(X_i=1)=\mathbb{P}(X_i=2)=1/2$ (coin flip).
+Compute $\mathbb{E}\big[\mathrm{tr}((D+tI)^{-1})\big]_{t=0}$ and interpret.
+}
+
+\MODEL{
+\[
+\frac{d}{dt}\log\det(D+tI)=\mathrm{tr}((D+tI)^{-1}).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $D$ diagonal with positive entries, so invertible at $t=0$.
+\end{bullets}
+}
+
+\varmapStart
+\var{D}{Random diagonal matrix.}
+\var{t}{Scalar parameter.}
+\varmapEnd
+
+\WHICHFORMULA{
+$d\,\log\det(A)=\mathrm{tr}(A^{-1}dA)$ with $dA=I\,dt$ yields the slope
+$\mathrm{tr}(A^{-1})$.
+}
+
+\GOVERN{
+\[
+\left.\frac{d}{dt}\log\det(D+tI)\right|_{t=0}=\mathrm{tr}(D^{-1}).
+\]
+}
+
+\INPUTS{$X_i\in\{1,2\}$ equiprobable.}
+
+\DERIVATION{
+\begin{align*}
+& \mathrm{tr}(D^{-1})=\sum_{i=1}^3 X_i^{-1}.\\
+& \mathbb{E}[X_i^{-1}]=\frac{1}{2}\cdot 1 + \frac{1}{2}\cdot \frac{1}{2}
+=\frac{3}{4}.\\
+& \Rightarrow \mathbb{E}[\mathrm{tr}(D^{-1})]=3\cdot \frac{3}{4}=\frac{9}{4}.
+\end{align*}
+}
+
+\RESULT{
+Expected slope at $t=0$ equals $9/4$.
+}
+
+\UNITCHECK{
+Scalar expectation; linearity of expectation applies.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If any $X_i=0$ were allowed, slope would be infinite.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute $\mathbb{E}[\log\det(D+tI)]$ and differentiate; same result by dominated
+convergence since all terms are bounded.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Monte Carlo with fixed seed approximates $2.25$.
+\end{bullets}
+}
+
+\INTUITION{
+Average of reciprocals adds; independence makes sum easy.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Slope equals trace of inverse for $dA=I\,dt$.
+\end{bullets}
+}
+
+\ProblemPage{7}{Convexity of $-\log\det$ on $\mathrm{SPD}(n)$ (Proof-Style)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show that $-\log\det$ is convex on $\mathrm{SPD}(n)$.
+
+\PROBLEM{
+Prove that for any $A\succ 0$ and symmetric $H$, the quadratic form
+$d^2(-\log\det)(A)[H,H]\ge 0$.
+}
+
+\MODEL{
+\[
+d^2\,\log\det(A)[H,H]=-\,\|A^{-1/2}H A^{-1/2}\|_F^2.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A\succ 0$, $H=H^T$.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Symmetric positive definite matrix.}
+\var{H}{Symmetric direction.}
+\varmapEnd
+
+\WHICHFORMULA{
+Second differential of $\log\det$ from Formula 3.
+}
+
+\GOVERN{
+\[
+d^2(-\log\det)(A)[H,H]=\|A^{-1/2}H A^{-1/2}\|_F^2\ge 0.
+\]
+}
+
+\INPUTS{$A\succ 0$, $H=H^T$.}
+
+\DERIVATION{
+\begin{align*}
+& d^2\,\log\det(A)[H,H]
+=-\,\mathrm{tr}(A^{-1}H A^{-1}H).\\
+& \text{Let }X=A^{-1/2}H A^{-1/2}\Rightarrow
+\mathrm{tr}(A^{-1}H A^{-1}H)=\mathrm{tr}(X^2)=\|X\|_F^2.\\
+& \Rightarrow d^2(-\log\det)(A)[H,H]=\|X\|_F^2\ge 0.
+\end{align*}
+}
+
+\RESULT{
+$-\log\det$ is convex on $\mathrm{SPD}(n)$.
+}
+
+\UNITCHECK{
+Quadratic form is nonnegative and homogeneous of degree two in $H$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item Equality iff $H=0$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use operator convexity of $- \log$ and spectral calculus on eigenvalues.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numeric check with random $A\succ 0$ and $H$ yields nonnegative values.
+\end{bullets}
+}
+
+\INTUITION{
+Curvature penalizes relative deformations measured in the $A$-metric.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Hessian of $\log\det$ equals $-A^{-1}\otimes A^{-1}$.
+\end{bullets}
+}
+
+\ProblemPage{8}{Eigenvalue Perspective (Combo with Spectral Decomposition)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Relate $\frac{d}{dt}\log\det(A(t))$ to eigenvalues for commuting paths.
+
+\PROBLEM{
+Suppose $A(t)$ commutes with $\dot A(t)$ for all $t$ and is diagonalizable:
+$A(t)=P\Lambda(t)P^{-1}$ with $\Lambda=\mathrm{diag}(\lambda_i(t))$.
+Show $\frac{d}{dt}\log\det(A(t))=\sum_i \frac{\dot\lambda_i}{\lambda_i}$.
+Verify for $A(t)=\mathrm{diag}(1+t,2-2t,3)$ at $t=0$.
+}
+
+\MODEL{
+\[
+\frac{d}{dt}\log\det(A)=\mathrm{tr}(A^{-1}\dot A)
+=\sum_i \frac{\dot\lambda_i}{\lambda_i}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A(t)\in\mathrm{GL}(n)$, diagonalizable, and $[A,\dot A]=0$.
+\end{bullets}
+}
+
+\varmapStart
+\var{A(t)}{Matrix path.}
+\var{\lambda_i(t)}{Eigenvalues.}
+\varmapEnd
+
+\WHICHFORMULA{
+Jacobi's formula plus similarity invariance of trace.
+}
+
+\GOVERN{
+\[
+\mathrm{tr}(A^{-1}\dot A)=\mathrm{tr}(P^{-1}A^{-1}P\,P^{-1}\dot A P)
+=\mathrm{tr}(\Lambda^{-1}\dot \Lambda).
+\]
+}
+
+\INPUTS{$A(t)$ as above.}
+
+\DERIVATION{
+\begin{align*}
+& A=P\Lambda P^{-1},\quad A^{-1}=P\Lambda^{-1}P^{-1}.\\
+& \mathrm{tr}(A^{-1}\dot A)=\mathrm{tr}(P\Lambda^{-1}P^{-1}P\dot\Lambda P^{-1})
+=\mathrm{tr}(\Lambda^{-1}\dot\Lambda)=\sum_i \frac{\dot\lambda_i}{\lambda_i}.\\
+& \text{Example: }\lambda(t)=(1+t,2-2t,3),\ \dot\lambda=(1,-2,0).\\
+& \sum_i \frac{\dot\lambda_i}{\lambda_i}\Big|_{t=0}
+=1/1+(-2)/2+0/3=0.
+\end{align*}
+}
+
+\RESULT{
+$\frac{d}{dt}\log\det(A)=\sum_i \frac{\dot\lambda_i}{\lambda_i}$; example gives $0$.
+}
+
+\UNITCHECK{
+Dimensionless sum equals scalar trace.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If some $\lambda_i\to 0$, derivative diverges.
+\end{bullets}
+}
+
+\ALTERNATE{
+For noncommuting paths, use perturbation theory; result holds to first order
+for diagonalizable $A$ with simple spectrum under appropriate conditions.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Direct computation: $\det(A(t))=(1+t)(2-2t)3$, derivative of log at
+$t=0$ is zero.
+\end{bullets}
+}
+
+\INTUITION{
+Log of product is sum of logs; eigenvalues multiply to determinant.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Spectral trace identity $\mathrm{tr}(\Lambda^{-1}\dot\Lambda)$.
+\end{bullets}
+}
+
+\ProblemPage{9}{Optimal Direction for Increasing Determinant (Combo with Optimization)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Maximize $d\,\det(A)[H]$ subject to $\|H\|_F=1$.
+
+\PROBLEM{
+Given $A\in\mathrm{GL}(n)$, find the direction $H^\star$ with unit Frobenius
+norm that maximizes the first-order increase of $\det(A)$.
+Provide the value of the maximal directional derivative.
+}
+
+\MODEL{
+\[
+d\,\det(A)[H]=\langle \det(A)A^{-T}, H\rangle,\quad \|H\|_F=1.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ invertible.
+\item Frobenius norm constraint.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Base matrix.}
+\var{H}{Direction with $\|H\|_F=1$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Cauchy\textendash Schwarz inequality for Frobenius inner product and gradient
+of $\det$.
+}
+
+\GOVERN{
+\[
+\max_{\|H\|_F=1}\langle G,H\rangle=\|G\|_F,\quad
+G=\det(A)A^{-T}.
+\]
+}
+
+\INPUTS{$A$ given.}
+
+\DERIVATION{
+\begin{align*}
+& d\,\det(A)[H]=\langle G,H\rangle,\ \|H\|_F=1.\\
+& \text{By Cauchy\textendash Schwarz, } \langle G,H\rangle\le \|G\|_F\|H\|_F
+=\|G\|_F.\\
+& \text{Equality for } H^\star=G/\|G\|_F.\\
+& \Rightarrow H^\star=\frac{\det(A)}{\| \det(A)A^{-T}\|_F}A^{-T},\
+\max=d\,\det(A)[H^\star]=\| \det(A)A^{-T}\|_F.
+\end{align*}
+}
+
+\RESULT{
+$H^\star\propto A^{-T}$; maximal slope $\det(A)\,\|A^{-T}\|_F$.
+}
+
+\UNITCHECK{
+Slope scales like $\det(A)$; direction dimensionless under Frobenius norm.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $\det(A)\to 0$, maximal slope tends to zero.
+\item If $A$ ill-conditioned, $\|A^{-T}\|_F$ large.
+\end{bullets}
+}
+
+\ALTERNATE{
+In spectral basis of $A^TA$, the optimal $H$ aligns with $A^{-T}$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item For $A=\mathrm{diag}(2,3)$, $G=6\cdot \mathrm{diag}(1/2,1/3)=\mathrm{diag}(3,2)$,
+$\|G\|_F=\sqrt{13}$.
+\end{bullets}
+}
+
+\INTUITION{
+Push along the gradient to increase the function most rapidly.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Steepest-ascent direction is normalized gradient.
+\end{bullets}
+}
+
+\ProblemPage{10}{Determinant of the Inverse (Proof-Style)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show $d\,\det(A^{-1})[H]=-\,\det(A^{-1})\,\mathrm{tr}(A^{-1}H)$.
+
+\PROBLEM{
+Prove the identity and verify numerically for
+$A=\begin{bmatrix}1&1\\0&2\end{bmatrix}$,
+$H=\begin{bmatrix}0&1\\1&0\end{bmatrix}$.
+}
+
+\MODEL{
+\[
+\det(A^{-1})=\det(A)^{-1},\quad d\,\log\det(A^{-1})[H]
+=-\,\mathrm{tr}(A^{-1}H).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A\in\mathrm{GL}(n)$.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Base matrix.}
+\var{H}{Direction.}
+\varmapEnd
+
+\WHICHFORMULA{
+Chain rule on $\log\det(A^{-1})=-\log\det(A)$ and Jacobi's formula.
+}
+
+\GOVERN{
+\[
+d\,\det(A^{-1})=\det(A^{-1})\,d\,\log\det(A^{-1})
+=-\det(A^{-1})\,\mathrm{tr}(A^{-1}dA).
+\]
+}
+
+\INPUTS{$A,H$ as above.}
+
+\DERIVATION{
+\begin{align*}
+& \det(A)=2,\ \det(A^{-1})=1/2,\\
+& A^{-1}=\begin{bmatrix}1&-1/2\\0&1/2\end{bmatrix}.\\
+& \mathrm{tr}(A^{-1}H)=\mathrm{tr}\Big(
+\begin{bmatrix}1&-1/2\\0&1/2\end{bmatrix}
+\begin{bmatrix}0&1\\1&0\end{bmatrix}\Big)
+=\mathrm{tr}\begin{bmatrix}-1/2&1\\1/2&0\end{bmatrix}=-1/2.\\
+& d\,\det(A^{-1})[H]=-(1/2)\cdot(-1/2)=1/4.\\
+& \text{Check: } (A+\epsilon H)^{-1}
+\text{ and }\det(\cdot) \text{ finite difference } \approx 1/4.
+\end{align*}
+}
+
+\RESULT{
+$d\,\det(A^{-1})[H]=-\,\det(A^{-1})\,\mathrm{tr}(A^{-1}H)$.
+}
+
+\UNITCHECK{
+Scalar equality; sign flip from inversion.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item Near singular $A$, derivative magnitude can be large.
+\end{bullets}
+}
+
+\ALTERNATE{
+Differentiate $\det(A^{-1})=\det(A)^{-1}$ directly:
+$d(\det^{-1})=-\det^{-2} d\,\det$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Use symmetric difference quotient to confirm $0.25$.
+\end{bullets}
+}
+
+\INTUITION{
+Inverting flips volume; increasing $\det(A)$ decreases $\det(A^{-1})$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $\log\det(A^{-1})=-\log\det(A)$.
+\end{bullets}
+}
+
+\clearpage
+\section{Coding Demonstrations}
+
+\CodeDemoPage{Verifying Jacobi's Formula by Finite Differences}
+\PROBLEM{
+Verify $d\,\det(A)[H]=\det(A)\,\mathrm{tr}(A^{-1}H)$ using finite differences on
+random well-conditioned matrices.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> tuple}: parse n and seed.
+\item \inlinecode{def solve_case(n, seed) -> float}: worst abs error.
+\item \inlinecode{def validate() -> None}: assertions on small n.
+\item \inlinecode{def main() -> None}: run and print error.
+\end{bullets}
+}
+
+\INPUTS{
+$n$ size (int), random seed (int). Uses fixed $\epsilon=1e-6$, $k=5$ trials.
+}
+
+\OUTPUTS{
+Maximum absolute discrepancy between finite-diff slope and analytic formula.
+}
+
+\FORMULA{
+\[
+\Delta=\left|\frac{\det(A+\epsilon H)-\det(A-\epsilon H)}{2\epsilon}
+-\det(A)\,\mathrm{tr}(A^{-1}H)\right|.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    parts = s.strip().split()
+    n = int(parts[0]) if parts else 3
+    seed = int(parts[1]) if len(parts) > 1 else 0
+    return n, seed
+
+def rand_spd(n, rng):
+    M = rng.randn(n, n)
+    A = M.T @ M + n * np.eye(n)
+    return A
+
+def rand_dir(n, rng):
+    H = rng.randn(n, n)
+    return H
+
+def solve_case(n, seed):
+    rng = np.random.default_rng(seed)
+    eps = 1e-6
+    worst = 0.0
+    for _ in range(5):
+        A = rand_spd(n, rng)
+        H = rand_dir(n, rng)
+        detA = np.linalg.det(A)
+        invA = np.linalg.inv(A)
+        fd = (np.linalg.det(A + eps*H) - np.linalg.det(A - eps*H))/(2*eps)
+        jac = detA * np.trace(invA @ H)
+        worst = max(worst, abs(fd - jac))
+    return worst
+
+def validate():
+    err = solve_case(3, 0)
+    assert err < 1e-6
+    err = solve_case(5, 1)
+    assert err < 5e-6
+
+def main():
+    validate()
+    w = solve_case(4, 42)
+    print("worst_abs_error", w)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    parts = s.strip().split()
+    n = int(parts[0]) if parts else 3
+    seed = int(parts[1]) if len(parts) > 1 else 0
+    return n, seed
+
+def solve_case(n, seed):
+    rng = np.random.default_rng(seed)
+    eps = 1e-6
+    worst = 0.0
+    for _ in range(5):
+        A = rng.standard_normal((n, n))
+        A = A.T @ A + n * np.eye(n)
+        H = rng.standard_normal((n, n))
+        sign, logdet = np.linalg.slogdet(A)
+        detA = float(sign * np.exp(logdet))
+        invA = np.linalg.inv(A)
+        fd = (np.linalg.det(A + eps*H) - np.linalg.det(A - eps*H))/(2*eps)
+        jac = detA * float(np.trace(invA @ H))
+        worst = max(worst, abs(fd - jac))
+    return worst
+
+def validate():
+    err = solve_case(3, 0)
+    assert err < 1e-6
+    err = solve_case(6, 7)
+    assert err < 1e-5
+
+def main():
+    validate()
+    print("max_err", solve_case(5, 123))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Time $\mathcal{O}(k n^3)$ per run due to factorizations; space $\mathcal{O}(n^2)$.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Singular or ill-conditioned $A$ causes large errors; use $\mathrm{SPD}$.
+\item Too large $\epsilon$ introduces bias; too small causes cancellation.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Use $\mathrm{slogdet}$ to avoid overflow; central differences for accuracy.
+\item Avoid explicit inverse if possible; linear solves are stabler.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Assertions on error thresholds.
+\item Multiple random trials with fixed seed ensure determinism.
+\end{bullets}
+}
+
+\RESULT{
+Errors below $10^{-5}$ for moderate sizes confirm Jacobi's formula numerically.
+}
+
+\EXPLANATION{
+Finite differences approximate the directional derivative; the analytic value
+comes from $\det(A)\,\mathrm{tr}(A^{-1}H)$.
+}
+
+\EXTENSION{
+Vectorize over batch matrices and directions for faster testing.
+}
+
+\CodeDemoPage{Hessian of Log-Det via Second-Order Difference}
+\PROBLEM{
+Verify $d^2\,\log\det(A)[H,H]\approx \frac{f(\epsilon)-2f(0)+f(-\epsilon)}
+{\epsilon^2}$ where $f(\epsilon)=\log\det(A+\epsilon H)$.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def approx_hessian(A,H,eps) -> float}
+\item \inlinecode{def true_hessian(A,H) -> float}
+\item \inlinecode{def validate() -> None}
+\item \inlinecode{def main() -> None}
+\end{bullets}
+}
+
+\INPUTS{
+$A\succ 0$, direction $H$ (symmetric), step $\epsilon$.
+}
+
+\OUTPUTS{
+Absolute error between finite difference and analytic Hessian scalar.
+}
+
+\FORMULA{
+\[
+d^2\,\log\det(A)[H,H]=-\,\mathrm{tr}(A^{-1}H A^{-1}H).
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def make_spd(n, rng):
+    M = rng.standard_normal((n, n))
+    return M.T @ M + n * np.eye(n)
+
+def symm(M):
+    return (M + M.T) / 2.0
+
+def approx_hessian(A, H, eps):
+    def f(E):
+        return np.linalg.slogdet(A + E * H)[1]
+    return (f(eps) - 2*f(0.0) + f(-eps)) / (eps**2)
+
+def true_hessian(A, H):
+    invA = np.linalg.inv(A)
+    return -float(np.trace(invA @ H @ invA @ H))
+
+def validate():
+    rng = np.random.default_rng(0)
+    A = make_spd(4, rng)
+    H = symm(rng.standard_normal((4, 4)))
+    eps = 1e-4
+    err = abs(approx_hessian(A, H, eps) - true_hessian(A, H))
+    assert err < 1e-6
+
+def main():
+    validate()
+    print("ok")
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def approx_hessian(A, H, eps):
+    s1, l1 = np.linalg.slogdet(A + eps * H)
+    s0, l0 = np.linalg.slogdet(A)
+    s2, l2 = np.linalg.slogdet(A - eps * H)
+    return (l1 - 2*l0 + l2) / (eps**2)
+
+def true_hessian(A, H):
+    invA = np.linalg.inv(A)
+    return -float(np.trace(invA @ H @ invA @ H))
+
+def validate():
+    rng = np.random.default_rng(1)
+    A = rng.standard_normal((3, 3))
+    A = A.T @ A + 3 * np.eye(3)
+    H = rng.standard_normal((3, 3))
+    H = (H + H.T) / 2.0
+    err = abs(approx_hessian(A, H, 1e-4) - true_hessian(A, H))
+    assert err < 1e-6
+
+def main():
+    validate()
+    print("ok")
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Time $\mathcal{O}(n^3)$ per evaluation; finite difference uses three evals.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Non-symmetric $H$ can produce non-real values; symmetrize $H$.
+\item Too small $\epsilon$ incurs roundoff; pick $10^{-4}$ to $10^{-5}$.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Use $\mathrm{slogdet}$ to keep values bounded.
+\item Avoid explicit inverse when possible in extensions.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Assertion on absolute error below tolerance.
+\end{bullets}
+}
+
+\RESULT{
+Finite difference matches analytic Hessian within tight tolerance.
+}
+
+\EXPLANATION{
+Second-order central difference approximates curvature; analytic form uses
+$dA^{-1}$ and cyclic trace.
+}
+
+\clearpage
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Multivariate Gaussian negative log-likelihood includes $\log\det(\Sigma)$ and
+$(x-\mu)^T\Sigma^{-1}(x-\mu)$.
+Compute gradient wrt $\Sigma$ using matrix differential identities and verify.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\Sigma\succ 0$; single observation $x$ with mean $\mu$.
+\item Loss $L(\Sigma)=\frac{1}{2}\big(\log\det\Sigma+
+(x-\mu)^T\Sigma^{-1}(x-\mu)\big)$.
+\end{bullets}
+}
+\WHICHFORMULA{
+$d\,\log\det\Sigma=\mathrm{tr}(\Sigma^{-1}d\Sigma)$ and
+$d\,\Sigma^{-1}=-\Sigma^{-1}(d\Sigma)\Sigma^{-1}$.
+}
+\varmapStart
+\var{\Sigma}{Covariance matrix in $\mathrm{SPD}(n)$.}
+\var{x,\mu}{Data vector and mean.}
+\var{S}{Outer product $(x-\mu)(x-\mu)^T$.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate $\Sigma\succ 0$, $x,\mu$.
+\item Compute analytic gradient $G=\frac{1}{2}(\Sigma^{-T}-\Sigma^{-T}S\Sigma^{-T})$.
+\item Verify by finite differences.
+\end{bullets}
+}
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def grad_nll(Sigma, x, mu):
+    r = (x - mu).reshape(-1, 1)
+    S = r @ r.T
+    invS = np.linalg.inv(Sigma)
+    G = 0.5 * (invS.T - invS.T @ S @ invS.T)
+    return G
+
+def finite_diff(Sigma, x, mu, E):
+    eps = 1e-6
+    def L(S):
+        r = x - mu
+        s, l = np.linalg.slogdet(S)
+        return 0.5 * (l + float(r.T @ np.linalg.inv(S) @ r))
+    return (L(Sigma + eps*E) - L(Sigma - eps*E)) / (2*eps)
+
+def main():
+    np.random.seed(0)
+    n = 3
+    A = np.random.randn(n, n)
+    Sigma = A.T @ A + n * np.eye(n)
+    x = np.array([1.0, -1.0, 0.5])
+    mu = np.zeros(n)
+    G = grad_nll(Sigma, x, mu)
+    E = np.random.randn(n, n)
+    E = (E + E.T) / 2.0
+    fd = finite_diff(Sigma, x, mu, E)
+    an = float(np.trace(G.T @ E))
+    print("fd", fd, "an", an, "err", abs(fd - an))
+    assert abs(fd - an) < 1e-6
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{Implementation (Library Version)}
+\begin{codepy}
+import numpy as np
+
+def analytic_grad(Sigma, x, mu):
+    r = (x - mu).reshape(-1, 1)
+    S = r @ r.T
+    invS = np.linalg.inv(Sigma)
+    return 0.5 * (invS.T - invS.T @ S @ invS.T)
+
+def validate():
+    np.random.seed(1)
+    n = 4
+    B = np.random.randn(n, n)
+    Sigma = B.T @ B + n * np.eye(n)
+    x = np.random.randn(n)
+    mu = np.zeros(n)
+    E = np.random.randn(n, n)
+    E = (E + E.T) / 2.0
+    G = analytic_grad(Sigma, x, mu)
+    eps = 1e-6
+    s1, l1 = np.linalg.slogdet(Sigma + eps*E)
+    s0, l0 = np.linalg.slogdet(Sigma)
+    s2, l2 = np.linalg.slogdet(Sigma - eps*E)
+    r = x - mu
+    q1 = r.T @ np.linalg.inv(Sigma + eps*E) @ r
+    q0 = r.T @ np.linalg.inv(Sigma) @ r
+    q2 = r.T @ np.linalg.inv(Sigma - eps*E) @ r
+    fd = 0.5 * ((l1 - 2*l0 + l2)/(eps**2) * 0.0 + (q1 - q2)/(2*eps))
+    an = float(np.trace(G.T @ E))
+    assert abs(fd - an) < 1e-6
+
+def main():
+    validate()
+    print("ok")
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{
+Finite-difference directional derivative error below $10^{-6}$.
+}
+\INTERPRET{
+Gradient decomposes into entropy term $\Sigma^{-T}$ and Mahalanobis penalty.
+}
+\NEXTSTEPS{
+Extend to multiple samples: replace $S$ by empirical covariance.
+}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Estimate covariance $\Sigma$ of asset returns by maximizing Gaussian likelihood.
+Show stationary point at empirical covariance via matrix differentials.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Returns $r_i\in\mathbb{R}^d$ i.i.d. zero mean.
+\item Negative log-likelihood $L(\Sigma)=\frac{n}{2}\log\det\Sigma
++\frac{1}{2}\mathrm{tr}(S\Sigma^{-1})$, $S=\sum r_i r_i^T$.
+\end{bullets}
+}
+\WHICHFORMULA{
+$d\,\log\det\Sigma=\mathrm{tr}(\Sigma^{-1}d\Sigma)$ and
+$d\,\mathrm{tr}(S\Sigma^{-1})=-\mathrm{tr}(\Sigma^{-1}S\Sigma^{-1}d\Sigma)$.
+}
+\varmapStart
+\var{\Sigma}{Covariance to estimate.}
+\var{S}{Scatter matrix.}
+\var{n}{Sample size.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Simulate returns and compute $S$.
+\item Derive gradient and set to zero.
+\item Verify that $\hat\Sigma=S/n$ nulls the gradient.
+\end{bullets}
+}
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def grad_L(Sigma, S, n):
+    invS = np.linalg.inv(Sigma)
+    G = 0.5 * (n * invS.T - (invS.T @ S @ invS.T))
+    return G
+
+def simulate(n=500, d=3, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal((d, d))
+    Sigma_true = A.T @ A + d * np.eye(d)
+    R = rng.multivariate_normal(np.zeros(d), Sigma_true, size=n)
+    S = R.T @ R
+    return S, Sigma_true
+
+def main():
+    S, Sigma_true = simulate()
+    n = 500
+    Sigma_hat = S / n
+    G = grad_L(Sigma_hat, S, n)
+    e = np.linalg.norm(G, ord="fro")
+    print("grad_fro_norm", e)
+    assert e < 1e-6
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{
+Frobenius norm of gradient at $\Sigma=S/n$ approximately zero.
+}
+\INTERPRET{
+Maximum likelihood for zero-mean Gaussian gives sample covariance.
+}
+\NEXTSTEPS{
+Include mean; constrain $\Sigma$ with shrinkage or factor structure.
+}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+In a volume-preserving normalizing flow step with linear map $y=Wx$, the
+log-likelihood uses $\log|\det W|$.
+Compute analytic gradient $\nabla_W \log|\det W|=W^{-T}$ and verify.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $W\in\mathrm{GL}(n)$.
+\item Loss $L(W)=-\log|\det W|$ for a penalty step.
+\end{bullets}
+}
+\WHICHFORMULA{
+$d\,\log\det W=\mathrm{tr}(W^{-1}dW)$, gradient $W^{-T}$.
+}
+\varmapStart
+\var{W}{Weight matrix.}
+\var{E}{Test direction.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate random $W$ with good condition.
+\item Compare finite-diff directional derivative with analytic trace.
+\end{bullets}
+}
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+
+def grad_logdet(W):
+    return np.linalg.inv(W).T
+
+def check(W, E):
+    eps = 1e-6
+    s1, l1 = np.linalg.slogdet(W + eps*E)
+    s0, l0 = np.linalg.slogdet(W)
+    s2, l2 = np.linalg.slogdet(W - eps*E)
+    fd = (l1 - l2) / (2*eps)
+    an = float(np.trace(grad_logdet(W).T @ E))
+    return abs(fd - an)
+
+def main():
+    np.random.seed(0)
+    n = 4
+    A = np.random.randn(n, n)
+    W = A + n * np.eye(n)
+    E = np.random.randn(n, n)
+    err = check(W, E)
+    print("err", err)
+    assert err < 1e-6
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{
+Directional derivative error below $10^{-6}$.
+}
+\INTERPRET{
+Confirms $W^{-T}$ as gradient of $\log|\det W|$ used in flow models.
+}
+\NEXTSTEPS{
+Constrain $W$ (e.g., triangular) to compute log-determinant faster.
+}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Assess multicollinearity via $\log\det(\Sigma)$ of standardized features and
+study effect of rescaling features.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Data features $X\in\mathbb{R}^{n\times d}$, empirical covariance $\Sigma$.
+\item Scaling by diagonal $D$ transforms covariance to $D\Sigma D$.
+\end{bullets}
+}
+\WHICHFORMULA{
+$\log\det(D\Sigma D)=2\sum_i \log|D_{ii}|+\log\det(\Sigma)$.
+}
+\PIPELINE{
+\begin{bullets}
+\item Simulate correlated data and compute $\Sigma$.
+\item Apply diagonal rescaling and verify log-det identity.
+\item Use $-\log\det$ as multicollinearity proxy.
+\end{bullets}
+}
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def simulate(n=300, d=3, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal((d, d))
+    C = A.T @ A + d * np.eye(d)
+    X = rng.multivariate_normal(np.zeros(d), C, size=n)
+    X -= X.mean(axis=0)
+    return X
+
+def cov(X):
+    n = X.shape[0]
+    return (X.T @ X) / n
+
+def main():
+    X = simulate()
+    Sigma = cov(X)
+    D = np.diag([2.0, 0.5, 3.0])
+    Sig2 = D @ Sigma @ D
+    s1, l1 = np.linalg.slogdet(Sig2)
+    s0, l0 = np.linalg.slogdet(Sigma)
+    rhs = 2 * np.sum(np.log(np.abs(np.diag(D)))) + l0
+    print("lhs", l1, "rhs", rhs, "err", abs(l1 - rhs))
+    assert abs(l1 - rhs) < 1e-10
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{
+Absolute error of the log-det scaling identity below numerical tolerance.
+}
+\INTERPRET{
+Rescaling by $D$ shifts $\log\det$ by $2\sum \log|D_{ii}|$, isolating intrinsic
+correlation structure.
+}
+\NEXTSTEPS{
+Use $-\log\det(\Sigma)$ to rank feature redundancy; extend to shrinkage $\Sigma$.
+}
+
+\end{document}

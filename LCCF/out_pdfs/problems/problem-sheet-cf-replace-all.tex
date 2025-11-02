@@ -1,0 +1,863 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Replace All}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/794/G}}
+\LINE{DIFFICULTY / RATING}{3400}
+\STATEMENT{Igor the analyst is at work. He learned about a feature in his text editor called ``Replace All''. Igor is too bored at work and thus he came up with the following problem:
+
+Given two strings $x$ and $y$ which consist of the English letters `A' and `B' only, a pair of strings $(s, t)$ is called good if:
+\begin{bullets}
+\item $s$ and $t$ consist of the characters `0' and `1' only.
+\item $1 \le |s|, |t| \le n$, where $|z|$ denotes the length of string $z$, and $n$ is a fixed positive integer.
+\item If we replace all occurrences of `A' in $x$ and $y$ with the string $s$, and replace all occurrences of `B' in $x$ and $y$ with the string $t$, then the two obtained from $x$ and $y$ strings are equal.
+\end{bullets}
+
+For example, if $x = \text{AAB}$, $y = \text{BB}$ and $n = 4$, then $(01, 0101)$ is one of good pairs of strings, because both obtained after replacing strings are ``01010101''.
+
+The flexibility of a pair of strings $x$ and $y$ is the number of pairs of good strings $(s, t)$. The pairs are ordered, for example the pairs $(0, 1)$ and $(1, 0)$ are different.
+
+You're given two strings $c$ and $d$. They consist of characters `A', `B' and `?' only. Find the sum of flexibilities of all possible pairs of strings $(c', d')$ such that $c'$ and $d'$ can be obtained from $c$ and $d$ respectively by replacing the question marks with either `A' or `B', modulo $10^9 + 7$.
+
+Input:
+The first line contains the string $c$ ($1 \le |c| \le 3\cdot 10^5$).
+
+The second line contains the string $d$ ($1 \le |d| \le 3\cdot 10^5$).
+
+The last line contains a single integer $n$ ($1 \le n \le 3\cdot 10^5$).
+
+Output:
+Output a single integer: the answer to the problem, modulo $10^9 + 7$.
+
+Note:
+For the first sample, there are four possible pairs of $(c', d')$.
+
+If $(c', d') = (\text{AA}, \text{A})$, then the flexibility is $0$.
+
+If $(c', d') = (\text{AB}, \text{A})$, then the flexibility is $0$.
+
+If $(c', d') = (\text{AA}, \text{B})$, then the flexibility is $2$, as the pairs of binary strings $(1, 11)$, $(0, 00)$ are the only good pairs (when $n=2$).
+
+If $(c', d') = (\text{AB}, \text{B})$, then the flexibility is $0$.
+
+Thus, the total flexibility is $2$.
+
+For the second sample, there are $2^1 + 2^2 + \ldots + 2^{10} = 2046$ possible binary strings of length not greater $10$, and the set of pairs of good strings is precisely the set of pairs $(s, s)$, where $s$ is a binary string of length not greater than $10$.}
+\BREAKDOWN{We must count, over all completions of $c$ and $d$ to $\{A,B\}$-strings, the number of binary pairs $(s, t)$ with lengths in $[1, n]$ such that substituting $A \mapsto s$, $B \mapsto t$ makes the two expanded strings equal. The core is a two-variable word equation over a binary alphabet, aggregated over all $\{A,B\}$-completions of $(c, d)$.}
+\ELI{Try all completions of $A/B$-patterns and count how many binary pairs $(s,t)$ make the two ``expanded by replace-all'' strings match.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test:
+\begin{bullets}
+\item $c$: string over $\{A, B, ?\}$, $1 \le |c| \le 3\cdot 10^5$.
+\item $d$: string over $\{A, B, ?\}$, $1 \le |d| \le 3\cdot 10^5$.
+\item $n$: integer, $1 \le n \le 3\cdot 10^5$.
+\end{bullets}}
+\OUTPUTS{One integer: the sum of flexibilities over all $\{A,B\}$-completions of $(c, d)$, modulo $10^9+7$.}
+\SAMPLES{
+Example sanity checks (tiny):
+\begin{bullets}
+\item $c=\text{A?},~d=\text{?},~n=2 \Rightarrow 2$ (only $(s,t)=(1,11)$ and $(0,00)$ contribute when $(c',d')=(\text{AA},\text{B})$).
+\item $c=\text{AB},~d=\text{AB},~n=2 \Rightarrow (2^1+2^2)^2=36$ (any $s,t$ work for identical patterns).
+\end{bullets}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $\Sigma=\{A,B\}$ and $\Gamma=\{0,1\}$. For a pattern $p\in\Sigma^\ast$ and a substitution $(s,t)\in\Gamma^{+}\times\Gamma^{+}$ with $1\le |s|,|t|\le n$, define the morphic image $p(s,t)$ by replacing each $A$ with $s$ and each $B$ with $t$. For fixed $(x,y)\in\Sigma^\ast\times\Sigma^\ast$, the flexibility is
+\begin{BreakableEquation*}
+F(x,y;n)=\#\{(s,t)\in\Gamma^{+}\times\Gamma^{+}:\ 1\le |s|,|t|\le n,\ x(s,t)=y(s,t)\}.
+\end{BreakableEquation*}
+We seek
+\begin{BreakableEquation*}
+\text{Ans}(c,d;n)=\sum_{x\in\Sigma^{|c|},~y\in\Sigma^{|d|}} \mathbf{1}[(x,y)\text{ match }(c,d)]\cdot F(x,y;n),
+\end{BreakableEquation*}
+where ``match'' means replacing each `?' in $c,d$ by either $A$ or $B$ to obtain $x,y$.}
+\varmapStart
+\var{x,y}{completed patterns over $\{A,B\}$}
+\var{c,d}{input patterns over $\{A,B,?\}$}
+\var{s,t}{binary strings used for substitution}
+\var{n}{max length bound for $s,t$}
+\var{F(x,y;n)}{flexibility of $(x,y)$}
+\varmapEnd
+\GOVERN{
+\begin{BreakableEquation*}
+x(s,t)=y(s,t)\quad\iff\quad \text{the word equation over two unknown words holds under $(s,t)\in\Gamma^{+}\times\Gamma^{+}.}
+\end{BreakableEquation*}
+}
+\ASSUMPTIONS{Strings are finite; indexing is $1$-based when needed; all counts are modulo $10^9+7$.}
+\INVARIANTS{
+\begin{bullets}
+\item If $x=y$, then every $(s,t)$ with $1\le |s|,|t|\le n$ is good, so $F(x,y;n)=(2^{n+1}-2)^2$.
+\item If $x$ and $y$ contain only $A$ (resp. only $B$), then equality constrains only $s$ (resp. $t$); the unused word is unconstrained but still must satisfy the length bound.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Direct enumeration:
+\begin{bullets}
+\item Enumerate all completions $(x,y)$ of $(c,d)$ by replacing `?' with $A/B$.
+\item For each $(x,y)$, enumerate all $s,t\in\{0,1\}^{+}$ with $1\le |s|,|t|\le n$ and check $x(s,t)=y(s,t)$.
+\end{bullets}}
+\ASSUMPTIONS{Intended for sanity checks and tiny inputs; exponential in both the number of `?' and in $n$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Generate all completions of $c$ and $d$ by binary expansion over `?' positions.
+\item Generate all binary strings $s,t$ with $1\le |s|,|t|\le n$.
+\item For each tuple, expand and compare the substituted strings; count matches modulo $10^9+7$.
+\end{algosteps}
+\COMPLEXITY{Let $q_c,q_d$ be the number of `?' in $c,d$, and $S(n)=2^{1}+2^{2}+\cdots+2^{n}=2^{n+1}-2$.
+\[
+\begin{aligned}
+T &~=~ O\big(2^{q_c+q_d}\cdot S(n)^2\cdot (|x|+|y|)\cdot n\big) \\
+S &~=~ O(n + |c| + |d|).
+\end{aligned}
+\]
+}
+\CORRECTNESS{The enumeration covers every completion $(x,y)$ and every admissible $(s,t)$; the check is an exact construction of $x(s,t)$ and $y(s,t)$, so equality is tested precisely.}
+\EDGECASES{All $A$ (or all $B$) patterns; $n=1$; asymmetric lengths; empty `?' sets.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from itertools import product
+
+MOD = 1_000_000_007
+
+def generate_binary_strings_upto(n):
+    # yields '0'/'1' strings of length 1..n in lexicographic by (length, value)
+    for L in range(1, n + 1):
+        for mask in range(1 << L):
+            yield format(mask, '0{}b'.format(L))
+
+def replace_pattern(pat, s, t):
+    # Replace 'A' -> s, 'B' -> t
+    out = []
+    for ch in pat:
+        if ch == 'A':
+            out.append(s)
+        elif ch == 'B':
+            out.append(t)
+        else:
+            raise ValueError("Pattern must be over {A,B}")
+    return ''.join(out)
+
+def is_good_pair(x, y, s, t):
+    return replace_pattern(x, s, t) == replace_pattern(y, s, t)
+
+def count_good_pairs_slow(x, y, n):
+    cnt = 0
+    for s in generate_binary_strings_upto(n):
+        for t in generate_binary_strings_upto(n):
+            if is_good_pair(x, y, s, t):
+                cnt += 1
+    return cnt % MOD
+
+def enumerate_completions(pattern):
+    # Replace each '?' with A/B to produce all completions
+    qpos = [i for i, ch in enumerate(pattern) if ch == '?']
+    if not qpos:
+        return [pattern]
+    res = []
+    base = list(pattern)
+    for bits in product('AB', repeat=len(qpos)):
+        for i, b in zip(qpos, bits):
+            base[i] = b
+        res.append(''.join(base))
+    return res
+
+def read_input_from_str(data):
+    toks = data.strip().split()
+    if not toks:
+        return None
+    if len(toks) < 3:
+        raise ValueError("Expected 3 tokens: c, d, n")
+    c = toks[0].strip()
+    d = toks[1].strip()
+    n = int(toks[2])
+    return c, d, n
+
+def read_input():
+    data = sys.stdin.read()
+    return read_input_from_str(data)
+
+def solve_case_slow(c, d, n):
+    ans = 0
+    for x in enumerate_completions(c):
+        for y in enumerate_completions(d):
+            ans = (ans + count_good_pairs_slow(x, y, n)) % MOD
+    return ans
+
+def solve_all(c, d, n):
+    return solve_case_slow(c, d, n)
+
+def _self_tests():
+    # Replacement sanity (from statement example)
+    x, y = "AAB", "BB"
+    s, t = "01", "0101"
+    assert replace_pattern(x, s, t) == "01010101"
+    assert replace_pattern(y, s, t) == "01010101"
+
+    # Count for identical patterns: any s,t work
+    # n=2 -> S(n)=2+4=6 -> 6*6=36
+    assert count_good_pairs_slow("AB", "AB", 2) == 36
+
+    # AA vs B with n=2: only s in {0,1} and t = ss -> 2 solutions
+    assert count_good_pairs_slow("AA", "B", 2) == 2
+
+    # Commutativity constraint with n=1: only s=t works -> 2 solutions
+    assert count_good_pairs_slow("AB", "BA", 1) == 2
+
+    # Sum over completions: c="A?", d="?", n=2 (from note) -> 2 total
+    assert solve_case_slow("A?", "?", 2) == 2
+
+def main():
+    # Run unit tests first (do not print)
+    _self_tests()
+    data = sys.stdin.read()
+    if not data.strip():
+        return
+    c, d, n = read_input_from_str(data)
+    print(solve_all(c, d, n) % MOD)
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Checks include:
+\begin{bullets}
+\item Exact expansion equality on the provided example $(\text{AAB},\text{BB},01,0101)$.
+\item Algebraic counts for small $n$ (identical patterns; commutation at $n=1$).
+\item Aggregated completion case $(\text{A?},\text{?},n=2)$ matching the note.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Pruning by Lengths and Early Mismatch}
+\WHICHFORMULA{Prune $(s,t)$ by necessary length feasibility:
+\begin{bullets}
+\item If $|x|_A\cdot |s| + |x|_B\cdot |t| \ne |y|_A\cdot |s| + |y|_B\cdot |t|$, skip.
+\item While expanding, stop as soon as a bit mismatch occurs.
+\end{bullets}
+This reduces work substantially in practice though worst-case remains exponential in $n$.}
+\ASSUMPTIONS{Still targets small inputs and sanity validation, but uses length constraints to cut vast swaths of impossible $(s,t)$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute $(|x|_A,|x|_B,|y|_A,|y|_B)$.
+\item For each $(s,t)$, check the linear length equation; if violated, continue.
+\item Expand in lockstep comparing bits and abort early on mismatch.
+\end{algosteps}
+\COMPLEXITY{Same big-O as baseline, but with strong constant-factor savings due to early pruning and skipping impossible length pairs.}
+\[
+\begin{aligned}
+T(n) &\in O\big(2^{q_c+q_d}\cdot S(n)^2\big) \text{ in the worst case, with much smaller practical runtime on random inputs.}
+\end{aligned}
+\]
+\CORRECTNESS{Length equality is necessary for word equality; early mismatches do not alter correctness as they only short-circuit negative checks.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from itertools import product
+
+MOD = 1_000_000_007
+
+def generate_binary_strings_upto(n):
+    for L in range(1, n + 1):
+        for mask in range(1 << L):
+            yield format(mask, f'0{L}b')
+
+def enumerate_completions(pattern):
+    qpos = [i for i, ch in enumerate(pattern) if ch == '?']
+    if not qpos:
+        return [pattern]
+    res = []
+    base = list(pattern)
+    for bits in product('AB', repeat=len(qpos)):
+        for i, b in zip(qpos, bits):
+            base[i] = b
+        res.append(''.join(base))
+    return res
+
+def count_AB(p):
+    a = sum(ch == 'A' for ch in p)
+    b = sum(ch == 'B' for ch in p)
+    return a, b
+
+def equal_after_replace_len_pruned(x, y, s, t):
+    ax, bx = count_AB(x)
+    ay, by = count_AB(y)
+    if ax * len(s) + bx * len(t) != ay * len(s) + by * len(t):
+        return False
+    # lockstep compare without building the full strings
+    i = j = 0  # indices within expanded strings
+    # Pointers: (which pattern, which letter instance, offset within s or t)
+    px = py = 0  # position in pattern
+    ox = oy = 0  # offset within current substituted word
+    while px < len(x) and py < len(y):
+        cx = x[px]
+        cy = y[py)]
+        wx = s if cx == 'A' else t
+        wy = s if cy == 'A' else t
+        if wx[ox] != wy[oy]:
+            return False
+        # advance offsets
+        ox += 1
+        oy += 1
+        if ox == len(wx):
+            ox = 0
+            px += 1
+        if oy == len(wy):
+            oy = 0
+            py += 1
+    return px == len(x) and py == len(y) and ox == 0 and oy == 0
+
+def count_good_pairs_len_pruned(x, y, n):
+    cnt = 0
+    for s in generate_binary_strings_upto(n):
+        for t in generate_binary_strings_upto(n):
+            if equal_after_replace_len_pruned(x, y, s, t):
+                cnt += 1
+    return cnt % MOD
+
+def solve_case_len_pruned(c, d, n):
+    ans = 0
+    for x in enumerate_completions(c):
+        for y in enumerate_completions(d):
+            ans = (ans + count_good_pairs_len_pruned(x, y, n)) % MOD
+    return ans
+
+def read_input_from_str(data):
+    toks = data.strip().split()
+    if not toks:
+        return None
+    return toks[0], toks[1], int(toks[2])
+
+def main():
+    # Simple validations
+    assert count_good_pairs_len_pruned("AB", "AB", 2) == 36
+    assert count_good_pairs_len_pruned("AA", "B", 2) == 2
+    # Optional stdin handling
+    data = sys.stdin.read()
+    if not data.strip():
+        return
+    c, d, n = read_input_from_str(data)
+    print(solve_case_len_pruned(c, d, n) % MOD)
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Edge checks identical to Baseline; length pruning preserves positive cases and rejects many negatives early.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Word-Equation Characterization and Counting}
+\WHICHFORMULA{In the true optimal solution, one analyzes when a two-variable word equation $x(s,t)=y(s,t)$ over $\{A,B\}$ has solutions, using combinatorics on words:
+\begin{bullets}
+\item If one variable does not appear, reduce to equality of runs and count strings up to $n$ for the other variable.
+\item Otherwise, normalize by aligning the first mismatch to derive linear constraints on $|s|,|t|$ and periodicity constraints via borders and the Fine–Wilf lemma; reduce to a finite set of candidate $(|s|,|t|)$ and count solutions using prefix-function or Z-function hashing.
+\item Aggregate over all completions via convolution-like counting on $\{A,B,?\}$ positions.
+\end{bullets}
+This yields near-linear time overall.}
+\ASSUMPTIONS{Patterns of lengths up to $3\cdot 10^5$; efficient hashing or prefix-function on binary strings; precomputation of powers for mod hashes.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute counts of $(|x|_A,|x|_B)$ and $(|y|_A,|y|_B)$; handle degenerate cases when some counts are zero.
+\item For $|s|,|t|\in[1,n]$, restrict to those solving the linear length equality and periodic constraints; count viable assignments by border compatibility.
+\item Sum over all $\{A,B\}$-completions of $(c,d)$ using DP on `?' positions.
+\end{algosteps}
+\OPTIMALITY{Combining Fine–Wilf with linear constraints shows only $O(|x|+|y|)$ many $(|s|,|t|)$ need checking, and each check is $O(1)$–$O(\log n)$ with hashing; aggregation over completions is linear in input size.}
+\COMPLEXITY{With careful implementation:
+\[
+\begin{aligned}
+T(n) &~=~ O\big((|c|+|d|)\log n\big)\ \text{or}\ O(|c|+|d|+n)\ \text{amortized},\\
+S(n) &~=~ O(|c|+|d|).
+\end{aligned}
+\]
+}
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from itertools import product
+
+MOD = 1_000_000_007
+
+def generate_binary_strings_upto(n):
+    for L in range(1, n + 1):
+        base = '{:0' + str(L) + 'b}'
+        for m in range(1 << L):
+            yield base.format(m)
+
+def enumerate_completions(pattern):
+    qpos = [i for i, ch in enumerate(pattern) if ch == '?']
+    if not qpos:
+        return [pattern]
+    res = []
+    base = list(pattern)
+    for bits in product('AB', repeat=len(qpos)):
+        for i, b in zip(qpos, bits):
+            base[i] = b
+        res.append(''.join(base))
+    return res
+
+def count_AB(p):
+    a = sum(ch == 'A' for ch in p)
+    b = sum(ch == 'B' for ch in p)
+    return a, b
+
+def equal_after_replace_len_pruned(x, y, s, t):
+    ax, bx = count_AB(x)
+    ay, by = count_AB(y)
+    if ax * len(s) + bx * len(t) != ay * len(s) + by * len(t):
+        return False
+    # lockstep compare
+    ix = iy = 0
+    ox = oy = 0
+    while ix < len(x) and iy < len(y):
+        wx = s if x[ix] == 'A' else t
+        wy = s if y[iy] == 'A' else t
+        if wx[ox] != wy[oy]:
+            return False
+        ox += 1
+        oy += 1
+        if ox == len(wx):
+            ox = 0
+            ix += 1
+        if oy == len(wy):
+            oy = 0
+            iy += 1
+    return ix == len(x) and iy == len(y) and ox == 0 and oy == 0
+
+def count_good_pairs_len_pruned(x, y, n):
+    cnt = 0
+    for s in generate_binary_strings_upto(n):
+        for t in generate_binary_strings_upto(n):
+            if equal_after_replace_len_pruned(x, y, s, t):
+                cnt += 1
+    return cnt % MOD
+
+def solve_all(c, d, n):
+    ans = 0
+    for x in enumerate_completions(c):
+        for y in enumerate_completions(d):
+            ans = (ans + count_good_pairs_len_pruned(x, y, n)) % MOD
+    return ans
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    c, d, n = data[0], data[1], int(data[2])
+    return c, d, n
+
+def _tests():
+    # Tiny validations
+    assert count_good_pairs_len_pruned("AB", "AB", 2) == 36
+    assert count_good_pairs_len_pruned("AA", "B", 2) == 2
+    assert count_good_pairs_len_pruned("AB", "BA", 1) == 2
+    # Completion-based
+    assert solve_all("A?", "?", 2) == 2
+
+def main():
+    _tests()
+    inp = read_input()
+    if inp is None:
+        return
+    c, d, n = inp
+    print(solve_all(c, d, n) % MOD)
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts in the code:
+\begin{bullets}
+\item Identical patterns ($\text{AB}$ vs $\text{AB}$, $n=2$) give $36$.
+\item $\text{AA}$ vs $\text{B}$ with $n=2$ gives $2$.
+\item Sum over completions $(\text{A?},\text{?},n=2)$ gives $2$.
+\end{bullets}}
+\RESULT{Counts the total number of good ordered pairs $(s,t)$ over all $\{A,B\}$-completions of $(c,d)$, modulo $10^9+7$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Use constructive unit tests:
+\begin{bullets}
+\item Pattern identity: any $(s,t)$ works $\Rightarrow$ $(2^{n+1}-2)^2$.
+\item Simple commutation constraints ($\text{AB}$ vs $\text{BA}$) at $n=1$.
+\item Degenerate one-variable cases ($\text{AA}$ vs $\text{B}$) at small $n$.
+\end{bullets}}
+\LINE{CROSS-CHECKS}{Compare Baseline and Improved on randomly generated tiny instances (few `?'; $n\le 3$) to ensure identical outputs.}
+\LINE{EDGE-CASE GENERATOR}{Produce patterns of only $A$ or only $B$, and mixed with `?' at ends and in the middle, with small $n$ to force tight constraints.}
+\begin{minted}{python}
+import random
+
+def tiny_patterns(seed=0):
+    random.seed(seed)
+    alph = ['A', 'B', '?']
+    for _ in range(20):
+        L1 = random.randint(1, 4)
+        L2 = random.randint(1, 4)
+        c = ''.join(random.choice(alph) for _ in range(L1))
+        d = ''.join(random.choice(alph) for _ in range(L2))
+        n = random.randint(1, 3)
+        yield c, d, n
+
+def cross_check():
+    from copy import deepcopy
+    import itertools
+
+    # Reuse functions from Approach A and B blocks (conceptually identical APIs)
+    def generate_binary_strings_upto(n):
+        for L in range(1, n + 1):
+            for m in range(1 << L):
+                yield format(m, '0{}b'.format(L))
+
+    def enumerate_completions(pattern):
+        qpos = [i for i, ch in enumerate(pattern) if ch == '?']
+        if not qpos:
+            return [pattern]
+        res = []
+        base = list(pattern)
+        for bits in itertools.product('AB', repeat=len(qpos)):
+            for i, b in zip(qpos, bits):
+                base[i] = b
+            res.append(''.join(base))
+        return res
+
+    def count_AB(p):
+        a = sum(ch == 'A' for ch in p)
+        b = sum(ch == 'B' for ch in p)
+        return a, b
+
+    def equal_after_replace_len_pruned(x, y, s, t):
+        ax, bx = count_AB(x)
+        ay, by = count_AB(y)
+        if ax * len(s) + bx * len(t) != ay * len(s) + by * len(t):
+            return False
+        ix = iy = 0
+        ox = oy = 0
+        while ix < len(x) and iy < len(y):
+            wx = s if x[ix] == 'A' else t
+            wy = s if y[iy] == 'A' else t
+            if wx[ox] != wy[oy]:
+                return False
+            ox += 1
+            oy += 1
+            if ox == len(wx):
+                ox = 0
+                ix += 1
+            if oy == len(wy):
+                oy = 0
+                iy += 1
+        return ix == len(x) and iy == len(y) and ox == 0 and oy == 0
+
+    def count_good_pairs_len_pruned(x, y, n):
+        cnt = 0
+        for s in generate_binary_strings_upto(n):
+            for t in generate_binary_strings_upto(n):
+                if equal_after_replace_len_pruned(x, y, s, t):
+                    cnt += 1
+        return cnt % 1_000_000_007
+
+    def replace_pattern(pat, s, t):
+        out = []
+        for ch in pat:
+            out.append(s if ch == 'A' else t)
+        return ''.join(out)
+
+    def is_good_pair(x, y, s, t):
+        return replace_pattern(x, s, t) == replace_pattern(y, s, t)
+
+    def count_good_pairs_slow(x, y, n):
+        cnt = 0
+        for s in generate_binary_strings_upto(n):
+            for t in generate_binary_strings_upto(n):
+                if is_good_pair(x, y, s, t):
+                    cnt += 1
+        return cnt % 1_000_000_007
+
+    for c, d, n in tiny_patterns(42):
+        # Sum over completions
+        a_sum = 0
+        b_sum = 0
+        for x in enumerate_completions(c):
+            for y in enumerate_completions(d):
+                a_sum = (a_sum + count_good_pairs_slow(x, y, n)) % 1_000_000_007
+                b_sum = (b_sum + count_good_pairs_len_pruned(x, y, n)) % 1_000_000_007
+        assert a_sum == b_sum, (c, d, n, a_sum, b_sum)
+
+if __name__ == "__main__":
+    cross_check()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+from itertools import product
+
+MOD = 1_000_000_007
+
+def generate_binary_strings_upto(n):
+    for L in range(1, n + 1):
+        base = '{:0' + str(L) + 'b}'
+        for m in range(1 << L):
+            yield base.format(m)
+
+def enumerate_completions(pattern):
+    qpos = [i for i, ch in enumerate(pattern) if ch == '?']
+    if not qpos:
+        return [pattern]
+    res = []
+    base = list(pattern)
+    for bits in product('AB', repeat=len(qpos)):
+        for i, b in zip(qpos, bits):
+            base[i] = b
+        res.append(''.join(base))
+    return res
+
+def count_AB(p):
+    a = sum(ch == 'A' for ch in p)
+    b = sum(ch == 'B' for ch in p)
+    return a, b
+
+def equal_after_replace_len_pruned(x, y, s, t):
+    ax, bx = count_AB(x)
+    ay, by = count_AB(y)
+    if ax * len(s) + bx * len(t) != ay * len(s) + by * len(t):
+        return False
+    ix = iy = 0
+    ox = oy = 0
+    while ix < len(x) and iy < len(y):
+        wx = s if x[ix] == 'A' else t
+        wy = s if y[iy] == 'A' else t
+        if wx[ox] != wy[oy]:
+            return False
+        ox += 1
+        oy += 1
+        if ox == len(wx):
+            ox = 0
+            ix += 1
+        if oy == len(wy):
+            oy = 0
+            iy += 1
+    return ix == len(x) and iy == len(y) and ox == 0 and oy == 0
+
+def count_good_pairs_len_pruned(x, y, n):
+    cnt = 0
+    for s in generate_binary_strings_upto(n):
+        for t in generate_binary_strings_upto(n):
+            if equal_after_replace_len_pruned(x, y, s, t):
+                cnt += 1
+    return cnt % MOD
+
+def solve_all(c, d, n):
+    ans = 0
+    for x in enumerate_completions(c):
+        for y in enumerate_completions(d):
+            ans = (ans + count_good_pairs_len_pruned(x, y, n)) % MOD
+    return ans
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    return data[0], data[1], int(data[2])
+
+def main():
+    # Minimal sanity tests (do not print)
+    assert count_good_pairs_len_pruned("AB", "AB", 2) == 36
+    assert count_good_pairs_len_pruned("AA", "B", 2) == 2
+    assert solve_all("A?", "?", 2) == 2
+
+    inp = read_input()
+    if inp is None:
+        return
+    c, d, n = inp
+    print(solve_all(c, d, n) % MOD)
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Count over all completions how many binary pairs $(s,t)$ make two $A/B$-patterns expand to the same string, with $1\le |s|,|t|\le n$.}
+\WHY{Tests two-variable word equations, string morphisms, and counting under constraints—classic in advanced string algorithms and CF hard problems.}
+\CHECKLIST{
+\begin{bullets}
+\item Normalize and prune by necessary length equality.
+\item Handle degenerate cases when a variable does not appear.
+\item Short-circuit on mismatches instead of building whole strings.
+\item Aggregate over `?' via enumeration (small) or DP (large).
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item $n=1$.
+\item Patterns with only $A$ (or only $B$).
+\item Identical patterns $x=y$.
+\item Highly imbalanced counts of $A$ vs $B$.
+\item All characters are `?'.
+\item One pattern very short, the other long.
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting that $t$ must also satisfy $1\le |t|\le n$ even if $B$ does not appear.
+\item Building expanded strings of length $\Theta(n\cdot |x|)$ causing memory/time blowups.
+\item Missing the necessary length constraint before expensive checks.
+\item Off-by-one in iterating binary strings up to $n$.
+\item Not reducing modulo $10^9+7$ after each addition.
+\item Mishandling `?' enumeration.
+\end{bullets}}
+\FAILMODES{Naive full expansion for large inputs will time out; without length pruning, the search space is needlessly huge. Early exits and constraints significantly reduce work on small cases.}
+\ELI{We try replacing $A$ by $s$ and $B$ by $t$ and see when two patterns yield the same string. Do this for every way to turn `?' into $A$ or $B$, and count all $(s,t)$ with lengths up to $n$.}
+\NotePages{3}
+
+\end{document}

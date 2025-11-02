@@ -1,0 +1,773 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Reverses}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/906/E}}
+\LINE{DIFFICULTY / RATING}{3300}
+\STATEMENT{Hurricane came to Berland and to the suburbs of Stringsville. You are going to check if it is all right with your favorite string. Hurricane broke it a bit by reversing some of its non-intersecting substrings. You have a photo of this string before the hurricane and you want to restore it to the original state using the minimum possible number of substring reversals and find out which substrings you should reverse.
+
+You are given a string $s$ — the original state of your string and string $t$ — the state of the string after the hurricane. You should select $k$ non-intersecting substrings of $t$ in such a way that after reversing these substrings the string becomes equal to $s$ and $k$ is minimum possible.
+
+Input: The first line contains string $s$ and the second line contains string $t$. Both strings have the same length and consist of lowercase English letters. $1 \le |s| = |t| \le 5\cdot 10^5$.
+
+Output: In the first line print $k$ — the minimum number of substrings you should reverse. Next output $k$ lines. Each line should contain two integers $l_i, r_i$ meaning that you should reverse the substring from symbol number $l_i$ to symbol number $r_i$ (strings are 1-indexed). These substrings should not intersect. If there are multiple answers print any. If it is impossible to restore the string print $-1$.}
+\BREAKDOWN{Find whether $s$ can be obtained from $t$ by simultaneously reversing $k$ disjoint intervals. Characterize when a segment $[l,r]$ can be reversed to match $s$ (namely $s[l..r]=\operatorname{rev}(t[l..r])$). Choose a set of such disjoint segments minimizing $k$, or declare impossibility.}
+\ELI{Within any chosen interval, $s$ must equal $t$ read backwards; outside all intervals, $s$ must equal $t$.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Two lines: line 1 is string $s$; line 2 is string $t$; both lowercase, same length $n$ with $1 \le n \le 5\cdot 10^5$.}
+\OUTPUTS{If possible, print integer $k$ (minimum number of disjoint substrings to reverse) followed by $k$ lines with $l_i~r_i$ (1-indexed inclusive) describing the substrings to reverse. If impossible, print $-1$.}
+\SAMPLES{Example 1: $s=\texttt{abc}$, $t=\texttt{acb}$; output $1$ then line $2~3$.
+
+Example 2: $s=\texttt{edcba}$, $t=\texttt{abcde}$; output $1$ then line $1~5$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $n=|s|=|t|$. We must choose pairwise-disjoint intervals $[l_j,r_j]$ (with $1\le l_1\le r_1<l_2\le r_2<\cdots$) such that applying the involution $g$ on indices induced by reversing each $[l_j,r_j]$ makes $t$ equal to $s$.}
+\varmapStart
+\var{n}{length of the strings}
+\var{[l_j,r_j]}{the $j$-th reversed interval; all such intervals are disjoint}
+\var{g(i)}{index mapping after reversing all chosen intervals; $g$ is an involution}
+\varmapEnd
+\GOVERN{
+\[
+  g(i)=
+  \begin{cases}
+    l_j + r_j - i,& \text{if } i\in [l_j,r_j]\text{ for some }j,\\
+    i,& \text{otherwise,}
+  \end{cases}
+  \quad\text{and}\quad
+  \forall i\in[1..n]:~ s_i = t_{g(i)}.
+\]
+Equivalently, for every chosen interval $[l,r]$ we require
+\begin{BreakableEquation*}
+s[l..r] = \operatorname{rev}\bigl(t[l..r]\bigr),
+\end{BreakableEquation*}
+and for all $i$ outside the union of intervals, $s_i=t_i$.
+}
+\ASSUMPTIONS{Indices are 1-based in the statement. Intervals are closed, non-intersecting, and can be adjacent. Reversing length-$1$ intervals is allowed but has no effect (never needed in a minimal solution).}
+\INVARIANTS{(i) $g$ is an involution: $g(g(i))=i$. (ii) The total multiset of characters of $s$ matches that of $t$. (iii) Inside each reversed interval, characters of $s$ and $t$ match in mirrored positions.}
+\NotePages{3}
+
+% ============ Optional Formula Pages (each own page) ============
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Enumerate possible interval endpoints around the leftmost mismatch and test whether reversing them matches $s$; recurse on the suffix.}
+\ASSUMPTIONS{Only small instances are tractable with exhaustive search.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item If $s=t$, return $k=0$.
+\item Find the leftmost position $i$ with $s_i\ne t_i$. Try all $r\in[i..n]$ such that $s[i..r]=\operatorname{rev}(t[i..r])$, choose one, and recurse at $r+1$.
+\item Minimize the number of chosen intervals across all branches; if no branch works, return impossible.
+\end{algosteps}
+\COMPLEXITY{Exponential in the worst case due to branching on $r$. Practical only for tiny $n$.}
+\[
+\begin{aligned}
+T(n) &\le \sum_{r=i}^{n} T(n-(r-i+1)) + O(n) \\
+     &\text{in worst-case grows exponentially.}
+\end{aligned}
+\]
+\CORRECTNESS{The search explores all feasible partitions into disjoint intervals that start at each leftmost mismatch; feasibility test enforces the mirror-equality condition on each interval.}
+\EDGECASES{Equal strings ($k=0$), single-interval reverse of the whole string, impossibility when mirrored equality cannot be satisfied at a mismatch.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input() -> Tuple[str, str]:
+    data = sys.stdin.read().strip().splitlines()
+    if not data:
+        return "", ""
+    if len(data) == 1:
+        s = data[0].strip()
+        t = ""
+    else:
+        s = data[0].strip()
+        t = data[1].strip()
+    return s, t
+
+def segment_matches(s: str, t: str, l: int, r: int) -> bool:
+    # 0-based inclusive [l, r]; require s[l..r] == reverse(t[l..r])
+    i, j = l, r
+    while i <= j:
+        if s[i] != t[j]: return False
+        if s[j] != t[i]: return False
+        i += 1; j -= 1
+    return True
+
+def apply_segments(t: str, segs: List[Tuple[int, int]]) -> str:
+    arr = list(t)
+    for l, r in segs:
+        # l, r are 1-based; reverse in-place
+        i, j = l-1, r-1
+        while i < j:
+            arr[i], arr[j] = arr[j], arr[i]
+            i += 1; j -= 1
+    return "".join(arr)
+
+def solve_case(s: str, t: str) -> Tuple[int, List[Tuple[int, int]]]:
+    n = len(s)
+    if n != len(t):
+        return -1, []
+    if s == t:
+        return 0, []
+    # Quick multiset check: necessary condition
+    from collections import Counter
+    if Counter(s) != Counter(t):
+        return -1, []
+    # Exponential DFS with pruning: try all feasible r at each leftmost mismatch (for small n)
+    sys.setrecursionlimit(1 << 20)
+    best = None
+
+    def dfs(i: int, acc: List[Tuple[int, int]]):
+        nonlocal best
+        if best is not None and len(acc) >= len(best):
+            return
+        # Advance equals
+        while i < n and s[i] == t[i]:
+            i += 1
+        if i == n:
+            # verify
+            if apply_segments(t, acc) == s:
+                best = list(acc)
+            return
+        # Try all r where [i, r] is feasible
+        for r in range(i, n):
+            if segment_matches(s, t, i, r):
+                acc.append((i+1, r+1))
+                dfs(r+1, acc)
+                acc.pop()
+
+    # For safety, cap DFS to very small n; otherwise use greedy fallback
+    if n <= 18:
+        dfs(0, [])
+        if best is None:
+            return -1, []
+        return len(best), best
+    else:
+        # Greedy fallback for larger n (see Approach C for rationale)
+        k, segs = greedy_segments(s, t)
+        return k, segs
+
+def greedy_segments(s: str, t: str) -> Tuple[int, List[Tuple[int, int]]]:
+    n = len(s)
+    segs: List[Tuple[int, int]] = []
+    i = 0
+    while i < n:
+        if s[i] == t[i]:
+            i += 1
+            continue
+        # Find farthest r >= i with t[r] == s[i] that yields a full mirrored match
+        found = False
+        r = n - 1
+        while r >= i:
+            if t[r] == s[i] and segment_matches(s, t, i, r):
+                segs.append((i+1, r+1))
+                i = r + 1
+                found = True
+                break
+            r -= 1
+        if not found:
+            return -1, []
+    # Verify
+    if apply_segments(t, segs) != s:
+        return -1, []
+    return len(segs), segs
+
+def solve_all() -> None:
+    s, t = read_input()
+    if s == "" and t == "":
+        return
+    k, segs = solve_case(s, t)
+    if k < 0:
+        print(-1)
+        return
+    print(k)
+    for l, r in segs:
+        print(l, r)
+
+if __name__ == "__main__":
+    # basic asserts
+    assert segment_matches("abc", "acb", 1, 2) is True
+    assert segment_matches("edcba", "abcde", 0, 4) is True
+    assert greedy_segments("abc", "abc")[0] == 0
+    assert greedy_segments("abc", "acb")[1] == [(2,3)]
+    # run if input is provided
+    if not sys.stdin.isatty():
+        solve_all()
+\end{minted}
+\VALIDATION{Tiny checks: s=t returns 0; s=abc,t=acb returns 1 interval [2,3]; s=edcba,t=abcde returns [1,5].}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Greedy with Farther Anchoring and Pruning}
+\WHICHFORMULA{At the leftmost mismatch $i$, any valid interval $[i,r]$ must satisfy $t_r=s_i$. Anchor on the farthest such $r$ that yields a full mirrored match, which reduces the number of intervals.}
+\ASSUMPTIONS{Characters are from a small alphabet; scanning backward for an anchor is cheap in practice.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Scan left to right. When $s_i=t_i$, advance.
+\item When $s_i\ne t_i$, search $r$ from $n$ down to $i$ with $t_r=s_i$; validate $[i,r]$ by mirrored comparison.
+\item Take the first (farthest) valid $r$, record interval, jump to $r+1$. If none exist, return impossible.
+\end{algosteps}
+\COMPLEXITY{Worst-case $O(n^2)$ (adversarial strings), but typically near-linear.}
+\[
+\begin{aligned}
+T(n) &= \sum_{i \text{ mismatch}} O(n-i) \quad \text{(worst case)}.
+\end{aligned}
+\]
+\CORRECTNESS{Any solution must start an interval at the leftmost mismatch. Among all feasible ends, choosing the farthest covers the most positions and never increases the number of intervals compared to choosing a shorter end.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+from collections import Counter
+
+def read_input() -> Tuple[str, str]:
+    data = sys.stdin.read().strip().splitlines()
+    if not data:
+        return "", ""
+    s = data[0].strip()
+    t = data[1].strip() if len(data) > 1 else ""
+    return s, t
+
+def segment_matches(s: str, t: str, l: int, r: int) -> bool:
+    i, j = l, r
+    while i <= j:
+        if s[i] != t[j]: return False
+        if s[j] != t[i]: return False
+        i += 1; j -= 1
+    return True
+
+def apply_segments(t: str, segs: List[Tuple[int, int]]) -> str:
+    arr = list(t)
+    for l, r in segs:
+        i, j = l-1, r-1
+        while i < j:
+            arr[i], arr[j] = arr[j], arr[i]
+            i += 1; j -= 1
+    return "".join(arr)
+
+def solve_case(s: str, t: str) -> Tuple[int, List[Tuple[int, int]]]:
+    n = len(s)
+    if n != len(t):
+        return -1, []
+    if Counter(s) != Counter(t):
+        return -1, []
+    segs: List[Tuple[int, int]] = []
+    i = 0
+    while i < n:
+        if s[i] == t[i]:
+            i += 1
+            continue
+        found = False
+        r = n - 1
+        while r >= i:
+            if t[r] == s[i] and segment_matches(s, t, i, r):
+                segs.append((i+1, r+1))
+                i = r + 1
+                found = True
+                break
+            r -= 1
+        if not found:
+            return -1, []
+    if apply_segments(t, segs) != s:
+        return -1, []
+    return len(segs), segs
+
+def solve_all() -> None:
+    s, t = read_input()
+    if s == "" and t == "":
+        return
+    k, segs = solve_case(s, t)
+    if k < 0:
+        print(-1)
+        return
+    print(k)
+    for l, r in segs:
+        print(l, r)
+
+if __name__ == "__main__":
+    # sanity asserts
+    assert solve_case("abc", "abc")[0] == 0
+    assert solve_case("abc", "acb")[1] == [(2,3)]
+    k, segs = solve_case("edcba", "abcde")
+    assert k == 1 and segs == [(1,5)]
+    if not sys.stdin.isatty():
+        solve_all()
+\end{minted}
+\VALIDATION{Checked on tiny equal/near-equal strings and full reverse. Edge impossible case e.g., $s=\texttt{ab}$, $t=\texttt{aa}$ returns $-1$.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Global Greedy via Maximal Mirror-Equal Segments}
+\WHICHFORMULA{A valid interval $[l,r]$ iff $s[l..r]=\operatorname{rev}(t[l..r])$. Scanning left-to-right, start intervals at the leftmost mismatch and choose the longest $r$ for which this holds.}
+\ASSUMPTIONS{An interval selected at the leftmost mismatch cannot overlap any interval starting later; taking it as long as possible minimizes the number of intervals.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item If $s=t$, return $0$.
+\item Pre-check multisets: if the character counts differ, return $-1$ (necessary condition).
+\item Let $i=1$. While $i\le n$:
+  \begin{bullets}
+  \item If $s_i=t_i$, increment $i$.
+  \item Else find the largest $r\ge i$ such that $s[i..r]=\operatorname{rev}(t[i..r])$; output $[i,r]$ and set $i=r+1$.
+  \end{bullets}
+\item Verify by applying all reversals to $t$ and comparing to $s$. If mismatch occurs, return $-1$.
+\end{algosteps}
+\OPTIMALITY{At the leftmost mismatch, any solution must begin an interval at $i$. Among all feasible ends, extending to the maximal $r$ strictly contains any shorter feasible end and never increases the number of intervals, as it can only absorb positions that would otherwise require their own intervals. Thus the greedy produces a minimal cover.}
+\COMPLEXITY{With naive validation, worst-case $O(n^2)$ time and $O(1)$ extra space; with advanced string data structures (e.g., rolling hashes or a specialized palindromic structure over the pair sequence), one can compute maximal ends in near-linear time.}
+\[
+\begin{aligned}
+T(n) &= O(n^2)\ \text{(naive mirror checks)},\quad S(n)=O(1).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+from collections import Counter
+
+def read_input() -> Tuple[str, str]:
+    data = sys.stdin.read().strip().splitlines()
+    if not data:
+        return "", ""
+    s = data[0].strip()
+    t = data[1].strip() if len(data) > 1 else ""
+    return s, t
+
+def segment_matches(s: str, t: str, l: int, r: int) -> bool:
+    # 0-based inclusive l..r: s[l..r] == reverse(t[l..r]) and symmetrically s[r]==t[l]
+    i, j = l, r
+    while i <= j:
+        if s[i] != t[j]: return False
+        if s[j] != t[i]: return False
+        i += 1; j -= 1
+    return True
+
+def apply_segments(t: str, segs: List[Tuple[int, int]]) -> str:
+    arr = list(t)
+    for l, r in segs:
+        i, j = l-1, r-1
+        while i < j:
+            arr[i], arr[j] = arr[j], arr[i]
+            i += 1; j -= 1
+    return "".join(arr)
+
+def solve_case(s: str, t: str) -> Tuple[int, List[Tuple[int, int]]]:
+    n = len(s)
+    if n != len(t):
+        return -1, []
+    if s == t:
+        return 0, []
+    if Counter(s) != Counter(t):
+        return -1, []
+    segs: List[Tuple[int, int]] = []
+    i = 0
+    while i < n:
+        if s[i] == t[i]:
+            i += 1
+            continue
+        # Find farthest feasible r
+        found = False
+        r = n - 1
+        while r >= i:
+            if t[r] == s[i] and segment_matches(s, t, i, r):
+                segs.append((i+1, r+1))
+                i = r + 1
+                found = True
+                break
+            r -= 1
+        if not found:
+            return -1, []
+    # Final verification
+    if apply_segments(t, segs) != s:
+        return -1, []
+    return len(segs), segs
+
+def solve_all() -> None:
+    s, t = read_input()
+    if s == "" and t == "":
+        return
+    k, segs = solve_case(s, t)
+    if k < 0:
+        print(-1)
+        return
+    print(k)
+    for l, r in segs:
+        print(l, r)
+
+if __name__ == "__main__":
+    # Exactly 3 asserts
+    assert solve_case("abc", "abc")[0] == 0
+    assert solve_case("abc", "acb")[1] == [(2,3)]
+    assert solve_case("edcba", "abcde")[1] == [(1,5)]
+    if not sys.stdin.isatty():
+        solve_all()
+\end{minted}
+\VALIDATION{Asserts: equal strings, a single small swapable segment, and a full reversal case. For any produced answer, a final verification step re-applies the segments and checks equality with $s$.}
+\RESULT{The algorithm outputs $k$ disjoint intervals $[l_i,r_i]$ (1-indexed) such that reversing them in $t$ yields $s$. If no such set exists, it prints $-1$. Any valid set with minimal $k$ is acceptable.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit-test interval validity; test identity, single-interval, multiple-interval, and impossible cases; verify re-application reproduces $s$.}
+\LINE{CROSS-CHECKS}{Compare the DFS baseline (for $n\le 18$) against the greedy on random tiny instances; ensure both yield the same $k$ and segments after normalization.}
+\LINE{EDGE-CASE GENERATOR}{Generate random strings with small $n$, insert random disjoint reversed intervals, and verify recovery.}
+\begin{minted}{python}
+import random
+from typing import List, Tuple
+
+def gen_instance(n: int, k: int) -> Tuple[str, str, List[Tuple[int,int]]]:
+    s = ''.join(random.choice('abc') for _ in range(n))
+    segs = []
+    used = [False]*n
+    t = list(s)
+    # pick k disjoint intervals
+    positions = list(range(n))
+    positions.sort()
+    i = 0
+    while k > 0 and i < n:
+        l = random.randint(i, n-1)
+        r = random.randint(l, n-1)
+        # ensure disjointness
+        if any(used[x] for x in range(l, r+1)):
+            i += 1
+            continue
+        for x in range(l, r+1):
+            used[x] = True
+        t[l:r+1] = list(reversed(t[l:r+1]))
+        segs.append((l+1, r+1))
+        k -= 1
+        i = r + 1
+    t = ''.join(t)
+    return s, t, segs
+
+def reference_solve(s: str, t: str) -> Tuple[int, List[Tuple[int, int]]]:
+    # Use the final greedy
+    from collections import Counter
+    if len(s) != len(t) or Counter(s) != Counter(t):
+        return -1, []
+    n = len(s)
+    def segment_matches(s: str, t: str, l: int, r: int) -> bool:
+        i, j = l, r
+        while i <= j:
+            if s[i] != t[j]: return False
+            if s[j] != t[i]: return False
+            i += 1; j -= 1
+        return True
+    def apply_segments(t: str, segs: List[Tuple[int, int]]) -> str:
+        arr = list(t)
+        for l, r in segs:
+            i, j = l-1, r-1
+            while i < j:
+                arr[i], arr[j] = arr[j], arr[i]
+                i += 1; j -= 1
+        return "".join(arr)
+    segs: List[Tuple[int,int]] = []
+    i = 0
+    while i < n:
+        if s[i] == t[i]:
+            i += 1
+            continue
+        r = n-1
+        found = False
+        while r >= i:
+            if t[r] == s[i] and segment_matches(s, t, i, r):
+                segs.append((i+1, r+1))
+                i = r+1
+                found = True
+                break
+            r -= 1
+        if not found:
+            return -1, []
+    if apply_segments(t, segs) != s:
+        return -1, []
+    return len(segs), segs
+
+# quick randomized sanity (small n)
+random.seed(0)
+for n in range(1, 8):
+    for _ in range(30):
+        s, t, _ = gen_instance(n, random.randint(0, 2))
+        k, segs = reference_solve(s, t)
+        if k >= 0:
+            tt = t
+            # apply and verify
+            arr = list(tt)
+            for l, r in segs:
+                i, j = l-1, r-1
+                while i < j:
+                    arr[i], arr[j] = arr[j], arr[i]
+                    i += 1; j -= 1
+            assert ''.join(arr) == s
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Final reference solution using greedy farthest-feasible interval selection.
+import sys
+from typing import List, Tuple
+from collections import Counter
+
+def read_input() -> Tuple[str, str]:
+    data = sys.stdin.read().strip().splitlines()
+    if not data:
+        return "", ""
+    s = data[0].strip()
+    t = data[1].strip() if len(data) > 1 else ""
+    return s, t
+
+def segment_matches(s: str, t: str, l: int, r: int) -> bool:
+    i, j = l, r
+    while i <= j:
+        if s[i] != t[j]: return False
+        if s[j] != t[i]: return False
+        i += 1; j -= 1
+    return True
+
+def apply_segments(t: str, segs: List[Tuple[int, int]]) -> str:
+    arr = list(t)
+    for l, r in segs:
+        i, j = l-1, r-1
+        while i < j:
+            arr[i], arr[j] = arr[j], arr[i]
+            i += 1; j -= 1
+    return "".join(arr)
+
+def solve_case(s: str, t: str) -> Tuple[int, List[Tuple[int, int]]]:
+    n = len(s)
+    if n != len(t):
+        return -1, []
+    if s == t:
+        return 0, []
+    if Counter(s) != Counter(t):
+        return -1, []
+    segs: List[Tuple[int, int]] = []
+    i = 0
+    while i < n:
+        if s[i] == t[i]:
+            i += 1
+            continue
+        found = False
+        r = n - 1
+        while r >= i:
+            if t[r] == s[i] and segment_matches(s, t, i, r):
+                segs.append((i+1, r+1))
+                i = r + 1
+                found = True
+                break
+            r -= 1
+        if not found:
+            return -1, []
+    if apply_segments(t, segs) != s:
+        return -1, []
+    return len(segs), segs
+
+def solve_all() -> None:
+    s, t = read_input()
+    if s == "" and t == "":
+        return
+    k, segs = solve_case(s, t)
+    if k < 0:
+        print(-1)
+        return
+    print(k)
+    for l, r in segs:
+        print(l, r)
+
+if __name__ == "__main__":
+    # Deterministic asserts
+    assert solve_case("abc", "abc")[0] == 0
+    assert solve_case("abc", "acb")[1] == [(2,3)]
+    assert solve_case("edcba", "abcde")[1] == [(1,5)]
+    if not sys.stdin.isatty():
+        solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Reverse $k$ disjoint substrings of $t$ so that the result equals $s$, minimizing $k$. A valid interval must satisfy $s[l..r]=\operatorname{rev}(t[l..r])$.}
+\WHY{This tests interval reasoning, involutions, and string equality under reversal — a nontrivial alignment constraint.}
+\CHECKLIST{
+- Check multiset equality of $s$ and $t$ (necessary).
+- Scan for leftmost mismatch.
+- Validate candidate $[l,r]$ via mirrored comparisons.
+- Prefer the farthest feasible $r$ to reduce $k$.
+- Verify by re-applying intervals to $t$ at the end.
+}
+\EDGECASES{
+- $s=t$ (answer $0$).
+- Full reversal of the whole string.
+- Multiple segments with equal middle characters.
+- Adjacent intervals.
+- Single-character intervals (never needed).
+- Impossible cases where no mirrored interval can start at a mismatch.
+- Highly repetitive strings (watch performance).
+- Alternating characters producing many mismatches.
+}
+\PITFALLS{
+- Off-by-one on indices (1-based output vs 0-based code).
+- Forgetting to check both mirrored directions inside an interval.
+- Allowing overlapping intervals.
+- Printing length-1 intervals unnecessarily.
+- Not verifying the final transformed string equals $s$.
+- Assuming monotonicity of feasible lengths in $r$ (it does not hold).
+- Skipping the necessary multiset check leading to wasted search.
+- Excessive recursion depth without caps on brute force.
+}
+\FAILMODES{Naive per-position binary searches on length fail because feasibility is not prefix-closed in length. Hash-based LCPs must align carefully; misalignment leads to false positives. Greedy that takes the nearest end may yield suboptimal $k$.}
+\ELI{Within each chosen interval, $s$ must be exactly $t$ read backwards. Start at the first mismatch, grab the longest block that mirrors correctly, and repeat. If at some mismatch no such block exists, it is impossible.}
+\NotePages{3}
+
+\end{document}

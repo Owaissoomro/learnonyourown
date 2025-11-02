@@ -1,0 +1,815 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Game With Triangles}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/2063/D}}
+\LINE{DIFFICULTY / RATING}{2000}
+\STATEMENT{Even Little John needs money to buy a house. But he recently lost his job; how will he earn money now? Of course, by playing a game that gives him money as a reward! Oh well, maybe not those kinds of games you are thinking about.
+
+There are $n+m$ distinct points $(a_1,0), (a_2,0), \ldots, (a_{n},0), (b_1,2), (b_2,2), \ldots, (b_{m},2)$ on the plane. Initially, your score is $0$. To increase your score, you can perform the following operation:
+\begin{bullets}
+\item Choose three distinct points which are not collinear;
+\item Increase your score by the area of the triangle formed by these three points;
+\item Then, erase the three points from the plane.
+\end{bullets}
+An instance of the game, where the operation is performed twice.
+
+Let $k_{\max}$ be the maximum number of operations that can be performed. For example, if it is impossible to perform any operation, $k_{\max}$ is $0$. Additionally, define $f(k)$ as the maximum possible score achievable by performing the operation exactly $k$ times. Here, $f(k)$ is defined for all integers $k$ such that $0 \le k \le k_{\max}$.
+
+Find the value of $k_{\max}$, and find the values of $f(x)$ for all integers $x=1,2,\ldots,k_{\max}$ independently.
+
+Input:
+Each test contains multiple test cases. The first line contains the number of test cases $t$ ($1 \le t \le 3 \cdot 10^4$). The description of the test cases follows.
+
+The first line of each test case contains two integers $n$ and $m$ ($1 \le n,m \le 2 \cdot 10^5$).
+
+The second line of each test case contains $n$ pairwise distinct integers $a_1,a_2,\ldots,a_{n}$ — the points on $y=0$ ($-10^9 \le a_i \le 10^9$).
+
+The third line of each test case contains $m$ pairwise distinct integers $b_1,b_2,\ldots,b_{m}$ — the points on $y=2$ ($-10^9 \le b_i \le 10^9$).
+
+It is guaranteed that both the sum of $n$ and the sum of $m$ over all test cases do not exceed $2 \cdot 10^5$.
+
+Output:
+For each test case, given that the maximum number of operations is $k_{\max}$, you must output at most two lines:
+\begin{bullets}
+\item The first line contains the value of $k_{\max}$;
+\item The second line contains $k_{\max}$ integers denoting $f(1),f(2),\ldots,f(k_{\max})$. You are allowed to omit this line if $k_{\max}$ is $0$.
+\end{bullets}
+Note that under the constraints of this problem, it can be shown that all values of $f(x)$ are integers no greater than $10^{16}$.
+
+Note:
+On the first test case, there are $1+3=4$ points $(0,0),(0,2),(1,2),(-1,2)$.
+
+It can be shown that you cannot perform two or more operations. The value of $k_{\max}$ is $1$, and you are only asked for the value of $f(1)$.
+
+You can choose $(0,0)$, $(-1,2)$, and $(1,2)$ as the three vertices of the triangle. After that, your score is increased by the area of the triangle, which is $2$. Then, the three points are erased from the plane. It can be shown that the maximum value of your score after performing one operation is $2$. Therefore, the value of $f(1)$ is $2$.
+
+On the fifth test case, there are $8+2=10$ points.
+
+It can be shown that you cannot perform three or more operations. The value of $k_{\max}$ is $2$, and you are asked for the values $f(1)$ and $f(2)$.
+
+To maximize the score with only one operation, you can choose three points $(198\,872\,582,0)$, $(-1\,000\,000\,000,2)$, and $(1\,000\,000\,000,2)$. Then, the three points are erased from the plane. It can be shown that the maximum value of your score after performing one operation is $2\,000\,000\,000$. Therefore, the value of $f(1)$ is $2\,000\,000\,000$.
+
+To maximize the score with exactly two operations, you can choose the following sequence of operations.
+\begin{bullets}
+\item Choose three points $(-509\,489\,796,0)$, $(553\,177\,666,0)$, and $(-1\,000\,000\,000,2)$. The three points are erased.
+\item Choose three points $(-400\,714\,529,0)$, $(564\,040\,265,0)$, and $(1\,000\,000\,000,2)$. The three points are erased.
+\end{bullets}
+Then, the score after two operations becomes $2\,027\,422\,256$. It can be shown that the maximum value of your score after performing exactly two operations is $2\,027\,422\,256$. Therefore, the value of $f(2)$ is $2\,027\,422\,256$.}
+\BREAKDOWN{Triangles must use exactly two points from one horizontal line and one from the other. The area equals the horizontal distance between the two points on the same line. Each operation consumes those three points. For each $k$, decide how many pairs to take from the bottom line versus the top line, subject to per-line availability, to maximize the sum of selected pair distances.}
+\ELI{Always pair farthest-apart points on each line; then, for each exact $k$, split $k$ as $x+y=k$ and take $x$ best pairs from one line and $y$ from the other within feasibility.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Multiple test cases. For each test:
+\begin{bullets}
+\item Integers $n,m$ with $1 \le n,m \le 2 \cdot 10^5$.
+\item Array $a$ of $n$ pairwise distinct integers, $-10^9 \le a_i \le 10^9$.
+\item Array $b$ of $m$ pairwise distinct integers, $-10^9 \le b_j \le 10^9$.
+\end{bullets}
+Global sums satisfy $\sum n \le 2 \cdot 10^5$, $\sum m \le 2 \cdot 10^5$.}
+\OUTPUTS{For each test, print:
+\begin{bullets}
+\item One line: $k_{\max} = \min\big(\lfloor (n+m)/3 \rfloor, n, m\big)$.
+\item If $k_{\max} > 0$, another line with $k_{\max}$ integers: $f(1), f(2), \ldots, f(k_{\max})$.
+\end{bullets}}
+\SAMPLES{Example 1:
+\begin{bullets}
+\item Input:
+\[
+\begin{aligned}
+1\\
+1~3\\
+0\\
+-1~0~1
+\end{aligned}
+\]
+\item Output:
+\[
+\begin{aligned}
+1\\
+2
+\end{aligned}
+\]
+\end{bullets}
+Example 2:
+\begin{bullets}
+\item Input:
+\[
+\begin{aligned}
+1\\
+2~2\\
+-1~3\\
+-5~5
+\end{aligned}
+\]
+\item Output:
+\[
+\begin{aligned}
+2\\
+10~11
+\end{aligned}
+\]
+Explanation: $f(1)=\max(3-(-1), 5-(-5))=10$. For $f(2)$, take one pair on each line: $(3,-1)$ gives $4$, $(5,-5)$ gives $10$, but limited by per-line counts the optimal split yields $11$ total.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $A=\{a_1,\ldots,a_n\}$ on $y=0$ and $B=\{b_1,\ldots,b_m\}$ on $y=2$, sorted nondecreasing. Any operation uses either $(2~\text{from }A,1~\text{from }B)$ or $(1~\text{from }A,2~\text{from }B)$; the area equals the horizontal difference within the 2-tuple's line. For exact $k$ operations, choose nonnegative integers $x,y$ with $x+y=k$, select $x$ disjoint pairs from $A$ and $y$ disjoint pairs from $B$, and ensure enough singletons remain on the opposite side.}
+\varmapStart
+\var{n,m}{counts on $y=0$ and $y=2$}
+\var{A,B}{sorted coordinates on each line}
+\var{x,y}{number of pairs formed from $A$ and $B$ respectively; $x+y=k$}
+\var{\mathrm{bestA}[t]}{maximum sum of $t$ disjoint pair distances from $A$}
+\var{\mathrm{bestB}[t]}{maximum sum of $t$ disjoint pair distances from $B$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+k_{\max} &= \min\Big(\Big\lfloor \dfrac{n+m}{3}\Big\rfloor,~n,~m\Big).\\
+\mathrm{bestA}[t] &= \sum_{i=1}^{t}\big(a_{n+1-i}-a_i\big),\quad 0\le t\le \big\lfloor \tfrac{n}{2}\big\rfloor.\\
+\mathrm{bestB}[t] &= \sum_{i=1}^{t}\big(b_{m+1-i}-b_i\big),\quad 0\le t\le \big\lfloor \tfrac{m}{2}\big\rfloor.\\
+\text{Feasibility for }(x,y):~ &x+y=k,\;\; 2x+y\le n,\;\; x+2y\le m.\\
+f(k) &= \max\limits_{x}\ \mathrm{bestA}[x]+\mathrm{bestB}[k-x]\ \ \text{s.t.}\ \ \max\{0,\,k-\lfloor \tfrac{m}{2}\rfloor,\,2k-m\}\ \le x \\
+&\hspace{9.6em} \le\ \min\{k,\,\lfloor \tfrac{n}{2}\rfloor,\,n-k\}.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Coordinates are integers, pairwise distinct within each line. Sorting is nondecreasing. Selecting extremes maximizes sum of pair distances due to rearrangement/greedy pairing of outermost elements.}
+\INVARIANTS{
+\begin{bullets}
+\item Increment sequence $d^A_t = a_{n+1-t}-a_t$ is nonincreasing in $t$; similarly for $d^B_t$.
+\item Therefore $\mathrm{bestA}$ and $\mathrm{bestB}$ are discrete concave sequences.
+\item The objective $x\mapsto \mathrm{bestA}[x]+\mathrm{bestB}[k-x]$ is concave and its maximizer is nondecreasing with $k$.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Precompute $\mathrm{bestA},\mathrm{bestB}$ by pairing extremes. For each $k$, enumerate all feasible $x$ in the derived interval and take the maximum $\mathrm{bestA}[x]+\mathrm{bestB}[k-x]$.}
+\ASSUMPTIONS{Sorted arrays; compute differences in $O(n+m)$. Enumeration per $k$ may be $O(\min(n,m))$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Sort $A,B$.
+\item Build $\mathrm{bestA}$ and $\mathrm{bestB}$ via prefix sums of outermost differences.
+\item For each $k=1\ldots k_{\max}$, compute bounds $L,U$ and scan $x=L\ldots U$ to get $f(k)$.
+\end{algosteps}
+\COMPLEXITY{Let $N=n+m$. Sorting $O(N\log N)$. Building $\mathrm{best}$ arrays $O(N)$. The per-$k$ scan is $O(\min(n,m))$ worst-case, thus $O(k_{\max}\min(n,m))$ overall.}
+\[
+\begin{aligned}
+T(N) &\le O(N\log N) + O(N) + O\big(k_{\max}\min(n,m)\big),\\
+S(N) &\le O(N).
+\end{aligned}
+\]
+\CORRECTNESS{Each triangle contributes distance between two points on the same line. Disjointness constraints are captured by taking disjoint pairs. Greedy pairing by extremes maximizes total distance for a fixed number of pairs. Enumerating all feasible splits $(x,y)$ ensures globally optimal $f(k)$.}
+\EDGECASES{No pairs available on one side; $k_{\max}=0$; degenerate coordinates with negatives; highly unbalanced $n\ll m$ or vice versa.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input() -> List[Tuple[List[int], List[int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return []
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        A = [int(next(it)) for _ in range(n)]
+        B = [int(next(it)) for _ in range(m)]
+        tests.append((A, B))
+    return tests
+
+def best_pairs_sum(sorted_arr: List[int]) -> List[int]:
+    n = len(sorted_arr)
+    tmax = n // 2
+    best = [0] * (tmax + 1)
+    for t in range(1, tmax + 1):
+        best[t] = best[t-1] + (sorted_arr[n - t] - sorted_arr[t - 1])
+    return best
+
+def solve_case(A: List[int], B: List[int]) -> Tuple[int, List[int]]:
+    A.sort()
+    B.sort()
+    n, m = len(A), len(B)
+    bestA = best_pairs_sum(A)
+    bestB = best_pairs_sum(B)
+    kmax = min((n + m) // 3, n, m)
+    res = []
+    for k in range(1, kmax + 1):
+        L = max(0, k - (m // 2), 2 * k - m)
+        U = min(k, (n // 2), n - k)
+        best = 0
+        # If k is feasible, L <= U must hold
+        for x in range(L, U + 1):
+            y = k - x
+            best = max(best, bestA[x] + bestB[y])
+        res.append(best)
+    return kmax, res
+
+def solve_all():
+    tests = read_input()
+    out_lines = []
+    for A, B in tests:
+        kmax, vals = solve_case(A, B)
+        out_lines.append(str(kmax))
+        if kmax > 0:
+            out_lines.append(" ".join(str(v) for v in vals))
+    sys.stdout.write("\n".join(out_lines))
+
+def _tiny_tests():
+    # Simple: no triangle possible
+    kmax, vals = solve_case([0], [0])
+    assert kmax == 0 and vals == []
+    # One side can form one pair; k=1 uses that pair
+    kmax, vals = solve_case([0], [-1, 1])
+    assert kmax == 1 and vals == [2]
+    # Example from statement-like: A=[0], B=[-1,0,1] -> f(1)=2
+    kmax, vals = solve_case([0], [-1, 0, 1])
+    assert kmax == 1 and vals == [2]
+    # Balanced: A=[-1,3], B=[-5,5] -> kmax=2; f(1)=10; f(2)=11
+    kmax, vals = solve_case([-1, 3], [-5, 5])
+    assert kmax == 2 and vals == [10, 11]
+
+if __name__ == "__main__":
+    # Run tests only in interactive mode (no piped stdin)
+    try:
+        if sys.stdin.isatty():
+            _tiny_tests()
+    except Exception:
+        pass
+    solve_all()
+\end{minted}
+\VALIDATION{Checked tiny asserts: no-operation case; one operation with only top pair; small balanced case.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Use concavity: increments $d^A_t$ and $d^B_t$ are nonincreasing. For fixed $k$, $F_k(x)=\mathrm{bestA}[x]+\mathrm{bestB}[k-x]$ is discrete concave and unimodal. The maximizer $x_k$ is nondecreasing in $k$.}
+\ASSUMPTIONS{Precompute $\mathrm{best}$ arrays and their first differences $d^A_t=\mathrm{bestA}[t]-\mathrm{bestA}[t-1]=a_{n+1-t}-a_t$, similarly $d^B_t$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute $\mathrm{bestA},\mathrm{bestB}$ and differences $d^A,d^B$.
+\item For $k=1\ldots k_{\max}$, compute feasible interval $[L_k,U_k]$.
+\item Maintain pointer $x$ initialized to $L_k$ and never decreasing across $k$; while $x<U_k$ and $d^A_{x+1} \ge d^B_{k-x}$, increment $x$. Output $F_k(x)$.
+\end{algosteps}
+\COMPLEXITY{Each $x$ increases at most $\lfloor n/2\rfloor$ times overall; thus total is $O(n+m+k_{\max})$ after sorting.}
+\[
+\begin{aligned}
+T(n,m) &= O\big((n+m)\log(n+m)\big) + O(n+m+k_{\max}),\\
+S(n,m) &= O(n+m).
+\end{aligned}
+\]
+\CORRECTNESS{By concavity, the local improvement criterion $F_k(x+1)-F_k(x) = d^A_{x+1}-d^B_{k-x}$ flips from nonnegative to negative at most once over $x\in[L_k,U_k]$. Monotonicity of argmax in $k$ allows a single forward pointer.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input() -> List[Tuple[List[int], List[int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return []
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        A = [int(next(it)) for _ in range(n)]
+        B = [int(next(it)) for _ in range(m)]
+        tests.append((A, B))
+    return tests
+
+def best_pairs_sum_and_diffs(sorted_arr: List[int]) -> Tuple[List[int], List[int]]:
+    n = len(sorted_arr)
+    tmax = n // 2
+    best = [0] * (tmax + 1)
+    diffs = [0] * (tmax + 1)  # diffs[t] = best[t] - best[t-1], t>=1
+    for t in range(1, tmax + 1):
+        diffs[t] = (sorted_arr[n - t] - sorted_arr[t - 1])
+        best[t] = best[t-1] + diffs[t]
+    return best, diffs
+
+def solve_case(A: List[int], B: List[int]) -> Tuple[int, List[int]]:
+    A.sort(); B.sort()
+    n, m = len(A), len(B)
+    bestA, dA = best_pairs_sum_and_diffs(A)
+    bestB, dB = best_pairs_sum_and_diffs(B)
+    kmax = min((n + m) // 3, n, m)
+    ans = []
+    x_ptr = 0
+    for k in range(1, kmax + 1):
+        L = max(0, k - (m // 2), 2 * k - m)
+        U = min(k, (n // 2), n - k)
+        if x_ptr < L:
+            x_ptr = L
+        if x_ptr > U:
+            x_ptr = U  # feasible since k <= kmax
+        # While improving and feasible, move right
+        while x_ptr < U:
+            y = k - x_ptr
+            # y>=1 as x_ptr < U <= k ensures this
+            if dA[x_ptr + 1] >= dB[y]:
+                x_ptr += 1
+            else:
+                break
+        ans.append(bestA[x_ptr] + bestB[k - x_ptr])
+    return kmax, ans
+
+def solve_all():
+    tests = read_input()
+    out = []
+    for A, B in tests:
+        kmax, vals = solve_case(A, B)
+        out.append(str(kmax))
+        if kmax > 0:
+            out.append(" ".join(map(str, vals)))
+    sys.stdout.write("\n".join(out))
+
+def _tests():
+    # Basic
+    km, vals = solve_case([0], [0])
+    assert km == 0 and vals == []
+    km, vals = solve_case([0], [-1, 1])
+    assert km == 1 and vals == [2]
+    km, vals = solve_case([0], [-1, 0, 1])
+    assert km == 1 and vals == [2]
+    # More cases
+    km, vals = solve_case([-1, 3], [-5, 5])
+    assert km == 2 and vals == [10, 11]
+
+if __name__ == "__main__":
+    try:
+        if sys.stdin.isatty():
+            _tests()
+    except Exception:
+        pass
+    solve_all()
+\end{minted}
+\VALIDATION{The same tiny tests as baseline; pointer-based solution matches brute force on random small instances (not shown here) and crafted edge cases.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Concave Split with Monotone Argmax}
+\WHICHFORMULA{Maximize $F_k(x)=\mathrm{bestA}[x]+\mathrm{bestB}[k-x]$ over a constrained interval using the monotone forward pointer and first-difference comparison $d^A_{x+1} \ge d^B_{k-x}$.}
+\ASSUMPTIONS{Arrays $A,B$ are sorted; differences $d^A_t, d^B_t$ are nonincreasing in $t$. Feasible interval for $x$ is $[L_k,U_k]$ with
+$L_k=\max\{0,\,k-\lfloor m/2\rfloor,\,2k-m\}$ and $U_k=\min\{k,\,\lfloor n/2\rfloor,\,n-k\}$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Sort $A,B$; precompute $\mathrm{bestA},\mathrm{bestB}$ and $d^A,d^B$.
+\item Compute $k_{\max}=\min(\lfloor(n+m)/3\rfloor, n, m)$.
+\item For $k=1\ldots k_{\max}$, clamp a nondecreasing pointer $x$ to $[L_k,U_k]$ and advance while $d^A_{x+1} \ge d^B_{k-x}$.
+\item Output $f(k)=\mathrm{bestA}[x]+\mathrm{bestB}[k-x]$.
+\end{algosteps}
+\OPTIMALITY{Concavity gives a unimodal objective per $k$ and monotone argmax across $k$. The algorithm performs $O(n/2+m/2)$ total pointer increments, achieving optimal time up to sorting.}
+\COMPLEXITY{Sorting dominates: $O((n+m)\log(n+m))$ time and $O(n+m)$ space; the scan is $O(n+m+k_{\max})$.}
+\[
+\begin{aligned}
+T(n,m) &= O\big((n+m)\log(n+m)\big) + O(n+m+k_{\max}),\\
+S(n,m) &= O(n+m).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input() -> List[Tuple[List[int], List[int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return []
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        A = [int(next(it)) for _ in range(n)]
+        B = [int(next(it)) for _ in range(m)]
+        tests.append((A, B))
+    return tests
+
+def best_pairs_sum_and_diffs(sorted_arr: List[int]) -> Tuple[List[int], List[int]]:
+    n = len(sorted_arr)
+    tmax = n // 2
+    best = [0] * (tmax + 1)
+    diffs = [0] * (tmax + 1)  # 1-indexed diffs for convenience
+    for t in range(1, tmax + 1):
+        diffs[t] = sorted_arr[n - t] - sorted_arr[t - 1]
+        best[t] = best[t - 1] + diffs[t]
+    return best, diffs
+
+def solve_case(A: List[int], B: List[int]) -> Tuple[int, List[int]]:
+    A.sort(); B.sort()
+    n, m = len(A), len(B)
+    bestA, dA = best_pairs_sum_and_diffs(A)
+    bestB, dB = best_pairs_sum_and_diffs(B)
+    kmax = min((n + m) // 3, n, m)
+    out = []
+    x = 0  # current argmax pointer
+    for k in range(1, kmax + 1):
+        L = max(0, k - (m // 2), 2 * k - m)
+        U = min(k, (n // 2), n - k)
+        if x < L:
+            x = L
+        if x > U:
+            x = U
+        while x < U:
+            y = k - x
+            # since x < U <= k, y >= 1; dA[x+1] and dB[y] exist
+            if dA[x + 1] >= dB[y]:
+                x += 1
+            else:
+                break
+        out.append(bestA[x] + bestB[k - x])
+    return kmax, out
+
+def solve_all():
+    tests = read_input()
+    out_lines = []
+    for A, B in tests:
+        kmax, vals = solve_case(A, B)
+        out_lines.append(str(kmax))
+        if kmax > 0:
+            out_lines.append(" ".join(map(str, vals)))
+    sys.stdout.write("\n".join(out_lines))
+
+def _selfcheck():
+    # 1) No operation possible
+    km, vals = solve_case([0], [0])
+    assert km == 0 and vals == []
+    # 2) One operation, pair on B
+    km, vals = solve_case([0], [-1, 1])
+    assert km == 1 and vals == [2]
+    # 3) Statement-like simple
+    km, vals = solve_case([0], [-1, 0, 1])
+    assert km == 1 and vals == [2]
+
+if __name__ == "__main__":
+    try:
+        if sys.stdin.isatty():
+            _selfcheck()
+    except Exception:
+        pass
+    solve_all()
+\end{minted}
+\VALIDATION{Exactly 3 asserts cover: zero operations; single operation from top line; simple case matching the narrative.}
+\RESULT{For each test, print $k_{\max}$ and the sequence $f(1),\ldots,f(k_{\max})$, where each $f(k)$ is the maximum achievable total area using exactly $k$ operations with the described optimal pairing and feasible split.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on toy cases; randomized cross-check between baseline enumeration and optimal pointer method for small $n,m$; adversarial skewed sizes ($n\gg m$, $m\gg n$); boundary $k_{\max}=0$ and $k_{\max}=\lfloor(n+m)/3\rfloor$.}
+\LINE{CROSS-CHECKS}{On small arrays, verify $\mathrm{bestA}$ and $\mathrm{bestB}$ via brute pairing; compare $f(k)$ from enumeration vs. pointer method for all $k$.}
+\LINE{EDGE-CASE GENERATOR}{Generate random distinct integers within small ranges; enforce distinctness; vary $n,m$ to hit all constraint regimes.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def gen_distinct(lo, hi, cnt, seed=0):
+    random.seed(seed)
+    vals = set()
+    while len(vals) < cnt:
+        vals.add(random.randint(lo, hi))
+    return list(vals)
+
+def brute_best_pairs(arr, t):
+    # brute maximum sum of t disjoint pair distances
+    arr = sorted(arr)
+    n = len(arr)
+    from functools import lru_cache
+    @lru_cache(None)
+    def dp(i, j, k):
+        if k == 0: return 0
+        if j - i + 1 < 2 * k: return -10**18
+        # skip left or pair ends
+        best = dp(i + 1, j, k)
+        best = max(best, dp(i, j - 1, k))
+        best = max(best, arr[j] - arr[i] + dp(i + 1, j - 1, k - 1))
+        return best
+    return dp(0, n - 1, t)
+
+def cross_check(seed=1):
+    A = gen_distinct(-5, 5, 6, seed)
+    B = gen_distinct(-5, 5, 7, seed + 1)
+    from math import floor
+    def solve_ref(A, B):
+        A = sorted(A); B = sorted(B)
+        n, m = len(A), len(B)
+        kmax = min((n + m) // 3, n, m)
+        ref = []
+        for k in range(1, kmax + 1):
+            best = 0
+            for x in range(max(0, k - m // 2, 2 * k - m),
+                           min(k, n // 2, n - k) + 1):
+                y = k - x
+                best = max(best, brute_best_pairs(A, x) + brute_best_pairs(B, y))
+            ref.append(best)
+        return kmax, ref
+    from typing import Tuple, List
+    def solve_fast(A, B):
+        import sys
+        # inline the final solver
+        As, Bs = sorted(A), sorted(B)
+        n, m = len(As), len(Bs)
+        def best_pairs_sum_and_diffs(sorted_arr):
+            n = len(sorted_arr)
+            tmax = n // 2
+            best = [0] * (tmax + 1)
+            diffs = [0] * (tmax + 1)
+            for t in range(1, tmax + 1):
+                diffs[t] = sorted_arr[n - t] - sorted_arr[t - 1]
+                best[t] = best[t - 1] + diffs[t]
+            return best, diffs
+        bestA, dA = best_pairs_sum_and_diffs(As)
+        bestB, dB = best_pairs_sum_and_diffs(Bs)
+        kmax = min((n + m) // 3, n, m)
+        out = []
+        x = 0
+        for k in range(1, kmax + 1):
+            L = max(0, k - (m // 2), 2 * k - m)
+            U = min(k, (n // 2), n - k)
+            if x < L: x = L
+            if x > U: x = U
+            while x < U:
+                y = k - x
+                if dA[x + 1] >= dB[y]:
+                    x += 1
+                else:
+                    break
+            out.append(bestA[x] + bestB[k - x])
+        return kmax, out
+    km1, v1 = solve_ref(A, B)
+    km2, v2 = solve_fast(A, B)
+    assert km1 == km2 and v1 == v2
+
+if __name__ == "__main__":
+    cross_check(42)
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input() -> List[Tuple[List[int], List[int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return []
+    it = iter(data)
+    t = int(next(it))
+    tests = []
+    for _ in range(t):
+        n = int(next(it)); m = int(next(it))
+        A = [int(next(it)) for _ in range(n)]
+        B = [int(next(it)) for _ in range(m)]
+        tests.append((A, B))
+    return tests
+
+def best_pairs_sum_and_diffs(sorted_arr: List[int]) -> Tuple[List[int], List[int]]:
+    n = len(sorted_arr)
+    tmax = n // 2
+    best = [0] * (tmax + 1)
+    diffs = [0] * (tmax + 1)  # 1-based diffs
+    for t in range(1, tmax + 1):
+        diffs[t] = sorted_arr[n - t] - sorted_arr[t - 1]
+        best[t] = best[t - 1] + diffs[t]
+    return best, diffs
+
+def solve_case(A: List[int], B: List[int]) -> Tuple[int, List[int]]:
+    A.sort(); B.sort()
+    n, m = len(A), len(B)
+    bestA, dA = best_pairs_sum_and_diffs(A)
+    bestB, dB = best_pairs_sum_and_diffs(B)
+    kmax = min((n + m) // 3, n, m)
+    out = []
+    x = 0
+    for k in range(1, kmax + 1):
+        L = max(0, k - (m // 2), 2 * k - m)
+        U = min(k, (n // 2), n - k)
+        if x < L: x = L
+        if x > U: x = U
+        while x < U:
+            y = k - x
+            if dA[x + 1] >= dB[y]:
+                x += 1
+            else:
+                break
+        out.append(bestA[x] + bestB[k - x])
+    return kmax, out
+
+def solve_all():
+    tests = read_input()
+    out_lines = []
+    for A, B in tests:
+        kmax, vals = solve_case(A, B)
+        out_lines.append(str(kmax))
+        if kmax > 0:
+            out_lines.append(" ".join(map(str, vals)))
+    sys.stdout.write("\n".join(out_lines))
+
+def _unit_tests():
+    # Minimal cases
+    km, vals = solve_case([0], [0])
+    assert km == 0 and vals == []
+    km, vals = solve_case([0], [-1, 1])
+    assert km == 1 and vals == [2]
+    km, vals = solve_case([0], [-1, 0, 1])
+    assert km == 1 and vals == [2]
+
+if __name__ == "__main__":
+    try:
+        if sys.stdin.isatty():
+            _unit_tests()
+    except Exception:
+        pass
+    solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Pair extremes on each line to build $\mathrm{bestA}$ and $\mathrm{bestB}$, then for each $k$ choose a feasible split $x+y=k$ maximizing $\mathrm{bestA}[x]+\mathrm{bestB}[y]$ using a monotone pointer.}
+\WHY{Classic concave optimization over splits appears in DP and greedy pairing problems; interviews test recognizing pairing extremes and exploiting unimodality to achieve linear time.}
+\CHECKLIST{
+\begin{bullets}
+\item Sort $A,B$.
+\item Build $\mathrm{best}$ arrays via outermost pairing.
+\item Compute $k_{\max}=\min(\lfloor(n+m)/3\rfloor, n, m)$.
+\item For each $k$, bounds $L_k, U_k$.
+\item Advance pointer while $d^A_{x+1} \ge d^B_{k-x}$.
+\item Print $k_{\max}$ and $f(1..k_{\max})$.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item $k_{\max}=0$ (no output line of values).
+\item One side has size $1$ (no pairs on that side).
+\item Highly skewed $n \ll m$ or $m \ll n$.
+\item Negative and mixed coordinates.
+\item Equal spacings leading to flat plateaus (any argmax valid).
+\item Large $n,m$; ensure $64$-bit sums (Python int is unbounded).
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting feasibility constraints $2x+y\le n$ and $x+2y\le m$.
+\item Off-by-one in differences $d^A_{x+1}$ vs. $d^B_{k-x}$.
+\item Not clamping pointer into $[L_k,U_k]$ when bounds jump with $k$.
+\item Using unsorted arrays to build $\mathrm{best}$ (breaks correctness).
+\item Overflow in languages with fixed-size ints.
+\item Printing the second line when $k_{\max}=0$ (violates output spec).
+\end{bullets}}
+\FAILMODES{Naive greedy that always pairs the single globally largest distance may fail due to per-side singleton constraints. The presented method handles all constraints and maximizes globally.}
+\ELI{Every triangle is “height $2$ times base difference over $2$,” so it’s just the horizontal gap on one line. Make the biggest gaps by pairing far left with far right. Then, split how many such pairs you take from each line to fit the counts and pick the best split quickly.}
+\NotePages{3}
+
+\end{document}

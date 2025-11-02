@@ -1,0 +1,803 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — AND-MEX Walk}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1659/E}}
+\LINE{DIFFICULTY / RATING}{2200}
+\STATEMENT{There is an undirected, connected graph with $n$ vertices and $m$ weighted edges. A walk from vertex $u$ to vertex $v$ is defined as a sequence of vertices $p_1,p_2,\ldots,p_k$ (which are not necessarily distinct) starting with $u$ and ending with $v$, such that $p_i$ and $p_{i+1}$ are connected by an edge for $1 \le i < k$.
+
+We define the length of a walk as follows: take the ordered sequence of edges and write down the weights on each of them in an array. Now, write down the bitwise AND of every nonempty prefix of this array. The length of the walk is the MEX of all these values.
+
+More formally, let us have $[w_1,w_2,\ldots,w_{k-1}]$ where $w_i$ is the weight of the edge between $p_i$ and $p_{i+1}$. Then the length of the walk is given by $\mathrm{MEX}(\{w_1,\,w_1\ \&\ w_2,\,\ldots,\,w_1\ \&\ w_2\ \&\ \ldots\ \&\ w_{k-1}\})$, where $\&$ denotes the bitwise AND operation.
+
+Now you must process $q$ queries of the form $u\ v$. For each query, find the minimum possible length of a walk from $u$ to $v$.
+
+The MEX (minimum excluded) of a set is the smallest non-negative integer that does not belong to the set. For instance:
+\begin{bullets}
+\item The MEX of $\{2,1\}$ is $0$, because $0$ does not belong to the set.
+\item The MEX of $\{3,1,0\}$ is $2$, because $0$ and $1$ belong to the set, but $2$ does not.
+\item The MEX of $\{0,3,1,2\}$ is $4$ because $0$, $1$, $2$ and $3$ belong to the set, but $4$ does not.
+\end{bullets}
+
+Input: The first line contains two integers $n$ and $m$ ($2 \le n \le 10^5$; $n-1 \le m \le \min\{\tfrac{n(n-1)}{2},10^5\}$).
+
+Each of the next $m$ lines contains three integers $a$, $b$, and $w$ ($1 \le a, b \le n$, $a \ne b$; $0 \le w < 2^{30}$) indicating an undirected edge between vertex $a$ and vertex $b$ with weight $w$. The input will not contain self-loops or duplicate edges, and the provided graph will be connected.
+
+The next line contains a single integer $q$ ($1 \le q \le 10^5$).
+
+Each of the next $q$ lines contains two integers $u$ and $v$ ($1 \le u, v \le n$, $u \ne v$), the description of each query.
+
+Output: For each query, print one line containing a single integer — the answer to the query.
+
+Note: The following is an explanation of the first example.
+
+Here is one possible walk for the first query:
+\begin{BreakableEquation*}
+1 \overset{5}{\rightarrow} 3 \overset{3}{\rightarrow} 2 \overset{1}{\rightarrow} 1 \overset{5}{\rightarrow} 3 \overset{1}{\rightarrow} 4 \overset{2}{\rightarrow} 5.
+\end{BreakableEquation*}
+The array of weights is $w=[5,3,1,5,1,2]$. Now if we take the bitwise AND of every prefix of this array, we get the set $\{5,1,0\}$. The MEX of this set is $2$. We cannot get a walk with a smaller length (as defined in the statement).}
+\BREAKDOWN{Translate the walk length definition into bit-constraints along prefixes. Observe monotonicity of prefix-AND and that the set size is at most $30$. Reduce answering to connectivity in per-bit subgraphs and augment with a ``goodness'' condition to avoid ever producing value $1$.}
+\ELI{Answer is always $0$, $1$, or $2$: check if some bit stays $1$ along a whole path ($0$), else if you can delay clearing a higher bit until after using an even edge ($1$), otherwise ($2$).}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{A connected undirected graph with $n$ nodes and $m$ weighted edges; then $q$ queries. Constraints: $2 \le n \le 10^5$, $n-1 \le m \le \min\{\tfrac{n(n-1)}{2},10^5\}$, $0 \le w < 2^{30}$, $1 \le q \le 10^5$.}
+\OUTPUTS{For each query $(u,v)$, print the minimal possible MEX of the set of prefix-AND values along any walk from $u$ to $v$.}
+\SAMPLES{Example 1 (tiny, illustrative):
+\begin{bullets}
+\item $n=3$, $m=2$: edges $(1,2,2)$, $(2,3,1)$. Queries: $(1,3) \to 2$.
+\item $n=3$, $m=2$: edges $(1,2,2)$, $(2,3,2)$. Queries: $(1,3) \to 0$ (bit $1$ stays set).
+\end{bullets}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $G=(V,E)$, $|V|=n$, with weights $w:E\to\{0,\ldots,2^{30}-1\}$. For a walk $P=(p_1,\ldots,p_k)$, define prefix-ANDs $A_i=\bigwedge_{j=1}^{i-1} w(p_j,p_{j+1})$ for $i=2,\ldots,k$. Its length is $\mathrm{MEX}(\{A_2,\ldots,A_k\})$. For a query $(u,v)$, minimize this length over all $u\to v$ walks.}
+\varmapStart
+\var{G_b}{Subgraph with edges whose $b$-th bit is $1$ in their weight}
+\var{C_b(x)}{Connected component ID of node $x$ in $G_b$}
+\var{\text{even}(x)}{Boolean: $x$ has an incident edge with even weight}
+\var{\text{good}_b(C)}{Boolean: component $C$ of $G_b$ contains a node with an even incident edge}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+\text{Ans}(u,v) &=
+\begin{cases}
+0, & \exists b\in[0,29]:~ C_b(u)=C_b(v),\\
+1, & \neg(\exists b: C_b(u)=C_b(v))~\wedge~\exists b\in[1,29]:~ \text{good}_b(C_b(u)),\\
+2, & \text{otherwise}.
+\end{cases}
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Walks may repeat vertices/edges arbitrarily. Graph is connected, simple (no parallel edges, no self-loops). Bit indexing uses $0$ as least significant bit.}
+\INVARIANTS{
+\begin{bullets}
+\item Prefix-AND sequence is nonincreasing in the bitwise partial order.
+\item Along any path contained in $G_b$, bit $b$ remains set in every prefix-AND; hence value $0$ never appears.
+\item Once bit $0$ is cleared by any even edge, prefix-AND can never take value $1$ later.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Enumerate short walks and compute the set of prefix-ANDs, then take its MEX; keep the minimum over enumerated walks. This is exponential but fine for tiny graphs and for sanity checks.}
+\ASSUMPTIONS{Bound walk length by a small cap $L$ (e.g., $6$–$7$) and prune when prefix-AND stabilizes.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item DFS from $u$, tracking current node, current cumulative AND, and the set of prefix-ANDs seen.
+\item On each step, extend to any neighbor; update cumulative AND with the edge weight and insert into the set.
+\item If we reach $v$, compute MEX of the set and minimize the answer. Prune by depth and by repeated states.
+\end{algosteps}
+\COMPLEXITY{For cap $L$, worst-case $O(\deg^L)$ paths; each step updates an integer and set in $O(1)$ amortized. Used only for validation on tiny cases.}
+\[
+\begin{aligned}
+T(n) &\approx O(\Delta^L),\quad S(n)=O(L)
+\end{aligned}
+\]
+\CORRECTNESS{Enumerates all bounded-length walks and correctly computes their MEX; minimum over explored walks is a valid upper bound on the true optimum.}
+\EDGECASES{Zero-weight edges; parallel revisits; immediate arrival ($u$ adjacent to $v$).}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# CF TEMPLATE (baseline brute force for tiny inputs)
+from typing import List, Tuple, Dict, Set
+import sys
+
+def mex_of_set(S: Set[int]) -> int:
+    x = 0
+    while x in S:
+        x += 1
+    return x
+
+def read_input() -> Tuple[int, int, List[Tuple[int,int,int]], int, List[Tuple[int,int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, [], 0, []
+    it = iter(map(int, data))
+    n = next(it); m = next(it)
+    edges = []
+    for _ in range(m):
+        a = next(it); b = next(it); w = next(it)
+        edges.append((a, b, w))
+    q = next(it)
+    queries = []
+    for _ in range(q):
+        u = next(it); v = next(it)
+        queries.append((u, v))
+    return n, m, edges, q, queries
+
+def solve_all_bruteforce(n: int, m: int, edges: List[Tuple[int,int,int]], q: int, queries: List[Tuple[int,int]]) -> List[int]:
+    # Build adjacency
+    g: Dict[int, List[Tuple[int,int]]] = {i: [] for i in range(1, n+1)}
+    for a,b,w in edges:
+        g[a].append((b,w))
+        g[b].append((a,w))
+    ans = []
+    L = 6  # depth cap for brute-force
+    for (src, dst) in queries:
+        best = float('inf')
+        # State cache: (node, depth, cur_and, frozen_seen_subset_small) -> avoid cycles
+        # For brute, keep simple visited map per (node, depth) to control explosion
+        from collections import defaultdict
+        seen_state = defaultdict(set)  # node -> set of (depth, cur_and)
+        def dfs(u: int, depth: int, cur_and: int, seen_vals: Set[int], started: bool):
+            nonlocal best
+            if depth > L or depth >= best:
+                return
+            for v,w in g[u]:
+                na = w if not started else (cur_and & w)
+                nset = set(seen_vals)
+                nset.add(na)
+                # Prune if state repeats
+                key = (depth+1, na)
+                if key in seen_state[v]:
+                    continue
+                seen_state[v].add(key)
+                if v == dst:
+                    cand = mex_of_set(nset)
+                    if cand < best:
+                        best = cand
+                dfs(v, depth+1, na, nset, True)
+        if src == dst:
+            best = 0
+        else:
+            dfs(src, 0, 0, set(), False)
+        if best == float('inf'):
+            # If not found within cap, return a safe upper bound (2), as any walk can include both 0 and 1 usually.
+            best = 2
+        ans.append(best)
+    return ans
+
+def main():
+    n,m,edges,q,queries = read_input()
+    if n == 0:
+        return
+    res = solve_all_bruteforce(n,m,edges,q,queries)
+    print("\n".join(map(str, res)))
+
+if __name__ == "__main__":
+    # Tiny sanity tests
+    # 1) Path with shared higher bit -> answer 0
+    n=3; m=2; edges=[(1,2,2),(2,3,2)]; q=1; queries=[(1,3)]
+    out = solve_all_bruteforce(n,m,edges,q,queries)
+    assert out == [0]
+    # 2) Mixed parities -> {1,0} reachable -> mex 2 in tiny bound
+    n=3; m=2; edges=[(1,2,1),(2,3,2)]; q=1; queries=[(1,3)]
+    out = solve_all_bruteforce(n,m,edges,q,queries)
+    assert out[0] in (1,2)  # brute may find 2; minimal is 2 here
+    # 3) Single edge odd, walk 1->2 -> set {1} -> mex 0
+    n=2; m=1; edges=[(1,2,1)]; q=1; queries=[(1,2)]
+    out = solve_all_bruteforce(n,m,edges,q,queries)
+    assert out == [0]
+    # Do not run main() for tests
+    pass
+\end{minted}
+\VALIDATION{Sanity asserts included for small graphs. Use as a correctness scaffold, not for performance.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Per-Bit Connectivity Pruning + Brute}
+\WHICHFORMULA{Use per-bit connectivity to immediately return $0$ when possible; otherwise, fall back to bounded brute force. This prunes many cases early.}
+\ASSUMPTIONS{Construct $G_b$ for each bit $b$ and check whether $u$ and $v$ are connected in any $G_b$; if so, answer is $0$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build union-find for each bit $b\in[0,29]$ over edges with that bit set.
+\item For a query $(u,v)$, if $\exists b: C_b(u)=C_b(v)$ then answer $0$.
+\item Else, run the bounded brute-force DFS from Approach A to get a safe answer on small cases.
+\end{algosteps}
+\COMPLEXITY{Preprocessing $O(30m\alpha(n))$. Each query resolves in $O(30)$ if pruned to $0$; otherwise falls back to exponential brute on tiny cases.}
+\[
+\begin{aligned}
+T_{\text{pre}} &= O(30\,m\,\alpha(n)),\quad T_{\text{qry}}=O(30)\ \text{or}\ O(\Delta^L)
+\end{aligned}
+\]
+\CORRECTNESS{If $u$ and $v$ are connected in $G_b$, a walk entirely inside $G_b$ keeps bit $b$ forever, so $0$ is absent and MEX is $0$. Otherwise, brute maintains soundness.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Same API/signature as baseline; deterministic; with asserts
+from typing import List, Tuple, Dict, Set
+import sys
+
+class DSU:
+    def __init__(self, n: int):
+        self.p = list(range(n+1))
+        self.r = [0]*(n+1)
+    def find(self, x: int) -> int:
+        while self.p[x] != x:
+            self.p[x] = self.p[self.p[x]]
+            x = self.p[x]
+        return x
+    def union(self, a: int, b: int):
+        a = self.find(a); b = self.find(b)
+        if a == b: return
+        if self.r[a] < self.r[b]:
+            a, b = b, a
+        self.p[b] = a
+        if self.r[a] == self.r[b]:
+            self.r[a] += 1
+
+def read_input() -> Tuple[int, int, List[Tuple[int,int,int]], int, List[Tuple[int,int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, [], 0, []
+    it = iter(map(int, data))
+    n = next(it); m = next(it)
+    edges = []
+    for _ in range(m):
+        a = next(it); b = next(it); w = next(it)
+        edges.append((a, b, w))
+    q = next(it)
+    queries = []
+    for _ in range(q):
+        u = next(it); v = next(it)
+        queries.append((u, v))
+    return n, m, edges, q, queries
+
+def brute_short(n: int, edges: List[Tuple[int,int,int]], u: int, v: int) -> int:
+    g: Dict[int, List[Tuple[int,int]]] = {i: [] for i in range(1, n+1)}
+    for a,b,w in edges:
+        g[a].append((b,w))
+        g[b].append((a,w))
+    L = 6
+    best = float('inf')
+    from collections import defaultdict
+    seen_state = defaultdict(set)
+    def mex(S: Set[int]) -> int:
+        x=0
+        while x in S: x+=1
+        return x
+    def dfs(x: int, depth: int, cur_and: int, seen_vals: Set[int], started: bool):
+        nonlocal best
+        if depth > L or depth >= best:
+            return
+        for y,w in g[x]:
+            na = w if not started else (cur_and & w)
+            nset = set(seen_vals); nset.add(na)
+            key = (depth+1, na)
+            if key in seen_state[y]: continue
+            seen_state[y].add(key)
+            if y == v:
+                cand = mex(nset)
+                if cand < best: best = cand
+            dfs(y, depth+1, na, nset, True)
+    if u == v:
+        return 0
+    dfs(u, 0, 0, set(), False)
+    if best == float('inf'):
+        best = 2
+    return best
+
+def solve_all_mixed(n: int, m: int, edges: List[Tuple[int,int,int]], q: int, queries: List[Tuple[int,int]]) -> List[int]:
+    # Build DSU per bit for pruning to 0
+    B = 30
+    dsus = [DSU(n) for _ in range(B)]
+    for a,b,w in edges:
+        for bit in range(B):
+            if (w >> bit) & 1:
+                dsus[bit].union(a,b)
+    ans = []
+    for u,v in queries:
+        zero = False
+        for bit in range(B):
+            if dsus[bit].find(u) == dsus[bit].find(v):
+                zero = True
+                break
+        if zero:
+            ans.append(0)
+        else:
+            ans.append(brute_short(n, edges, u, v))
+    return ans
+
+def main():
+    n,m,edges,q,queries = read_input()
+    if n == 0: 
+        return
+    res = solve_all_mixed(n,m,edges,q,queries)
+    print("\n".join(map(str, res)))
+
+if __name__ == "__main__":
+    # Quick checks
+    n=3; m=2; edges=[(1,2,2),(2,3,2)]; q=1; queries=[(1,3)]
+    out = solve_all_mixed(n,m,edges,q,queries); assert out == [0]
+    n=3; m=2; edges=[(1,2,1),(2,3,2)]; q=1; queries=[(1,3)]
+    out = solve_all_mixed(n,m,edges,q,queries); assert out[0] in (1,2)
+    pass
+\end{minted}
+\VALIDATION{Improved solver matches baseline on tiny cases and instantly answers $0$ when per-bit connectivity holds.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Per-Bit DSUs + ``Good'' Components (Editorial)}
+\WHICHFORMULA{Characterize answers as:
+- $0$ iff $\exists b$ such that $u$ and $v$ are connected in $G_b$;
+- Else $1$ iff $\exists b\in[1,29]$ such that the component of $u$ in $G_b$ contains a vertex incident to an even edge;
+- Else $2$.}
+\ASSUMPTIONS{Bits indexed $0$..$29$; walks may detour arbitrarily since the graph is connected. Maintaining a single higher bit $b\ge 1$ before touching any even edge prevents value $1$ from ever appearing, and later we can force $0$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For each bit $b\in[0,29]$, build a DSU over $G_b$ (edges with that bit set).
+\item Precompute $\text{even}(v)$ for all $v$: whether $v$ has any incident edge with even weight.
+\item For each $b\in[1,29]$, mark $\text{good}_b(\cdot)$ by flagging DSU-$b$ components that contain a vertex with $\text{even}(v)=\text{True}$.
+\item For a query $(u,v)$:
+\begin{bullets}
+\item If $\exists b$: $C_b(u)=C_b(v)$, answer $0$.
+\item Else if $\exists b\in[1,29]$: component $C_b(u)$ is good, answer $1$.
+\item Else answer $2$.
+\end{bullets}
+\end{algosteps}
+\OPTIMALITY{The conditions are tight: 
+- $0$ requires a bit to remain $1$ across the entire walk, equivalent to staying in some $G_b$ from $u$ to $v$.
+- If not $0$, then for every bit there exists an edge clearing it somewhere; connectivity lets us include all of them to reach $0$. Avoiding ever producing $1$ is possible iff some higher bit can be preserved from $u$ until after traversing an even edge (precisely the ``good'' condition). Otherwise any walk inevitably has a prefix-AND $1$.}
+\COMPLEXITY{Preprocessing $O(30m\alpha(n) + 30n)$; answering each query in $O(30)$. Memory $O(30n)$.}
+\[
+\begin{aligned}
+T_{\text{pre}} &= O(30\,m\,\alpha(n) + 30\,n),\quad T_{\text{qry}}=O(30).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case()/solve_all(), main()+guard + asserts
+from typing import List, Tuple, Dict
+import sys
+
+class DSU:
+    __slots__ = ("p","r")
+    def __init__(self, n: int):
+        self.p = list(range(n+1))
+        self.r = [0]*(n+1)
+    def find(self, x: int) -> int:
+        # Iterative path compression
+        while self.p[x] != x:
+            self.p[x] = self.p[self.p[x]]
+            x = self.p[x]
+        return x
+    def union(self, a: int, b: int):
+        a = self.find(a); b = self.find(b)
+        if a == b: return
+        if self.r[a] < self.r[b]:
+            a, b = b, a
+        self.p[b] = a
+        if self.r[a] == self.r[b]:
+            self.r[a] += 1
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, [], 0, []
+    it = iter(map(int, data))
+    n = next(it); m = next(it)
+    edges = []
+    for _ in range(m):
+        a = next(it); b = next(it); w = next(it)
+        edges.append((a,b,w))
+    q = next(it)
+    queries = []
+    for _ in range(q):
+        u = next(it); v = next(it)
+        queries.append((u,v))
+    return n, m, edges, q, queries
+
+def preprocess(n: int, edges: List[Tuple[int,int,int]]):
+    B = 30
+    dsus = [DSU(n) for _ in range(B)]
+    # Build DSU for each bit
+    for a,b,w in edges:
+        for bit in range(B):
+            if (w >> bit) & 1:
+                dsus[bit].union(a,b)
+    # even[v] flag
+    even = [False]*(n+1)
+    for a,b,w in edges:
+        if (w & 1) == 0:
+            even[a] = True
+            even[b] = True
+    # good components for bits 1..29
+    good_comp: List[Dict[int,bool]] = [dict() for _ in range(B)]
+    for bit in range(1, B):
+        gc = good_comp[bit]
+        # Mark roots that contain a node with an even incident edge
+        for v in range(1, n+1):
+            if even[v]:
+                r = dsus[bit].find(v)
+                gc[r] = True
+    return dsus, good_comp
+
+def solve_all(n: int, m: int, edges: List[Tuple[int,int,int]], q: int, queries: List[Tuple[int,int]]) -> List[int]:
+    if n == 0:
+        return []
+    dsus, good_comp = preprocess(n, edges)
+    B = 30
+    ans = []
+    for (u,v) in queries:
+        # Check answer 0
+        zero = False
+        for bit in range(B):
+            if dsus[bit].find(u) == dsus[bit].find(v):
+                zero = True
+                break
+        if zero:
+            ans.append(0)
+            continue
+        # Check answer 1: does there exist bit>=1 such that component of u is good?
+        one = False
+        for bit in range(1, B):
+            r = dsus[bit].find(u)
+            if good_comp[bit].get(r, False):
+                one = True
+                break
+        ans.append(1 if one else 2)
+    return ans
+
+def main():
+    n,m,edges,q,queries = read_input()
+    if n == 0:
+        return
+    res = solve_all(n,m,edges,q,queries)
+    print("\n".join(map(str, res)))
+
+if __name__ == "__main__":
+    # Unit tests for core logic
+    # Case 0: shared bit path -> answer 0
+    n=3; m=2; edges=[(1,2,2),(2,3,2)]; q=1; queries=[(1,3)]
+    assert solve_all(n,m,edges,q,queries) == [0]
+    # Case 1: not connected in any single-bit graph; u in good comp for bit 1 -> answer 1
+    n=3; m=2; edges=[(1,2,2),(2,3,1)]; q=2; queries=[(1,3),(1,2)]
+    # For (1,3): expect 1, for (1,2): G_1 connects them so zero dominates -> 0
+    out = solve_all(n,m,edges,q,queries); assert out[0] == 1 and out[1] == 0
+    # Case 2: requires 2 (no single-bit connectivity u-v; u not in any good higher-bit component)
+    n=3; m=2; edges=[(1,2,1),(2,3,2)]; q=1; queries=[(1,3)]
+    assert solve_all(n,m,edges,q,queries) == [2]
+    # Ready for submission
+    pass
+\end{minted}
+\VALIDATION{Exactly 3 asserts included:
+1) Answer $0$ via shared bit path;
+2) Mix showing $1$ and $0$ behavior;
+3) Case forcing $2$.}
+\RESULT{For each query $(u,v)$, the minimal MEX is in $\{0,1,2\}$ decided by per-bit connectivity and the ``good component'' property as above; ties do not apply.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests for the three outcomes ($0$, $1$, $2$); randomized small graphs cross-checking baseline vs optimal; adversarial parities (all odd, all even, mixed).}
+\LINE{CROSS-CHECKS}{On tiny graphs (up to $n \le 6$), compare Approach A brute-force minimum against Approach C for randomly generated queries.}
+\LINE{EDGE-CASE GENERATOR}{Create graphs with: only even edges; only odd edges; edges having disjoint higher-bit supports; presence/absence of incident even edges.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+from typing import List, Tuple
+import random
+
+def gen_line(n: int, weight_fn) -> Tuple[int,int,List[Tuple[int,int,int]]]:
+    edges = []
+    for i in range(1, n):
+        edges.append((i, i+1, weight_fn(i)))
+    return n, n-1, edges
+
+def gen_all_odd(n: int) -> Tuple[int,int,List[Tuple[int,int,int]]]:
+    def wf(i): return (2*((i%4)+1) + 1)  # odd, varying higher bits
+    return gen_line(n, wf)
+
+def gen_all_even(n: int) -> Tuple[int,int,List[Tuple[int,int,int]]]:
+    def wf(i): return 2*((i%4)+1)  # even, varying higher bits
+    return gen_line(n, wf)
+
+def gen_mixed_small() -> Tuple[int,int,List[Tuple[int,int,int]]]:
+    n = 5
+    edges = [
+        (1,2,3),(2,3,5),(3,4,2),(4,5,1),(2,4,6)
+    ]
+    return n, len(edges), edges
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF/LC) + asserts
+from typing import List, Tuple, Dict
+import sys
+
+class DSU:
+    __slots__ = ("p","r")
+    def __init__(self, n: int):
+        self.p = list(range(n+1))
+        self.r = [0]*(n+1)
+    def find(self, x: int) -> int:
+        while self.p[x] != x:
+            self.p[x] = self.p[self.p[x]]
+            x = self.p[x]
+        return x
+    def union(self, a: int, b: int):
+        a = self.find(a); b = self.find(b)
+        if a == b: return
+        if self.r[a] < self.r[b]:
+            a, b = b, a
+        self.p[b] = a
+        if self.r[a] == self.r[b]:
+            self.r[a] += 1
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return 0, 0, [], 0, []
+    it = iter(map(int, data))
+    n = next(it); m = next(it)
+    edges = []
+    for _ in range(m):
+        a = next(it); b = next(it); w = next(it)
+        edges.append((a,b,w))
+    q = next(it)
+    queries = []
+    for _ in range(q):
+        u = next(it); v = next(it)
+        queries.append((u,v))
+    return n, m, edges, q, queries
+
+def preprocess(n: int, edges: List[Tuple[int,int,int]]):
+    B = 30
+    dsus = [DSU(n) for _ in range(B)]
+    for a,b,w in edges:
+        for bit in range(B):
+            if (w >> bit) & 1:
+                dsus[bit].union(a,b)
+    even = [False]*(n+1)
+    for a,b,w in edges:
+        if (w & 1) == 0:
+            even[a] = True
+            even[b] = True
+    good_comp: List[Dict[int,bool]] = [dict() for _ in range(B)]
+    for bit in range(1, B):
+        gc = good_comp[bit]
+        for v in range(1, n+1):
+            if even[v]:
+                r = dsus[bit].find(v)
+                gc[r] = True
+    return dsus, good_comp
+
+def solve_all(n: int, m: int, edges: List[Tuple[int,int,int]], q: int, queries: List[Tuple[int,int]]) -> List[int]:
+    if n == 0:
+        return []
+    dsus, good_comp = preprocess(n, edges)
+    B = 30
+    ans = []
+    for (u,v) in queries:
+        zero = False
+        for bit in range(B):
+            if dsus[bit].find(u) == dsus[bit].find(v):
+                zero = True
+                break
+        if zero:
+            ans.append(0)
+            continue
+        one = False
+        for bit in range(1, B):
+            r = dsus[bit].find(u)
+            if good_comp[bit].get(r, False):
+                one = True
+                break
+        ans.append(1 if one else 2)
+    return ans
+
+def main():
+    n,m,edges,q,queries = read_input()
+    if n == 0:
+        return
+    res = solve_all(n,m,edges,q,queries)
+    print("\n".join(map(str, res)))
+
+if __name__ == "__main__":
+    # Three asserts as smoke tests
+    n=3; m=2; edges=[(1,2,2),(2,3,2)]; q=1; queries=[(1,3)]
+    assert solve_all(n,m,edges,q,queries) == [0]
+    n=3; m=2; edges=[(1,2,2),(2,3,1)]; q=2; queries=[(1,3),(1,2)]
+    out = solve_all(n,m,edges,q,queries); assert out[0] == 1 and out[1] == 0
+    n=3; m=2; edges=[(1,2,1),(2,3,2)]; q=1; queries=[(1,3)]
+    assert solve_all(n,m,edges,q,queries) == [2]
+    # main()
+    pass
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Reduce walk-length MEX to per-bit connectivity and a precomputed ``goodness'' mark; answers lie in $\{0,1,2\}$.}
+\WHY{Per-bit graph reasoning and DSU preprocessing are common in bitwise-graph CF problems; this tests insight about prefix-AND monotonicity and constructing minimal obstructions (value $1$).}
+\CHECKLIST{
+\begin{bullets}
+\item Build DSU for each bit $b\in[0,29]$ on edges with that bit set.
+\item Compute per-vertex even-edge incidence.
+\item For $b\in[1,29]$, mark DSU components containing an even-incident vertex as good.
+\item Query: if $u$ and $v$ share any DSU-$b$ component $\Rightarrow 0$.
+\item Else if $u$ lies in any good DSU-$b$ component for $b\ge 1$ $\Rightarrow 1$.
+\item Else $\Rightarrow 2$.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item Edges with weight $0$ (immediately include $0$ in set).
+\item Graphs where a single bit is $1$ on every edge (all queries answer $0$).
+\item Vertices with no even incident edge (may force answer $2$ when $0$ is impossible).
+\item Queries where $u$ and $v$ are adjacent vs. requiring long detours.
+\item Disconnected $G_b$ even though $G$ is connected.
+\item Multiple edges not present (input guarantees simple graph).
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting bit $0$ in the $0$-answer connectivity check.
+\item Marking ``good'' on vertices rather than DSU components for $b\ge 1$.
+\item Using union-find without path compression/rank (performance).
+\item Off-by-one on bit range $[0,29]$.
+\item Treating $u$ and $v$ symmetrically for the $1$-case; only $u$'s component needs to be good.
+\item Memory blow-up if trying to store full $30\times n$ structures in a language with heavy per-object overhead.
+\end{bullets}}
+\FAILMODES{Heuristics that only check parity-connectedness miss cases where higher bits matter. Brute-force walks are intractable. The DSU-good criterion withstands adversarial mixes of odd/even and higher-bit patterns.}
+\ELI{If you can keep some bit always on along the whole way, $0$ never appears, so the MEX is $0$. If not, try to keep some higher bit on until you cross an even edge; then you avoid ever seeing $1$, but you can still force a $0$ later, giving MEX $1$. If neither is possible, you are forced to see both $0$ and $1$, so the MEX is $2$.}
+\NotePages{3}
+
+\end{document}

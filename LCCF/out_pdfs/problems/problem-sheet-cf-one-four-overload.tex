@@ -1,0 +1,959 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — One-Four Overload}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1567/F}}
+\LINE{DIFFICULTY / RATING}{2700}
+\STATEMENT{Alice has an empty grid with $n$ rows and $m$ columns. Some of the cells are marked, and no marked cells are adjacent to the edge of the grid. (Two squares are adjacent if they share a side.)
+
+Alice wants to fill each cell with a number such that the following statements are true:
+\begin{bullets}
+\item every unmarked cell contains either the number $1$ or $4$;
+\item every marked cell contains the sum of the numbers in all unmarked cells adjacent to it (if a marked cell is not adjacent to any unmarked cell, this sum is $0$);
+\item every marked cell contains a multiple of $5$.
+\end{bullets}
+
+Input: The first line of input contains two integers $n$ and $m$ ($1 \le n, m \le 500$) — the number of rows and the number of columns in the grid, respectively.
+
+Then $n$ lines follow, each containing $m$ characters. Each of these characters is either `.' or `X' — an unmarked and a marked cell, respectively. No marked cells are adjacent to the edge of the grid.
+
+Output: Output ``NO'' if no suitable grid exists. Otherwise, output ``YES''. Then output $n$ lines of $m$ space-separated integers — the integers in the grid.
+
+Note: It can be shown that no such grid exists for the second test.}
+\BREAKDOWN{Model the constraints on marked cells as modular conditions on sums of adjacent unmarked cells. Enforce that each marked cell sees an equal number of $1$ and $4$ among its neighboring unmarked cells so that its sum is a multiple of $5$. Reduce this to a bipartite coloring of a graph over unmarked cells induced by marked cells.}
+\ELI{Make the unmarked cells black/white so that around every marked cell they alternate; put $1$ on black and $4$ on white so every marked cell sums to multiples of $5$.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Grid size: integers $n, m$ with $1 \le n, m \le 500$. Grid: $n$ strings each of length $m$ over the alphabet $\{., X\}$.}
+\OUTPUTS{If impossible, print a single line ``NO''. Otherwise, print ``YES'' on the first line, then $n$ lines follow, each with $m$ space-separated integers representing the filled grid. Unmarked cells must be either $1$ or $4$; each marked cell must equal the sum of its adjacent unmarked neighbors and be a multiple of $5$.}
+\SAMPLES{Example 1
+\begin{bullets}
+\item Input
+\[
+\begin{aligned}
+3~3\\
+\ldots\\
+.X.\\
+\ldots
+\end{aligned}
+\]
+\item Output (one valid)
+\[
+\begin{aligned}
+\text{YES}\\
+1~4~1\\
+4~10~4\\
+1~4~1
+\end{aligned}
+\]
+\end{bullets}
+Example 2
+\begin{bullets}
+\item Input
+\[
+\begin{aligned}
+5~5\\
+\ldots\ldots\\
+\ldots\ldots\\
+..\text{XX}.\\
+\ldots\ldots\\
+\ldots\ldots
+\end{aligned}
+\]
+\item Output
+\begin{BreakableEquation*}
+\text{NO}
+\end{BreakableEquation*}
+\end{bullets}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $G$ be the $n \times m$ grid. Partition cells into unmarked $U$ and marked $M$. Assign a value $a_{i,j}$ to each cell $(i,j)$. For $(i,j)\in U$, $a_{i,j}\in\{1,4\}$. For $(i,j)\in M$, let $N(i,j)\subseteq U$ be its 4-neighborhood in $U$; then $a_{i,j}=\sum_{(p,q)\in N(i,j)} a_{p,q}$ and $5 \mid a_{i,j}$.}
+\varmapStart
+\var{n,m}{grid dimensions}
+\var{U}{set of unmarked cells ('.')}
+\var{M}{set of marked cells ('X')}
+\var{N(i,j)}{unmarked neighbors (4-neighborhood) of cell $(i,j)$}
+\var{a_{i,j}}{assigned integer value at cell $(i,j)$}
+\varmapEnd
+\GOVERN{
+\[
+\forall (i,j)\in U:\ a_{i,j}\in\{1,4\},\quad
+\forall (i,j)\in M:\ a_{i,j}=\sum_{(p,q)\in N(i,j)} a_{p,q},\quad
+\forall (i,j)\in M:\ a_{i,j}\equiv 0 \pmod 5.
+\]
+}
+\ASSUMPTIONS{No marked cell is adjacent to the grid boundary. Grid indices are 0-based or 1-based consistently; neighbors use 4-connectivity.}
+\INVARIANTS{
+\begin{bullets}
+\item If every $(i,j)\in M$ has an even number of neighbors in $U$, one can connect those neighbors in an even cycle and 2-color all of $U$.
+\item A 2-coloring of $U$ induces around each $(i,j)\in M$ an equal number of the two colors when its neighbors are arranged cyclically.
+\item Assigning $1$ to one color class and $4$ to the other makes every marked cell sum to $\tfrac{|N(i,j)|}{2}\cdot (1+4)=5\cdot \tfrac{|N(i,j)|}{2}$.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Enumerate all assignments $a_{i,j}\in\{1,4\}$ for $(i,j)\in U$ and check the constraints on $M$.}
+\ASSUMPTIONS{Feasible only for tiny $|U|$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item List all unmarked cells $U$.
+\item Enumerate all $2^{|U|}$ assignments of $\{1,4\}$.
+\item For each assignment, compute each $a_{i,j}$ for $(i,j)\in M$ as the sum of adjacent unmarked values and check divisibility by $5$.
+\end{algosteps}
+\COMPLEXITY{Exponential in $|U|$.}
+\[
+\begin{aligned}
+T(n) &= \Theta(2^{|U|}\cdot (|U|+|M|)) \\
+S(n) &= \Theta(|U|).
+\end{aligned}
+\]
+\CORRECTNESS{Exhaustively checks all possible labelings of unmarked cells and accepts if and only if a valid labeling exists.}
+\EDGECASES{Empty $U$; marked cells with no unmarked neighbors; grids with many unmarked cells become intractable.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# Baseline brute force for very small grids; demonstration only.
+from itertools import product
+from collections import deque
+import sys
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    grid = [list(next(it)) for _ in range(n)]
+    return n, m, grid
+
+def neighbors4(i, j, n, m):
+    for di, dj in [(-1,0),(0,1),(1,0),(0,-1)]:
+        ni, nj = i+di, j+dj
+        if 0 <= ni < n and 0 <= nj < m:
+            yield ni, nj
+
+def check_and_build(n, m, grid, assign):
+    val = [[0]*m for _ in range(n)]
+    for (i, j), v in assign.items():
+        val[i][j] = v
+    for i in range(n):
+        for j in range(m):
+            if grid[i][j] == 'X':
+                s = 0
+                for ni, nj in neighbors4(i, j, n, m):
+                    if grid[ni][nj] == '.':
+                        s += val[ni][nj]
+                if s % 5 != 0:
+                    return None
+                val[i][j] = s
+    return val
+
+def solve_case_bruteforce(n, m, grid, limit=18):
+    dots = [(i, j) for i in range(n) for j in range(m) if grid[i][j] == '.']
+    if len(dots) > limit:
+        return None  # too big for brute force
+    for bits in product([1, 4], repeat=len(dots)):
+        assign = {dots[k]: bits[k] for k in range(len(dots))}
+        built = check_and_build(n, m, grid, assign)
+        if built is not None:
+            return built
+    return None
+
+def solve_all():
+    inp = read_input()
+    if inp is None:
+        return
+    n, m, grid = inp
+    ans = solve_case_bruteforce(n, m, grid)
+    if ans is None:
+        print("NO")
+    else:
+        print("YES")
+        for i in range(n):
+            print(*ans[i])
+
+def _self_test():
+    # Tiny 1x1 '.' grid
+    n, m = 1, 1
+    grid = [['.']]
+    ans = solve_case_bruteforce(n, m, grid)
+    assert ans is not None and ans[0][0] in (1, 4)
+
+if __name__ == "__main__":
+    _self_test()
+    # Commented: reading stdin in baseline demo to avoid interfering with later solutions
+    # solve_all()
+\end{minted}
+\VALIDATION{Checked on trivial $1\times 1$ grid. This approach is illustrative and not used for real constraints.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Parity Feasibility + Pairing Neighbors per Marked Cell}
+\WHICHFORMULA{A necessary condition is that every marked cell has an even number of adjacent unmarked cells; otherwise, one cannot split neighbors into equal counts of $1$ and $4$. Pair unmarked neighbors around a marked cell into a cycle to enforce alternation.}
+\ASSUMPTIONS{Neighbors are considered in cyclic order (e.g., Up, Right, Down, Left), skipping absent ones; even degree yields an even cycle.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For each marked cell $X$, collect its adjacent unmarked cells $N(X)$.
+\item If $|N(X)|$ is odd for any $X$, answer ``NO''.
+\item Otherwise, for each $X$ with $|N(X)|\ge 2$, connect its neighbors into a cycle in the order Up, Right, Down, Left (wrapping around).
+\item The union of these cycles over all $X$ forms a graph $H$ on unmarked cells; continue with bipartite coloring.
+\end{algosteps}
+\COMPLEXITY{Graph construction is linear in grid size.}
+\[
+\begin{aligned}
+T(n,m) &= \Theta(nm),\quad S(n,m)=\Theta(nm).
+\end{aligned}
+\]
+\CORRECTNESS{Even degrees allow pairing into cycles; odd degree makes it impossible to have equal counts of two labels among neighbors. The constructed graph will be a union of even cycles, preserving bipartiteness.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Build feasibility graph by pairing neighbors around each 'X'
+from collections import deque
+import sys
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    grid = [list(next(it)) for _ in range(n)]
+    return n, m, grid
+
+def neighbors4(i, j, n, m):
+    for di, dj in [(-1,0),(0,1),(1,0),(0,-1)]:
+        ni, nj = i+di, j+dj
+        if 0 <= ni < n and 0 <= nj < m:
+            yield ni, nj
+
+def build_graph(n, m, grid):
+    id_of = [[-1]*m for _ in range(n)]
+    dots = []
+    for i in range(n):
+        for j in range(m):
+            if grid[i][j] == '.':
+                id_of[i][j] = len(dots)
+                dots.append((i, j))
+    g = [[] for _ in range(len(dots))]
+    # For each X, collect dot neighbors in fixed cyclic order: U, R, D, L
+    for i in range(n):
+        for j in range(m):
+            if grid[i][j] != 'X':
+                continue
+            cyc = []
+            for di, dj in [(-1,0),(0,1),(1,0),(0,-1)]:
+                ni, nj = i+di, j+dj
+                if 0 <= ni < n and 0 <= nj < m and grid[ni][nj] == '.':
+                    cyc.append(id_of[ni][nj])
+            if len(cyc) % 2 == 1:
+                return None, None, None
+            if len(cyc) >= 2:
+                k = len(cyc)
+                for t in range(k):
+                    u = cyc[t]
+                    v = cyc[(t+1) % k]
+                    if u != v:
+                        g[u].append(v)
+                        g[v].append(u)
+    return id_of, dots, g
+
+def color_bipartite(g):
+    n = len(g)
+    col = [-1]*n
+    for s in range(n):
+        if col[s] != -1:
+            continue
+        col[s] = 0
+        dq = deque([s])
+        while dq:
+            u = dq.popleft()
+            for v in g[u]:
+                if col[v] == -1:
+                    col[v] = col[u] ^ 1
+                    dq.append(v)
+                elif col[v] == col[u]:
+                    return None
+    return col
+
+def solve_case_build(n, m, grid):
+    id_of, dots, g = build_graph(n, m, grid)
+    if id_of is None:
+        return None
+    col = color_bipartite(g)
+    if col is None:
+        return None
+    val = [[0]*m for _ in range(n)]
+    # Assign 1/4 to dots based on color; isolated dots get color 0 -> 1
+    for idx, (i, j) in enumerate(dots):
+        if col[idx] == -1:
+            col[idx] = 0
+        val[i][j] = 1 if col[idx] == 0 else 4
+    # Assign sums to X cells
+    for i in range(n):
+        for j in range(m):
+            if grid[i][j] == 'X':
+                s = 0
+                for ni, nj in neighbors4(i, j, n, m):
+                    if grid[ni][nj] == '.':
+                        s += val[ni][nj]
+                if s % 5 != 0:
+                    return None
+                val[i][j] = s
+    return val
+
+def solve_all():
+    inp = read_input()
+    if inp is None:
+        return
+    n, m, grid = inp
+    ans = solve_case_build(n, m, grid)
+    if ans is None:
+        print("NO")
+    else:
+        print("YES")
+        for i in range(n):
+            print(*ans[i])
+
+def _self_test():
+    # 3x3 with center X
+    n, m = 3, 3
+    grid = [list("..."), list(".X."), list("...")]
+    ans = solve_case_build(n, m, grid)
+    assert ans is not None and ans[1][1] % 5 == 0
+    for i in range(n):
+        for j in range(m):
+            if grid[i][j] == '.':
+                assert ans[i][j] in (1, 4)
+    # Case that should be impossible: center X has 3 unmarked neighbors
+    n, m = 5, 5
+    grid = [list(".....") for _ in range(5)]
+    grid[2][2] = 'X'
+    grid[2][3] = 'X'  # reduces degree of center X to 3 (odd)
+    ans = solve_case_build(n, m, grid)
+    assert ans is None
+
+if __name__ == "__main__":
+    _self_test()
+    # solve_all()
+\end{minted}
+\VALIDATION{Verified even-degree requirement and correctness on a simple center-marked grid; detects odd-degree impossibility.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Cycle Pairing + Global Bipartite Coloring}
+\WHICHFORMULA{For each marked cell, order its unmarked neighbors as Up, Right, Down, Left, skipping missing ones, and connect them into a cycle. The union of even cycles yields a bipartite graph on unmarked cells. 2-color it, then assign $1$ to one color and $4$ to the other.}
+\ASSUMPTIONS{Each marked cell has an even number of unmarked neighbors. The constructed graph is a union of even-length cycles, hence bipartite.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Map every unmarked cell to a node id.
+\item For each marked cell, collect adjacent unmarked nodes in cyclic order; if the count is odd, print ``NO''. Otherwise, connect neighbors into a cycle.
+\item 2-color the resulting graph via BFS/DFS. If a conflict is ever found, print ``NO'' (defensive).
+\item Assign $1$ to color $0$ and $4$ to color $1$ for unmarked cells.
+\item For each marked cell, set its value to the sum of adjacent unmarked values (this will be a multiple of $5$).
+\end{algosteps}
+\OPTIMALITY{Linear-time construction and coloring. The even-cycle construction guarantees feasibility whenever it exists under this parity condition; sums at marked cells become multiples of $5$ by design.}
+\COMPLEXITY{Linear in the number of cells.}
+\[
+\begin{aligned}
+T(n,m) &= \Theta(nm)\quad\text{(scan, build edges, BFS color, compute sums)},\\
+S(n,m) &= \Theta(nm)\quad\text{(ids, graph, colors, output matrix)}.
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case()/solve_all(), main()+guard + asserts
+from collections import deque
+import sys
+from io import StringIO
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    grid = [list(next(it)) for _ in range(n)]
+    return n, m, grid
+
+def neighbors4(i, j, n, m):
+    for di, dj in [(-1,0),(0,1),(1,0),(0,-1)]:
+        ni, nj = i+di, j+dj
+        if 0 <= ni < n and 0 <= nj < m:
+            yield ni, nj
+
+def build_graph(n, m, grid):
+    id_of = [[-1]*m for _ in range(n)]
+    dots = []
+    for i in range(n):
+        for j in range(m):
+            if grid[i][j] == '.':
+                id_of[i][j] = len(dots)
+                dots.append((i, j))
+    g = [[] for _ in range(len(dots))]
+    for i in range(n):
+        for j in range(m):
+            if grid[i][j] != 'X':
+                continue
+            cyc = []
+            # fixed cyclic order U, R, D, L
+            for di, dj in [(-1,0),(0,1),(1,0),(0,-1)]:
+                ni, nj = i+di, j+dj
+                if 0 <= ni < n and 0 <= nj < m and grid[ni][nj] == '.':
+                    cyc.append(id_of[ni][nj])
+            if len(cyc) % 2 == 1:
+                return None, None, None
+            k = len(cyc)
+            if k >= 2:
+                for t in range(k):
+                    u = cyc[t]; v = cyc[(t+1) % k]
+                    if u != v:
+                        g[u].append(v)
+                        g[v].append(u)
+    return id_of, dots, g
+
+def color_bipartite(g):
+    n = len(g)
+    col = [-1]*n
+    for s in range(n):
+        if col[s] != -1:
+            continue
+        col[s] = 0
+        dq = deque([s])
+        while dq:
+            u = dq.popleft()
+            for v in g[u]:
+                if col[v] == -1:
+                    col[v] = col[u] ^ 1
+                    dq.append(v)
+                elif col[v] == col[u]:
+                    return None
+    return col
+
+def solve_case(n, m, grid):
+    id_of, dots, g = build_graph(n, m, grid)
+    if id_of is None:
+        return None
+    col = color_bipartite(g)
+    if col is None:
+        return None
+    val = [[0]*m for _ in range(n)]
+    for idx, (i, j) in enumerate(dots):
+        c = col[idx]
+        if c == -1:
+            c = 0
+        val[i][j] = 1 if c == 0 else 4
+    for i in range(n):
+        for j in range(m):
+            if grid[i][j] == 'X':
+                s = 0
+                for ni, nj in neighbors4(i, j, n, m):
+                    if grid[ni][nj] == '.':
+                        s += val[ni][nj]
+                if s % 5 != 0:
+                    return None
+                val[i][j] = s
+    return val
+
+def solve_all():
+    inp = read_input()
+    if inp is None:
+        return
+    n, m, grid = inp
+    ans = solve_case(n, m, grid)
+    if ans is None:
+        print("NO")
+    else:
+        print("YES")
+        for i in range(n):
+            print(*ans[i])
+
+# --- Tests ---
+def run_io(in_s):
+    backup_stdin, backup_stdout = sys.stdin, sys.stdout
+    try:
+        sys.stdin = StringIO(in_s)
+        out = StringIO()
+        sys.stdout = out
+        solve_all()
+        return out.getvalue()
+    finally:
+        sys.stdin, sys.stdout = backup_stdin, backup_stdout
+
+def _parse_output(grid, out_s):
+    lines = out_s.strip().splitlines()
+    if not lines:
+        return None, None
+    if lines[0].strip() == "NO":
+        return "NO", None
+    if lines[0].strip() != "YES":
+        return None, None
+    n = len(grid)
+    vals = []
+    for i in range(n):
+        vals.append(list(map(int, lines[1+i].split())))
+    return "YES", vals
+
+def _validate(grid, vals):
+    n, m = len(grid), len(grid[0])
+    for i in range(n):
+        for j in range(m):
+            if grid[i][j] == '.':
+                assert vals[i][j] in (1, 4)
+            else:
+                s = 0
+                for di, dj in [(-1,0),(0,1),(1,0),(0,-1)]:
+                    ni, nj = i+di, j+dj
+                    if 0 <= ni < n and 0 <= nj < m and grid[ni][nj] == '.':
+                        s += vals[ni][nj]
+                assert vals[i][j] == s and s % 5 == 0
+
+def _self_tests():
+    # Test 1: 1x1 '.'
+    grid = ["."]
+    out = run_io("1 1\n.\n")
+    status, vals = _parse_output(grid, out)
+    assert status == "YES"
+    _validate([list(row) for row in grid], vals)
+    # Test 2: 3x3 with center X
+    grid = ["...", ".X.", "..."]
+    out = run_io("3 3\n...\n.X.\n...\n")
+    status, vals = _parse_output(grid, out)
+    assert status == "YES"
+    _validate([list(row) for row in grid], vals)
+    # Test 3: Odd degree X -> NO
+    grid = [
+        ".....",
+        "..X..",
+        "..XX.",
+        "..X..",
+        ".....",
+    ]
+    out = run_io("5 5\n" + "\n".join(grid) + "\n")
+    status, vals = _parse_output(grid, out)
+    assert status == "NO"
+
+if __name__ == "__main__":
+    _self_tests()
+    solve_all()
+\end{minted}
+\VALIDATION{Exactly 3 asserts are embedded: 1x1 unmarked grid; 3x3 with central marked cell; a crafted case where a marked cell has an odd number of unmarked neighbors leading to ``NO''.}
+\RESULT{If feasible, outputs a grid where unmarked cells are $1$ or $4$, marked cells are the required sums, and all marked cells are multiples of $5$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests cover: trivial unmarked-only grids; single marked cell with four unmarked neighbors; impossible instance with an odd-degree marked cell. Property checks ensure sums and parity constraints.}
+\LINE{CROSS-CHECKS}{Compare outputs of Approach B and C on tiny inputs; both should either produce ``NO'' or produce grids satisfying the constraints.}
+\LINE{EDGE-CASE GENERATOR}{Generate random small grids with marked cells strictly in the interior; check feasibility by the parity condition and verify solver output.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def gen_grid(n, m, p_mark=0.2, seed=0):
+    random.seed(seed)
+    g = [['.' for _ in range(m)] for _ in range(n)]
+    # place 'X' only in strict interior to satisfy the constraint
+    for i in range(1, n-1):
+        for j in range(1, m-1):
+            if random.random() < p_mark:
+                g[i][j] = 'X'
+    return g
+
+def parity_feasible(g):
+    n, m = len(g), len(g[0])
+    for i in range(n):
+        for j in range(m):
+            if g[i][j] == 'X':
+                cnt = 0
+                for di, dj in [(-1,0),(0,1),(1,0),(0,-1)]:
+                    ni, nj = i+di, j+dj
+                    if 0 <= ni < n and 0 <= nj < m and g[ni][nj] == '.':
+                        cnt += 1
+                if cnt % 2 == 1:
+                    return False
+    return True
+
+def mini_regression():
+    from io import StringIO
+    import sys
+    for seed in range(5):
+        g = gen_grid(6, 6, p_mark=0.3, seed=seed)
+        n, m = 6, 6
+        s = StringIO()
+        s.write(f"{n} {m}\n")
+        for row in g:
+            s.write("".join(row) + "\n")
+        out = run_io(s.getvalue())
+        if parity_feasible(g):
+            assert out.splitlines()[0].strip() == "YES"
+        else:
+            assert out.splitlines()[0].strip() in ("YES", "NO")
+
+if __name__ == "__main__":
+    mini_regression()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Single, final reference solution with the required API (CF) + asserts
+from collections import deque
+import sys
+from io import StringIO
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    grid = [list(next(it)) for _ in range(n)]
+    return n, m, grid
+
+def neighbors4(i, j, n, m):
+    for di, dj in [(-1,0),(0,1),(1,0),(0,-1)]:
+        ni, nj = i+di, j+dj
+        if 0 <= ni < n and 0 <= nj < m:
+            yield ni, nj
+
+def build_graph(n, m, grid):
+    id_of = [[-1]*m for _ in range(n)]
+    dots = []
+    for i in range(n):
+        for j in range(m):
+            if grid[i][j] == '.':
+                id_of[i][j] = len(dots)
+                dots.append((i, j))
+    g = [[] for _ in range(len(dots))]
+    for i in range(n):
+        for j in range(m):
+            if grid[i][j] != 'X':
+                continue
+            cyc = []
+            for di, dj in [(-1,0),(0,1),(1,0),(0,-1)]:
+                ni, nj = i+di, j+dj
+                if 0 <= ni < n and 0 <= nj < m and grid[ni][nj] == '.':
+                    cyc.append(id_of[ni][nj])
+            if len(cyc) % 2 == 1:
+                return None, None, None
+            k = len(cyc)
+            if k >= 2:
+                for t in range(k):
+                    u = cyc[t]; v = cyc[(t+1) % k]
+                    if u != v:
+                        g[u].append(v)
+                        g[v].append(u)
+    return id_of, dots, g
+
+def color_bipartite(g):
+    n = len(g)
+    col = [-1]*n
+    for s in range(n):
+        if col[s] != -1:
+            continue
+        col[s] = 0
+        dq = deque([s])
+        while dq:
+            u = dq.popleft()
+            for v in g[u]:
+                if col[v] == -1:
+                    col[v] = col[u] ^ 1
+                    dq.append(v)
+                elif col[v] == col[u]:
+                    return None
+    return col
+
+def solve_case(n, m, grid):
+    id_of, dots, g = build_graph(n, m, grid)
+    if id_of is None:
+        return None
+    col = color_bipartite(g)
+    if col is None:
+        return None
+    val = [[0]*m for _ in range(n)]
+    for idx, (i, j) in enumerate(dots):
+        c = col[idx]
+        if c == -1:
+            c = 0
+        val[i][j] = 1 if c == 0 else 4
+    for i in range(n):
+        for j in range(m):
+            if grid[i][j] == 'X':
+                s = 0
+                for ni, nj in neighbors4(i, j, n, m):
+                    if grid[ni][nj] == '.':
+                        s += val[ni][nj]
+                if s % 5 != 0:
+                    return None
+                val[i][j] = s
+    return val
+
+def solve_all():
+    inp = read_input()
+    if inp is None:
+        return
+    n, m, grid = inp
+    ans = solve_case(n, m, grid)
+    if ans is None:
+        print("NO")
+    else:
+        print("YES")
+        for i in range(n):
+            print(*ans[i])
+
+# Embedded asserts
+def run_io(in_s):
+    backup_stdin, backup_stdout = sys.stdin, sys.stdout
+    try:
+        sys.stdin = StringIO(in_s)
+        out = StringIO()
+        sys.stdout = out
+        solve_all()
+        return out.getvalue()
+    finally:
+        sys.stdin, sys.stdout = backup_stdin, backup_stdout
+
+def _parse_output(grid, out_s):
+    lines = out_s.strip().splitlines()
+    if not lines:
+        return None, None
+    if lines[0].strip() == "NO":
+        return "NO", None
+    if lines[0].strip() != "YES":
+        return None, None
+    n = len(grid)
+    vals = []
+    for i in range(n):
+        vals.append(list(map(int, lines[1+i].split())))
+    return "YES", vals
+
+def _validate(grid, vals):
+    n, m = len(grid), len(grid[0])
+    for i in range(n):
+        for j in range(m):
+            if grid[i][j] == '.':
+                assert vals[i][j] in (1, 4)
+            else:
+                s = 0
+                for di, dj in [(-1,0),(0,1),(1,0),(0,-1)]:
+                    ni, nj = i+di, j+dj
+                    if 0 <= ni < n and 0 <= nj < m and grid[ni][nj] == '.':
+                        s += vals[ni][nj]
+                assert vals[i][j] == s and s % 5 == 0
+
+def _self_tests():
+    # 1) 1x1 '.'
+    grid = ["."]
+    out = run_io("1 1\n.\n")
+    status, vals = _parse_output(grid, out)
+    assert status == "YES"
+    _validate([list(row) for row in grid], vals)
+    # 2) 3x3 center X
+    grid = ["...", ".X.", "..."]
+    out = run_io("3 3\n...\n.X.\n...\n")
+    status, vals = _parse_output(grid, out)
+    assert status == "YES"
+    _validate([list(row) for row in grid], vals)
+    # 3) Odd-degree impossible
+    grid = [
+        ".....",
+        "..X..",
+        "..XX.",
+        "..X..",
+        ".....",
+    ]
+    out = run_io("5 5\n" + "\n".join(grid) + "\n")
+    status, _ = _parse_output(grid, out)
+    assert status == "NO"
+
+if __name__ == "__main__":
+    _self_tests()
+    solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Reduce to bipartite coloring of a graph on unmarked cells built by cycling neighbors around each marked cell; assign $1/4$ to the two parts.}
+\WHY{It tests constructive reductions, graph parity arguments, and global consistency from local constraints.}
+\CHECKLIST{
+\begin{bullets}
+\item Check every marked cell has even count of adjacent unmarked cells.
+\item Build edges between consecutive neighbors around each marked cell in fixed cyclic order.
+\item BFS/DFS 2-color the unmarked graph.
+\item Assign $1$ and $4$ to color classes and compute sums for marked cells.
+\item Output the grid.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item No marked cells at all.
+\item Marked cell with zero unmarked neighbors (value $0$).
+\item Isolated unmarked cells not adjacent to any marked cell.
+\item Multiple marked cells sharing unmarked neighbors.
+\item Large grids near the size limits.
+\item Inputs violating the ``marked cells not adjacent to edge'' guarantee (defensive handling still works).
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to enforce even neighbor count before constructing the graph.
+\item Inconsistent neighbor ordering causing wrong pairing; always use a fixed order (U, R, D, L).
+\item Not handling disconnected components when coloring.
+\item Not assigning default colors to isolated unmarked nodes.
+\item Integer formatting: ensure space-separated integers and correct ``YES/NO'' casing.
+\item Off-by-one in neighbor iteration at boundaries.
+\end{bullets}}
+\FAILMODES{Any odd-degree marked cell breaks feasibility. Random ad-hoc pairing can introduce conflicts; the cyclic pairing ensures only even cycles, preserving bipartiteness.}
+\ELI{We draw lines connecting unmarked cells around each X so they form loops. Coloring the dots alternately lets us put $1$ and $4$ so that every X adds up to a multiple of $5$. If any X sees an odd number of dots, it is impossible.}
+\NotePages{3}
+
+\end{document}

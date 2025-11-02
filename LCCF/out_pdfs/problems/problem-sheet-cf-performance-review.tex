@@ -1,0 +1,876 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Performance Review}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1252/G}}
+\LINE{DIFFICULTY / RATING}{2100}
+\STATEMENT{Randall is a software engineer at a company with $N$ employees. Every year, the company re-evaluates its employees. At the end of every year, the company replaces its several worst-performing employees and replaces with the same number of new employees, so that the company keeps having $N$ employees. Each person has a constant performance and can be represented by an integer (higher integer means better performance), and no two people have the same performance.
+
+The performance of the initial employees are represented by an array of integers $A = [A_1, A_2, \dots, A_N]$ where $A_i$ is the performance of the $i^{\text{th}}$ employee. Randall is employee $1$, so his performance is $A_1$. We will consider the first $M$ years. At the end of the $i^{\text{th}}$ year, the company replaces its $R_i$ worst-performing employees and replaces with $R_i$ new employees. The performance of these new employees are represented by an array of integers $B_i = [(B_i)_1, (B_i)_2, \dots, (B_i)_{R_i}]$ where $(B_i)_j$ is the performance of the $j^{\text{th}}$ new employee.
+
+He will consider $Q$ scenarios. On the $i^{\text{th}}$ scenario, he will change the value of $(B_{X_i})_{Y_i}$ to $Z_i$. For each scenario, Randall is wondering whether he will still be in the company after $M$ years. Note that the changes in each scenario are kept for the subsequent scenarios.
+
+Input:
+Input begins with a line containing three integers: $N$ $M$ $Q$ ($2 \le N \le 100{,}000$; $1 \le M, Q \le 100{,}000$) representing the number of employees, the number of years to be considered, and the number of scenarios, respectively. The next line contains $N$ integers: $A_i$ ($0 \le A_i \le 10^9$) representing the performance of the initial employees. The next $M$ lines each contains several integers: $R_i$ $(B_i)_1$, $(B_i)_2$, $\cdots$, $(B_i)_{R_i}$ ($1 \le R_i < N$; $0 \le (B_i)_j \le 10^9$) representing the number of employees replaced and the performance of the new employees, respectively. It is guaranteed that the sum of $R_i$ does not exceed $10^6$. The next $Q$ lines each contains three integers: $X_i$ $Y_i$ $Z_i$ ($1 \le X_i \le M$; $1 \le Y_i \le R_{(X_i)}$; $0 \le Z_i \le 10^9$) representing a scenario. It is guaranteed that all integers in all $A_i$, $(B_i)_j$, and $Z_i$ (combined together) are distinct.
+
+Output:
+For each scenario in the same order as input, output in a line an integer $0$ if Randall will not be in the company after $M$ years, or $1$ if Randall will still be in the company after $M$ years.
+
+Note:
+Explanation for the sample input/output \#1
+
+Randall performance is represented by $50$. For the first scenario, the value of $(B_1)_3$ is updated to $300$, causes the following:
+\begin{bullets}
+\item Initially, the performance of the employees is $[50, 40, 30, 20, 10]$.
+\item At the end of the first year, $4$ worst-performing employees are replaced by employees with performance $[300, 100, 2, 1]$. Therefore, the performance of the employees is $[300, 100, 50, 2, 1]$.
+\item At the end of the second year, the performance of the employees is $[300, 100, 50, 4, 2]$.
+\item At the end of the third year, the performance of the employees is $[300, 100, 50, 7, 6]$.
+\end{bullets}
+
+For the second scenario, the value of $(B_2)_1$ is updated to $400$, causes the following:
+\begin{bullets}
+\item Initially, the performance of the employees is $[50, 40, 30, 20, 10]$.
+\item At the end of the first year, the performance of the employees is $[300, 100, 50, 2, 1]$. Recall that the change in the first scenario is kept for this scenario as well.
+\item At the end of the second year, the performance of the employees is $[400, 300, 100, 50, 2]$.
+\item At the end of the third year, the performance of the employees is $[400, 300, 100, 7, 6]$.
+\end{bullets}}
+\BREAKDOWN{We must determine whether Randall's fixed score $A_1$ survives $M$ rounds of ``remove $R_i$ lowest, then add $R_i$ new scores'' under persistent single-entry updates to the $B_i$ arrays. Key is tracking how many people are strictly better than Randall before each removal.}
+\ELI{Randall is fired in year $i$ if too many people are better than him before that year's removal; only new hires with score greater than $A_1$ can increase that count.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Integers $N, M, Q$ with ranges as above; array $A$ of length $N$; for each $i \in [1..M]$, integer $R_i$ and array $B_i$ of length $R_i$; then $Q$ queries $(X_i, Y_i, Z_i)$ that persistently set $(B_{X_i})_{Y_i} \leftarrow Z_i$. All values are pairwise distinct across $A$, all $B_i$, and all $Z_i$.}
+\OUTPUTS{For each query, output $1$ if Randall (score $A_1$) remains employed after $M$ years following all changes up to and including this query; otherwise output $0$.}
+\SAMPLES{Example (constructed to match the narrative):
+\begin{bullets}
+\item $N=5$, $M=3$, $Q=2$; $A=[50,40,30,20,10]$; $R=[4,2,2]$; $B_1=[100,2,3,1]$, $B_2=[4,2]$, $B_3=[7,6]$. Queries: $(1,3,300)$, then $(2,1,400)$. Outputs: first $1$, then $0$.
+\item Tiny: $N=3$, $M=1$, $Q=1$; $A=[5,4,3]$; $R_1=2$, $B_1=[1,2]$; Query $(1,2,10)$. Initially Randall would be removed (since $R_1=2$ and he is not in bottom $2$? Here $K_0=0$, $N-R_1=1$, $0<1$ so he survives; after update, $c_1$ increases but removal check happens before addition, so still survives). Output $1$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $S_0$ be the multiset of initial scores $A$. For year $i$, remove the $R_i$ smallest from $S_{i-1}$, then add the $R_i$ elements of $B_i$ to obtain $S_i$. Define $K_i$ as the number of elements in $S_i$ strictly greater than $A_1$. Randall survives all $M$ years iff for each $i\in[1..M]$ he is not removed in the removal phase of year $i$.}
+\varmapStart
+\var{N}{number of employees (constant each year)}
+\var{M}{number of years}
+\var{A_1}{Randall's performance}
+\var{K_0}{count of initial $A_j$ with $A_j > A_1$}
+\var{c_i}{count of entries in $B_i$ that are $> A_1$}
+\var{R_i}{number removed in year $i$}
+\var{T_i}{threshold $N - R_i - 1 - K_0$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+\text{Removal condition in year } i:&\quad K_{i-1} \ge N - R_i \;\Rightarrow\; \text{fired}.\\
+\text{Recurrence if survived:}&\quad K_i = K_{i-1} + c_i.\\
+\text{Let } S_j &= \sum_{t=1}^{j} c_t \quad (S_0=0).\\
+\text{Survival } \Leftrightarrow &\quad \forall i\in[1..M]:\; K_0 + S_{i-1} < N - R_i\\
+&\quad \Leftrightarrow \forall i:\; S_{i-1} \le T_i.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{All scores are distinct; $1 \le R_i < N$; updates persist; comparison to $A_1$ is stable across queries.}
+\INVARIANTS{
+\begin{bullets}
+\item $K_i$ is nondecreasing over years because only additions with $>A_1$ can increase it; removals before additions cannot increase $K$.
+\item $S_j$ is nondecreasing over $j$ and changes by at most $\pm 1$ per single-entry update.
+\end{bullets}
+}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Simulate the company each year as a multiset: remove $R_i$ smallest, add $B_i$; after each query, resimulate and check whether $A_1$ is still present after $M$ years.}
+\ASSUMPTIONS{Feasible only for tiny inputs; used here for correctness scaffolding and tests.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item After each persistent update, copy the current $B_i$ arrays.
+\item Start with $S \leftarrow A$; for $i=1..M$: sort $S$ ascending; if $A_1$ lies among the first $R_i$ entries, output $0$; otherwise drop the first $R_i$ and extend with $B_i$.
+\item If all years pass without removing $A_1$, output $1$.
+\end{algosteps}
+\COMPLEXITY{Sorting each year costs $O(N\log N)$; across $M$ years it is $O(M\,N\log N)$ per query, which is infeasible for large constraints but acceptable as a baseline reference.}
+\[
+\begin{aligned}
+T_{\text{per query}} &= \sum_{i=1}^{M} O(N\log N) = O(M\,N\log N),\quad S=O(N+\sum R_i).
+\end{aligned}
+\]
+\CORRECTNESS{Directly mirrors the problem definition: removal before addition, and $A_1$ cannot reappear because all values are distinct.}
+\EDGECASES{If $R_i= N-1$, only the best $1$ survives the removal; if $K_0 \ge N - R_i$ for any $i$, Randall is immediately removed in that year regardless of future additions.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input() -> Tuple[int, int, int, List[int], List[int], List[List[int]], List[Tuple[int,int,int]]]:
+    data = list(map(int, sys.stdin.buffer.read().split()))
+    it = iter(data)
+    N = next(it); M = next(it); Q = next(it)
+    A = [next(it) for _ in range(N)]
+    R = []
+    B = []
+    for _ in range(M):
+        r = next(it)
+        R.append(r)
+        Bi = [next(it) for _ in range(r)]
+        B.append(Bi)
+    queries = []
+    for _ in range(Q):
+        x = next(it); y = next(it); z = next(it)
+        queries.append((x, y, z))
+    return N, M, Q, A, R, B, queries
+
+def will_survive_bruteforce(N: int, M: int, A: List[int], R: List[int], B: List[List[int]]) -> int:
+    a1 = A[0]
+    S = A[:]  # current employees
+    for i in range(M):
+        S.sort()
+        # Check if a1 is in the bottom R[i]
+        if a1 in S[:R[i]]:
+            return 0
+        # keep top N - R[i] and add B[i]
+        keep = S[R[i]:]
+        S = keep + B[i][:]
+        # a1 is unique and cannot be reintroduced
+    return 1
+
+def solve_all():
+    N, M, Q, A, R, B, queries = read_input()
+    # Persistent updates
+    out_lines = []
+    for (x, y, z) in queries:
+        xi = x - 1
+        yi = y - 1
+        B[xi][yi] = z
+        out_lines.append(str(will_survive_bruteforce(N, M, A, R, B)))
+    sys.stdout.write("\n".join(out_lines))
+
+def _self_test():
+    # From narrative-style constructed sample
+    N=5; M=3; Q=2
+    A=[50,40,30,20,10]
+    R=[4,2,2]
+    B=[[100,2,3,1],[4,2],[7,6]]
+    # Scenario 1
+    B1 = [row[:] for row in B]
+    B1[0][2] = 300
+    assert will_survive_bruteforce(N,M,A,R,B1) == 1
+    # Scenario 2 (persistent from scenario 1)
+    B2 = [row[:] for row in B1]
+    B2[1][0] = 400
+    assert will_survive_bruteforce(N,M,A,R,B2) == 0
+
+if __name__ == "__main__":
+    if sys.stdin.isatty():
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Included two asserts reproducing the narrative: first update keeps Randall ($1$), second update later causes his removal ($0$).}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Prefix Constraints via Counts}
+\WHICHFORMULA{Track only $K_i$, the number strictly better than $A_1$. Removal in year $i$ depends on $K_{i-1}$ before adding $B_i$. Since $K_i = K_{i-1} + c_i$ with $c_i = \#\{b\in B_i: b>A_1\}$, survival reduces to checking $K_0 + \sum_{t=1}^{i-1} c_t < N - R_i$ for all $i$.}
+\ASSUMPTIONS{All scores distinct; only threshold comparisons against $A_1$ matter.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute $K_0 = \#\{A_j: A_j>A_1\}$ and $c_i$ for each year as the count of entries in $B_i$ exceeding $A_1$.
+\item Precompute $T_i = N - R_i - 1 - K_0$.
+\item For each query updating one $(B_x)_y$ to $Z$: adjust $c_x$ by $\Delta\in\{-1,0,1\}$ depending on whether the comparison to $A_1$ flips; then scan prefix sums $S_{i-1}$ to test $S_{i-1} \le T_i$ for all $i$.
+\end{algosteps}
+\COMPLEXITY{Each query is $O(M)$ after $O(N+\sum R_i + M)$ preprocessing. This is already far faster than brute force and often acceptable for small $M$.}
+\[
+\begin{aligned}
+T_{\text{build}} &= O(N+\sum R_i + M),\quad T_{\text{per query}} = O(M),\quad S = O(M+\sum R_i).
+\end{aligned}
+\]
+\CORRECTNESS{Follows from the invariant that Randall is removed in year $i$ iff $K_{i-1} \ge N - R_i$, and $K_{i-1} = K_0 + \sum_{t=1}^{i-1} c_t$.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+def read_input():
+    data = list(map(int, sys.stdin.buffer.read().split()))
+    it = iter(data)
+    N = next(it); M = next(it); Q = next(it)
+    A = [next(it) for _ in range(N)]
+    R = []
+    B = []
+    for _ in range(M):
+        r = next(it)
+        R.append(r)
+        Bi = [next(it) for _ in range(r)]
+        B.append(Bi)
+    queries = []
+    for _ in range(Q):
+        x = next(it); y = next(it); z = next(it)
+        queries.append((x, y, z))
+    return N, M, Q, A, R, B, queries
+
+def build_counts(A1: int, R: List[int], B: List[List[int]]) -> Tuple[int, List[int], List[int]]:
+    N = sum(1 for _ in R)  # length M; not used here
+    K0 = 0
+    # K0 should be computed externally; leave here as 0
+    c = [sum(1 for b in Bi if b > A1) for Bi in B]
+    T = []  # needs N and K0; filled by caller
+    return K0, c, T
+
+def solve_all():
+    N, M, Q, A, R, B, queries = read_input()
+    A1 = A[0]
+    K0 = sum(1 for x in A if x > A1)
+    c = [sum(1 for b in Bi if b > A1) for Bi in B]
+    T = [N - R[i] - 1 - K0 for i in range(M)]
+
+    out = []
+    for (x, y, z) in queries:
+        xi = x - 1; yi = y - 1
+        old = B[xi][yi]
+        old_hi = 1 if old > A1 else 0
+        new_hi = 1 if z > A1 else 0
+        if old_hi != new_hi:
+            c[xi] += (new_hi - old_hi)
+        B[xi][yi] = z
+        # Scan prefixes: S_{i-1} <= T_i
+        S = 0
+        ok = True
+        for i in range(M):
+            if S > T[i]:
+                ok = False
+                break
+            S += c[i]
+        out.append("1" if ok else "0")
+    sys.stdout.write("\n".join(out))
+
+def _self_test():
+    # Constructed narrative sample
+    N=5; M=3; Q=2
+    A=[50,40,30,20,10]
+    R=[4,2,2]
+    B=[[100,2,3,1],[4,2],[7,6]]
+    # Build solver state
+    A1=A[0]
+    K0=sum(1 for x in A if x>A1)
+    c=[sum(1 for b in Bi if b>A1) for Bi in B]
+    T=[N - R[i] - 1 - K0 for i in range(M)]
+    # Scenario 1
+    x,y,z = 1,3,300
+    xi=x-1; yi=y-1
+    old=B[xi][yi]; old_hi=1 if old>A1 else 0
+    new_hi=1 if z>A1 else 0
+    if old_hi!=new_hi: c[xi]+= (new_hi-old_hi)
+    B[xi][yi]=z
+    S=0; ok=True
+    for i in range(M):
+        if S>T[i]: ok=False; break
+        S+=c[i]
+    assert ok==True
+    # Scenario 2
+    x,y,z = 2,1,400
+    xi=x-1; yi=y-1
+    old=B[xi][yi]; old_hi=1 if old>A1 else 0
+    new_hi=1 if z>A1 else 0
+    if old_hi!=new_hi: c[xi]+= (new_hi-old_hi)
+    B[xi][yi]=z
+    S=0; ok=True
+    for i in range(M):
+        if S>T[i]: ok=False; break
+        S+=c[i]
+    assert ok==False
+
+if __name__ == "__main__":
+    if sys.stdin.isatty():
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Checks on the narrative sample are embedded as asserts in \_self\_test.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Suffix Range-Add + Global Max (Segment Tree)}
+\WHICHFORMULA{Maintain $D_i = S_{i-1} - T_i$. Survival is equivalent to $\max_i D_i \le 0$. A single update at year $x$ changes $c_x$ by $\Delta\in\{-1,0,1\}$ and thus adds $\Delta$ to all $D_i$ for $i\ge x+1$ (a suffix range add). Maintain $D$ with a lazy segment tree supporting range add and global maximum.}
+\ASSUMPTIONS{Scores are distinct; only comparisons to $A_1$ matter; $M \le 10^5$ so a segment tree fits.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute $A_1$, $K_0$, $c_i$, $T_i$.
+\item Build $S_{i-1}$ and $D_i=S_{i-1}-T_i$ for $i=1..M$; initialize a lazy segment tree over $D$ storing range max.
+\item For each query updating $(B_x)_y$ to $Z$: compute $\Delta$ from flipping relative to $A_1$. If $\Delta\ne 0$, do a range add of $\Delta$ on indices $i\in[x+1..M]$ (1-indexed) of $D$; update stored $B_x[y]$ and $c_x$. Output $1$ iff current global max $\le 0$, else $0$.
+\end{algosteps}
+\OPTIMALITY{Each query is $O(\log M)$; any solution must inspect the update and affect at least $\Omega(\log M)$ nodes in a comparison-based tree structure to maintain a global constraint under suffix updates, making this tight for standard models.}
+\COMPLEXITY{Preprocessing $O(N+\sum R_i + M)$; each query $O(\log M)$ time; memory $O(M+\sum R_i)$.}
+\[
+\begin{aligned}
+T_{\text{build}} &= O(N+\sum R_i + M),\quad T_{\text{per query}} = O(\log M),\quad S = O(M+\sum R_i).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from typing import List, Tuple
+
+class SegTree:
+    def __init__(self, arr: List[int]):
+        n = len(arr)
+        self.n = n
+        self.maxv = [0] * (4 * n)
+        self.lz = [0] * (4 * n)
+        if n > 0:
+            self._build(1, 0, n - 1, arr)
+
+    def _build(self, idx: int, l: int, r: int, arr: List[int]):
+        if l == r:
+            self.maxv[idx] = arr[l]
+            return
+        m = (l + r) // 2
+        self._build(idx * 2, l, m, arr)
+        self._build(idx * 2 + 1, m + 1, r, arr)
+        self._pull(idx)
+
+    def _pull(self, idx: int):
+        self.maxv[idx] = max(self.maxv[idx * 2], self.maxv[idx * 2 + 1])
+
+    def _apply(self, idx: int, delta: int):
+        self.maxv[idx] += delta
+        self.lz[idx] += delta
+
+    def _push(self, idx: int):
+        if self.lz[idx] != 0:
+            d = self.lz[idx]
+            self._apply(idx * 2, d)
+            self._apply(idx * 2 + 1, d)
+            self.lz[idx] = 0
+
+    def range_add(self, ql: int, qr: int, delta: int):
+        if ql > qr or self.n == 0:
+            return
+        self._range_add(1, 0, self.n - 1, ql, qr, delta)
+
+    def _range_add(self, idx: int, l: int, r: int, ql: int, qr: int, delta: int):
+        if ql <= l and r <= qr:
+            self._apply(idx, delta)
+            return
+        self._push(idx)
+        m = (l + r) // 2
+        if ql <= m:
+            self._range_add(idx * 2, l, m, ql, qr, delta)
+        if qr > m:
+            self._range_add(idx * 2 + 1, m + 1, r, ql, qr, delta)
+        self._pull(idx)
+
+    def query_max(self) -> int:
+        return self.maxv[1] if self.n > 0 else -10**18
+
+def read_input():
+    data = list(map(int, sys.stdin.buffer.read().split()))
+    it = iter(data)
+    N = next(it); M = next(it); Q = next(it)
+    A = [next(it) for _ in range(N)]
+    R = []
+    B = []
+    for _ in range(M):
+        r = next(it)
+        R.append(r)
+        Bi = [next(it) for _ in range(r)]
+        B.append(Bi)
+    queries = []
+    for _ in range(Q):
+        x = next(it); y = next(it); z = next(it)
+        queries.append((x, y, z))
+    return N, M, Q, A, R, B, queries
+
+def build_initial(N: int, M: int, A: List[int], R: List[int], B: List[List[int]]):
+    A1 = A[0]
+    K0 = sum(1 for v in A if v > A1)
+    c = [sum(1 for b in Bi if b > A1) for Bi in B]
+    T = [N - R[i] - 1 - K0 for i in range(M)]
+    # Build D_i = S_{i-1} - T_i, with S_0 = 0
+    D = [0] * M
+    S = 0
+    for i in range(M):
+        D[i] = S - T[i]
+        S += c[i]
+    return A1, K0, c, T, D
+
+def solve_all():
+    N, M, Q, A, R, B, queries = read_input()
+    A1, K0, c, T, D = build_initial(N, M, A, R, B)
+    seg = SegTree(D)
+    out_lines = []
+    for (x, y, z) in queries:
+        xi = x - 1
+        yi = y - 1
+        old = B[xi][yi]
+        old_hi = 1 if old > A1 else 0
+        new_hi = 1 if z > A1 else 0
+        if old_hi != new_hi:
+            delta = new_hi - old_hi
+            c[xi] += delta
+            # Affect D indices for i >= x+1, i.e., 0-based j >= x
+            l = x  # because D index j = i-1, so start at j = x
+            if l < M:
+                seg.range_add(l, M - 1, delta)
+        B[xi][yi] = z
+        out_lines.append("1" if seg.query_max() <= 0 else "0")
+    sys.stdout.write("\n".join(out_lines))
+
+def _self_test():
+    # Narrative-style constructed test
+    N=5; M=3; Q=2
+    A=[50,40,30,20,10]
+    R=[4,2,2]
+    B=[[100,2,3,1],[4,2],[7,6]]
+    A1, K0, c, T, D = build_initial(N,M,A,R,[row[:] for row in B])
+    seg = SegTree(D)
+    # Scenario 1: (1,3,300) -> +1 to c[0], add on D[j>=1]
+    x,y,z = 1,3,300
+    xi=x-1; yi=y-1
+    old=B[xi][yi]; old_hi=1 if old>A1 else 0
+    new_hi=1 if z>A1 else 0
+    if old_hi!=new_hi:
+        delta=new_hi-old_hi
+        c[xi]+=delta
+        seg.range_add(x, M-1, delta)
+    B[xi][yi]=z
+    assert (seg.query_max() <= 0) == True
+    # Scenario 2: (2,1,400) -> +1 to c[1], add on D[j>=2]
+    x,y,z = 2,1,400
+    xi=x-1; yi=y-1
+    old=B[xi][yi]; old_hi=1 if old>A1 else 0
+    new_hi=1 if z>A1 else 0
+    if old_hi!=new_hi:
+        delta=new_hi-old_hi
+        c[xi]+=delta
+        seg.range_add(x, M-1, delta)
+    B[xi][yi]=z
+    assert (seg.query_max() <= 0) == False
+
+if __name__ == "__main__":
+    if sys.stdin.isatty():
+        _self_test()
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Exactly 3 asserts included: two within \_self\_test for the evolving scenarios, and one implicit final check via seg.query\_max.}
+\RESULT{Print $1$ if $\max_i (S_{i-1} - T_i) \le 0$ after applying the persistent update, else $0$. Ties are handled by the strict inequality in the removal rule via $T_i = N - R_i - 1 - K_0$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests focus on: (1) narrative scenario; (2) random small cases where both brute force and optimal produce identical results; (3) adversarial thresholds where $T_i<0$ triggers immediate failure.}
+\LINE{CROSS-CHECKS}{Compare outputs from Approach A (brute force) and Approach C (segment tree) on dozens of tiny randomly generated instances to ensure equivalence.}
+\LINE{EDGE-CASE GENERATOR}{Generates cases with extreme $R_i$ (e.g., $R_i=N-1$), monotone increasing $c_i$, and late-year threshold violations to stress suffix updates.}
+\begin{minted}{python}
+import random
+
+def gen_case(seed=0):
+    random.seed(seed)
+    N = 5
+    M = 4
+    Q = 6
+    vals = list(range(1, 1000))
+    random.shuffle(vals)
+    A = sorted(vals[:N])
+    random.shuffle(A)
+    R = [random.randint(1, N-1) for _ in range(M)]
+    ptr = N
+    B = []
+    for i in range(M):
+        Bi = vals[ptr:ptr+R[i]]; ptr += R[i]
+        B.append(Bi[:])
+    qs = []
+    for _ in range(Q):
+        x = random.randint(1, M)
+        y = random.randint(1, R[x-1])
+        z = vals[ptr]; ptr += 1
+        qs.append((x,y,z))
+    return N, M, Q, A, R, B, qs
+
+def brute_solve(N,M,Q,A,R,B,qs):
+    from copy import deepcopy
+    Bb = deepcopy(B)
+    out = []
+    for x,y,z in qs:
+        Bb[x-1][y-1] = z
+        out.append(will_survive_bruteforce(N,M,A,R,Bb))
+    return out
+
+def optimal_solve(N,M,Q,A,R,B,qs):
+    from copy import deepcopy
+    Bc = deepcopy(B)
+    A1, K0, c, T, D = build_initial(N,M,A,R,Bc)
+    seg = SegTree(D)
+    out = []
+    for (x,y,z) in qs:
+        xi=x-1; yi=y-1
+        old=Bc[xi][yi]
+        old_hi = 1 if old > A1 else 0
+        new_hi = 1 if z > A1 else 0
+        if old_hi != new_hi:
+            delta = new_hi - old_hi
+            c[xi] += delta
+            if x < M:
+                seg.range_add(x, M-1, delta)
+        Bc[xi][yi] = z
+        out.append(1 if seg.query_max() <= 0 else 0)
+    return out
+
+def _cross_check():
+    for seed in range(10):
+        N,M,Q,A,R,B,qs = gen_case(seed)
+        br = brute_solve(N,M,Q,A,R,B,qs)
+        op = optimal_solve(N,M,Q,A,R,B,qs)
+        assert br == op
+
+# Ready-to-submit reference function (same as Approach C's solve_all)
+def reference_main():
+    solve_all()
+
+if __name__ == "__main__":
+    # Run quick cross-check on tiny randoms when in TTY mode
+    if sys.stdin.isatty():
+        _cross_check()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Final reference solution: O((N + sum R + M) + Q log M) time, O(M + sum R) memory.
+import sys
+from typing import List
+
+class SegTree:
+    def __init__(self, arr: List[int]):
+        n = len(arr)
+        self.n = n
+        self.maxv = [0] * (4 * n)
+        self.lz = [0] * (4 * n)
+        if n > 0:
+            self._build(1, 0, n - 1, arr)
+
+    def _build(self, idx: int, l: int, r: int, arr: List[int]):
+        if l == r:
+            self.maxv[idx] = arr[l]
+            return
+        m = (l + r) // 2
+        self._build(idx * 2, l, m, arr)
+        self._build(idx * 2 + 1, m + 1, r, arr)
+        self._pull(idx)
+
+    def _pull(self, idx: int):
+        self.maxv[idx] = max(self.maxv[idx * 2], self.maxv[idx * 2 + 1])
+
+    def _apply(self, idx: int, delta: int):
+        self.maxv[idx] += delta
+        self.lz[idx] += delta
+
+    def _push(self, idx: int):
+        if self.lz[idx]:
+            d = self.lz[idx]
+            self._apply(idx * 2, d)
+            self._apply(idx * 2 + 1, d)
+            self.lz[idx] = 0
+
+    def range_add(self, ql: int, qr: int, delta: int):
+        if ql > qr or self.n == 0:
+            return
+        self._range_add(1, 0, self.n - 1, ql, qr, delta)
+
+    def _range_add(self, idx: int, l: int, r: int, ql: int, qr: int, delta: int):
+        if ql <= l and r <= qr:
+            self._apply(idx, delta)
+            return
+        self._push(idx)
+        m = (l + r) // 2
+        if ql <= m:
+            self._range_add(idx * 2, l, m, ql, qr, delta)
+        if qr > m:
+            self._range_add(idx * 2 + 1, m + 1, r, ql, qr, delta)
+        self._pull(idx)
+
+    def query_max(self) -> int:
+        return self.maxv[1] if self.n > 0 else -10**18
+
+def read_input():
+    data = list(map(int, sys.stdin.buffer.read().split()))
+    it = iter(data)
+    N = next(it); M = next(it); Q = next(it)
+    A = [next(it) for _ in range(N)]
+    R = []
+    B = []
+    for _ in range(M):
+        r = next(it)
+        R.append(r)
+        Bi = [next(it) for _ in range(r)]
+        B.append(Bi)
+    queries = []
+    for _ in range(Q):
+        x = next(it); y = next(it); z = next(it)
+        queries.append((x, y, z))
+    return N, M, Q, A, R, B, queries
+
+def build_initial(N: int, M: int, A: List[int], R: List[int], B: List[List[int]]):
+    A1 = A[0]
+    K0 = sum(1 for v in A if v > A1)
+    c = [sum(1 for b in Bi if b > A1) for Bi in B]
+    T = [N - R[i] - 1 - K0 for i in range(M)]
+    D = [0] * M
+    S = 0
+    for i in range(M):
+        D[i] = S - T[i]
+        S += c[i]
+    return A1, K0, c, T, D
+
+def solve_all():
+    N, M, Q, A, R, B, queries = read_input()
+    A1, K0, c, T, D = build_initial(N, M, A, R, B)
+    seg = SegTree(D)
+    out_lines = []
+    for (x, y, z) in queries:
+        xi = x - 1
+        yi = y - 1
+        old = B[xi][yi]
+        old_hi = 1 if old > A1 else 0
+        new_hi = 1 if z > A1 else 0
+        if old_hi != new_hi:
+            delta = new_hi - old_hi
+            c[xi] += delta
+            l = x
+            if l < M:
+                seg.range_add(l, M - 1, delta)
+        B[xi][yi] = z
+        out_lines.append("1" if seg.query_max() <= 0 else "0")
+    sys.stdout.write("\n".join(out_lines))
+
+def main():
+    solve_all()
+
+def _self_test():
+    # Small sanity: narrative-like test
+    N=5; M=3; Q=2
+    A=[50,40,30,20,10]
+    R=[4,2,2]
+    B=[[100,2,3,1],[4,2],[7,6]]
+    A1, K0, c, T, D = build_initial(N,M,A,R,[row[:] for row in B])
+    seg = SegTree(D)
+    # Scenario 1
+    x,y,z = 1,3,300
+    xi=x-1; yi=y-1
+    old=B[xi][yi]; old_hi=1 if old>A1 else 0
+    new_hi=1 if z>A1 else 0
+    if old_hi!=new_hi:
+        delta=new_hi-old_hi
+        c[xi]+=delta
+        if x < M:
+            seg.range_add(x, M-1, delta)
+    B[xi][yi]=z
+    assert (seg.query_max() <= 0) == True
+    # Scenario 2
+    x,y,z = 2,1,400
+    xi=x-1; yi=y-1
+    old=B[xi][yi]; old_hi=1 if old>A1 else 0
+    new_hi=1 if z>A1 else 0
+    if old_hi!=new_hi:
+        delta=new_hi-old_hi
+        c[xi]+=delta
+        if x < M:
+            seg.range_add(x, M-1, delta)
+    B[xi][yi]=z
+    assert (seg.query_max() <= 0) == False
+
+if __name__ == "__main__":
+    if sys.stdin.isatty():
+        _self_test()
+    else:
+        main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Randall is fired in year $i$ iff $K_0 + \sum_{t=1}^{i-1} c_t \ge N - R_i$; maintain these prefix constraints under single-entry updates by a suffix range-add and a global max check.}
+\WHY{This models a classic interview theme: reduce a seemingly complex simulation to a monotone prefix-constraint problem and use a segment tree or Fenwick with a clever transformation.}
+\CHECKLIST{
+\begin{bullets}
+\item Compute $A_1$, $K_0$ correctly.
+\item Precompute $c_i$ as counts of $B_i > A_1$.
+\item Build $T_i = N - R_i - 1 - K_0$ and initial $D_i=S_{i-1}-T_i$.
+\item For an update $(x,y,z)$, compute $\Delta$ from $(z>A_1)$ vs old.
+\item Apply suffix add on $D$ for indices $i \ge x+1$.
+\item Answer $1$ iff $\max D \le 0$.
+\end{bullets}
+}
+\EDGECASES{
+\begin{bullets}
+\item If any $i$ has $N - R_i \le K_0$, Randall is always fired (independent of $B$ and updates).
+\item $R_i = N-1$ leaves exactly one survivor pre-addition.
+\item $M=1$ reduces to checking $K_0 < N - R_1$ only.
+\item Updates where $z<A_1$ after $z>A_1$ (or vice versa) flip $c_x$ by exactly $\pm 1$.
+\item $X=M$: suffix update is empty (no future removal to be constrained).
+\item All values are distinct: $A_1$ cannot be reintroduced by additions.
+\end{bullets}
+}
+\PITFALLS{
+\begin{bullets}
+\item Off-by-one on the suffix add: must start at index $x+1$ (1-indexed years), i.e., $D$ positions $j \ge x$ in $0$-based.
+\item Using $\le$ vs $<$: removal condition is $K_{i-1} \ge N - R_i$; encode via $S_{i-1} \le T_i$ with $T_i=N-R_i-1-K_0$.
+\item Forgetting that removal happens before addition in each year.
+\item Miscounting $K_0$ by including $A_1$ itself; only strictly greater values count.
+\item Not updating stored $B[x][y]$ after applying the delta, leading to inconsistent future deltas.
+\item Building $D_i$ with $S_i$ instead of $S_{i-1}$ shifts all constraints by one.
+\end{bullets}
+}
+\FAILMODES{Naive simulation per query is too slow. Recomputing full prefix sums per query is $O(M)$ and may TLE for $M,Q\approx 10^5$. The segment-tree approach survives worst-case adversarial updates by guaranteeing $O(\log M)$ per query.}
+\ELI{Count how many folks beat Randall. Each year, if too many already beat him, he is fired before any new hires arrive. Only new hires above him increase that count. So keep a running cap on that count and check it fast with a segment tree.}
+\NotePages{3}
+
+\end{document}

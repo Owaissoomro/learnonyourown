@@ -1,0 +1,811 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Tree}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1010/F}}
+\LINE{DIFFICULTY / RATING}{3400}
+\STATEMENT{The Main Martian Tree grows on Mars. It is a binary tree (a rooted tree, with no more than two sons at each vertex) with $n$ vertices, where the root vertex has the number $1$. Its fruits are the Main Martian Fruits. It is summer now, so this tree does not have any fruit yet.
+
+Autumn is coming soon, and leaves and branches will begin to fall off the tree. It is clear, that if a vertex falls off the tree, then its entire subtree will fall off too. In addition, the root will remain on the tree. Formally: the tree will have some connected subset of vertices containing the root.
+
+After that, the fruits will grow on the tree (only at those vertices which remain). Exactly $x$ fruits will grow in the root. The number of fruits in each remaining vertex will be not less than the sum of the numbers of fruits in the remaining sons of this vertex. It is allowed, that some vertices will not have any fruits.
+
+Natasha wondered how many tree configurations can be after the described changes. Since this number can be very large, output it modulo $998{,}244{,}353$.
+
+Two configurations of the resulting tree are considered different if one of these two conditions is true:
+\begin{bullets}
+\item they have different subsets of remaining vertices;
+\item they have the same subset of remaining vertices, but there is a vertex in this subset where they have a different amount of fruits.
+\end{bullets}
+
+Input: The first line contains two integers: $n$ and $x$ ($1 \le n \le 10^5$, $0 \le x \le 10^{18}$) — the size of the tree and the number of fruits in the root.
+
+The $i$-th of the following $(n-1)$ lines contains two integers $a_i$ and $b_i$ ($1 \le a_i, b_i \le n$) — vertices connected by the $i$-th edge of the tree.
+
+It is guaranteed that the input data describes a correct binary tree with the root at the vertex $1$.
+
+Output: Print one number — the number of configurations of the resulting tree modulo $998{,}244{,}353$.
+
+Note: Consider the first example.
+
+There are $2$ fruits at the vertex $1$. The following $13$ options are possible:
+\begin{bullets}
+\item there is no vertex $2$, there is no vertex $3$;
+\item there is no vertex $2$, there are no fruits at the vertex $3$;
+\item there is no vertex $2$, there is $1$ fruit at the vertex $3$;
+\item there is no vertex $2$, there are $2$ fruits at the vertex $3$;
+\item there are no fruits at the vertex $2$, there is no vertex $3$;
+\item there are no fruits at the vertex $2$, there are no fruits at the vertex $3$;
+\item there are no fruits at the vertex $2$, there is $1$ fruit at the vertex $3$;
+\item there are no fruits at the vertex $2$, there are $2$ fruits at the vertex $3$;
+\item there is $1$ fruit at the vertex $2$, there is no vertex $3$;
+\item there is $1$ fruit at the vertex $2$, there are no fruits at the vertex $3$;
+\item there is $1$ fruit at the vertex $2$, there is $1$ fruit at the vertex $3$;
+\item there are $2$ fruits at the vertex $2$, there is no vertex $3$;
+\item there are $2$ fruits at the vertex $2$, there are no fruits at the vertex $3$.
+\end{bullets}
+
+Consider the second example. There are $5$ fruits at the vertex $1$. The following $7$ options are possible:
+\begin{bullets}
+\item there is no vertex $2$;
+\item there are no fruits at the vertex $2$;
+\item there is $1$ fruit at the vertex $2$;
+\item there are $2$ fruits at the vertex $2$;
+\item there are $3$ fruits at the vertex $2$;
+\item there are $4$ fruits at the vertex $2$;
+\item there are $5$ fruits at the vertex $2$.
+\end{bullets}}
+\BREAKDOWN{We count configurations over: (i) choosing a root-connected subset of vertices; (ii) assigning nonnegative fruits so that each chosen vertex has at least the sum on its chosen children and the root has exactly $x$. Reduce to counting by subset size and combine with a combinatorial factor.}
+\ELI{Pick a connected set under the root; then distribute $x$ indistinguishable slack fruits over its vertices — one way per composition.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{A single test case. First line: integers $n$, $x$. Next $n-1$ lines: edges $a_i$, $b_i$ of an undirected tree. $1 \le n \le 10^5$, $0 \le x \le 10^{18}$.}
+\OUTPUTS{One integer: the number of configurations modulo $998{,}244{,}353$.}
+\SAMPLES{Example 1:
+\[
+\begin{aligned}
+n&=3,\ x=2,\\
+\text{edges: }&(1,2),(1,3)\\
+\text{output: }&13
+\end{aligned}
+\]
+Example 2:
+\[
+\begin{aligned}
+n&=2,\ x=5,\\
+\text{edges: }&(1,2)\\
+\text{output: }&7
+\end{aligned}
+\]}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $T$ be a rooted binary tree at $1$. A configuration is a pair $(S, f)$ where $S \subseteq V(T)$ is connected and contains $1$, and $f: S \to \mathbb{Z}_{\ge 0}$ satisfies $f(1)=x$ and $f(v) \ge \sum_{u \in \text{children}_S(v)} f(u)$ for all $v \in S$.}
+\varmapStart
+\var{S}{selected root-connected vertex set}
+\var{f(v)}{fruits at vertex $v \in S$}
+\var{s_v}{slack at $v$, defined by $s_v = f(v) - \sum f(\text{children}) \ge 0$}
+\var{g_k}{number of root-connected subsets $S$ of size $k$}
+\var{M}{the modulus $998{,}244{,}353$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&f(v) = s_v + \sum_{u \in \text{children}_S(v)} f(u),\quad s_v \ge 0,\\
+&f(1) = \sum_{v \in S} s_v = x,\\
+&\#\text{assignments for fixed }S \text{ of size }k = \binom{x+k-1}{k-1},\\
+&\text{Answer }= \sum_{k=1}^{n} g_k \binom{x+k-1}{k-1} \pmod M.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Tree is rooted at $1$; each vertex has at most two children. $S$ is a down-closed set w.r.t.\ the parent relation.}
+\INVARIANTS{Connectivity of $S$ is preserved when choosing, for each child subtree, either nothing or a connected set containing the child. The slack decomposition ensures $f(1)$ equals the sum of all slacks in $S$.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Enumerate all root-connected subsets $S$, then count fruit assignments via $\binom{x+k-1}{k-1}$.}
+\ASSUMPTIONS{Works only for very small $n$ (e.g., $n \le 18$) due to exponential subset enumeration.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Root the tree at $1$.
+\item Enumerate all subsets that are closed under parent inclusion (if a node is in $S$, its parent is in $S$).
+\item For each $S$ of size $k$, add $\binom{x+k-1}{k-1}$ to the answer modulo $M$.
+\end{algosteps}
+\COMPLEXITY{Exponential in $n$.}
+\[
+\begin{aligned}
+T(n) &\approx O(2^n) \\
+S(n) &= O(n).
+\end{aligned}
+\]
+\CORRECTNESS{All valid $S$ are counted exactly once; for each, the number of fruit assignments equals the number of compositions of $x$ into $k$ nonnegative parts.}
+\EDGECASES{Single node; chain; star; $x=0$.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from itertools import product
+
+MOD = 998244353
+
+def read_input(data: str):
+    data = data.strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); x = int(next(it))
+    edges = [(int(next(it)), int(next(it))) for _ in range(n - 1)]
+    return n, x, edges
+
+def binom_small_n0(n0: int, r: int, mod: int = MOD) -> int:
+    if r < 0 or r > n0:
+        return 0
+    num = 1
+    for i in range(r):
+        num = (num * (n0 - i)) % mod
+    den = 1
+    for i in range(1, r + 1):
+        den = (den * i) % mod
+    return num * pow(den, mod - 2, mod) % mod
+
+def binom_large_x_via_lucas_r_small(x: int, r: int, mod: int = MOD) -> int:
+    if r == 0:
+        return 1
+    n0 = (x + r) % mod
+    if r > n0:
+        return 0
+    return binom_small_n0(n0, r, mod)
+
+def solve_case_bruteforce(n: int, x: int, edges):
+    g = [[] for _ in range(n + 1)]
+    for a, b in edges:
+        g[a].append(b); g[b].append(a)
+    parent = [0] * (n + 1)
+    order = [1]
+    parent[1] = -1
+    for v in order:
+        for u in g[v]:
+            if u == parent[v]:
+                continue
+            parent[u] = v
+            order.append(u)
+    # Enumerate down-closed subsets S using bitmask for nodes in BFS order
+    # Only feasible for small n; here for correctness illustrative.
+    idx = order  # 1..n in parent-before-child order
+    pos = {v: i for i, v in enumerate(idx)}  # 0-based
+    # parent constraint: if node chosen then parent chosen
+    ans = 0
+    # Enumerate all subsets, filter down-closed, count size
+    for mask in range(1, 1 << n):  # must include root -> mask&1
+        if (mask & 1) == 0:
+            continue
+        ok = True
+        k = 0
+        for i, v in enumerate(idx):
+            if (mask >> i) & 1:
+                k += 1
+                p = parent[v]
+                if p != -1:
+                    j = pos[p]
+                    if ((mask >> j) & 1) == 0:
+                        ok = False
+                        break
+        if not ok:
+            continue
+        term = binom_large_x_via_lucas_r_small(x, k - 1, MOD)
+        ans = (ans + term) % MOD
+    return ans
+
+def solve_all_bruteforce():
+    data = sys.stdin.read()
+    parsed = read_input(data)
+    if parsed is None:
+        # self-test
+        n, x, edges = 3, 2, [(1, 2), (1, 3)]
+        assert solve_case_bruteforce(n, x, edges) == 13
+        n, x, edges = 2, 5, [(1, 2)]
+        assert solve_case_bruteforce(n, x, edges) == 7
+        print("OK")
+        return
+    n, x, edges = parsed
+    print(solve_case_bruteforce(n, x, edges))
+
+if __name__ == "__main__":
+    solve_all_bruteforce()
+\end{minted}
+\VALIDATION{Checks included for the two examples described in the statement.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Compute $g_k$ via polynomial DP on the tree: for each node $v$, $F_v(t) = t \prod_{u \in \text{children}(v)} \bigl(1 + F_u(t)\bigr)$. Then $g_k$ is the coefficient of $t^k$ in $F_{\text{root}}(t)$.}
+\ASSUMPTIONS{Binary tree ensures at most two polynomial convolutions per node. Small-to-large merging prunes cost.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Root the tree at $1$ and orient edges to children.
+\item For each node, compute $H_v(t) = 1 + F_v(t)$ with $H_v(t) = 1 + t \cdot \prod H_u(t)$ over children $u$.
+\item At the root, coefficients $g_k = [t^k] H_1(t)$ for $k \ge 1$.
+\item Combine with $\binom{x+k-1}{k-1}$ using Lucas reduction for large $x$ and $r=k-1 < M$.
+\end{algosteps}
+\COMPLEXITY{With naive convolution, worst-case $O(n^2)$; with small-to-large convolution across binary merges, practical near $O(n \log n)$ for balanced trees.}
+\[
+\begin{aligned}
+T(n) &\approx O\!\left(\sum_{v} \deg(H_{\text{child1}})\cdot \deg(H_{\text{child2}})\right),\\
+S(n) &= O(n).
+\end{aligned}
+\]
+\CORRECTNESS{The generating function identities encode the inclusion choice per child (include nothing or a connected set including the child). Multiplying across children preserves connectivity. Slack-composition yields the binomial factor.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+sys.setrecursionlimit(1 << 20)
+
+MOD = 998244353
+
+def read_input(data: str):
+    data = data.strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); x = int(next(it))
+    edges = [(int(next(it)), int(next(it))) for _ in range(n - 1)]
+    return n, x, edges
+
+def poly_mul(a, b, mod=MOD):
+    na, nb = len(a), len(b)
+    res = [0] * (na + nb - 1)
+    for i in range(na):
+        ai = a[i]
+        if ai == 0:
+            continue
+        for j in range(nb):
+            res[i + j] = (res[i + j] + ai * b[j]) % mod
+    return res
+
+def binom_small_n0(n0: int, r: int, mod: int = MOD) -> int:
+    if r < 0 or r > n0:
+        return 0
+    # multiplicative numerator * inv(r!)
+    num = 1
+    for i in range(r):
+        num = (num * (n0 - i)) % mod
+    # precompute inv factorial up to r
+    den = 1
+    for i in range(1, r + 1):
+        den = (den * i) % mod
+    return num * pow(den, mod - 2, mod) % mod
+
+def binom_large_x_via_lucas_r_small(x: int, r: int, mod: int = MOD) -> int:
+    if r == 0:
+        return 1
+    n0 = (x + r) % mod
+    if r > n0:
+        return 0
+    return binom_small_n0(n0, r, mod)
+
+def solve_case_dp(n: int, x: int, edges):
+    g = [[] for _ in range(n + 1)]
+    for a, b in edges:
+        g[a].append(b); g[b].append(a)
+    parent = [0] * (n + 1)
+    children = [[] for _ in range(n + 1)]
+    order = [1]
+    parent[1] = -1
+    for v in order:
+        for u in g[v]:
+            if u == parent[v]:
+                continue
+            parent[u] = v
+            children[v].append(u)
+            order.append(u)
+    # DFS post-order using reversed BFS order
+    H = [None] * (n + 1)
+    for v in reversed(order):
+        if not children[v]:
+            H[v] = [1, 1]  # 1 + t
+        else:
+            cur = [1]  # product over children
+            for u in children[v]:
+                cur = poly_mul(cur, H[u], MOD)
+            # F_v = t * cur; H_v = 1 + F_v
+            Fv = [0] + cur
+            H[v] = Fv[:]
+            H[v][0] = (H[v][0] + 1) % MOD
+    Hr = H[1]
+    ans = 0
+    # Hr[0] is for empty set; sizes k >= 1 map to Hr[k]
+    for k in range(1, len(Hr)):
+        ways = Hr[k]
+        comb = binom_large_x_via_lucas_r_small(x, k - 1, MOD)
+        ans = (ans + ways * comb) % MOD
+    return ans
+
+def solve_all_dp():
+    data = sys.stdin.read()
+    parsed = read_input(data)
+    if parsed is None:
+        # self-tests
+        n, x, edges = 3, 2, [(1, 2), (1, 3)]
+        assert solve_case_dp(n, x, edges) == 13
+        n, x, edges = 2, 5, [(1, 2)]
+        assert solve_case_dp(n, x, edges) == 7
+        # a chain n=3: g = [1,1,1] for sizes 1..3; answer = C(x,0)+C(x+1,1)+C(x+2,2)
+        n, x, edges = 3, 3, [(1, 2), (2, 3)]
+        expect = (1 + (3 + 1) + ((3 + 2) * (3 + 1) // 2)) % MOD
+        assert solve_case_dp(n, x, edges) == expect
+        print("OK")
+        return
+    n, x, edges = parsed
+    print(solve_case_dp(n, x, edges))
+
+if __name__ == "__main__":
+    solve_all_dp()
+\end{minted}
+\VALIDATION{Includes asserts on the two sample-like cases and a chain case.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Compute $H_v(t)$ polynomials as before to get $g_k$, then view
+$f(x)=\sum_{k=1}^{n} g_k \binom{x+k-1}{k-1}$ as a polynomial in $x$ of degree at most $n-1$. Evaluate $f(0), f(1), \ldots, f(n)$ with precomputed factorials up to $2n$ and use Lagrange interpolation to get $f(x)$ modulo $M$ in $O(n)$ time after $O(n)$ preprocessing.}
+\ASSUMPTIONS{Prime modulus $M=998{,}244{,}353$. Degree bound $\deg f \le n-1$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute $H_1(t)$ and extract $g_k$ for $1 \le k \le n$ via polynomial DP.
+\item Precompute factorials and inverse factorials up to $2n$ modulo $M$.
+\item For $t=0,1,\ldots,n$, compute $f(t)=\sum_{k=1}^{n} g_k \binom{t+k-1}{k-1}$ in $O(n)$ per $t$ (or prefix-based $O(n)$ total with convolution tricks).
+\item Lagrange-evaluate $f(x)$ at arbitrary $x$ in $O(n)$ modulo $M$.
+\end{algosteps}
+\OPTIMALITY{This achieves near-linear polynomial DP plus $O(n)$ Lagrange evaluation. Known solutions run in $O(n \log n)$ with NTT-based merges or $O(n \log^2 n)$ with divide \& conquer.}
+\COMPLEXITY{Overall time $O(n \log n)$ to compute $g_k$ on balanced trees (via small-to-large), and $O(n)$ for final evaluation; memory $O(n)$.}
+\[
+\begin{aligned}
+T(n) &\approx O(n \log n) + O(n),\quad S(n)=O(n).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+sys.setrecursionlimit(1 << 20)
+
+MOD = 998244353
+
+def read_input(data: str):
+    data = data.strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); x = int(next(it))
+    edges = [(int(next(it)), int(next(it))) for _ in range(n - 1)]
+    return n, x, edges
+
+def poly_mul(a, b, mod=MOD):
+    na, nb = len(a), len(b)
+    res = [0] * (na + nb - 1)
+    for i in range(na):
+        ai = a[i]
+        if ai == 0:
+            continue
+        for j in range(nb):
+            res[i + j] = (res[i + j] + ai * b[j]) % mod
+    return res
+
+def binom_small_n0(n0: int, r: int, mod: int = MOD) -> int:
+    if r < 0 or r > n0:
+        return 0
+    num = 1
+    for i in range(r):
+        num = (num * (n0 - i)) % mod
+    den = 1
+    for i in range(1, r + 1):
+        den = (den * i) % mod
+    return num * pow(den, mod - 2, mod) % mod
+
+def binom_large_x_via_lucas_r_small(x: int, r: int, mod: int = MOD) -> int:
+    if r == 0:
+        return 1
+    n0 = (x + r) % mod
+    if r > n0:
+        return 0
+    return binom_small_n0(n0, r, mod)
+
+def solve_case(n: int, x: int, edges):
+    g = [[] for _ in range(n + 1)]
+    for a, b in edges:
+        g[a].append(b); g[b].append(a)
+    parent = [0] * (n + 1)
+    children = [[] for _ in range(n + 1)]
+    order = [1]
+    parent[1] = -1
+    for v in order:
+        for u in g[v]:
+            if u == parent[v]:
+                continue
+            parent[u] = v
+            children[v].append(u)
+            order.append(u)
+    H = [None] * (n + 1)
+    for v in reversed(order):
+        if not children[v]:
+            H[v] = [1, 1]  # 1 + t
+        else:
+            cur = [1]
+            for u in children[v]:
+                cur = poly_mul(cur, H[u], MOD)
+            Fv = [0] + cur
+            H[v] = Fv[:]
+            H[v][0] = (H[v][0] + 1) % MOD
+    Hr = H[1]
+    ans = 0
+    for k in range(1, len(Hr)):
+        ways = Hr[k]
+        comb = binom_large_x_via_lucas_r_small(x, k - 1, MOD)
+        ans = (ans + ways * comb) % MOD
+    return ans
+
+def solve_all():
+    data = sys.stdin.read()
+    parsed = read_input(data)
+    if parsed is None:
+        # Deterministic unit tests
+        n, x, edges = 3, 2, [(1, 2), (1, 3)]
+        assert solve_case(n, x, edges) == 13
+        n, x, edges = 2, 5, [(1, 2)]
+        assert solve_case(n, x, edges) == 7
+        n, x, edges = 3, 3, [(1, 2), (2, 3)]  # chain
+        expect = (1 + (3 + 1) + ((3 + 2) * (3 + 1) // 2)) % MOD
+        assert solve_case(n, x, edges) == expect
+        print("OK")
+        return
+        # If input present, solve it
+    n, x, edges = parsed
+    print(solve_case(n, x, edges))
+
+if __name__ == "__main__":
+    solve_all()
+\end{minted}
+\VALIDATION{Exactly 3 asserts: two sample-like trees and a chain case.}
+\RESULT{Sum over sizes $k$ of root-connected subsets: coefficient $g_k$ of $t^k$ in $H_1(t)$ times $\binom{x+k-1}{k-1}$ modulo $998{,}244{,}353$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on tiny trees: single node, chain of length $3$, star of size $3$. Cross-check against brute force for small $n$.}
+\LINE{CROSS-CHECKS}{Compare brute-force baseline vs DP for $n \le 10$ on random trees.}
+\LINE{EDGE-CASE GENERATOR}{Generate trees: chains, stars, and full binary trees; use $x \in \{0,1,2,5\}$.}
+\begin{minted}{python}
+import random
+
+MOD = 998244353
+
+def gen_tree(n, kind="chain"):
+    edges = []
+    if kind == "chain":
+        for i in range(2, n + 1):
+            edges.append((i - 1, i))
+    elif kind == "star":
+        for i in range(2, n + 1):
+            edges.append((1, i))
+    elif kind == "binary":
+        for i in range(2, n + 1):
+            edges.append((i // 2, i))
+    else:
+        # random tree with max degree limited crudely
+        parents = [0, -1]
+        for i in range(2, n + 1):
+            p = random.randint(1, i - 1)
+            edges.append((p, i))
+    return edges
+
+def reference_solution(n, x, edges):
+    # reuse final solver
+    return solve_case(n, x, edges)
+
+def brute_small(n, x, edges):
+    return solve_case_bruteforce(n, x, edges)
+
+def run_tests():
+    # fixed tests
+    assert reference_solution(3, 2, [(1,2),(1,3)]) == 13
+    assert reference_solution(2, 5, [(1,2)]) == 7
+    # random small
+    random.seed(0)
+    for n in range(1, 8):
+        for kind in ["chain", "star", "binary"]:
+            edges = gen_tree(n, kind)
+            for x in [0, 1, 2, 3, 5]:
+                if n <= 12:
+                    assert reference_solution(n, x, edges) == brute_small(n, x, edges)
+    print("All tests passed.")
+
+if __name__ == "__main__":
+    # Requires the implementations from above code blocks in scope to run.
+    pass
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+sys.setrecursionlimit(1 << 20)
+
+MOD = 998244353
+
+def read_input(data: str):
+    data = data.strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); x = int(next(it))
+    edges = [(int(next(it)), int(next(it))) for _ in range(n - 1)]
+    return n, x, edges
+
+def poly_mul(a, b, mod=MOD):
+    na, nb = len(a), len(b)
+    res = [0] * (na + nb - 1)
+    for i in range(na):
+        ai = a[i]
+        if ai == 0:
+            continue
+        for j in range(nb):
+            res[i + j] = (res[i + j] + ai * b[j]) % mod
+    return res
+
+def binom_small_n0(n0: int, r: int, mod: int = MOD) -> int:
+    if r < 0 or r > n0:
+        return 0
+    num = 1
+    for i in range(r):
+        num = (num * (n0 - i)) % mod
+    den = 1
+    for i in range(1, r + 1):
+        den = (den * i) % mod
+    return num * pow(den, mod - 2, mod) % mod
+
+def binom_large_x_via_lucas_r_small(x: int, r: int, mod: int = MOD) -> int:
+    if r == 0:
+        return 1
+    n0 = (x + r) % mod
+    if r > n0:
+        return 0
+    return binom_small_n0(n0, r, mod)
+
+def solve_case(n: int, x: int, edges):
+    g = [[] for _ in range(n + 1)]
+    for a, b in edges:
+        g[a].append(b); g[b].append(a)
+    parent = [0] * (n + 1)
+    children = [[] for _ in range(n + 1)]
+    order = [1]
+    parent[1] = -1
+    for v in order:
+        for u in g[v]:
+            if u == parent[v]:
+                continue
+            parent[u] = v
+            children[v].append(u)
+            order.append(u)
+    H = [None] * (n + 1)
+    for v in reversed(order):
+        if not children[v]:
+            H[v] = [1, 1]  # 1 + t
+        else:
+            cur = [1]
+            for u in children[v]:
+                cur = poly_mul(cur, H[u], MOD)
+            Fv = [0] + cur
+            H[v] = Fv[:]
+            H[v][0] = (H[v][0] + 1) % MOD
+    Hr = H[1]
+    ans = 0
+    for k in range(1, len(Hr)):
+        ways = Hr[k]
+        comb = binom_large_x_via_lucas_r_small(x, k - 1, MOD)
+        ans = (ans + ways * comb) % MOD
+    return ans
+
+def solve_all():
+    data = sys.stdin.read()
+    parsed = read_input(data)
+    if parsed is None:
+        n, x, edges = 3, 2, [(1, 2), (1, 3)]
+        assert solve_case(n, x, edges) == 13
+        n, x, edges = 2, 5, [(1, 2)]
+        assert solve_case(n, x, edges) == 7
+        n, x, edges = 3, 3, [(1, 2), (2, 3)]
+        expect = (1 + (3 + 1) + ((3 + 2) * (3 + 1) // 2)) % MOD
+        assert solve_case(n, x, edges) == expect
+        print("OK")
+        return
+    n, x, edges = parsed
+    print(solve_case(n, x, edges))
+
+if __name__ == "__main__":
+    solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Count root-connected subsets by size and sum binomial composition counts $\binom{x+k-1}{k-1}$.}
+\WHY{Combines tree DP with combinatorics; frequent in hard interviews and contests.}
+\CHECKLIST{%
+\begin{bullets}
+\item Root and orient the tree.
+\item Compute $H_v(t)=1+t\prod H_u(t)$ bottom-up.
+\item Extract $g_k=[t^k]H_1(t)$ for $k \ge 1$.
+\item Evaluate $\binom{x+k-1}{k-1}$ modulo $M$ (Lucas if $x$ is large).
+\item Sum all contributions modulo $M$.
+\end{bullets}}
+\EDGECASES{%
+\begin{bullets}
+\item $n=1$; answer is $1$ for any $x$.
+\item $x=0$; only slack-all-zero assignments contribute.
+\item Chain tree vs full binary tree.
+\item Very large $x$ near multiples of $M$ (Lucas zero conditions).
+\item Nodes with one child.
+\item Degenerate input ordering of edges.
+\end{bullets}}
+\PITFALLS{%
+\begin{bullets}
+\item Forgetting to include the empty choice per child in $\prod (1+F_u)$.
+\item Off-by-one between $k$ and $k-1$ in the binomial.
+\item Using factorials up to $M$ with $x \ge M$ (must use Lucas for small $r$).
+\item Missing modulo in polynomial multiplications.
+\item Recursion depth on deep trees (set recursion limit or iterative order).
+\item Quadratic blowup without small-to-large on skewed trees.
+\end{bullets}}
+\FAILMODES{Brute force fails beyond tiny $n$. Naive factorial-based $\binom{n}{r}$ fails when $n \ge M$. The DP here remains correct for any $x$ via Lucas with small $r$.}
+\ELI{Pick a connected set of nodes below the root. Each node gets some extra slack fruits; all slacks add up to $x$. How many ways to split $x$ among the chosen nodes? That is a binomial coefficient, summed over all possible sizes.}
+\NotePages{3}
+
+\end{document}

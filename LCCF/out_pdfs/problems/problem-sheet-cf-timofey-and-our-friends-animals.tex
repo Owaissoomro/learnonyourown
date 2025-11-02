@@ -1,0 +1,788 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Timofey and our friends animals}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/763/E}}
+\LINE{DIFFICULTY / RATING}{2900}
+\STATEMENT{After his birthday party, Timofey went to his favorite tree alley in a park. He wants to feed there his favorite birds — crows.
+
+It is widely known that each tree is occupied by a single crow family. The trees in the alley form a row and are numbered from 1 to $n$. Some families are friends to each other. For some reasons, two families can be friends only if they live not too far from each other, more precisely, there is no more than $k - 1$ trees between any pair of friend families. Formally, the family on the $u$-th tree and the family on the $v$-th tree can be friends only if $\lvert u - v\rvert \le k$ holds.
+
+One of the friendship features is that if some family learns that Timofey is feeding crows somewhere, it notifies about this all friend families. Thus, after Timofey starts to feed crows under some tree, all the families that are friends to the family living on this tree, as well as their friends and so on, fly to the feeding place. Of course, the family living on the tree also comes to the feeding place.
+
+Today Timofey came to the alley and noticed that all the families that live on trees with numbers strictly less than $l$ or strictly greater than $r$ have flown away. Thus, it is not possible to pass the information about feeding through them. Moreover, there is no need to feed them. Help Timofey to learn what is the minimum number of trees under which he has to feed crows so that all the families that have remained will get the information about feeding. You are given several situations, described by integers $l$ and $r$, you need to calculate the answer for all of them.
+
+Input:
+The first line contains integers $n$ and $k$ ($1 \le n \le 10^5$, $1 \le k \le 5$), where $n$ is the number of trees, and $k$ is the maximum possible distance between friend families.
+
+The next line contains single integer $m$ ($0 \le m \le n\cdot k$) — the number of pair of friend families.
+
+Each of the next $m$ lines contains two integers $u$ and $v$ ($1 \le u, v \le 10^5$), that means that the families on trees $u$ and $v$ are friends. It is guaranteed that $u \ne v$ and $\lvert u - v\rvert \le k$. All the given pairs are distinct.
+
+The next line contains single integer $q$ ($1 \le q \le 10^5$) — the number of situations you need to calculate the answer in.
+
+Each of the next $q$ lines contains two integers $l$ and $r$ ($1 \le l \le r \le 10^5$), that means that in this situation families that have flown away lived on such trees $x$, so that either $x < l$ or $x > r$.
+
+Output:
+Print $q$ lines. Line $i$ should contain single integer — the answer in the $i$-th situation.
+
+Note:
+In the first example the following family pairs are friends: $(1, 3)$, $(2, 3)$ and $(4, 5)$.
+
+- In the first situation only the first family has remained, so the answer is $1$.
+- In the second situation the first two families have remained, and they are not friends, so the answer is $2$.
+- In the third situation the families $2$ and $3$ are friends, so it is enough to feed any of them, the answer is $1$.
+- In the fourth situation we can feed the first family, then the third family will get the information from the first family, and the second family will get the information from the third. The answer is $1$.
+- In the fifth situation we can feed the first and the fifth families, so the answer is $2$.}
+\BREAKDOWN{We need, for each interval $[l,r]$, the number of connected components in the induced subgraph on vertices $[l,r]$ of an undirected graph whose edges only connect vertices at distance at most $k$. The small constant $k\le 5$ imposes a banded structure enabling efficient range queries.}
+\ELI{Count how many friend-groups remain connected inside $[l,r]$; edges do not cross more than one $k$-block, so we can stitch answers with a small boundary summary.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Integers $n,k$; integer $m$ and $m$ undirected edges $(u,v)$ with $\lvert u-v\rvert \le k$; integer $q$ and $q$ queries $(l,r)$. Bounds: $1\le n\le 10^5$, $1\le k\le 5$, $0\le m\le n\cdot k$, $1\le q\le 10^5$, $1\le l\le r\le 10^5$.}
+\OUTPUTS{For each query $(l,r)$, output the minimum number of starting trees to inform all families in $[l,r]$, which equals the number of connected components in the induced subgraph on $[l,r]$. One integer per line.}
+\SAMPLES{
+Example (tiny):
+n=5, k=2, edges: (1,3),(2,3),(4,5); queries: (1,1),(1,2),(2,3),(1,3),(1,5) produce outputs 1,2,1,1,2.
+}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $G=(V,E)$ where $V=\{1,\ldots,n\}$ and $E\subseteq\{\{u,v\}:\lvert u-v\rvert\le k\}$. For an interval $[l,r]$, consider the induced subgraph $G[l,r] = G[V\cap [l,r]]$. The answer is $\#\text{components}(G[l,r])$.}
+\varmapStart
+\var{n}{number of trees}
+\var{k}{max distance for friendship edges}
+\var{m}{number of edges}
+\var{q}{number of queries}
+\var{[l,r]}{query interval; only vertices $l\ldots r$ remain}
+\varmapEnd
+\GOVERN{
+\begin{BreakableEquation*}
+\text{ans}(l,r) \;=\; \left\lvert V\cap[l,r]\right\rvert \;-\; \text{rank of a spanning forest of }G[l,r].
+\end{BreakableEquation*}
+Equivalently, $\text{ans}(l,r)$ is the number of connected components of $G[l,r]$.
+}
+\ASSUMPTIONS{Edges satisfy $\lvert u-v\rvert\le k$. The graph is undirected, no multi-edges, and $k\le 5$.}
+\INVARIANTS{
+- Edges only connect within a column or adjacent columns when vertices are laid out in $k$ rows by index modulo $k$.
+- Number of components decreases by $1$ exactly when adding an edge connects two previously distinct components.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{For each query, build the induced subgraph on $[l,r]$ and count components via DSU or BFS.}
+\ASSUMPTIONS{Process each query independently; time will be too slow for worst-case but correct.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For query $(l,r)$, initialize DSU over vertices $l,\ldots,r$.
+\item For each input edge $(u,v)$ with $l\le u,v\le r$, unite $u$ and $v$.
+\item Answer is number of distinct DSU roots among $l,\ldots,r$. 
+\end{algosteps}
+\COMPLEXITY{Per query $O((r-l+1) + m_{[l,r]})$, worst-case $O(n+m)$; total $O(q(n+m))$.}
+\[
+\begin{aligned}
+T_{\text{total}} &\in \Theta\big(q(n+m)\big)\quad\text{(too slow for }q,n\le 10^5\text{)} \\
+S &\in O(n+k).
+\end{aligned}
+\]
+\CORRECTNESS{Directly counts connected components in the induced subgraph by unioning all edges inside $[l,r]$.}
+\EDGECASES{Empty edge set; single vertex; all vertices connected; $k=1$.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+from typing import List, Tuple, Optional
+import sys
+import random
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); k = int(next(it))
+    m = int(next(it))
+    edges = []
+    for _ in range(m):
+        u = int(next(it)); v = int(next(it))
+        edges.append((u, v))
+    q = int(next(it))
+    queries = []
+    for _ in range(q):
+        l = int(next(it)); r = int(next(it))
+        queries.append((l, r))
+    return n, k, edges, queries
+
+class DSU:
+    def __init__(self, n: int):
+        self.p = list(range(n))
+        self.r = [0]*n
+        self.cnt = n
+    def find(self, x: int) -> int:
+        while self.p[x] != x:
+            self.p[x] = self.p[self.p[x]]
+            x = self.p[x]
+        return x
+    def union(self, a: int, b: int) -> bool:
+        ra, rb = self.find(a), self.find(b)
+        if ra == rb: return False
+        if self.r[ra] < self.r[rb]:
+            ra, rb = rb, ra
+        self.p[rb] = ra
+        if self.r[ra] == self.r[rb]:
+            self.r[ra] += 1
+        self.cnt -= 1
+        return True
+
+def solve_all_baseline(n: int, k: int, edges: List[Tuple[int,int]], queries: List[Tuple[int,int]]) -> List[int]:
+    res = []
+    for l, r in queries:
+        dsu = DSU(r - l + 1)
+        present = set(range(l, r+1))
+        for u, v in edges:
+            if l <= u <= r and l <= v <= r:
+                dsu.union(u - l, v - l)
+        # count distinct roots among present
+        seen = set()
+        for i in range(r - l + 1):
+            seen.add(dsu.find(i))
+        res.append(len(seen))
+    return res
+
+def main():
+    parsed = read_input()
+    if parsed is None:
+        # basic self-checks on tiny cases
+        n, k = 5, 2
+        edges = [(1,3),(2,3),(4,5)]
+        queries = [(1,1),(1,2),(2,3),(1,3),(1,5)]
+        out = solve_all_baseline(n, k, edges, queries)
+        assert out == [1,2,1,1,2]
+        # random tiny fuzz
+        for _ in range(50):
+            n = random.randint(1, 12)
+            k = random.randint(1, 5)
+            E = []
+            for u in range(1, n+1):
+                for v in range(u+1, min(n, u+k)+1):
+                    if random.random() < 0.3:
+                        E.append((u, v))
+            q = 10
+            Q = []
+            for __ in range(q):
+                l = random.randint(1, n)
+                r = random.randint(l, n)
+                Q.append((l, r))
+            ans = solve_all_baseline(n, k, E, Q)
+            assert len(ans) == q
+        return
+    n, k, edges, queries = parsed
+    out = solve_all_baseline(n, k, edges, queries)
+    sys.stdout.write("\n".join(map(str, out)))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Asserts include the sample described and randomized tiny fuzz vs the same baseline routine (consistency).}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Block Decomposition on Columns (Leaves Only)}
+\WHICHFORMULA{Lay out vertices into $k$ rows by index modulo $k$, so edges only occur within a column or across adjacent columns. Answer each query by explicitly handling its two boundary columns and scanning the few complete columns in-between.}
+\ASSUMPTIONS{We rely on the strip-graph property induced by $\lvert u-v\rvert\le k$. Time improves if the interval spans only few columns.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Map vertex $i$ to $(\text{col}=\lfloor(i-1)/k\rfloor,\ \text{row}=(i-1)\bmod k)$.
+\item Pre-store per-column internal edges and per-boundary cross edges.
+\item For a query, handle left and right partial columns by tiny DSU on at most $k$ nodes; for the middle, scan each column and union to neighbors. 
+\end{algosteps}
+\COMPLEXITY{Handles queries in $O(k^2\cdot \#\text{columns in range})$, which is better than brute force but still linear in interval length.}
+\[
+\begin{aligned}
+T(q) &\approx O\Big(\sum_{[l,r]} k^2\cdot \big(\lfloor(r-1)/k\rfloor - \lfloor(l-1)/k\rfloor + 1\big)\Big).
+\end{aligned}
+\]
+\CORRECTNESS{Only edges within a column or across adjacent columns exist; unions limited accordingly are sufficient.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Sketch-only: Keep same API as baseline; this block intentionally omitted for brevity since
+# the optimal approach below dominates and is fully implemented and tested.
+# (In interviews, this section would show a partial optimization preceding the final one.)
+\end{minted}
+\VALIDATION{N/A — superseded by the optimal approach with full tests.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Segment Tree on Columns with Boundary DSU Summaries}
+\WHICHFORMULA{Use a segment tree over columns ($\approx \lceil n/k\rceil$ leaves). Each node stores: (i) the number of components in its subgraph, and (ii) the partition of its leftmost and rightmost column nodes (at most $k+k\le 10$) into component labels. Merge two adjacent segments by DSU only over boundary components using the cross edges between their touching columns. Partial columns at query ends are handled by on-the-fly tiny slices.}
+\ASSUMPTIONS{$k\le 5$ ensures the boundary state is small. Edges satisfy $\lvert u-v\rvert\le k$ so they never skip more than one column.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Reindex vertex $i$ to $(c=\lfloor(i-1)/k\rfloor,r=(i-1)\bmod k)$. Build:
+  - intra[c]: edges among rows within column $c$,
+  - cross[c]: edges between column $c$ and $c{+}1$.
+\item Build a segment tree on columns:
+  - Leaf $c$: DSU on present rows to form internal components; left/right labels equal.
+  - Internal node: merge children by DSU over boundary components only, using cross edges across the middle boundary; update component count.
+\item Query $[l,r]$:
+  - If both in one column, build a slice leaf on rows $[r_l,r_r]$ and return its component count.
+  - Else merge left slice (rows $[r_l,k{-}1]$), the segment tree result on full middle columns if any, and the right slice (rows $[0,r_r]$) in order. The final count is the answer.
+\end{algosteps}
+\OPTIMALITY{Each merge touches at most $k^2\le 25$ cross edges and at most $4k\le 20$ boundary components. A segment-tree query merges $O(\log(n/k))$ nodes. Two extra slice builds cost $O(k^2)$. This is optimal up to logarithmic factors for banded graphs with small $k$.}
+\COMPLEXITY{Per query $O(k^2 + k\log(n/k))$ with tiny constants; preprocessing $O(n + m)$. Memory $O(n + m)$.}
+\[
+\begin{aligned}
+T_{\text{pre}} &\in O(n + m),\quad
+T_{\text{query}} \in O(k^2 + k\log(n/k)),\quad
+S \in O(n + m).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+from typing import List, Tuple, Optional
+import sys
+import random
+
+# ------------------ Data structures ------------------
+
+class DSU:
+    __slots__ = ("p", "r")
+    def __init__(self, n: int):
+        self.p = list(range(n))
+        self.r = [0]*n
+    def find(self, x: int) -> int:
+        p = self.p
+        while p[x] != x:
+            p[x] = p[p[x]]
+            x = p[x]
+        return x
+    def union(self, a: int, b: int) -> bool:
+        pa, pb = self.find(a), self.find(b)
+        if pa == pb: return False
+        ra, rb = self.r[pa], self.r[pb]
+        if ra < rb:
+            pa, pb = pb, pa
+        self.p[pb] = pa
+        if ra == rb:
+            self.r[pa] += 1
+        return True
+
+class Node:
+    __slots__ = ("L","R","cnt","ll","rr")
+    def __init__(self, L: int, R: int, cnt: int, ll: List[int], rr: List[int]):
+        self.L = L; self.R = R; self.cnt = cnt; self.ll = ll; self.rr = rr
+
+# ------------------ Solver ------------------
+
+class Solver:
+    def __init__(self, n: int, k: int, edges: List[Tuple[int,int]]):
+        self.n = n
+        self.k = k
+        self.C = (n + k - 1) // k  # number of columns
+        self.intra = [[] for _ in range(self.C)]          # per-column internal edges (row,row)
+        self.cross = [[] for _ in range(max(0, self.C-1))]# between col c and c+1: (row_in_c, row_in_c+1)
+        self._build_edges(edges)
+        self.tree = [None]*(4*self.C) if self.C > 0 else []
+        if self.C > 0:
+            self._build(1, 0, self.C-1)
+
+    def _idx_to_colrow(self, i: int) -> Tuple[int,int]:
+        i -= 1
+        return (i // self.k, i % self.k)
+
+    def _build_edges(self, edges: List[Tuple[int,int]]):
+        k = self.k
+        for (u, v) in edges:
+            cu, ru = self._idx_to_colrow(u)
+            cv, rv = self._idx_to_colrow(v)
+            if cu == cv:
+                self.intra[cu].append((ru, rv))
+            else:
+                if cu > cv:
+                    cu, cv = cv, cu
+                    ru, rv = rv, ru
+                # now cu == cv-1
+                if cv - cu != 1:
+                    # Should not happen if |u-v| <= k
+                    continue
+                self.cross[cu].append((ru, rv))
+
+    def _present_rows_in_col(self, c: int) -> int:
+        # number of existing rows in column c
+        if c < self.C - 1: return self.k
+        rem = self.n - (self.C - 1)*self.k
+        return rem if rem > 0 else self.k
+
+    def _build_leaf(self, c: int) -> Node:
+        k = self.k
+        present_cnt = self._present_rows_in_col(c)
+        present = [1 if r < present_cnt else 0 for r in range(k)]
+        parent = list(range(k))
+        dsu = DSU(k)
+        # Union only among present rows based on intra[c]
+        for a, b in self.intra[c]:
+            if a < k and b < k and present[a] and present[b]:
+                dsu.union(a, b)
+        # Map roots for present rows to compact ids
+        root2id = {}
+        nxt = 0
+        ll = [-1]*k
+        for r in range(k):
+            if present[r]:
+                root = dsu.find(r)
+                if root not in root2id:
+                    root2id[root] = nxt; nxt += 1
+                ll[r] = root2id[root]
+        rr = ll[:]  # same for leaf: left and right boundary are identical
+        cnt = len(root2id)
+        return Node(c, c, cnt, ll, rr)
+
+    def _merge(self, A: Node, B: Node) -> Node:
+        assert A.R + 1 == B.L
+        k = self.k
+        # Prepare mapping of boundary component ids to DSU indices
+        # Collect unique labels from A.ll and A.rr
+        mapA = {}
+        idx = 0
+        for lab in A.ll:
+            if lab != -1 and lab not in mapA:
+                mapA[lab] = idx; idx += 1
+        for lab in A.rr:
+            if lab != -1 and lab not in mapA:
+                mapA[lab] = idx; idx += 1
+        Acount = idx
+        mapB = {}
+        for lab in B.ll:
+            if lab != -1 and lab not in mapB:
+                mapB[lab] = idx; idx += 1
+        for lab in B.rr:
+            if lab != -1 and lab not in mapB:
+                mapB[lab] = idx; idx += 1
+        total = idx
+        dsu = DSU(total)
+        cnt = A.cnt + B.cnt
+        # Cross edges across boundary A.R (between columns A.R and B.L)
+        boundary = A.R
+        if 0 <= boundary < len(self.cross):
+            for ra, rb in self.cross[boundary]:
+                la = A.rr[ra] if 0 <= ra < k else -1
+                lb = B.ll[rb] if 0 <= rb < k else -1
+                if la == -1 or lb == -1:
+                    continue
+                ia = mapA[la]
+                ib = Acount + mapB[lb]
+                if dsu.union(ia, ib):
+                    cnt -= 1
+        # Build output labels by compressing representatives
+        rep2id = {}
+        nxt = 0
+        out_ll = [-1]*k
+        for r in range(k):
+            lab = A.ll[r]
+            if lab == -1: 
+                out_ll[r] = -1
+            else:
+                rep = dsu.find(mapA[lab])
+                if rep not in rep2id:
+                    rep2id[rep] = nxt; nxt += 1
+                out_ll[r] = rep2id[rep]
+        out_rr = [-1]*k
+        for r in range(k):
+            lab = B.rr[r]
+            if lab == -1:
+                out_rr[r] = -1
+            else:
+                rep = dsu.find(Acount + mapB[lab])
+                if rep not in rep2id:
+                    rep2id[rep] = nxt; nxt += 1
+                out_rr[r] = rep2id[rep]
+        return Node(A.L, B.R, cnt, out_ll, out_rr)
+
+    def _build(self, i: int, L: int, R: int):
+        if L == R:
+            self.tree[i] = self._build_leaf(L)
+            return
+        M = (L + R) // 2
+        self._build(i*2, L, M)
+        self._build(i*2+1, M+1, R)
+        self.tree[i] = self._merge(self.tree[i*2], self.tree[i*2+1])
+
+    def _query(self, i: int, L: int, R: int, ql: int, qr: int) -> Optional[Node]:
+        if ql > R or qr < L:
+            return None
+        if ql <= L and R <= qr:
+            return self.tree[i]
+        M = (L + R) // 2
+        left = self._query(i*2, L, M, ql, qr)
+        right = self._query(i*2+1, M+1, R, ql, qr)
+        if left is None: return right
+        if right is None: return left
+        return self._merge(left, right)
+
+    def _build_slice(self, c: int, lo: int, hi: int) -> Node:
+        # Build a leaf node restricted to rows [lo,hi] (inclusive)
+        k = self.k
+        present_cnt = self._present_rows_in_col(c)
+        lo = max(lo, 0)
+        hi = min(hi, present_cnt - 1)
+        if lo > hi:
+            # Empty slice: represent as zero-node leaf
+            ll = [-1]*k
+            rr = [-1]*k
+            return Node(c, c, 0, ll, rr)
+        present = [1 if (lo <= r <= hi) else 0 for r in range(k)]
+        dsu = DSU(k)
+        for a, b in self.intra[c]:
+            if 0 <= a < k and 0 <= b < k and present[a] and present[b]:
+                dsu.union(a, b)
+        root2id = {}
+        nxt = 0
+        ll = [-1]*k
+        for r in range(k):
+            if present[r]:
+                root = dsu.find(r)
+                if root not in root2id:
+                    root2id[root] = nxt; nxt += 1
+                ll[r] = root2id[root]
+        rr = ll[:]
+        cnt = len(root2id)
+        return Node(c, c, cnt, ll, rr)
+
+    def answer_query(self, l: int, r: int) -> int:
+        if self.C == 0:
+            return 0
+        k = self.k
+        cL = (l - 1) // k
+        rL = (l - 1) % k
+        cR = (r - 1) // k
+        rR = (r - 1) % k
+        if cL == cR:
+            slice_node = self._build_slice(cL, rL, rR)
+            return slice_node.cnt
+        left_slice = self._build_slice(cL, rL, k - 1)
+        right_slice = self._build_slice(cR, 0, rR)
+        mid_node = None
+        if cL + 1 <= cR - 1:
+            mid_node = self._query(1, 0, self.C-1, cL+1, cR-1)
+        cur = left_slice
+        if mid_node is not None:
+            cur = self._merge(cur, mid_node)
+        cur = self._merge(cur, right_slice)
+        return cur.cnt
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); k = int(next(it))
+    m = int(next(it))
+    edges = []
+    for _ in range(m):
+        u = int(next(it)); v = int(next(it))
+        edges.append((u, v))
+    q = int(next(it))
+    queries = []
+    for _ in range(q):
+        l = int(next(it)); r = int(next(it))
+        queries.append((l, r))
+    return n, k, edges, queries
+
+def solve_all(n: int, k: int, edges: List[Tuple[int,int]], queries: List[Tuple[int,int]]) -> List[int]:
+    solver = Solver(n, k, edges)
+    return [solver.answer_query(l, r) for (l, r) in queries]
+
+def main():
+    parsed = read_input()
+    if parsed is None:
+        # Unit tests: sample and randomized cross-check against brute force
+        # Sample
+        n, k = 5, 2
+        edges = [(1,3),(2,3),(4,5)]
+        queries = [(1,1),(1,2),(2,3),(1,3),(1,5)]
+        out = solve_all(n, k, edges, queries)
+        assert out == [1,2,1,1,2]
+        # Random fuzz
+        def brute(n, k, edges, queries):
+            # Baseline DSU per query
+            class BDSU:
+                def __init__(self, n):
+                    self.p = list(range(n))
+                    self.r = [0]*n
+                def find(self, x):
+                    while self.p[x] != x:
+                        self.p[x] = self.p[self.p[x]]
+                        x = self.p[x]
+                    return x
+                def union(self, a, b):
+                    ra, rb = self.find(a), self.find(b)
+                    if ra == rb: return False
+                    if self.r[ra] < self.r[rb]:
+                        ra, rb = rb, ra
+                    self.p[rb] = ra
+                    if self.r[ra] == self.r[rb]:
+                        self.r[ra] += 1
+                    return True
+            ans = []
+            for l, r in queries:
+                dsu = BDSU(r-l+1)
+                for (u, v) in edges:
+                    if l <= u <= r and l <= v <= r:
+                        dsu.union(u-l, v-l)
+                roots = set(dsu.find(i) for i in range(r-l+1))
+                ans.append(len(roots))
+            return ans
+        random.seed(0)
+        for _ in range(80):
+            n = random.randint(1, 40)
+            k = random.randint(1, 5)
+            E = []
+            for u in range(1, n+1):
+                for v in range(u+1, min(n, u+k)+1):
+                    if random.random() < 0.35:
+                        E.append((u, v))
+            q = 30
+            Q = []
+            for __ in range(q):
+                l = random.randint(1, n)
+                r = random.randint(l, n)
+                Q.append((l, r))
+            fast = solve_all(n, k, E, Q)
+            slow = brute(n, k, E, Q)
+            assert fast == slow
+        return
+    n, k, edges, queries = parsed
+    out = solve_all(n, k, edges, queries)
+    sys.stdout.write("\n".join(map(str, out)))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts: (1) the narrative sample case; (2) multiple randomized cross-checks vs brute force on small graphs; (3) implicit invariants via assertions on merge contiguity.}
+\RESULT{For each query $(l,r)$, prints the number of connected components in the induced subgraph on $[l,r]$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests include the illustrative example and randomized fuzz comparing the optimal solution with a brute-force DSU per query on small instances.}
+\LINE{CROSS-CHECKS}{The final segment-tree approach is cross-validated against the baseline on dozens of random graphs with $n\le 40$, $k\le 5$.}
+\LINE{EDGE-CASE GENERATOR}{Randomly generates bands of edges constrained by $\lvert u-v\rvert\le k$, including degenerate columns, $k=1$, and last-column truncation.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+def gen_chain(n, k):
+    E = []
+    for i in range(1, n):
+        if i+1 <= n and (1 <= (i+1) - i <= k):
+            E.append((i, i+1))
+    return E
+
+def gen_cliques_in_columns(n, k):
+    C = (n + k - 1) // k
+    E = []
+    for i in range(1, n+1):
+        for j in range(i+1, min(n, i+k)+1):
+            # intra-column only
+            if (i-1)//k == (j-1)//k:
+                E.append((i, j))
+    return E
+
+def run_edge_cases():
+    # chain graph
+    n, k = 12, 3
+    E = gen_chain(n, k)
+    S = Solver(n, k, E)
+    # full path: components in [l,r] is 1
+    assert all(S.answer_query(l, r) == 1 for l in range(1, n+1) for r in range(l, n))
+    # isolated vertices
+    n, k = 10, 5
+    E = []
+    S = Solver(n, k, E)
+    for l in range(1, n+1):
+        for r in range(l, n+1):
+            assert S.answer_query(l, r) == (r-l+1)
+run_edge_cases()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# The final reference implementation is identical to the "Code (Final Submission)" block above.
+# It includes read_input(), solve_all(), and a main() guard with asserts when no input is provided.
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Count components in the induced subgraph on $[l,r]$ of a banded graph ($\lvert u-v\rvert\le k$) using a segment tree that summarizes only boundary connectivity.}
+\WHY{This pattern appears in interval and grid strip graphs: compressing to small boundary states yields logarithmic query time.}
+\CHECKLIST{
+- Map indices to $(\text{col},\text{row})$ with $k$ rows.
+- Build intra-column and cross-boundary edge lists.
+- Segment tree leaves: DSU within a column.
+- Merge children via DSU on boundary component labels; decrement count on successful unions.
+- Handle partial columns as slices at query ends.}
+\EDGECASES{
+- Last column has fewer than $k$ vertices.
+- $k=1$ reduces to edges only within or between consecutive vertices.
+- No edges at all.
+- Fully connected within columns but sparse across boundaries.
+- Single-vertex queries.
+- Query where $l$ and $r$ in the same column.}
+\PITFALLS{
+- Forgetting to ignore non-existent rows in the last column.
+- Not asserting adjacency when merging non-contiguous segments.
+- Double counting unions when multiple cross edges connect the same boundary components.
+- Mishandling label compression producing inconsistent ids.
+- Creating DSU elements for absent (-1) labels.
+- Off-by-one in converting to $(\text{col},\text{row})$.}
+\FAILMODES{Brute force times out on $q\cdot(n+m)$; naive per-query rebuilds are too slow. The boundary-DSU segment tree avoids processing the whole interval, touching only $O(\log n)$ boundaries with $O(k^2)$ work each.}
+\ELI{Lay the trees in $k$ rows; friendships only connect within a column or to the next column. Each segment remembers how its ends are connected. To answer a query, stitch a few segments and tiny end pieces together, counting how many groups remain.}
+\NotePages{3}
+
+\end{document}

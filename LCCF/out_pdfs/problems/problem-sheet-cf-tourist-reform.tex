@@ -1,0 +1,954 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Tourist Reform}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/732/F}}
+\LINE{DIFFICULTY / RATING}{2300}
+\STATEMENT{Berland is a tourist country! At least, it can become such — the government of Berland is confident about this.
+
+There are $n$ cities in Berland, some pairs of which are connected by two-way roads. Each road connects two different cities. In Berland there are no roads which connect the same pair of cities. It is possible to get from any city to any other city using given two-way roads.
+
+According to the reform each road will become one-way. It will be oriented to one of two directions.
+
+To maximize the tourist attraction of Berland, after the reform for each city $i$ the value $r_i$ will be calculated. It will equal to the number of cities $x$ for which there is an oriented path from the city $i$ to the city $x$. In other words, $r_i$ will equal the number of cities which can be reached from the city $i$ by roads.
+
+The government is sure that tourist's attention will be focused on the minimum value of $r_i$.
+
+Help the government of Berland make the reform to maximize the minimum of $r_i$.
+
+Input:
+The first line contains two integers $n, m$ ($2 \le n \le 400{,}000$, $1 \le m \le 400{,}000$) — the number of cities and the number of roads.
+
+The next $m$ lines describe roads in Berland: the $j$-th of them contains two integers $u_j$ and $v_j$ ($1 \le u_j, v_j \le n$, $u_j \ne v_j$), where $u_j$ and $v_j$ are the numbers of cities which are connected by the $j$-th road.
+
+The cities are numbered from $1$ to $n$. It is guaranteed that it is possible to get from any city to any other by following two-way roads. In Berland there are no roads which connect the same pair of cities.
+
+Output:
+In the first line print a single integer — the maximum possible value $\min_{1 \le i \le n} \{ r_i \}$ after the orientation of roads.
+
+The next $m$ lines must contain the description of roads after the orientation: the $j$-th of them must contain two integers $u_j, v_j$, it means that the $j$-th road will be directed from the city $u_j$ to the city $v_j$. Print roads in the same order as they are given in the input data.}
+\BREAKDOWN{We must orient edges of a connected undirected graph to maximize the minimum reachability count across all vertices. Bridges constrain strong connectivity. Find a best orientation and compute the optimum minimum value.}
+\ELI{Make all roads inside every cycle-rich piece two-way reachable, and point all single-connection roads towards one largest piece so that everyone can reach at least that largest piece.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{A connected undirected simple graph: integers $n$ and $m$; then $m$ edges $(u_j,v_j)$ with $1 \le u_j, v_j \le n$, $u_j \ne v_j$.}
+\OUTPUTS{First line: one integer, the optimal value $\min_{1 \le i \le n} r_i$. Next $m$ lines: orientation of each input edge in the same order, as an ordered pair $u_j~v_j$ meaning the directed edge $u_j \to v_j$.}
+\SAMPLES{Example 1: A triangle $1$--$2$--$3$--$1$. Output value $3$, and any cyclic orientation, e.g., $1\to2$, $2\to3$, $3\to1$.
+
+Example 2: A path $1$--$2$--$3$--$4$. Output value $1$. One valid orientation: $2\to1$, $3\to2$, $4\to3$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Given a connected simple undirected graph $G=(V,E)$, choose an orientation $\overrightarrow{G}$ of all edges to maximize $\min_{v \in V} r(v)$, where $r(v)$ is the number of vertices reachable from $v$ in $\overrightarrow{G}$.}
+\varmapStart
+\var{G=(V,E)}{original undirected graph}
+\var{\mathrm{Bridge}}{edge whose removal disconnects $G$}
+\var{\mathcal{C}}{2-edge-connected components obtained by removing all bridges}
+\var{S^\star}{size of the largest component in $\mathcal{C}$}
+\var{r(v)}{number of vertices reachable from $v$ after orientation}
+\varmapEnd
+\GOVERN{
+\begin{BreakableEquation*}
+\text{Objective:}\quad \max_{\text{orientations of }E}\ \min_{v\in V} r(v).
+\end{BreakableEquation*}
+}
+\ASSUMPTIONS{Graph is connected; no multiple edges or loops; standard $1$-based vertex labels.}
+\INVARIANTS{
+- An undirected graph admits a strongly connected orientation iff it has no bridges (Robbins' theorem).\\
+- Removing all bridges splits $G$ into 2-edge-connected components; each such component can be oriented to be strongly connected.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Naively orient edges along a depth-first search (DFS): tree edges from parent to child; back edges from deeper node to ancestor. This yields strong connectivity when the whole graph is bridgeless, but is not optimal in general.}
+\ASSUMPTIONS{Use a single DFS from vertex $1$; ignore bridge structure.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build adjacency with edge identifiers $1..m$.
+\item Iteratively DFS from vertex $1$, orienting each unseen edge along the traversal direction; for already seen neighbor, orient from current to neighbor.
+\item Compute $r(v)$ for all $v$ by BFS on the directed graph to obtain the baseline minimum.
+\end{algosteps}
+\COMPLEXITY{For $n$ vertices and $m$ edges, orientation is $O(n+m)$. Computing all-pairs reachability via $n$ BFS runs is $O(n(n+m))$ and used only for tiny tests here.}
+\[
+\begin{aligned}
+T_{\text{orient}}(n,m) &= O(n+m),\quad
+T_{\text{eval}}(n,m) = O(n(n+m)) \text{ (tests only)},\\
+S(n,m) &= O(n+m).
+\end{aligned}
+\]
+\CORRECTNESS{Correctly produces an orientation; in bridgeless graphs, the DFS orientation is strongly connected. For graphs with bridges, this baseline does not optimize the minimum reachability.}
+\EDGECASES{Single edge; trees; cycles; mixed structures.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from collections import deque
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    n = int(next(it)); m = int(next(it))
+    U = [0]*m; V = [0]*m
+    for i in range(m):
+        u = int(next(it)); v = int(next(it))
+        U[i] = u; V[i] = v
+    return n, m, U, V
+
+def orient_naive(n, m, U, V):
+    adj = [[] for _ in range(n+1)]
+    for i in range(m):
+        u, v = U[i], V[i]
+        adj[u].append((v, i))
+        adj[v].append((u, i))
+    visited_v = [False]*(n+1)
+    used_e = [False]*m
+    dir_uv = [0]*m  # 1 if U->V, 0 if V->U
+
+    stack = [(1, 0)]
+    visited_v[1] = True
+    while stack:
+        u, idx = stack[-1]
+        if idx < len(adj[u]):
+            v, eid = adj[u][idx]
+            stack[-1] = (u, idx+1)
+            if used_e[eid]:
+                continue
+            used_e[eid] = True
+            # Orient from current u to v
+            if U[eid] == u:
+                dir_uv[eid] = 1
+            else:
+                dir_uv[eid] = 0
+            if not visited_v[v]:
+                visited_v[v] = True
+                stack.append((v, 0))
+        else:
+            stack.pop()
+
+    return dir_uv
+
+def eval_min_reach(n, m, U, V, dir_uv):
+    g = [[] for _ in range(n+1)]
+    for i in range(m):
+        if dir_uv[i] == 1:
+            g[U[i]].append(V[i])
+        else:
+            g[V[i]].append(U[i])
+    def bfs(s):
+        q = deque([s]); seen = [False]*(n+1); seen[s] = True; cnt = 1
+        while q:
+            u = q.popleft()
+            for v in g[u]:
+                if not seen[v]:
+                    seen[v] = True; q.append(v); cnt += 1
+        return cnt
+    return min(bfs(i) for i in range(1, n+1))
+
+def solve_case(n, m, U, V):
+    dir_uv = orient_naive(n, m, U, V)
+    best = eval_min_reach(n, m, U, V, dir_uv)
+    return best, dir_uv
+
+def solve_all(data: str):
+    n, m, U, V = read_input(data)
+    best, dir_uv = solve_case(n, m, U, V)
+    out_lines = [str(best)]
+    for i in range(m):
+        if dir_uv[i] == 1:
+            out_lines.append(f"{U[i]} {V[i]}")
+        else:
+            out_lines.append(f"{V[i]} {U[i]}")
+    return "\n".join(out_lines)
+
+if __name__ == "__main__":
+    data = sys.stdin.read()
+    if not data.strip():
+        # Tiny self-checks
+        n, m = 3, 3
+        U = [1,2,3]; V = [2,3,1]
+        best, _ = solve_case(n, m, U, V)
+        assert best == 3
+        n, m = 4, 3
+        U = [1,2,3]; V = [2,3,4]
+        best, _ = solve_case(n, m, U, V)
+        assert best >= 1
+        print("OK")
+    else:
+        print(solve_all(data))
+\end{minted}
+\VALIDATION{On a triangle, the minimum reachability is $3$. On a path, it is at least $1$.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Detect Bridges and Choose Best Root Component}
+\WHICHFORMULA{Robbins' theorem: a bridgeless undirected graph admits a strongly connected orientation. Therefore, removing bridges partitions the graph into 2-edge-connected components; within each, we can orient edges to be strongly connected. To maximize the minimum $r_i$, pick the largest such component as a ``hub''.}
+\ASSUMPTIONS{We can compute bridges in $O(n+m)$ using DFS lowlink, and components by a DFS ignoring bridges.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Find all bridges via iterative DFS computing tin/low.
+\item Compute components after removing bridges; find a largest component $C^\star$ and a vertex $s \in C^\star$.
+\item For now, still use a simple DFS orientation, but we will specialize bridge directions in Approach C.
+\end{algosteps}
+\COMPLEXITY{Bridge-finding and component labeling are linear: $O(n+m)$ time, $O(n+m)$ space.}
+\[
+\begin{aligned}
+T(n,m) &= O(n+m).
+\end{aligned}
+\]
+\CORRECTNESS{Identifies the structural bottlenecks (bridges) and the size of the optimal baseline $\ge |C^\star|$. The final orientation rule will ensure every vertex reaches $C^\star$.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+from collections import deque
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    n = int(next(it)); m = int(next(it))
+    U = [0]*m; V = [0]*m
+    for i in range(m):
+        u = int(next(it)); v = int(next(it))
+        U[i] = u; V[i] = v
+    return n, m, U, V
+
+def build_adj(n, m, U, V):
+    adj = [[] for _ in range(n+1)]
+    for i in range(m):
+        u, v = U[i], V[i]
+        adj[u].append((v, i))
+        adj[v].append((u, i))
+    return adj
+
+def find_bridges(n, m, U, V):
+    adj = build_adj(n, m, U, V)
+    tin = [0]*(n+1); low = [0]*(n+1)
+    used_e = [False]*m
+    bridges = [False]*m
+    t = 0
+    visited = [False]*(n+1)
+    for s in range(1, n+1):
+        if tin[s] != 0: continue
+        stack = [(s, -1, 0)]
+        while stack:
+            u, pe, idx = stack[-1]
+            if tin[u] == 0:
+                t += 1
+                tin[u] = low[u] = t
+            if idx < len(adj[u]):
+                v, eid = adj[u][idx]
+                stack[-1] = (u, pe, idx+1)
+                if eid == pe:
+                    continue
+                if tin[v] == 0:
+                    stack.append((v, eid, 0))
+                else:
+                    # back-edge
+                    if tin[v] < low[u]:
+                        low[u] = tin[v]
+            else:
+                stack.pop()
+                if pe != -1:
+                    parent = U[pe] ^ V[pe] ^ u
+                    # update parent's low
+                    if low[u] < low[parent]:
+                        low[parent] = low[u]
+                    if low[u] > tin[parent]:
+                        bridges[pe] = True
+    return bridges
+
+def components_ignoring_bridges(n, m, U, V, bridges):
+    adj = build_adj(n, m, U, V)
+    comp = [0]*(n+1)
+    comp_sizes = []
+    cid = 0
+    for s in range(1, n+1):
+        if comp[s] != 0: continue
+        cid += 1
+        cnt = 0
+        stack = [s]
+        comp[s] = cid
+        while stack:
+            u = stack.pop()
+            cnt += 1
+            for v, eid in adj[u]:
+                if bridges[eid]:
+                    continue
+                if comp[v] == 0:
+                    comp[v] = cid
+                    stack.append(v)
+        comp_sizes.append(cnt)
+    max_cid = 1
+    best_size = comp_sizes[0] if comp_sizes else 0
+    for i, sz in enumerate(comp_sizes, start=1):
+        if sz > best_size:
+            best_size = sz
+            max_cid = i
+    # pick any vertex with comp id max_cid
+    root = next(i for i in range(1, n+1) if comp[i] == max_cid)
+    return comp, best_size, root
+
+def solve_case(n, m, U, V):
+    bridges = find_bridges(n, m, U, V)
+    comp, best_size, root = components_ignoring_bridges(n, m, U, V, bridges)
+    # For improved (partial), just return the best size and a naive orientation.
+    dir_uv = [0]*m
+    adj = [[] for _ in range(n+1)]
+    for i in range(m):
+        u, v = U[i], V[i]
+        adj[u].append((v, i))
+        adj[v].append((u, i))
+    used_e = [False]*m
+    seen = [False]*(n+1)
+    stack = [(root, 0)]
+    seen[root] = True
+    while stack:
+        u, idx = stack[-1]
+        if idx < len(adj[u]):
+            v, eid = adj[u][idx]
+            stack[-1] = (u, idx+1)
+            if used_e[eid]:
+                continue
+            used_e[eid] = True
+            # simple orientation: along traversal
+            if U[eid] == u:
+                dir_uv[eid] = 1
+            else:
+                dir_uv[eid] = 0
+            if not seen[v]:
+                seen[v] = True
+                stack.append((v, 0))
+        else:
+            stack.pop()
+    return best_size, dir_uv
+
+def solve_all(data: str):
+    n, m, U, V = read_input(data)
+    best, dir_uv = solve_case(n, m, U, V)
+    out_lines = [str(best)]
+    for i in range(m):
+        if dir_uv[i] == 1:
+            out_lines.append(f"{U[i]} {V[i]}")
+        else:
+            out_lines.append(f"{V[i]} {U[i]}")
+    return "\n".join(out_lines)
+
+if __name__ == "__main__":
+    data = sys.stdin.read()
+    if not data.strip():
+        # Checks on mixed graphs
+        # Triangle plus a leaf attached by a bridge
+        n, m = 4, 4
+        U = [1,2,3,3]; V = [2,3,1,4]
+        bridges = find_bridges(n, m, U, V)
+        assert bridges[3] == True
+        comp, best_size, root = components_ignoring_bridges(n, m, U, V, bridges)
+        assert best_size == 3
+        print("OK")
+    else:
+        print(solve_all(data))
+\end{minted}
+\VALIDATION{Detects bridges and largest component correctly on small crafted cases.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Bridges Toward Hub + Strong Orientation Inside Components}
+\WHICHFORMULA{Let $S^\star$ be the size of the largest 2-edge-connected component (after removing bridges). Lower bound: orient every bridge toward this component; then every vertex can reach all of $S^\star$. Upper bound: for an endpoint of a bridge, at least one side is unreachable, so no orientation can make the minimum exceed $S^\star$. Thus the optimum is $S^\star$. Constructively:
+- Find bridges.
+- Find the largest component and a root vertex $s$ in it.
+- Do a DFS from $s$; for non-bridges, orient as in DFS (tree: parent$\to$child, back: deeper$\to$ancestor); for bridges, always orient \emph{toward} the already visited side (i.e., toward the root side).}
+\ASSUMPTIONS{The DFS used for orientation is iterative; the graph is connected; no multiedges or loops.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute all bridges via tin/low with an iterative DFS.
+\item Remove bridges and find connected components; pick $C^\star$ of size $S^\star$ and a vertex $s \in C^\star$.
+\item Iterative DFS from $s$ over the original graph, maintaining a visited-edge array:
+\begin{bullets}
+\item If the current edge is a bridge, orient it from the unvisited endpoint to the visited endpoint (toward $s$).
+\item If it is not a bridge, orient it from the current vertex to the neighbor as encountered (tree or back edge).
+\end{bullets}
+\item Output $S^\star$ and the oriented edges in input order.
+\end{algosteps}
+\OPTIMALITY{Lower bound: every vertex can reach all of $C^\star$, so $\min r_i \ge S^\star$. Upper bound: for any bridge, at least one endpoint cannot reach vertices on the opposite side regardless of orientation, so $\min r_i \le$ size of the larger side over all bridges, which is at most $S^\star$. Hence the algorithm achieves the optimum. Inside each 2-edge-connected component, the DFS orientation yields a strongly connected orientation.}
+\COMPLEXITY{$O(n+m)$ time and $O(n+m)$ space.}
+\[
+\begin{aligned}
+T(n,m) &= O(n+m),\quad S(n,m) = O(n+m).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+from collections import deque
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    n = int(next(it)); m = int(next(it))
+    U = [0]*m; V = [0]*m
+    for i in range(m):
+        u = int(next(it)); v = int(next(it))
+        U[i] = u; V[i] = v
+    return n, m, U, V
+
+def build_adj(n, m, U, V):
+    adj = [[] for _ in range(n+1)]
+    for i in range(m):
+        u, v = U[i], V[i]
+        adj[u].append((v, i))
+        adj[v].append((u, i))
+    return adj
+
+def find_bridges(n, m, U, V):
+    adj = build_adj(n, m, U, V)
+    tin = [0]*(n+1); low = [0]*(n+1)
+    bridges = [False]*m
+    t = 0
+    for s in range(1, n+1):
+        if tin[s] != 0: continue
+        stack = [(s, -1, 0)]
+        while stack:
+            u, pe, idx = stack[-1]
+            if tin[u] == 0:
+                t += 1
+                tin[u] = low[u] = t
+            if idx < len(adj[u]):
+                v, eid = adj[u][idx]
+                stack[-1] = (u, pe, idx+1)
+                if eid == pe:
+                    continue
+                if tin[v] == 0:
+                    stack.append((v, eid, 0))
+                else:
+                    if tin[v] < low[u]:
+                        low[u] = tin[v]
+            else:
+                stack.pop()
+                if pe != -1:
+                    parent = U[pe] ^ V[pe] ^ u
+                    if low[u] < low[parent]:
+                        low[parent] = low[u]
+                    if low[u] > tin[parent]:
+                        bridges[pe] = True
+    return bridges
+
+def largest_component_after_removing_bridges(n, m, U, V, bridges):
+    adj = build_adj(n, m, U, V)
+    comp = [0]*(n+1)
+    sizes = []
+    cid = 0
+    for s in range(1, n+1):
+        if comp[s] != 0: continue
+        cid += 1
+        q = [s]
+        comp[s] = cid
+        cnt = 0
+        while q:
+            u = q.pop()
+            cnt += 1
+            for v, eid in adj[u]:
+                if bridges[eid]:
+                    continue
+                if comp[v] == 0:
+                    comp[v] = cid
+                    q.append(v)
+        sizes.append(cnt)
+    # choose component with maximum size
+    best_cid = 1
+    best_sz = sizes[0] if sizes else 0
+    for i, sz in enumerate(sizes, start=1):
+        if sz > best_sz:
+            best_sz = sz
+            best_cid = i
+    root = next(i for i in range(1, n+1) if comp[i] == best_cid)
+    return best_sz, root, comp
+
+def orient_edges_optimal(n, m, U, V, bridges, root):
+    adj = build_adj(n, m, U, V)
+    visited_v = [False]*(n+1)
+    used_e = [False]*m
+    dir_uv = [0]*m  # 1 means U->V, 0 means V->U
+
+    stack = [(root, 0)]
+    visited_v[root] = True
+    while stack:
+        u, idx = stack[-1]
+        if idx < len(adj[u]):
+            v, eid = adj[u][idx]
+            stack[-1] = (u, idx+1)
+            if used_e[eid]:
+                continue
+            used_e[eid] = True
+            if bridges[eid]:
+                # bridge: orient from unvisited to visited (toward root side)
+                if visited_v[v]:
+                    # then orient u -> v (u must be unvisited, but we are at u, so visited_v[u] is True)
+                    # However this case should not happen first; safe fallback
+                    if U[eid] == u:
+                        dir_uv[eid] = 1
+                    else:
+                        dir_uv[eid] = 0
+                else:
+                    # neighbor unvisited: direct v -> u
+                    if U[eid] == v:
+                        dir_uv[eid] = 1
+                    else:
+                        dir_uv[eid] = 0
+                    visited_v[v] = True
+                    stack.append((v, 0))
+            else:
+                # non-bridge: orient along encounter: u -> v
+                if U[eid] == u:
+                    dir_uv[eid] = 1
+                else:
+                    dir_uv[eid] = 0
+                if not visited_v[v]:
+                    visited_v[v] = True
+                    stack.append((v, 0))
+        else:
+            stack.pop()
+    return dir_uv
+
+def solve_case(n, m, U, V):
+    bridges = find_bridges(n, m, U, V)
+    best_sz, root, _ = largest_component_after_removing_bridges(n, m, U, V, bridges)
+    dir_uv = orient_edges_optimal(n, m, U, V, bridges, root)
+    return best_sz, dir_uv
+
+def solve_all(data: str):
+    n, m, U, V = read_input(data)
+    best, dir_uv = solve_case(n, m, U, V)
+    out_lines = [str(best)]
+    for i in range(m):
+        if dir_uv[i] == 1:
+            out_lines.append(f"{U[i]} {V[i]}")
+        else:
+            out_lines.append(f"{V[i]} {U[i]}")
+    return "\n".join(out_lines)
+
+if __name__ == "__main__":
+    data = sys.stdin.read()
+    if not data.strip():
+        # Exactly 3 asserts
+        # 1) Triangle: strongly connected
+        n, m = 3, 3
+        U = [1,2,3]; V = [2,3,1]
+        best, dir_uv = solve_case(n, m, U, V)
+        assert best == 3
+        # 2) Path of 4: best is 1
+        n, m = 4, 3
+        U = [1,2,3]; V = [2,3,4]
+        best, _ = solve_case(n, m, U, V)
+        assert best == 1
+        # 3) Two cycles connected by a bridge: largest component size 4
+        n, m = 7, 8
+        U = [1,2,3,4,  4,5,6,7]; V = [2,3,1,5,  5,6,7,4]
+        best, _ = solve_case(n, m, U, V)
+        assert best == 4
+        print("OK")
+    else:
+        print(solve_all(data))
+\end{minted}
+\VALIDATION{Three asserts: triangle yields $3$; a path of $4$ yields $1$; two cycles linked by a bridge yield $4$, matching the largest 2-edge-connected component.}
+\RESULT{Print $S^\star$ and an orientation where every bridge points toward $C^\star$, and every non-bridge is oriented by DFS encounter.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit-test bridge finding; verify $S^\star$ on composed graphs (trees, cycles, cycle-chains with bridges). Validate that orientation yields exactly $S^\star$ minimum reachability by brute-force BFS on small graphs.}
+\LINE{CROSS-CHECKS}{Compare Approach A (naive) vs Approach C (optimal) on small random graphs; ensure Approach C never yields worse minimum and meets the theoretical upper bound $S^\star$.}
+\LINE{EDGE-CASE GENERATOR}{Generate trees (all edges bridges), single cycle (no bridges), lollipop graphs (cycle plus path), and multiple cycles connected by a chain of bridges.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+from collections import deque
+
+def gen_path(n):
+    U=[]; V=[]
+    for i in range(1, n):
+        U.append(i); V.append(i+1)
+    return n, n-1, U, V
+
+def gen_cycle(n):
+    U=[]; V=[]
+    for i in range(1, n):
+        U.append(i); V.append(i+1)
+    U.append(n); V.append(1)
+    return n, n, U, V
+
+def gen_lollipop(cycle_len, path_len):
+    n = cycle_len + path_len
+    U=[]; V=[]
+    for i in range(1, cycle_len):
+        U.append(i); V.append(i+1)
+    U.append(cycle_len); V.append(1)
+    for i in range(cycle_len, n):
+        U.append(i); V.append(i+1)
+    return n, len(U), U, V
+
+def brute_min_reach(n, m, U, V, dir_uv):
+    g = [[] for _ in range(n+1)]
+    for i in range(m):
+        if dir_uv[i] == 1:
+            g[U[i]].append(V[i])
+        else:
+            g[V[i]].append(U[i])
+    def bfs(s):
+        q = deque([s]); seen=[False]*(n+1); seen[s]=True; cnt=1
+        while q:
+            u = q.popleft()
+            for w in g[u]:
+                if not seen[w]:
+                    seen[w]=True; q.append(w); cnt+=1
+        return cnt
+    return min(bfs(i) for i in range(1, n+1))
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+
+def read_input():
+    data = sys.stdin.buffer.read().split()
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    U = [0]*m; V = [0]*m
+    for i in range(m):
+        u = int(next(it)); v = int(next(it))
+        U[i] = u; V[i] = v
+    return n, m, U, V
+
+def build_adj(n, m, U, V):
+    adj = [[] for _ in range(n+1)]
+    for i in range(m):
+        u, v = U[i], V[i]
+        adj[u].append((v, i))
+        adj[v].append((u, i))
+    return adj
+
+def find_bridges(n, m, U, V):
+    adj = build_adj(n, m, U, V)
+    tin = [0]*(n+1); low = [0]*(n+1)
+    bridges = [False]*m
+    t = 0
+    for s in range(1, n+1):
+        if tin[s] != 0: continue
+        stack = [(s, -1, 0)]
+        while stack:
+            u, pe, idx = stack[-1]
+            if tin[u] == 0:
+                t += 1
+                tin[u] = low[u] = t
+            if idx < len(adj[u]):
+                v, eid = adj[u][idx]
+                stack[-1] = (u, pe, idx+1)
+                if eid == pe:
+                    continue
+                if tin[v] == 0:
+                    stack.append((v, eid, 0))
+                else:
+                    if tin[v] < low[u]:
+                        low[u] = tin[v]
+            else:
+                stack.pop()
+                if pe != -1:
+                    parent = U[pe] ^ V[pe] ^ u
+                    if low[u] < low[parent]:
+                        low[parent] = low[u]
+                    if low[u] > tin[parent]:
+                        bridges[pe] = True
+    return bridges
+
+def largest_component_after_removing_bridges(n, m, U, V, bridges):
+    adj = build_adj(n, m, U, V)
+    comp = [0]*(n+1)
+    sizes = []
+    cid = 0
+    for s in range(1, n+1):
+        if comp[s] != 0: continue
+        cid += 1
+        q = [s]
+        comp[s] = cid
+        cnt = 0
+        while q:
+            u = q.pop()
+            cnt += 1
+            for v, eid in adj[u]:
+                if bridges[eid]:
+                    continue
+                if comp[v] == 0:
+                    comp[v] = cid
+                    q.append(v)
+        sizes.append(cnt)
+    best_cid = 1
+    best_sz = sizes[0] if sizes else 0
+    for i, sz in enumerate(sizes, start=1):
+        if sz > best_sz:
+            best_sz = sz
+            best_cid = i
+    root = next(i for i in range(1, n+1) if comp[i] == best_cid)
+    return best_sz, root
+
+def orient_edges_optimal(n, m, U, V, bridges, root):
+    adj = build_adj(n, m, U, V)
+    visited_v = [False]*(n+1)
+    used_e = [False]*m
+    dir_uv = [0]*m  # 1 => U->V, 0 => V->U
+
+    stack = [(root, 0)]
+    visited_v[root] = True
+    while stack:
+        u, idx = stack[-1]
+        if idx < len(adj[u]):
+            v, eid = adj[u][idx]
+            stack[-1] = (u, idx+1)
+            if used_e[eid]:
+                continue
+            used_e[eid] = True
+            if bridges[eid]:
+                # direct from unvisited to visited
+                if not visited_v[v]:
+                    # v -> u
+                    if U[eid] == v:
+                        dir_uv[eid] = 1
+                    else:
+                        dir_uv[eid] = 0
+                    visited_v[v] = True
+                    stack.append((v, 0))
+                else:
+                    # u -> v
+                    if U[eid] == u:
+                        dir_uv[eid] = 1
+                    else:
+                        dir_uv[eid] = 0
+            else:
+                # non-bridge: along encounter u -> v
+                if U[eid] == u:
+                    dir_uv[eid] = 1
+                else:
+                    dir_uv[eid] = 0
+                if not visited_v[v]:
+                    visited_v[v] = True
+                    stack.append((v, 0))
+        else:
+            stack.pop()
+    return dir_uv
+
+def solve_case(n, m, U, V):
+    bridges = find_bridges(n, m, U, V)
+    best_sz, root = largest_component_after_removing_bridges(n, m, U, V, bridges)
+    dir_uv = orient_edges_optimal(n, m, U, V, bridges, root)
+    return best_sz, dir_uv
+
+def main():
+    data = sys.stdin.buffer.read()
+    if not data.strip():
+        # Minimal sanity asserts
+        n, m = 3, 3
+        U = [1,2,3]; V = [2,3,1]
+        best, _ = solve_case(n, m, U, V)
+        assert best == 3
+        n, m = 4, 3
+        U = [1,2,3]; V = [2,3,4]
+        best, _ = solve_case(n, m, U, V)
+        assert best == 1
+        n, m = 7, 8
+        U = [1,2,3,4,  4,5,6,7]; V = [2,3,1,5,  5,6,7,4]
+        best, _ = solve_case(n, m, U, V)
+        assert best == 4
+        print("OK")
+        return
+    it = iter(data.split())
+    n = int(next(it)); m = int(next(it))
+    U = [0]*m; V = [0]*m
+    for i in range(m):
+        U[i] = int(next(it)); V[i] = int(next(it))
+    best, dir_uv = solve_case(n, m, U, V)
+    out = [str(best)]
+    for i in range(m):
+        if dir_uv[i] == 1:
+            out.append(f"{U[i]} {V[i]}")
+        else:
+            out.append(f"{V[i]} {U[i]}")
+    sys.stdout.write("\n".join(out))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Maximize the minimum reachability by directing all bridges toward the largest 2-edge-connected component and strongly orienting inside each component.}
+\WHY{Tests understanding of bridges, lowlink, and constructive optimal orientations in graphs — a common theme in high-rated CF problems.}
+\CHECKLIST{
+- Compute bridges via tin/low.
+- Label components after removing bridges and find the largest.
+- DFS from a vertex in the largest component:
+  - Orient bridges from unvisited to visited side.
+  - Orient non-bridges along encounter (tree: down, back: up).
+- Output size and directions in input order.}
+\EDGECASES{
+- Trees (all edges bridges): answer is $1$; orient all edges toward any chosen root.
+- Single cycle: answer is $n$.
+- Multiple cycles via bridges: answer is the largest cycle-rich component size.
+- Parallel-like inputs are disallowed by problem but watch for high degree.
+- Graph with $m=n-1$ (tree) vs $m \gg n$ (dense) behaviors.
+- Disconnected input is not allowed; no need to handle.}
+\PITFALLS{
+- Recursion depth in Python; use iterative DFS.
+- Forgetting to mark edges as used leads to double orientation.
+- Misorienting bridges (away from the root) breaks the guarantee.
+- Not preserving input order in output.
+- Off-by-one when indexing vertices.
+- Lowlink computation: ensure updates on exit of child frames.}
+\FAILMODES{Baseline DFS orientation may yield very small minimum reachability in graphs with bridges; the optimal method avoids this by funneling all bridges toward the hub component.}
+\ELI{Bridges are one-way bottlenecks. Point all bottlenecks toward the biggest hub of roads-with-cycles; then everyone can at least reach that hub. Inside each hub, make roads flow so you can circle around and reach everything there.}
+\NotePages{3}
+
+\end{document}

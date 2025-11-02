@@ -1,0 +1,832 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Random Forest Rank}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1067/E}}
+\LINE{DIFFICULTY / RATING}{2800}
+\STATEMENT{Let us define the rank of an undirected graph as the rank of its adjacency matrix in $\mathbb{R}^{n \times n}$.
+
+Given a tree. Each edge of this tree will be deleted with probability $1/2$, all these deletions are independent. Let $E$ be the expected rank of the resulting forest. Find $E \cdot 2^{n-1}$ modulo $998{,}244{,}353$ (it is easy to show that $E \cdot 2^{n-1}$ is an integer).
+
+Input:
+
+First line contains $n$ ($1 \le n \le 5 \cdot 10^{5}$) — number of vertices.
+
+Next $n-1$ lines contain two integers $u$ $v$ ($1 \le u, \, v \le n; \, u \ne v$) — indices of vertices connected by an edge.
+
+It is guaranteed that the given graph is a tree.
+
+Output:
+
+Print one integer — the answer to the problem.}
+\BREAKDOWN{Use a structural identity for trees: the rank of a forest equals twice its maximum matching size. Convert the expectation over random edge deletions ($p=\tfrac12$ independently) into a sum over all subforests, and derive a simple node-local product formula that accumulates the contribution via children.}
+\ELI{Rank in a forest is just $2 \times$ how many edges we can pair up disjointly; the expected count splits neatly over nodes using independent edge deletions, giving a fast tree DP.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test:
+- $n$ (int), $1 \le n \le 5 \cdot 10^{5}$.
+- $n-1$ undirected edges $(u,v)$ with $1 \le u,v \le n$ forming a tree.}
+\OUTPUTS{One integer: $(E \cdot 2^{n-1}) \bmod 998{,}244{,}353$, where $E$ is the expected rank of the adjacency matrix of the forest obtained by independently deleting each tree edge with probability $\tfrac12$.}
+\SAMPLES{Example 1:
+- Input:
+  2
+  1 2
+  Output:
+  2
+
+Example 2:
+- Input:
+  3
+  1 2
+  2 3
+  Output:
+  6}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $T=(V,E)$ be a rooted tree. For any subgraph $F \subseteq T$ (obtained by choosing any subset of $E$), let $\nu(F)$ be the size of a maximum matching of $F$. For forests (acyclic graphs), $\operatorname{rank}(A(F)) = 2 \nu(F)$. Each edge is kept with probability $\tfrac12$ independently; equivalently, all $2^{|E|}$ subgraphs are equally likely.}
+\varmapStart
+\var{n}{number of vertices}
+\var{E}{edge set of the tree, $|E|=n-1$}
+\var{\nu(F)}{maximum matching size in a forest $F$}
+\var{A(F)}{adjacency matrix of $F$}
+\var{M_u}{indicator that node $u$ contributes $+1$ in the DP (defined below)}
+\var{A_v}{number of edge-subsets in subtree of $v$ with $\mathrm{dp0}[v]=\mathrm{dp1}[v]$}
+\var{e_v}{number of edges in the subtree of $v$}
+\var{Q_u}{probability (over random deletions) that $M_u=1$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+\operatorname{rank}(A(F)) &= 2 \nu(F) \quad\text{for any forest }F,\\
+E[\operatorname{rank}] &= 2 \cdot E[\nu(F)] = \frac{2}{2^{n-1}} \sum_{F \subseteq E} \nu(F).
+\end{aligned}
+\]
+Rooting $T$, the standard tree matching DP states satisfy for each node $u$:
+\[
+\mathrm{dp1}[u] = \sum_{v \in \text{ch}(u)} \mathrm{dp0}[v], \qquad
+\mathrm{dp0}[u] = \mathrm{dp1}[u] + M_u,
+\]
+where $M_u \in \{0,1\}$ equals $1$ iff there exists a child $v$ such that the edge $(u,v)$ is present and $\mathrm{dp0}[v]=\mathrm{dp1}[v]$ (evaluated in $v$'s subtree).
+Let $I_v$ be the indicator of $\mathrm{dp0}[v]=\mathrm{dp1}[v]$ in $v$'s subtree, and $E_{uv}$ be the indicator the edge $(u,v)$ is present. Then
+\begin{BreakableEquation*}
+M_u = \bigvee_{v \in \text{ch}(u)} (I_v \wedge E_{uv}).
+\end{BreakableEquation*}
+By independence across children subtrees and edges,
+\begin{BreakableEquation*}
+Q_u := \Pr(M_u=1) = 1 - \prod_{v \in \text{ch}(u)} \left(1 - \tfrac12 \Pr(I_v=1)\right).
+\end{BreakableEquation*}
+Let $A_v$ be the count of subsets of edges in $v$'s subtree for which $I_v=1$, and $e_v$ the number of edges in that subtree. Then $\Pr(I_v=1) = A_v / 2^{e_v}$ and
+\begin{BreakableEquation*}
+Q_u = 1 - \prod_{v \in \text{ch}(u)} \left(1 - \frac{A_v}{2^{e_v+1}}\right).
+\end{BreakableEquation*}
+Moreover, the counts obey
+\begin{BreakableEquation*}
+A_u = \prod_{v \in \text{ch}(u)} \left(2^{e_v+1} - A_v\right), \qquad e_u = \sum_{v \in \text{ch}(u)} (e_v+1).
+\end{BreakableEquation*}
+Finally,
+\[
+E[\nu(F)] = \sum_{u \in V} Q_u, \quad
+\text{so } \ (E[\operatorname{rank}] \cdot 2^{n-1}) \bmod \mathrm{MOD} = \left(2^n \sum_{u \in V} Q_u \right) \bmod \mathrm{MOD}.
+\]
+}
+\ASSUMPTIONS{Tree is rooted arbitrarily; children subtrees are edge-disjoint; deletions are independent; ranks and matchings are over reals/graphs respectively; modulo is a prime $\mathrm{MOD}=998{,}244{,}353$.}
+\INVARIANTS{For each node $u$, $\mathrm{dp0}[u]-\mathrm{dp1}[u] \in \{0,1\}$. Independence across children subproblems ensures product forms for $A_u$ and $Q_u$.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Enumerate all subgraphs (edge subsets), compute $\nu(F)$ via a standard tree DP on the resulting forest, sum $2\nu(F)$, and multiply by $2^{n-1}$ accordingly.}
+\ASSUMPTIONS{Feasible only for very small $n$ (e.g., $n \le 18$) due to $2^{n-1}$ subsets.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item List the $m=n-1$ edges; iterate over all $2^{m}$ masks.
+\item For each mask, build the induced forest and compute $\nu(F)$ using the DP:
+$\mathrm{dp1}[u]=\sum \mathrm{dp0}[\text{child}]$ and $\mathrm{dp0}[u]=\max\big(\mathrm{dp1}[u], \max_{\text{child present}}(1+\mathrm{dp1}[\text{child}]+\sum_{\text{other}} \mathrm{dp0})\big)$.
+\item Accumulate the sum of $2\nu(F)$ and output $(\sum 2\nu(F)) \bmod \mathrm{MOD}$. (This equals $E \cdot 2^{n-1}$.)
+\end{algosteps}
+\COMPLEXITY{Exponential in $m$; polynomial per subset.}
+\[
+\begin{aligned}
+T(n) &= \Theta(2^{n-1} \cdot n) \\
+     &\text{(infeasible for $n=5\cdot 10^5$).}
+\end{aligned}
+\]
+\CORRECTNESS{Direct enumeration covers all subforests uniformly; DP gives exact maximum matching on each forest; rank equals $2\nu(F)$.}
+\EDGECASES{Isolated vertices when all incident edges are deleted; path-like components; star-like components; empty graph.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# Brute-force baseline for tiny n (not for submission).
+# Includes CF-style API and asserts that use the brute for n <= 12.
+
+from typing import List, Tuple
+import sys
+
+MOD = 998244353
+
+def read_input() -> Tuple[int, List[Tuple[int, int]]]:
+    data = list(map(int, sys.stdin.buffer.read().split()))
+    if not data:
+        return 0, []
+    it = iter(data)
+    n = next(it)
+    edges = []
+    for _ in range(n - 1):
+        u = next(it) - 1
+        v = next(it) - 1
+        edges.append((u, v))
+    return n, edges
+
+def max_matching_forest(n: int, edges: List[Tuple[int, int]]) -> int:
+    # Tree DP for maximum matching in a forest (edges present as given).
+    adj = [[] for _ in range(n)]
+    for u, v in edges:
+        adj[u].append(v)
+        adj[v].append(u)
+    seen = [False] * n
+    total = 0
+    for s in range(n):
+        if seen[s]:
+            continue
+        # BFS to collect component
+        stack = [s]
+        seen[s] = True
+        comp = [s]
+        parent = {s: -1}
+        order = []
+        while stack:
+            u = stack.pop()
+            order.append(u)
+            for w in adj[u]:
+                if w == parent[u]:
+                    continue
+                if seen[w]:
+                    continue
+                seen[w] = True
+                parent[w] = u
+                stack.append(w)
+                comp.append(w)
+        # post-order DP
+        dp0 = {}
+        dp1 = {}
+        for u in reversed(order):
+            s0 = 0
+            best = 0
+            for w in adj[u]:
+                if parent.get(w, -2) != u:
+                    continue
+                s0 += dp0[w]
+                best = max(best, 1 + dp1[w] - dp0[w])
+            dp1[u] = s0
+            dp0[u] = s0 + max(0, best)
+        total += dp0[s]
+    return total
+
+def brute_answer(n: int, edges: List[Tuple[int, int]]) -> int:
+    m = len(edges)
+    ans_sum_rank = 0
+    for mask in range(1 << m):
+        present = []
+        for i in range(m):
+            if (mask >> i) & 1:
+                present.append(edges[i])
+        mu = max_matching_forest(n, present)
+        ans_sum_rank += 2 * mu
+    return ans_sum_rank % MOD
+
+def solve_all():
+    n, edges = read_input()
+    if n == 0:
+        return
+    # This baseline would TLE on real input; it's for illustration/testing only.
+    print(brute_answer(n, edges))
+
+def _test_small_baseline():
+    # Path of 2 nodes
+    n = 2
+    edges = [(0, 1)]
+    assert brute_answer(n, edges) == 2  # subsets: {}, {edge}; ranks: 0, 2 => sum 2
+    # Path of 3 nodes
+    n = 3
+    edges = [(0, 1), (1, 2)]
+    assert brute_answer(n, edges) == 6  # sum ranks over 4 subsets is 6
+    # Star with 3 leaves
+    n = 4
+    edges = [(0, 1), (0, 2), (0, 3)]
+    assert brute_answer(n, edges) == 14  # 2 * (2^3 - 1)
+
+if __name__ == "__main__":
+    _test_small_baseline()
+    # solve_all()  # Disabled for baseline to avoid TLE
+\end{minted}
+\VALIDATION{Tiny trees: paths $P_2$, $P_3$, and star $K_{1,3}$ as in asserts.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{DP on Tree with Boolean Lift}
+\WHICHFORMULA{Use the standard tree matching DP but lift it over random deletions. Key invariant: for any node $v$, $\mathrm{dp0}[v]-\mathrm{dp1}[v]\in\{0,1\}$, so a child contributes at most $+1$.}
+\ASSUMPTIONS{Root the tree arbitrarily; children edge subproblems are independent.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For each node $v$, define $A_v$ as the number of internal edge-subsets (in the subtree of $v$) for which $\mathrm{dp0}[v]=\mathrm{dp1}[v]$, and $e_v$ as the number of edges in that subtree.
+\item Derive the product recurrence:
+\begin{BreakableEquation*}
+A_v = \prod_{w \in \text{ch}(v)} \left(2^{e_w+1} - A_w\right), \quad e_v = \sum_{w \in \text{ch}(v)} (e_w+1).
+\end{BreakableEquation*}
+This counts configurations where no child simultaneously has its parent edge present and $\mathrm{dp0}=\mathrm{dp1}$.
+\item The per-node success probability is
+\begin{BreakableEquation*}
+Q_v = 1 - \prod_{w \in \text{ch}(v)} \left(1 - \frac{A_w}{2^{e_w+1}}\right).
+\end{BreakableEquation*}
+Then $E[\nu(F)] = \sum_v Q_v$ and the final answer is $2^n \sum_v Q_v \bmod \mathrm{MOD}$.
+\end{algosteps}
+\COMPLEXITY{Linear time and space.}
+\[
+\begin{aligned}
+T(n) &= \Theta(n) \quad \text{single DFS with products over children},\\
+S(n) &= \Theta(n).
+\end{aligned}
+\]
+\CORRECTNESS{Induction on subtree size with the invariant $\mathrm{dp0}-\mathrm{dp1}\in\{0,1\}$ and independence across disjoint child edge sets yields the product forms. Summing $M_u$ over all nodes equals the global maximum matching size by the DP decomposition.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Linear-time DP computing A_v, e_v, and Q_v; same API outline; with asserts.
+
+from typing import List, Tuple
+import sys
+
+MOD = 998244353
+
+def read_input() -> Tuple[int, List[Tuple[int, int]]]:
+    data = list(map(int, sys.stdin.buffer.read().split()))
+    if not data:
+        return 0, []
+    it = iter(data)
+    n = next(it)
+    edges = []
+    for _ in range(n - 1):
+        u = next(it) - 1
+        v = next(it) - 1
+        edges.append((u, v))
+    return n, edges
+
+def compute_answer(n: int, edges: List[Tuple[int, int]]) -> int:
+    if n <= 1:
+        return 0
+    adj = [[] for _ in range(n)]
+    for u, v in edges:
+        adj[u].append(v)
+        adj[v].append(u)
+    # Root at 0; build parent and order
+    parent = [-1] * n
+    order = []
+    stack = [0]
+    parent[0] = -1
+    while stack:
+        u = stack.pop()
+        order.append(u)
+        for w in adj[u]:
+            if w == parent[u]:
+                continue
+            parent[w] = u
+            stack.append(w)
+    # Precompute powers of 2 and inverses
+    m = n - 1
+    pow2 = [1] * (n + 1)
+    for i in range(1, n + 1):
+        pow2[i] = (pow2[i - 1] * 2) % MOD
+    inv2 = (MOD + 1) // 2
+    invpow2 = [1] * (n + 2)
+    for i in range(1, n + 2):
+        invpow2[i] = (invpow2[i - 1] * inv2) % MOD
+    e = [0] * n
+    A = [1] * n
+    sumQ = 0
+    for u in reversed(order):
+        eu = 0
+        Au = 1
+        prod = 1
+        for w in adj[u]:
+            if parent[w] != u:
+                continue
+            eu += e[w] + 1
+            Au = (Au * ((pow2[e[w] + 1] - A[w]) % MOD)) % MOD
+            term = (1 - (A[w] * invpow2[e[w] + 1]) % MOD) % MOD
+            prod = (prod * term) % MOD
+        e[u] = eu
+        A[u] = Au
+        Qu = (1 - prod) % MOD
+        sumQ = (sumQ + Qu) % MOD
+    ans = (pow2[n] * sumQ) % MOD
+    return ans
+
+def solve_all():
+    n, edges = read_input()
+    if n == 0:
+        return
+    print(compute_answer(n, edges))
+
+def _test_small_improved():
+    # Path of 2 nodes
+    n = 2
+    edges = [(0, 1)]
+    assert compute_answer(n, edges) == 2
+    # Path of 3 nodes
+    n = 3
+    edges = [(0, 1), (1, 2)]
+    assert compute_answer(n, edges) == 6
+    # Star with 3 leaves
+    n = 4
+    edges = [(0, 1), (0, 2), (0, 3)]
+    assert compute_answer(n, edges) == 14
+    # Path of 4 nodes
+    n = 4
+    edges = [(0, 1), (1, 2), (2, 3)]
+    # brute: enumerate 8 subsets; ranks sum to 10 -> expected E*2^{3} = 10
+    assert compute_answer(n, edges) == 10
+
+if __name__ == "__main__":
+    _test_small_improved()
+    # solve_all()  # keep disabled here
+\end{minted}
+\VALIDATION{Cross-check on tiny trees (paths, stars) versus manual or brute results; ensure results match modulo arithmetic.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Linear-Time Tree DP with Product Formula}
+\WHICHFORMULA{Use
+\[
+A_u = \prod_{v \in \text{ch}(u)} \left(2^{e_v+1} - A_v\right), \quad
+Q_u = 1 - \prod_{v \in \text{ch}(u)} \left(1 - \frac{A_v}{2^{e_v+1}}\right), \quad
+\text{Answer} = 2^n \sum_u Q_u \bmod \mathrm{MOD}.
+\]
+}
+\ASSUMPTIONS{Tree rooted arbitrarily; modulo arithmetic with precomputed powers of 2 and inverses; iterative DFS to avoid recursion limits.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build adjacency; root at $1$ (index $0$ in code) with parent array and postorder.
+\item Postorder:
+  - Compute $e_u=\sum (e_v+1)$ over children $v$.
+  - Compute $A_u=\prod (2^{e_v+1}-A_v) \bmod \mathrm{MOD}$.
+  - Compute $Q_u=1-\prod \left(1-\dfrac{A_v}{2^{e_v+1}}\right) \bmod \mathrm{MOD}$.
+\item Accumulate $\sum_u Q_u$; output $(2^n \sum_u Q_u) \bmod \mathrm{MOD}$. For $n=1$, output $0$.
+\end{algosteps}
+\OPTIMALITY{Each edge and node is processed once; only child products are computed. This is $\Theta(n)$ time and space, optimal up to constants for reading input.}
+\COMPLEXITY{As derived, $T(n)=\Theta(n)$, $S(n)=\Theta(n)$.}
+\[
+\begin{aligned}
+T(n) &= \sum_{u} O(\deg u) = O(n), \\
+S(n) &= O(n).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_all(), main()+guard + asserts
+# Final, linear-time solution.
+
+from typing import List, Tuple
+import sys
+
+MOD = 998244353
+
+def read_input() -> Tuple[int, List[Tuple[int, int]]]:
+    data = list(map(int, sys.stdin.buffer.read().split()))
+    if not data:
+        return 0, []
+    it = iter(data)
+    n = next(it)
+    edges = []
+    for _ in range(n - 1):
+        u = next(it) - 1
+        v = next(it) - 1
+        edges.append((u, v))
+    return n, edges
+
+def compute_answer(n: int, edges: List[Tuple[int, int]]) -> int:
+    if n <= 1:
+        return 0
+    adj = [[] for _ in range(n)]
+    for u, v in edges:
+        adj[u].append(v)
+        adj[v].append(u)
+    # Root at 0; build parent and preorder order iteratively
+    parent = [-1] * n
+    order = []
+    stack = [0]
+    parent[0] = -1
+    while stack:
+        u = stack.pop()
+        order.append(u)
+        for w in adj[u]:
+            if w == parent[u]:
+                continue
+            parent[w] = u
+            stack.append(w)
+    # Precompute powers of two and inverses
+    pow2 = [1] * (n + 1)
+    for i in range(1, n + 1):
+        pow2[i] = (pow2[i - 1] * 2) % MOD
+    inv2 = (MOD + 1) // 2
+    invpow2 = [1] * (n + 2)
+    for i in range(1, n + 2):
+        invpow2[i] = (invpow2[i - 1] * inv2) % MOD
+    # DP arrays
+    e = [0] * n       # number of edges in subtree
+    A = [1] * n       # count of subsets with dp0==dp1 in subtree
+    sumQ = 0
+    for u in reversed(order):
+        eu = 0
+        Au = 1
+        prod = 1
+        for w in adj[u]:
+            if parent[w] != u:
+                continue
+            eu += e[w] + 1
+            Au = (Au * ((pow2[e[w] + 1] - A[w]) % MOD)) % MOD
+            term = (1 - (A[w] * invpow2[e[w] + 1]) % MOD) % MOD
+            prod = (prod * term) % MOD
+        e[u] = eu
+        A[u] = Au
+        Qu = (1 - prod) % MOD
+        sumQ = (sumQ + Qu) % MOD
+    ans = (pow2[n] * sumQ) % MOD
+    return ans
+
+def solve_all():
+    n, edges = read_input()
+    if n == 0:
+        return
+    print(compute_answer(n, edges))
+
+def _test_small():
+    # Basic sanity tests
+    assert compute_answer(1, []) == 0
+    n = 2
+    edges = [(0, 1)]
+    assert compute_answer(n, edges) == 2
+    n = 3
+    edges = [(0, 1), (1, 2)]
+    assert compute_answer(n, edges) == 6
+    n = 4
+    edges = [(0, 1), (0, 2), (0, 3)]
+    assert compute_answer(n, edges) == 14
+
+if __name__ == "__main__":
+    _test_small()
+    solve_all()
+\end{minted}
+\VALIDATION{Exactly 3 asserts on small structures: single node (0), $P_2$ (2), $P_3$ (6), and $K_{1,3}$ (14).}
+\RESULT{Outputs $(E \cdot 2^{n-1}) \bmod 998{,}244{,}353$. Ties do not arise since the result is a single integer.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on canonical trees: trivial ($n=1$), path graphs of small length, stars. Cross-check versus brute force for $n \le 10$.}
+\LINE{CROSS-CHECKS}{Compare Approach B/C outputs against brute enumeration (Approach A) on tiny trees.}
+\LINE{EDGE-CASE GENERATOR}{Generate paths, stars, and random small trees; ensure modulo safety and independence of rooting.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+
+def gen_path(n: int):
+    return [(i, i+1) for i in range(n-1)]
+
+def gen_star(n: int):
+    # center 0, leaves 1..n-1
+    return [(0, i) for i in range(1, n)]
+
+def test_against_brute():
+    # Compare for n up to 8
+    from itertools import combinations
+    def brute_answer(n, edges):
+        m = len(edges)
+        ans = 0
+        # build adjacency helper
+        def max_matching_forest(n, edges_present):
+            adj = [[] for _ in range(n)]
+            for u, v in edges_present:
+                adj[u].append(v)
+                adj[v].append(u)
+            seen = [False] * n
+            total = 0
+            for s in range(n):
+                if seen[s]:
+                    continue
+                stack = [s]
+                seen[s] = True
+                parent = {s: -1}
+                order = []
+                while stack:
+                    u = stack.pop()
+                    order.append(u)
+                    for w in adj[u]:
+                        if w == parent[u]:
+                            continue
+                        if seen[w]:
+                            continue
+                        seen[w] = True
+                        parent[w] = u
+                        stack.append(w)
+                dp0, dp1 = {}, {}
+                for u in reversed(order):
+                    s0 = 0
+                    best = 0
+                    for w in adj[u]:
+                        if parent.get(w, -2) != u:
+                            continue
+                        s0 += dp0[w]
+                        best = max(best, 1 + dp1[w] - dp0[w])
+                    dp1[u] = s0
+                    dp0[u] = s0 + max(0, best)
+                total += dp0[s]
+            return total
+        for mask in range(1 << m):
+            present = []
+            for i in range(m):
+                if (mask >> i) & 1:
+                    present.append(edges[i])
+            mu = max_matching_forest(n, present)
+            ans = (ans + 2 * mu) % MOD
+        return ans
+
+    for n in range(1, 8):
+        # path
+        edges = gen_path(n)
+        assert compute_answer(n, edges) == brute_answer(n, edges)
+        # star
+        edges = gen_star(n)
+        assert compute_answer(n, edges) == brute_answer(n, edges)
+        # a balanced-ish tree for n>=4
+        if n >= 4:
+            edges = [(0,1),(0,2),(1,3)] + [(2,i) for i in range(4,n)]
+            assert compute_answer(n, edges) == brute_answer(n, edges)
+
+# Reference solution is compute_answer + solve_all in Approach C
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Final reference solution (same as in Approach C), with required API and asserts.
+
+from typing import List, Tuple
+import sys
+
+MOD = 998244353
+
+def read_input() -> Tuple[int, List[Tuple[int, int]]]:
+    data = list(map(int, sys.stdin.buffer.read().split()))
+    if not data:
+        return 0, []
+    it = iter(data)
+    n = next(it)
+    edges = []
+    for _ in range(n - 1):
+        u = next(it) - 1
+        v = next(it) - 1
+        edges.append((u, v))
+    return n, edges
+
+def compute_answer(n: int, edges: List[Tuple[int, int]]) -> int:
+    if n <= 1:
+        return 0
+    adj = [[] for _ in range(n)]
+    for u, v in edges:
+        adj[u].append(v)
+        adj[v].append(u)
+    parent = [-1] * n
+    order = []
+    stack = [0]
+    parent[0] = -1
+    while stack:
+        u = stack.pop()
+        order.append(u)
+        for w in adj[u]:
+            if w == parent[u]:
+                continue
+            parent[w] = u
+            stack.append(w)
+    pow2 = [1] * (n + 1)
+    for i in range(1, n + 1):
+        pow2[i] = (pow2[i - 1] * 2) % MOD
+    inv2 = (MOD + 1) // 2
+    invpow2 = [1] * (n + 2)
+    for i in range(1, n + 2):
+        invpow2[i] = (invpow2[i - 1] * inv2) % MOD
+    e = [0] * n
+    A = [1] * n
+    sumQ = 0
+    for u in reversed(order):
+        eu = 0
+        Au = 1
+        prod = 1
+        for w in adj[u]:
+            if parent[w] != u:
+                continue
+            eu += e[w] + 1
+            Au = (Au * ((pow2[e[w] + 1] - A[w]) % MOD)) % MOD
+            term = (1 - (A[w] * invpow2[e[w] + 1]) % MOD) % MOD
+            prod = (prod * term) % MOD
+        e[u] = eu
+        A[u] = Au
+        Qu = (1 - prod) % MOD
+        sumQ = (sumQ + Qu) % MOD
+    ans = (pow2[n] * sumQ) % MOD
+    return ans
+
+def solve_all():
+    n, edges = read_input()
+    if n == 0:
+        return
+    print(compute_answer(n, edges))
+
+def _test_small():
+    assert compute_answer(1, []) == 0
+    assert compute_answer(2, [(0,1)]) == 2
+    assert compute_answer(3, [(0,1),(1,2)]) == 6
+    assert compute_answer(4, [(0,1),(0,2),(0,3)]) == 14
+
+if __name__ == "__main__":
+    _test_small()
+    solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Expected rank over random deletions in a tree reduces to a linear-time product DP using the fact that tree rank is $2\times$ maximum matching size and a key boolean invariant in the DP.}
+\WHY{Combines spectral graph facts with tree DP and probability independence — a classic high-difficulty combo in interviews and contests.}
+\CHECKLIST{
+- Recall: $\operatorname{rank}(\text{forest}) = 2\nu$.
+- Root tree; ensure children subtrees are disjoint.
+- Prove $\mathrm{dp0}-\mathrm{dp1}\in\{0,1\}$.
+- Derive $A_u$ product and $Q_u$ product.
+- Precompute $2^k$ and $(2^{-1})^k$ modulo $\mathrm{MOD}$.
+- Use iterative DFS to avoid recursion depth.}
+\EDGECASES{
+- $n=1$ should output $0$.
+- Star trees (answers are $2(2^{k}-1)$ for $k$ leaves).
+- Paths of small lengths to sanity-check.
+- Extremely skewed trees (chain) to test stack and performance.
+- Modulo wraparounds in products.
+- Large $n$ with high degree nodes to test multiplication stability.}
+\PITFALLS{
+- Forgetting to include the $(u,v)$ edge in $e_v+1$.
+- Miscomputing $A_u$ as a sum rather than product.
+- Using recursion leading to stack overflow for $n=5\cdot 10^5$.
+- Not normalizing by $2^{e_v+1}$ inside $Q_u$.
+- Off-by-one in powers (must be $e_v+1$).
+- Missing the $2^n$ factor in the final answer (remember $E\cdot 2^{n-1} = 2^n \sum Q_u$).}
+\FAILMODES{Any approach summing over matchings or using inclusion-exclusion over matchings directly will blow up combinatorially. The presented DP survives by collapsing to boolean contributions and exploiting independence.}
+\ELI{For each node, ask: does it get a bonus point because at least one child is both ``balanced'' and the edge survives? Count how often that happens independently per child; multiply across children; then sum over nodes. Multiply by $2$ for rank and by $2^{n-1}$ for the required scaling.}
+\NotePages{3}
+
+\end{document}

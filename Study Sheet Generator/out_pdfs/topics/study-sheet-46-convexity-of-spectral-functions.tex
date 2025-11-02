@@ -1,0 +1,2460 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]            % allow multi-line displays to break
+\setlength{\jot}{7pt}             % extra space between aligned lines
+\setlength{\emergencystretch}{8em}% give paragraphs room to wrap
+\sloppy                           % last-resort line breaking to avoid overfull boxes
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language])
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Convexity of Spectral Functions}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+A spectral function $F:\mathbb{S}^n\to\mathbb{R}\cup\{+\infty\}$ on the
+space $\mathbb{S}^n$ of real symmetric $n\times n$ matrices is any function
+that depends on a matrix $X$ only through its eigenvalues. Formally, there
+exists a symmetric (permutation-invariant) function
+$f:\mathbb{R}^n\to\mathbb{R}\cup\{+\infty\}$ such that
+$F(X)=f(\lambda(X))$, where $\lambda(X)\in\mathbb{R}^n$ lists eigenvalues
+in nonincreasing order. The domain is matrices for which $f$ is finite at
+their eigenvalue vectors; codomain is extended reals.
+}
+
+\WHY{
+Spectral functions translate matrix optimization and analysis into vector
+problems on eigenvalues, enabling convexity, subdifferential, and proximal
+characterizations. They underlie unitarily invariant norms, barriers like
+$-\log\det$, and objectives in covariance estimation, matrix completion,
+and robust optimization. Convexity ensures tractable optimization and
+duality theory.
+}
+
+\HOW{
+1. Specify a symmetric vector function $f$ on eigenvalues.
+2. Use spectral mapping $X\mapsto \lambda(X)$ to define $F(X)=f(\lambda(X))$.
+3. Invoke majorization, variational eigenvalue characterizations, and
+   trace inequalities to transfer convexity/concavity from $f$ to $F$.
+4. Derive subgradients, proximal maps, and variational forms using the
+   eigendecomposition $X=U\operatorname{diag}(\lambda)U^\top$.
+}
+
+\ELI{
+Treat a symmetric matrix like a set of dials (its eigenvalues). A spectral
+function looks only at the dials, not the matrix orientation. If the rule
+for combining dial readings is convex, then the same convex behavior
+extends back to the matrix.
+}
+
+\SCOPE{
+We focus on real symmetric matrices. Many results extend to Hermitian
+matrices. For general rectangular matrices, replace eigenvalues by
+singular values. Domains such as $\mathbb{S}_{++}^n$ (positive definite)
+arise for functions involving $\log\det$. Degeneracies occur with repeated
+eigenvalues, where subgradients form convex hulls across eigenspaces.
+}
+
+\CONFUSIONS{
+Convexity of spectral functions differs from operator convexity of scalar
+functions. A scalar $\varphi$ can be convex but not operator convex; yet
+$\sum_i \varphi(\lambda_i(X))$ is convex as a spectral function. Also,
+unitarily invariant norms depend on singular values (not necessarily
+eigenvalues) for general matrices; here we remain in $\mathbb{S}^n$.
+}
+
+\APPLICATIONS{
+\begin{bullets}
+\item Mathematical foundations: majorization, Schur-convexity, variational
+eigenvalue principles.
+\item Computational modeling: convex relaxations via nuclear/spectral norms,
+log-det barriers in semidefinite programs.
+\item Physical/engineering: energy bounds, stability margins via
+$\lambda_{\max}$.
+\item Statistical/algorithmic: covariance estimation, graphical models,
+regularization via spectral penalties.
+\end{bullets}
+}
+
+\textbf{ANALYTIC STRUCTURE.}
+Spectral functions are invariant under orthogonal similarity:
+$F(QXQ^\top)=F(X)$. Many are convex, Lipschitz, or coercive when $f$ is.
+They interact with the Loewner order and majorization order on eigenvalues.
+
+\textbf{CANONICAL LINKS.}
+Key identities: variational max-eigenvalue, Ky Fan $k$-sum, von Neumann
+trace inequality, Schur-Horn theorem, Lidskii majorization, and the convex
+subdifferential for $F(X)=f(\lambda(X))$.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Objective/constraint depends only on eigenvalues.
+\item Presence of $\lambda_{\max}$, $\sum_{i=1}^k \lambda_i$, $-\log\det$,
+or $\sum \varphi(\lambda_i)$.
+\item Orthogonal invariance appears; rotations do not change the value.
+\item Jensen-type inequalities across matrix convex combinations.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Represent $X$ via eigendecomposition and map to $\lambda(X)$.
+\item Identify the symmetric vector function $f$ and its properties.
+\item Apply variational or majorization inequalities.
+\item Pull back vector results to matrices, assemble subgradients.
+\item Validate with unitary invariance and limit checks.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Unitarily invariant value; ordering by majorization; Ky Fan norms; trace
+is invariant; determinant sign over $\mathbb{S}_{++}^n$ is positive.
+
+\textbf{EDGE INTUITION.}
+As $\|X\|\to\infty$, many spectral functions scale with eigenvalue growth.
+Near repeated eigenvalues, subgradients fan out over the eigenspace.
+On $\mathbb{S}_{++}^n$, $-\log\det$ blows up near the boundary.
+
+\section{Glossary}
+\glossx{Spectral Function}{
+A function on $\mathbb{S}^n$ that depends on a matrix only through its
+eigenvalues: $F(X)=f(\lambda(X))$ with $f$ symmetric.
+}{
+Bridges matrix analysis and convex optimization by reducing to vector
+functions while preserving convexity and subgradients.
+}{
+Diagonalize $X=U\operatorname{diag}(\lambda)U^\top$, apply $f$ to
+$\lambda$, and ignore $U$ by symmetry.
+}{
+Like judging a team only by the sorted scores, not who scored them.
+}{
+Pitfall: confusing dependence on eigenvalues with entries; spectral
+functions are invariant to $U$ but not to reordering eigenvalues in $f$.
+}
+
+\glossx{Majorization}{
+Partial order $x\prec y$ if partial sums of sorted components of $x$
+are bounded by those of $y$ with equal totals.
+}{
+Connects eigenvalue inequalities to convex ordering; powers Schur-convex
+comparisons and spectral convexity proofs.
+}{
+Use Ky Fan variational principles to bound sums of top eigenvalues, then
+apply Schur-convexity of symmetric convex $f$.
+}{
+Mixing vector components makes them more even; majorization formalizes
+"more mixed" vs. "more spread."
+}{
+Pitfall: $x\prec y$ is not componentwise inequality; it compares ordered
+partial sums plus equal total sums.
+}
+
+\glossx{Ky Fan $k$-sum}{
+For $X\in\mathbb{S}^n$, $\phi_k(X)=\sum_{i=1}^k\lambda_i(X)$.
+}{
+Central in majorization and convexity: variational formula leads to
+Lidskii inequalities and convexity of spectral sums.
+}{
+Use $\phi_k(X)=\max_{Q^\top Q=I_k}\operatorname{tr}(Q^\top X Q)$.
+}{
+Pick the best $k$-dimensional direction to capture top energy.
+}{
+Pitfall: Do not confuse with trace; $\phi_k$ only sums top $k$ eigenvalues.
+}
+
+\glossx{Subdifferential of Spectral Function}{
+Set of matrices $G$ satisfying $F(Y)\ge F(X)+\langle G,Y-X\rangle$ for
+all $Y$, where $F(X)=f(\lambda(X))$ with convex symmetric $f$.
+}{
+Characterizes optimality and proximal maps; essential in algorithms for
+matrix convex problems with spectral penalties.
+}{
+Diagonalize $X=U\Lambda U^\top$. Take $g\in\partial f(\lambda(X))$ and
+form $G=U\operatorname{diag}(g)U^\top$, then convexify across multiplicity.
+}{
+Think of pushing each eigenvalue with a scalar subgradient, then rotate
+back to the matrix space.
+}{
+Pitfall: When eigenvalues repeat, any mixture inside the corresponding
+eigenspace is valid; forgetting this loses subgradients.
+}
+
+\section{Symbol Ledger}
+\varmapStart
+\var{\mathbb{S}^n}{real symmetric $n\times n$ matrices.}
+\var{\mathbb{S}_{+}^n}{positive semidefinite cone.}
+\var{\mathbb{S}_{++}^n}{positive definite cone.}
+\var{\lambda(X)}{vector of eigenvalues of $X$ in nonincreasing order.}
+\var{U}{orthogonal matrix of eigenvectors, $U^\top U=I$.}
+\var{\Lambda}{diagonal matrix of eigenvalues.}
+\var{f}{symmetric vector function $f:\mathbb{R}^n\to\mathbb{R}\cup\{+\infty\}$.}
+\var{F}{spectral function $F(X)=f(\lambda(X))$.}
+\var{\varphi}{scalar function acting on one eigenvalue.}
+\var{t}{interpolation parameter in $[0,1]$.}
+\var{\phi_k}{Ky Fan $k$-sum of eigenvalues.}
+\var{Q}{matrix with orthonormal columns, $Q^\top Q=I_k$.}
+\var{\partial F(X)}{convex subdifferential of $F$ at $X$.}
+\var{\langle A,B\rangle}{Frobenius inner product $\operatorname{tr}(A^\top B)$.}
+\var{I}{identity matrix.}
+\var{S}{sample covariance or symmetric data matrix.}
+\var{\sigma_{\max}(A)}{largest singular value of $A$.}
+\varmapEnd
+
+\section{Formula Canon — One Formula Per Page}
+\FormulaPage{1}{Convexity Transfer: Symmetric Convex $f$ Implies Convex Spectral $F$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+If $f:\mathbb{R}^n\to\mathbb{R}\cup\{+\infty\}$ is convex and symmetric,
+then $F:\mathbb{S}^n\to\mathbb{R}\cup\{+\infty\}$ defined by
+$F(X)=f(\lambda(X))$ is convex.
+
+\WHAT{
+This establishes that convexity of a permutation-invariant vector function
+on eigenvalues lifts to convexity of the associated matrix-valued spectral
+function.
+}
+
+\WHY{
+It enables convex modeling with matrices by specifying convex costs on
+eigenvalues: nuclear/spectral norms, sums of convex scalars on eigenvalues,
+and barriers like $-\sum \log \lambda_i$.
+}
+
+\FORMULA{
+\[
+F(tX+(1-t)Y)\le tF(X)+(1-t)F(Y)\quad\forall X,Y\in\mathbb{S}^n,\ t\in[0,1].
+\]
+}
+
+\CANONICAL{
+$X,Y\in\mathbb{S}^n$. Let $\lambda(X)$ denote eigenvalues sorted
+nonincreasingly. $f$ is symmetric: $f(Px)=f(x)$ for any permutation $P$,
+and convex on $\mathbb{R}^n$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $f$ convex and symmetric (permutation-invariant).
+\item Eigenvalues are ordered consistently in $\lambda(\cdot)$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+(Convex symmetric $\Rightarrow$ Schur-convex) If $f$ is convex and
+symmetric, then $x\prec y$ implies $f(x)\le f(y)$.
+\end{lemma}
+\begin{proof}
+If $x\prec y$ then $x=Dy$ for some doubly stochastic $D$. By Birkhoff,
+$D=\sum_j \alpha_j P_j$ with permutations $P_j$, $\alpha_j\ge 0$,
+$\sum_j\alpha_j=1$. Convexity and symmetry give
+$f(x)=f(Dy)\le \sum_j \alpha_j f(P_j y)=\sum_j \alpha_j f(y)=f(y)$.
+\qedhere
+\end{proof}
+\begin{lemma}
+(Lidskii via Ky Fan) For $X,Y\in\mathbb{S}^n$ and $t\in[0,1]$,
+$\lambda(tX+(1-t)Y)\prec t\lambda(X)+(1-t)\lambda(Y)$.
+\end{lemma}
+\begin{proof}
+For each $k$, the Ky Fan inequality yields
+$\sum_{i=1}^k \lambda_i(tX+(1-t)Y)\le t\sum_{i=1}^k \lambda_i(X)
++(1-t)\sum_{i=1}^k \lambda_i(Y)$.
+Also traces match at $k=n$. Hence the majorization holds.
+To justify Ky Fan inequality, use the variational form
+$\sum_{i=1}^k\lambda_i(Z)=\max_{Q^\top Q=I_k}\operatorname{tr}(Q^\top ZQ)$,
+which is linear in $Z$ and preserves convex combinations, giving the bound.
+\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}&\ \lambda(tX+(1-t)Y)\prec t\lambda(X)+(1-t)\lambda(Y). \\
+\text{Step 2:}&\ \text{By Lemma 1, } f\text{ is Schur-convex.} \\
+\text{Step 3:}&\ f(\lambda(tX+(1-t)Y)) \le f(t\lambda(X)+(1-t)\lambda(Y)). \\
+\text{Step 4:}&\ \text{By convexity of } f,\ \\
+& f(t\lambda(X)+(1-t)\lambda(Y)) \le t f(\lambda(X))+(1-t)f(\lambda(Y)). \\
+\text{Step 5:}&\ \text{Hence } F(tX+(1-t)Y)\le tF(X)+(1-t)F(Y).
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Identify $f$ on eigenvalues and verify convexity and symmetry.
+\item Use Lidskii/majorization to compare eigenvalue vectors.
+\item Apply Schur-convexity and convexity to transfer inequality.
+\item Interpret the result on $X$ and $Y$.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item If $f(x)=\sum_i \varphi(x_i)$ with convex $\varphi$, then
+$F(X)=\sum_i \varphi(\lambda_i(X))$ is convex.
+\item For singular values $\sigma(A)$, same statement for unitarily
+invariant functions on rectangular matrices.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $f$ is not symmetric, $F$ is ill-defined on $\mathbb{S}^n$.
+\item If $f$ is concave, the induced $F$ is concave (not convex).
+\end{bullets}
+}
+
+\INPUTS{$X,Y\in\mathbb{S}^n$, $t\in[0,1]$, $f$ convex and symmetric.}
+
+\DERIVATION{
+\begin{align*}
+\text{Data: }& X,Y,t. \\
+\text{Compute: }& \lambda(X),\lambda(Y). \\
+\text{Bound: }& \lambda(tX+(1-t)Y)\prec t\lambda(X)+(1-t)\lambda(Y). \\
+\text{Evaluate: }& F(tX+(1-t)Y)=f(\lambda(\cdot)) \\
+& \le f(t\lambda(X)+(1-t)\lambda(Y)) \\
+& \le t f(\lambda(X))+(1-t)f(\lambda(Y)).
+\end{align*}
+}
+
+\RESULT{
+Convexity inequality for $F$ holds. Thus any convex symmetric $f$ generates
+a convex spectral function $F$ on $\mathbb{S}^n$.
+}
+
+\UNITCHECK{
+All quantities are scalar; invariance under orthogonal similarity is
+preserved; trace equality maintains the majorization total sum.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to sort eigenvalues before applying majorization.
+\item Misusing componentwise inequalities instead of majorization.
+\item Assuming differentiability where $f$ may be nonsmooth.
+\end{bullets}
+}
+
+\INTUITION{
+Eigenvalues of a convex mixture of matrices are more mixed than the convex
+mixture of eigenvalues. Convex symmetric $f$ rewards mixing less than
+spreading, so it prefers the left side, yielding convexity.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $x\prec y$ and $f$ convex symmetric $\Rightarrow f(x)\le f(y)$.
+\item $\lambda(tX+(1-t)Y)\prec t\lambda(X)+(1-t)\lambda(Y)$.
+\item Combine to conclude spectral convexity.
+\end{bullets}
+}
+
+\FormulaPage{2}{Variational Convexity of $\lambda_{\max}$ and Ky Fan Sums}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $X\in\mathbb{S}^n$,
+$\lambda_{\max}(X)=\max_{\|u\|=1} u^\top X u$ and
+$\phi_k(X)=\sum_{i=1}^k\lambda_i(X)=\max_{Q^\top Q=I_k}\operatorname{tr}(Q^\top X Q)$.
+Hence both are convex.
+
+\WHAT{
+Gives variational forms for top eigenvalue and top-$k$ eigenvalue sum,
+expressing them as suprema of linear functionals, which are convex.
+}
+
+\WHY{
+Variational characterizations enable optimization, subgradient computation,
+and algorithm design. Convexity follows as supremum of linear functions.
+}
+
+\FORMULA{
+\[
+\lambda_{\max}(X)=\sup_{\|u\|=1} \langle uu^\top, X\rangle,\quad
+\phi_k(X)=\sup_{Q^\top Q=I_k} \langle QQ^\top, X\rangle.
+\]
+}
+
+\CANONICAL{
+$X\in\mathbb{S}^n$. Unit vectors $u\in\mathbb{R}^n$ and
+$Q\in\mathbb{R}^{n\times k}$ with $Q^\top Q=I_k$ parameterize rank-1 and
+rank-$k$ projectors. Inner product is Frobenius.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Symmetry of $X$ ensures Rayleigh-Ritz holds.
+\item Orthonormality constraints define feasible sets compactly.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+(Rayleigh-Ritz) For $X\in\mathbb{S}^n$, $\lambda_{\max}(X)=
+\max_{\|u\|=1} u^\top X u$.
+\end{lemma}
+\begin{proof}
+Let $X=U\Lambda U^\top$ and set $v=U^\top u$. Then
+$u^\top X u=v^\top \Lambda v=\sum_i \lambda_i v_i^2\le \lambda_1\sum_i v_i^2
+=\lambda_1$, with equality for $u$ the top eigenvector. \qedhere
+\end{proof}
+\begin{lemma}
+(Ky Fan) $\sum_{i=1}^k\lambda_i(X)=\max_{Q^\top Q=I_k}\operatorname{tr}(Q^\top X Q)$.
+\end{lemma}
+\begin{proof}
+Write $X=U\Lambda U^\top$ and $Z=U^\top Q$. Then
+$\operatorname{tr}(Q^\top X Q)=\operatorname{tr}(Z^\top \Lambda Z)
+=\sum_{i=1}^n \lambda_i \|z_i\|^2\le \sum_{i=1}^k \lambda_i$ since
+$\sum_i \|z_i\|^2=\operatorname{tr}(Z^\top Z)=k$ and $\|z_i\|^2\le 1$,
+with equality by choosing $Q$ as the top $k$ eigenvectors. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{For } \lambda_{\max}:&\ \lambda_{\max}(X)=\max_{\|u\|=1} u^\top X u \\
+&= \max_{\|u\|=1} \langle uu^\top, X\rangle = \sup_{A\in\mathcal{U}_1}
+\langle A,X\rangle, \\
+\text{For } \phi_k:&\ \phi_k(X)= \max_{Q^\top Q=I_k} \langle QQ^\top, X\rangle
+= \sup_{A\in\mathcal{U}_k} \langle A,X\rangle,
+\end{align*}
+where $\mathcal{U}_1=\{uu^\top:\|u\|=1\}$ and
+$\mathcal{U}_k=\{QQ^\top:Q^\top Q=I_k\}$ are compact. Suprema of linear
+maps are convex, so both functions are convex.
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Express the spectral quantity via Rayleigh-Ritz or Ky Fan.
+\item Recognize it as a supremum of linear functionals of $X$.
+\item Conclude convexity and obtain subgradients from maximizers.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $\lambda_{\max}(X)=\min\{\mu:\ X\preceq \mu I\}$.
+\item $\phi_k(X)=\max\{\operatorname{tr}(AX):\ 0\preceq A\preceq I,\ 
+\operatorname{tr}(A)=k\}$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Nondifferentiable at matrices with multiple top eigenvalues.
+\item On $\mathbb{S}_+^n$, $\lambda_{\max}$ equals the operator norm.
+\end{bullets}
+}
+
+\INPUTS{$X\in\mathbb{S}^n$, integer $k\in\{1,\dots,n\}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Optimal }u:&\ \text{top eigenvector gives subgradient }G=uu^\top. \\
+\text{Optimal }Q:&\ \text{top-$k$ eigenvectors give subgradient }G=QQ^\top. \\
+\text{Convexity:}&\ \lambda_{\max}(tX+(1-t)Y) \\
+&= \max_{\|u\|=1} u^\top(tX+(1-t)Y)u \\
+&\le t\lambda_{\max}(X)+(1-t)\lambda_{\max}(Y).
+\end{align*}
+}
+
+\RESULT{
+$\lambda_{\max}$ and $\phi_k$ are convex spectral functions with explicit
+variational forms and subgradients from leading eigenspaces.
+}
+
+\UNITCHECK{
+All terms are scalar inner products; feasible sets are compact; maxima
+exist; orthogonal invariance holds.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Using arbitrary $u$ or $Q$ yields only lower bounds, not equality.
+\item Confusing $\phi_k$ with the sum of any $k$ eigenvalues (must be top).
+\end{bullets}
+}
+
+\INTUITION{
+The worst-case quadratic form or best $k$-dimensional subspace view makes
+$\lambda_{\max}$ and $\phi_k$ support functions of convex sets of
+projectors, hence convex.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Rayleigh-Ritz and Ky Fan extremal principles.
+\item Spectral convexity via supremum of linear maps.
+\end{bullets}
+}
+
+\FormulaPage{3}{Convexity of $-\log\det$ on $\mathbb{S}_{++}^n$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+The function $F(X)=-\log\det X$ is convex on $\mathbb{S}_{++}^n$ and
+strictly convex along any line that leaves the boundary avoided.
+
+\WHAT{
+$-\log\det$ measures barrier distance to the boundary of $\mathbb{S}_{++}^n$
+and equals $-\sum_i \log \lambda_i(X)$. It is a convex spectral function.
+}
+
+\WHY{
+Central in Gaussian likelihoods, graphical models, and interior-point
+methods for semidefinite programs as a self-concordant barrier.
+}
+
+\FORMULA{
+\[
+F(X)=-\log\det X,\quad D F(X)[H] = -\operatorname{tr}(X^{-1}H),\quad
+D^2 F(X)[H,H]=\operatorname{tr}(X^{-1}H X^{-1}H)\ge 0.
+\]
+}
+
+\CANONICAL{
+Domain $\mathbb{S}_{++}^n$. Eigenvalues $\lambda_i(X)>0$. Since
+$-\log$ is convex on $(0,+\infty)$, $F(X)=\sum_i -\log \lambda_i(X)$ is
+convex by Formula 1.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $X\in\mathbb{S}_{++}^n$ so $\log\det X$ is finite and smooth.
+\item Direction $H\in\mathbb{S}^n$ for Fr\'echet derivatives.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For $X\in\mathbb{S}_{++}^n$, $D\log\det(X)[H]=\operatorname{tr}(X^{-1}H)$.
+\end{lemma}
+\begin{proof}
+Consider $g(t)=\log\det(X+tH)$. Then
+$g'(t)=\operatorname{tr}((X+tH)^{-1}H)$; at $t=0$ this is
+$\operatorname{tr}(X^{-1}H)$. This follows from
+$\frac{d}{dt}\det M = \det M \cdot \operatorname{tr}(M^{-1}M')$.
+\qedhere
+\end{proof}
+\begin{lemma}
+$D^2(-\log\det)(X)[H,H]=\operatorname{tr}(X^{-1}H X^{-1}H)\ge 0$.
+\end{lemma}
+\begin{proof}
+Differentiate $DF(X)[H]=-\operatorname{tr}(X^{-1}H)$ in direction $H$:
+$D^2F(X)[H,H]=\operatorname{tr}(X^{-1}H X^{-1}H)$ using
+$D(X^{-1})[H]=-X^{-1}HX^{-1}$. The trace of a Gram matrix is nonnegative.
+\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Eigenvalue form: }& F(X)=\sum_{i=1}^n -\log \lambda_i(X). \\
+\text{By Formula 1: }& -\log \text{ convex } \Rightarrow F \text{ convex}. \\
+\text{Differential check: }& D^2F(X)[H,H]=\operatorname{tr}(X^{-1}H X^{-1}H) \\
+&= \|X^{-1/2} H X^{-1/2}\|_F^2 \ge 0. \\
+\text{Strictness: }& \text{Equality only if } X^{-1/2}HX^{-1/2}=0 \Rightarrow H=0.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Verify $X\in\mathbb{S}_{++}^n$.
+\item Use eigenvalue sum or differential forms.
+\item For optimization, set gradient $-X^{-1}+S=0$ when minimizing
+$-\log\det X+\langle S,X\rangle$.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $-\log\det X = \sup_{Y\succ 0}\{\langle Y,X\rangle - n - \log\det Y\}$.
+\item Jensen form: $-\log\det(tX+(1-t)Y)\le -t\log\det X-(1-t)\log\det Y$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item As $X\to \partial\mathbb{S}_{++}^n$, $-\log\det X\to +\infty$.
+\item Not defined on singular or indefinite matrices.
+\end{bullets}
+}
+
+\INPUTS{$X\in\mathbb{S}_{++}^n$, direction $H\in\mathbb{S}^n$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Gradient: }& \nabla F(X) = -X^{-1}. \\
+\text{Stationary point: }& \nabla(-\log\det X+\langle S,X\rangle)=0 \\
+&\Rightarrow -X^{-1}+S=0 \Rightarrow X=S^{-1}.
+\end{align*}
+}
+
+\RESULT{
+$-\log\det$ is convex and smooth on $\mathbb{S}_{++}^n$ with positive
+semidefinite Hessian; convex programs with this barrier are tractable.
+}
+
+\UNITCHECK{
+Trace inner products are scalar; eigenvalue sum equals $\log\det$; Hessian
+form is a squared Frobenius norm, nonnegative.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Confusing operator convexity of $-\log$ (true) with general convexity
+transfer; here both arguments apply.
+\item Ignoring domain $\mathbb{S}_{++}^n$ at the boundary.
+\end{bullets}
+}
+
+\INTUITION{
+$-\log\det$ penalizes small eigenvalues heavily, keeping $X$ away from
+singularity; curvature grows near the boundary.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Eigenvalue additive form $-\sum\log\lambda_i$.
+\item Hessian as $\|X^{-1/2} H X^{-1/2}\|_F^2$.
+\end{bullets}
+}
+
+\FormulaPage{4}{Subdifferential of Convex Spectral Functions}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let $F(X)=f(\lambda(X))$ with $f$ convex, symmetric. Suppose
+$X=U\Lambda U^\top$ with $\Lambda=\operatorname{diag}(\lambda)$.
+Then
+\[
+\partial F(X)=\operatorname{conv}\Big\{U\,\operatorname{diag}(g)\,U^\top:
+g\in \partial f(\lambda),\ g \text{ constant on equal-eigenvalue blocks}\Big\}.
+\]
+
+\WHAT{
+Characterizes all subgradients at $X$ by lifting vector subgradients at
+$\lambda(X)$ through the eigenbasis, with convexification across repeated
+eigenspaces.
+}
+
+\WHY{
+Enables optimality conditions and proximal mappings in algorithms for
+spectral-regularized optimization, including nonsmooth cases like
+$\sum_i |\lambda_i|$.
+}
+
+\FORMULA{
+\[
+G\in\partial F(X)\ \Longleftrightarrow\ F(Y)\ge F(X)+\langle G,Y-X\rangle
+\ \forall Y,\quad
+G=U\operatorname{diag}(g)U^\top,\ g\in\partial f(\lambda).
+\]
+When eigenvalues repeat, convex hull over permutations within multiplicity
+blocks is taken.
+}
+
+\CANONICAL{
+$X\in\mathbb{S}^n$ with eigendecomposition $X=U\Lambda U^\top$ and
+$\lambda=\lambda(X)$. The set $\partial f(\lambda)$ is the convex
+subdifferential in $\mathbb{R}^n$. Sorting is consistent.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $f$ convex and symmetric; $X$ diagonalizable by orthogonal $U$.
+\item If eigenvalues are repeated, allow block-wise permutations.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+(von Neumann trace inequality, symmetric case) For $A,B\in\mathbb{S}^n$,
+$\langle A,B\rangle \le \langle \lambda(A), \lambda(B)\rangle$ with
+equality when eigenvectors align.
+\end{lemma}
+\begin{proof}
+Write $A=U\operatorname{diag}(\alpha)U^\top$,
+$B=V\operatorname{diag}(\beta)V^\top$. Then
+$\langle A,B\rangle=\operatorname{tr}(U\operatorname{diag}(\alpha)U^\top
+V\operatorname{diag}(\beta)V^\top)$. Using Hardy-Littlewood-P\'olya
+rearrangement for eigenvalues yields the bound with equality when $U=V$.
+\qedhere
+\end{proof}
+\begin{lemma}
+If $g\in\partial f(\lambda)$, then for all $\mu$,
+$f(\mu)\ge f(\lambda)+\langle g,\mu-\lambda\rangle$.
+\end{lemma}
+\begin{proof}
+This is the definition of convex subdifferential in $\mathbb{R}^n$.
+\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Let }& X=U\Lambda U^\top,\ \lambda=\lambda(X),\ g\in\partial f(\lambda). \\
+\text{Define }& G=U\operatorname{diag}(g)U^\top. \\
+\text{For any }& Y\in\mathbb{S}^n,\ \mu=\lambda(Y). \\
+\text{Use }& \text{Lemma 1 with } U^\top Y U\ \text{to get} \\
+& \langle G,Y-X\rangle \le \langle g, \mu-\lambda\rangle. \\
+\text{Then }& f(\mu)\ge f(\lambda)+\langle g,\mu-\lambda\rangle
+\ \text{by Lemma 2}. \\
+\text{Hence }& F(Y)\ge F(X)+\langle G,Y-X\rangle. \\
+\text{Multiplicity: }& \text{If eigenvalues repeat, average over }U
+\text{ inside blocks.}
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Diagonalize $X$ and compute $\partial f(\lambda)$.
+\item Lift any $g\in\partial f(\lambda)$ to $G=U\operatorname{diag}(g)U^\top$.
+\item If multiplicities exist, convexify over block permutations.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item For $\lambda_{\max}$, $\partial \lambda_{\max}(X)=\operatorname{conv}
+\{uu^\top: u\ \text{top eigenvectors}\}$.
+\item For $F(X)=\sum_i \varphi(\lambda_i)$ with convex $\varphi$,
+$\partial F(X)=\{U\operatorname{diag}(d)U^\top: d_i\in\partial\varphi(
+\lambda_i),\ \text{block convexity}\}$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Nondifferentiability at repeated eigenvalues leads to set-valued
+subdifferentials.
+\item If $f$ not symmetric, the lifting fails.
+\end{bullets}
+}
+
+\INPUTS{$X\in\mathbb{S}^n$, eigendecomposition $U,\lambda$, and $f$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Compute }& U,\lambda,\ g\in\partial f(\lambda). \\
+\text{Form }& G=U\operatorname{diag}(g)U^\top. \\
+\text{Check }& F(Y)\ge F(X)+\langle G,Y-X\rangle \text{ for random }Y.
+\end{align*}
+}
+
+\RESULT{
+All subgradients are obtained by lifting vector subgradients and convex
+averaging within repeated-eigenvalue blocks.
+}
+
+\UNITCHECK{
+Both sides scale as scalars; orthogonal invariance holds; equality at
+aligned eigenbases saturates von Neumann inequality.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Forgetting block-wise freedom when eigenvalues are equal.
+\item Using unsorted $\lambda$ breaks the trace inequality alignment.
+\end{bullets}
+}
+
+\INTUITION{
+Push each eigenvalue using the vector subgradient and rotate back; when
+eigenvalues tie, any push within the flat direction is valid.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Subgradient lifting via eigenbasis.
+\item Alignment bound by von Neumann trace inequality.
+\end{bullets}
+}
+
+\section{10 Exhaustive Problems and Solutions}
+\ProblemPage{1}{Convexity of $\lambda_{\max}$, subgradient, and example}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show $\lambda_{\max}$ is convex; compute a subgradient at a given matrix
+and verify the inequality numerically.
+
+\PROBLEM{
+Let $X=\begin{bmatrix}2&1\\1&0\end{bmatrix}$, $Y=\begin{bmatrix}0&1\\1&3\end{bmatrix}$,
+$t=\tfrac{1}{3}$. Prove
+$\lambda_{\max}(tX+(1-t)Y)\le t\lambda_{\max}(X)+(1-t)\lambda_{\max}(Y)$.
+Find a subgradient $G\in\partial\lambda_{\max}(X)$ and verify
+$\lambda_{\max}(Y)\ge \lambda_{\max}(X)+\langle G,Y-X\rangle$.
+}
+
+\MODEL{
+\[
+\lambda_{\max}(Z)=\max_{\|u\|=1} u^\top Z u,\quad
+\partial\lambda_{\max}(Z)=\operatorname{conv}\{uu^\top:\ u\in\mathcal{U}\},
+\]
+where $\mathcal{U}$ is the set of top eigenvectors of $Z$.
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Matrices are symmetric $2\times 2$.
+\item Top eigenvalue is simple for $X$.
+\end{bullets}
+}
+
+\varmapStart
+\var{X,Y}{input symmetric matrices.}
+\var{t}{mixing parameter in $[0,1]$.}
+\var{u}{unit eigenvector of $X$ for $\lambda_{\max}(X)$.}
+\var{G}{subgradient $uu^\top$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 (variational form) implies convexity and subgradient form.
+}
+
+\GOVERN{
+\[
+\lambda_{\max}(tX+(1-t)Y)=\max_{\|u\|=1} u^\top(tX+(1-t)Y)u.
+\]
+}
+
+\INPUTS{$X=\begin{bmatrix}2&1\\1&0\end{bmatrix}$,
+$Y=\begin{bmatrix}0&1\\1&3\end{bmatrix}$, $t=\tfrac{1}{3}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Eigen of }X:&\ \det\begin{bmatrix}2-\lambda&1\\1&-\lambda\end{bmatrix}
+=\lambda^2-2\lambda-1=0, \\
+&\ \lambda_{\max}(X)=1+\sqrt{2}. \\
+\text{Eigenvector }u:&\ (X-(1+\sqrt{2})I)u=0 \Rightarrow
+\begin{bmatrix}1-\sqrt{2}&1\\1&-(1+\sqrt{2})\end{bmatrix}u=0, \\
+&\ u\propto \begin{bmatrix}1\\ \sqrt{2}-1\end{bmatrix},\
+u=\frac{1}{\sqrt{1+(\sqrt{2}-1)^2}}\begin{bmatrix}1\\ \sqrt{2}-1\end{bmatrix}. \\
+\text{Compute }& \lambda_{\max}(Y):
+\det\begin{bmatrix}-\lambda&1\\1&3-\lambda\end{bmatrix}=
+\lambda^2-3\lambda-1=0, \\
+&\ \lambda_{\max}(Y)=\tfrac{3+\sqrt{13}}{2}. \\
+\text{Mixture }Z:&\ Z=tX+(1-t)Y=\tfrac{1}{3}\begin{bmatrix}2&1\\1&0\end{bmatrix}
++\tfrac{2}{3}\begin{bmatrix}0&1\\1&3\end{bmatrix} \\
+&=\begin{bmatrix}\tfrac{2}{3}&1\\1&2\end{bmatrix}. \\
+\text{Eigen of }Z:&\ \det\begin{bmatrix}\tfrac{2}{3}-\lambda&1\\1&2-\lambda\end{bmatrix}
+=\lambda^2-\tfrac{8}{3}\lambda+\tfrac{1}{3}=0, \\
+&\ \lambda_{\max}(Z)=\tfrac{4+\sqrt{13}}{3}. \\
+\text{Check convexity: }& t\lambda_{\max}(X)+(1-t)\lambda_{\max}(Y) \\
+&= \tfrac{1}{3}(1+\sqrt{2})+\tfrac{2}{3}\cdot \tfrac{3+\sqrt{13}}{2}
+= \tfrac{1}{3}+\tfrac{\sqrt{2}}{3}+\tfrac{3}{3}+\tfrac{\sqrt{13}}{3} \\
+&= \tfrac{4+\sqrt{2}+\sqrt{13}}{3}. \\
+\text{Since }& \sqrt{13}>\sqrt{2},\ \tfrac{4+\sqrt{13}}{3}<\tfrac{4+\sqrt{2}+\sqrt{13}}{3}.
+\end{align*}
+}
+
+\RESULT{
+Convexity inequality holds numerically. A subgradient at $X$ is
+$G=uu^\top$; direct computation yields
+$\lambda_{\max}(Y)\ge \lambda_{\max}(X)+\langle G,Y-X\rangle$.
+}
+
+\UNITCHECK{
+All quantities are real scalars; eigenvalues computed from quadratic
+equations; inner product is trace of product.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $X$ has repeated top eigenvalues, $\partial\lambda_{\max}(X)$ is
+a convex hull over projectors in the top eigenspace.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use $\lambda_{\max}(Z)=\min\{\mu:\ Z\preceq \mu I\}$ and Loewner order to
+obtain convexity directly.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically evaluate both sides with high precision.
+\item Verify subgradient inequality for random $Y$.
+\end{bullets}
+}
+
+\INTUITION{
+Rayleigh quotient linearizes the objective along unit vectors; supremum of
+linear forms is convex.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Variational form of $\lambda_{\max}$ provides convexity and subgradients.
+\end{bullets}
+}
+
+\ProblemPage{2}{Convexity of $\sum_i \varphi(\lambda_i)$ with $\varphi(t)=|t|$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Prove $F(X)=\sum_{i=1}^n |\lambda_i(X)|$ is convex on $\mathbb{S}^n$ and
+compute $F$ for a concrete matrix.
+
+\PROBLEM{
+Let $X=\begin{bmatrix}3&-2\\-2&-1\end{bmatrix}$. Show $F$ is convex and
+compute $F(X)$. Then for
+$Y=\begin{bmatrix}1&0\\0&-4\end{bmatrix}$ and $t=\tfrac{1}{2}$ verify
+$F(\tfrac{1}{2}X+\tfrac{1}{2}Y)\le \tfrac{1}{2}F(X)+\tfrac{1}{2}F(Y)$.
+}
+
+\MODEL{
+\[
+F(X)=\sum_{i=1}^n \varphi(\lambda_i(X)),\ \varphi(t)=|t|,\ \varphi\ \text{convex}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Real symmetric matrices; eigenvalues real.
+\item Absolute value is convex and even.
+\end{bullets}
+}
+
+\varmapStart
+\var{X,Y}{input matrices.}
+\var{t}{mixing parameter.}
+\var{\varphi}{absolute value function.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 1 applies with $f(\lambda)=\sum_i |\lambda_i|$ convex and symmetric.
+}
+
+\GOVERN{
+\[
+F(tX+(1-t)Y)\le tF(X)+(1-t)F(Y).
+\]
+}
+
+\INPUTS{$X=\begin{bmatrix}3&-2\\-2&-1\end{bmatrix}$,
+$Y=\begin{bmatrix}1&0\\0&-4\end{bmatrix}$, $t=\tfrac{1}{2}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Eigen of }X:&\ \det\begin{bmatrix}3-\lambda&-2\\-2&-1-\lambda\end{bmatrix}
+=(3-\lambda)(-1-\lambda)-4 \\
+&= -3-3\lambda+\lambda^2-4=\lambda^2-3\lambda-7. \\
+&\ \lambda_{1,2}=\tfrac{3\pm\sqrt{9+28}}{2}=\tfrac{3\pm\sqrt{37}}{2}. \\
+&\ F(X)=\tfrac{3+\sqrt{37}}{2}+\tfrac{\sqrt{37}-3}{2}=\sqrt{37}. \\
+\text{Eigen of }Y:&\ \{1,-4\},\ F(Y)=|1|+|{-4}|=5. \\
+\text{Mixture }Z:&\ Z=\tfrac{1}{2}X+\tfrac{1}{2}Y
+=\begin{bmatrix}2&-1\\-1&-2.5\end{bmatrix}. \\
+\text{Eigen of }Z:&\ \det\begin{bmatrix}2-\lambda&-1\\-1&-2.5-\lambda\end{bmatrix}
+=(2-\lambda)(-2.5-\lambda)-1 \\
+&= -5 -2\lambda +2.5\lambda+\lambda^2 -1
+= \lambda^2+0.5\lambda-6. \\
+&\ \lambda_{1,2}=\tfrac{-0.5\pm \sqrt{0.25+24}}{2}
+=\tfrac{-0.5\pm \sqrt{24.25}}{2}. \\
+&\ F(Z)=\left|\tfrac{-0.5+\sqrt{24.25}}{2}\right|
++\left|\tfrac{-0.5-\sqrt{24.25}}{2}\right| \\
+&= \tfrac{-0.5+\sqrt{24.25}}{2} + \tfrac{0.5+\sqrt{24.25}}{2}
+= \sqrt{24.25}.
+\end{align*}
+}
+
+\RESULT{
+$F(X)=\sqrt{37}\approx 6.083$, $F(Y)=5$, $F(Z)=\sqrt{24.25}\approx 4.925$.
+Convexity bound: $F(Z)\le \tfrac{1}{2}(\sqrt{37}+5)\approx 5.541$ holds.
+}
+
+\UNITCHECK{
+All values are scalars; mixture respects linearity; absolute values ensure
+nonnegativity.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If an eigenvalue is zero, $|t|$ is nondifferentiable at $0$, but
+convexity remains valid.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use unitarily invariant norm identity on symmetric matrices:
+$\sum_i |\lambda_i(X)|=\|X\|_*$ (nuclear norm) and known convexity of norms.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute both sides numerically with high precision.
+\item Cross-check via singular values; for symmetric, $|\lambda_i|=\sigma_i$.
+\end{bullets}
+}
+
+\INTUITION{
+Summing absolute eigenvalues measures total signed stretch magnitude; mixing
+matrices reduces extremality, lowering the sum.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Spectral function with convex even scalar $\varphi$ is convex.
+\end{bullets}
+}
+
+\ProblemPage{3}{Ky Fan Convexity and Projection}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show $\phi_k(X)=\sum_{i=1}^k\lambda_i(X)$ is convex, and compute
+$\phi_1,\phi_2$ for a given $3\times 3$ matrix.
+
+\PROBLEM{
+Let $X=\begin{bmatrix}2&0&0\\0&-1&1\\0&1&0\end{bmatrix}$. Compute
+$\phi_1(X)$ and $\phi_2(X)$. Prove convexity of $\phi_k$ using the
+variational form. Verify numerically with a second matrix
+$Y=\operatorname{diag}(1,0,3)$ and $t=\tfrac{1}{2}$ for $k=2$.
+}
+
+\MODEL{
+\[
+\phi_k(X)=\max_{Q^\top Q=I_k}\operatorname{tr}(Q^\top X Q).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Symmetric matrices; $k\in\{1,2\}$.
+\item Variational characterization holds.
+\end{bullets}
+}
+
+\varmapStart
+\var{X,Y}{input matrices.}
+\var{k}{Ky Fan index.}
+\var{Q}{orthonormal $n\times k$ matrix.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 (Ky Fan variational form) implies convexity as supremum of
+linear functionals.
+}
+
+\GOVERN{
+\[
+\phi_k(tX+(1-t)Y)\le t\phi_k(X)+(1-t)\phi_k(Y).
+\]
+}
+
+\INPUTS{$X=\begin{bmatrix}2&0&0\\0&-1&1\\0&1&0\end{bmatrix}$,
+$Y=\operatorname{diag}(1,0,3)$, $t=\tfrac{1}{2}$, $k=2$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Eigen of }X:&\ X=\operatorname{diag}(2)\oplus \begin{bmatrix}-1&1\\1&0\end{bmatrix}. \\
+&\ \det\begin{bmatrix}-1-\lambda&1\\1&-\lambda\end{bmatrix}
+=\lambda^2+\lambda-1=0. \\
+&\ \lambda=\tfrac{-1\pm\sqrt{5}}{2}. \\
+&\ \lambda(X)=\left\{2,\ \tfrac{-1+\sqrt{5}}{2},\ \tfrac{-1-\sqrt{5}}{2}\right\}. \\
+&\ \phi_1(X)=2,\ \phi_2(X)=2+\tfrac{-1+\sqrt{5}}{2}=\tfrac{3+\sqrt{5}}{2}. \\
+\text{Eigen of }Y:&\ \{3,1,0\},\ \phi_2(Y)=3+1=4. \\
+\text{Mixture }Z:&\ Z=\tfrac{1}{2}X+\tfrac{1}{2}Y. \\
+\text{Bound: }& \phi_2(Z)\le \tfrac{1}{2}\phi_2(X)+\tfrac{1}{2}\phi_2(Y)
+=\tfrac{1}{2}\cdot \tfrac{3+\sqrt{5}}{2}+\tfrac{1}{2}\cdot 4
+=\tfrac{11+\sqrt{5}}{4}.
+\end{align*}
+}
+
+\RESULT{
+$\phi_1(X)=2$, $\phi_2(X)=\tfrac{3+\sqrt{5}}{2}\approx 2.618$. The convexity
+bound for $k=2$ holds numerically.
+}
+
+\UNITCHECK{
+Trace-based quantities are scalar; Ky Fan objective is linear for fixed
+$Q$, preserving convexity under supremum.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If top-$k$ eigenvalues tie with lower ones, $\phi_k$ is nondifferentiable.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use majorization: sum of top-$k$ eigenvalues is a support function of the
+spectrahedron $\{A:\ 0\preceq A\preceq I,\ \operatorname{tr}A=k\}$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically compute eigenvalues of $Z$ and sum top two.
+\item Compare with the convex combination bound.
+\end{bullets}
+}
+
+\INTUITION{
+Choose the best $k$-dimensional subspace to capture energy; mixtures cannot
+outperform mixing the optimal values.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Variational form yields convexity via supremum of linear functionals.
+\end{bullets}
+}
+
+\ProblemPage{4}{Alice-Bob: Hidden Majorization in Averaging Covariances}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Alice mixes two covariance matrices $C_1,C_2\in\mathbb{S}_{+}^n$,
+$C_t=tC_1+(1-t)C_2$. Bob claims $\sum_i \varphi(\lambda_i(C_t))\le
+t\sum_i \varphi(\lambda_i(C_1))+(1-t)\sum_i \varphi(\lambda_i(C_2))$ for
+convex $\varphi$. Prove Bob is correct and test numerically.
+
+\PROBLEM{
+Set $C_1=\begin{bmatrix}2&0\\0&1\end{bmatrix}$, $C_2=\begin{bmatrix}3&1\\1&2\end{bmatrix}$,
+$t=\tfrac{1}{4}$, $\varphi(u)=u^2$. Verify the inequality.
+}
+
+\MODEL{
+\[
+F(C)=\sum_i \varphi(\lambda_i(C)),\ \varphi(u)=u^2 \text{ convex}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $C_1,C_2$ are positive semidefinite covariances.
+\item $\varphi$ convex; Formula 1 applies.
+\end{bullets}
+}
+
+\varmapStart
+\var{C_1,C_2}{covariances.}
+\var{t}{mixing parameter.}
+\var{\varphi}{convex scalar function.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 1: convex symmetric vector function transfers convexity to spectral
+function on $\mathbb{S}^n$.
+}
+
+\GOVERN{
+\[
+F(C_t)\le tF(C_1)+(1-t)F(C_2).
+\]
+}
+
+\INPUTS{$C_1=\operatorname{diag}(2,1)$, $C_2=\begin{bmatrix}3&1\\1&2\end{bmatrix}$,
+$t=\tfrac{1}{4}$.}
+
+\DERIVATION{
+\begin{align*}
+&\lambda(C_1)=\{2,1\},\ F(C_1)=2^2+1^2=5. \\
+&\lambda(C_2):\ \det\begin{bmatrix}3-\lambda&1\\1&2-\lambda\end{bmatrix}
+=\lambda^2-5\lambda+5, \\
+&\ \lambda=\tfrac{5\pm \sqrt{25-20}}{2}=\tfrac{5\pm \sqrt{5}}{2}, \\
+&\ F(C_2)=\left(\tfrac{5+\sqrt{5}}{2}\right)^2+\left(\tfrac{5-\sqrt{5}}{2}\right)^2
+=\tfrac{25+5}{2}=15. \\
+&C_t=\tfrac{1}{4}C_1+\tfrac{3}{4}C_2=\begin{bmatrix}2.25&0.75\\0.75&1.75\end{bmatrix}. \\
+&\det\begin{bmatrix}2.25-\lambda&0.75\\0.75&1.75-\lambda\end{bmatrix}
+=\lambda^2-4\lambda+3.5, \\
+&\ \lambda=\tfrac{4\pm \sqrt{16-14}}{2}=\tfrac{4\pm \sqrt{2}}{2}=
+2\pm \tfrac{\sqrt{2}}{2}. \\
+&F(C_t)=(2+\tfrac{\sqrt{2}}{2})^2+(2-\tfrac{\sqrt{2}}{2})^2
+= 2\cdot (4+\tfrac{1}{2})=9. \\
+& tF(C_1)+(1-t)F(C_2)=\tfrac{1}{4}\cdot 5+\tfrac{3}{4}\cdot 15=12.5. \\
+& F(C_t)=9\le 12.5.
+\end{align*}
+}
+
+\RESULT{
+Bob is correct; the inequality holds with a strict gap in this example.
+}
+
+\UNITCHECK{
+All values scalar; convex combination preserves PSD; eigenvalues positive.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $C_1$ and $C_2$ commute and share eigenvectors, equality holds
+iff $\varphi$ is affine on their eigenvalue convex hull.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use Jensen on eigenvalue distributions with Lidskii majorization, as in
+Formula 1.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically recompute with high precision to confirm.
+\end{bullets}
+}
+
+\INTUITION{
+Averaging spreads eigenvalues inward; convex $\varphi$ values reduce.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Spectral convexity of separable convex sums $\sum \varphi(\lambda_i)$.
+\end{bullets}
+}
+
+\ProblemPage{5}{Coin Expectation: Jensen for $\lambda_{\max}$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For random $X$ on $\mathbb{S}^n$, $\mathbb{E}[\lambda_{\max}(X)]\ge
+\lambda_{\max}(\mathbb{E}[X])$.
+
+\PROBLEM{
+A fair coin chooses $X_1=\begin{bmatrix}2&0\\0&1\end{bmatrix}$ or
+$X_2=\begin{bmatrix}0&1\\1&1\end{bmatrix}$. Compute both sides and verify
+Jensen's inequality for $\lambda_{\max}$.
+}
+
+\MODEL{
+\[
+\lambda_{\max} \text{ convex } \Rightarrow \mathbb{E}[\lambda_{\max}(X)]
+\ge \lambda_{\max}(\mathbb{E}[X]).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Fair coin: $\mathbb{P}(X=X_1)=\mathbb{P}(X=X_2)=\tfrac{1}{2}$.
+\end{bullets}
+}
+
+\varmapStart
+\var{X_1,X_2}{outcomes.}
+\var{\bar{X}}{mean matrix.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 ensures convexity of $\lambda_{\max}$, enabling Jensen.
+}
+
+\GOVERN{
+\[
+\mathbb{E}[\lambda_{\max}(X)]\ge \lambda_{\max}(\mathbb{E}[X]).
+\]
+}
+
+\INPUTS{$X_1=\operatorname{diag}(2,1)$, $X_2=\begin{bmatrix}0&1\\1&1\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+&\lambda_{\max}(X_1)=2. \\
+&\lambda_{\max}(X_2):\ \det\begin{bmatrix}-\lambda&1\\1&1-\lambda\end{bmatrix}
+=\lambda^2-\lambda-1=0, \\
+&\ \lambda_{\max}(X_2)=\tfrac{1+\sqrt{5}}{2}\approx 1.618. \\
+&\mathbb{E}[\lambda_{\max}(X)]=\tfrac{1}{2}(2+1.618)=1.809. \\
+&\bar{X}=\tfrac{1}{2}\begin{bmatrix}2&0\\0&1\end{bmatrix}+
+\tfrac{1}{2}\begin{bmatrix}0&1\\1&1\end{bmatrix}
+=\begin{bmatrix}1&0.5\\0.5&1\end{bmatrix}. \\
+&\det\begin{bmatrix}1-\lambda&0.5\\0.5&1-\lambda\end{bmatrix}
+=(1-\lambda)^2-0.25=0, \\
+&\lambda_{\max}(\bar{X})=1.5. \\
+&1.809\ge 1.5.
+\end{align*}
+}
+
+\RESULT{
+Jensen's inequality holds with a strict gap: $1.809\ge 1.5$.
+}
+
+\UNITCHECK{
+All terms scalar; probabilities sum to one; mean is symmetric.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item Equality when $X$ is almost surely constant or when the top
+eigenvector is shared and eigenvalues affine.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute $\lambda_{\max}$ via Rayleigh quotient and apply Jensen per $u$,
+then take supremum.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Recompute eigenvalues numerically.
+\end{bullets}
+}
+
+\INTUITION{
+Convexity implies risk premium: expectation of a convex quantity exceeds
+the convex quantity at expectation.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Jensen inequality for convex spectral functions.
+\end{bullets}
+}
+
+\ProblemPage{6}{Proof-Style: Convexity of $-\log\det$ via Hessian}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Prove $-\log\det$ is convex on $\mathbb{S}_{++}^n$ by showing its Hessian
+is positive semidefinite.
+
+\PROBLEM{
+Let $F(X)=-\log\det X$ for $X\in\mathbb{S}_{++}^n$. Show
+$D^2F(X)[H,H]\ge 0$ for all $H\in\mathbb{S}^n$.
+}
+
+\MODEL{
+\[
+D F(X)[H] = -\operatorname{tr}(X^{-1}H),\ 
+D^2F(X)[H,H]=\operatorname{tr}(X^{-1}H X^{-1}H).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $X\in\mathbb{S}_{++}^n$, $H\in\mathbb{S}^n$.
+\end{bullets}
+}
+
+\varmapStart
+\var{X}{SPD matrix.}
+\var{H}{symmetric direction.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 3 provides differential identities for $-\log\det$.
+}
+
+\GOVERN{
+\[
+D^2F(X)[H,H]=\|X^{-1/2} H X^{-1/2}\|_F^2\ge 0.
+\]
+}
+
+\INPUTS{$X\succ 0$, $H=H^\top$.}
+
+\DERIVATION{
+\begin{align*}
+&DF(X)[H]=-\operatorname{tr}(X^{-1}H). \\
+&D^2F(X)[H,H]=\operatorname{tr}(X^{-1}H X^{-1}H)
+=\operatorname{tr}((X^{-1/2} H X^{-1/2})^2) \\
+&=\|X^{-1/2} H X^{-1/2}\|_F^2 \ge 0.
+\end{align*}
+}
+
+\RESULT{
+$-\log\det$ is convex on $\mathbb{S}_{++}^n$.
+}
+
+\UNITCHECK{
+Squared Frobenius norm nonnegative; dimensions consistent.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item Strictly positive unless $H=0$ along any line staying in
+$\mathbb{S}_{++}^n$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use Formula 1 with scalar convexity of $-\log$ and spectral sum form.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numeric finite-difference Hessian tests on random SPD matrices.
+\end{bullets}
+}
+
+\INTUITION{
+Curvature grows as eigenvalues approach zero, pushing away from the
+boundary strongly.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Hessian equals Gram matrix energy in the $X^{-1/2}$ metric.
+\end{bullets}
+}
+
+\ProblemPage{7}{Proof-Style: Subgradient of $\lambda_{\max}$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show that if $u$ is a unit eigenvector of $X$ for $\lambda_{\max}(X)$,
+then $G=uu^\top\in\partial\lambda_{\max}(X)$.
+
+\PROBLEM{
+Prove the subgradient condition for $G=uu^\top$ and discuss the case of
+multiple top eigenvalues.
+}
+
+\MODEL{
+\[
+\lambda_{\max}(Y)\ge \lambda_{\max}(X)+\langle uu^\top,Y-X\rangle.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $X\in\mathbb{S}^n$, $u$ unit top eigenvector.
+\end{bullets}
+}
+
+\varmapStart
+\var{X,Y}{symmetric matrices.}
+\var{u}{unit top eigenvector of $X$.}
+\var{G}{rank-1 projector $uu^\top$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 and Formula 4. Rayleigh-Ritz gives the inequality.
+}
+
+\GOVERN{
+\[
+\lambda_{\max}(Y)=\max_{\|v\|=1} v^\top Y v \ge u^\top Y u.
+\]
+}
+
+\INPUTS{$X=U\Lambda U^\top$, $u$ first column of $U$.}
+
+\DERIVATION{
+\begin{align*}
+&\lambda_{\max}(Y)\ge u^\top Y u = u^\top X u + u^\top(Y-X)u \\
+&= \lambda_{\max}(X) + \langle uu^\top, Y-X\rangle.
+\end{align*}
+}
+
+\RESULT{
+$uu^\top$ is a subgradient. If $\lambda_{\max}$ is multiple, then
+$\partial\lambda_{\max}(X)=\operatorname{conv}\{vv^\top:\ v\in\mathcal{U}\}$.
+}
+
+\UNITCHECK{
+All inner products scalar; $uu^\top$ is PSD with trace one.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item Nondifferentiable when multiplicity $>1$; subdifferential is a
+spectrahedron on the top eigenspace.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use Formula 4 lifting with $f(\lambda)=\max_i \lambda_i$ and its vector
+subgradients supported on the top coordinate.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Random $Y$ checks satisfy inequality numerically.
+\end{bullets}
+}
+
+\INTUITION{
+Move $Y$ along $uu^\top$ most increases the Rayleigh quotient.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Subgradients from maximizing Rayleigh directions.
+\end{bullets}
+}
+
+\ProblemPage{8}{Combo: Precision Estimation with $-\log\det$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given sample covariance $S\succ 0$, solve
+$\min_{X\succ 0}\ -\log\det X + \langle S,X\rangle$ and show the minimizer
+is $X^\star=S^{-1}$.
+
+\PROBLEM{
+Let $S=\begin{bmatrix}2&0.5\\0.5&1\end{bmatrix}\succ 0$. Find $X^\star$ and
+verify optimality conditions from spectral convexity.
+}
+
+\MODEL{
+\[
+\min_{X\succ 0}\ F(X),\ 
+F(X)=-\log\det X+\langle S,X\rangle.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $S\succ 0$; objective is strictly convex on $\mathbb{S}_{++}^n$.
+\end{bullets}
+}
+
+\varmapStart
+\var{S}{SPD sample covariance.}
+\var{X^\star}{optimal precision matrix.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 3 gives $\nabla(-\log\det X)=-X^{-1}$; set gradient to zero.
+}
+
+\GOVERN{
+\[
+\nabla F(X)=-X^{-1}+S,\quad \nabla F(X^\star)=0 \Rightarrow X^\star=S^{-1}.
+\]
+}
+
+\INPUTS{$S=\begin{bmatrix}2&0.5\\0.5&1\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+&\det S=2\cdot 1-0.25=1.75>0,\ S\succ 0. \\
+&S^{-1}=\frac{1}{1.75}\begin{bmatrix}1&-0.5\\-0.5&2\end{bmatrix}
+=\begin{bmatrix}0.5714&-0.2857\\-0.2857&1.1429\end{bmatrix}. \\
+&\nabla F(X^\star)=-{X^\star}^{-1}+S=-S+S=0. \\
+&\text{Strict convexity }\Rightarrow \text{unique minimizer }X^\star.
+\end{align*}
+}
+
+\RESULT{
+$X^\star=S^{-1}$ solves the problem and is unique.
+}
+
+\UNITCHECK{
+Inner products scalar; units cancel; inversion consistent with SPD domain.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $S$ is only PSD, the minimization has no finite solution; $X$
+drifts to the boundary.
+\end{bullets}
+}
+
+\ALTERNATE{
+Dual form: maximize $\log\det Y - n$ subject to $Y\preceq S$; relate via
+Fenchel conjugacy in Formula 3.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically verify that any feasible perturbation increases $F$.
+\end{bullets}
+}
+
+\INTUITION{
+$-\log\det$ pushes away from singularity; $\langle S,X\rangle$ aligns $X$
+with $S^{-1}$ at optimum.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Self-concordant barrier plus linear term yields closed-form minimizer.
+\end{bullets}
+}
+
+\ProblemPage{9}{Combo: Spectral Norm Constraint and Dual Support}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show $\lambda_{\max}(X)\le \tau$ iff $\langle X,A\rangle\le \tau$ for all
+$A\succeq 0$ with $\operatorname{tr}A=1$.
+
+\PROBLEM{
+Prove the equivalence and use it to test feasibility of
+$X=\begin{bmatrix}1&2\\2&0\end{bmatrix}$ for $\tau=3$.
+}
+
+\MODEL{
+\[
+\lambda_{\max}(X)=\max_{A\succeq 0,\,\operatorname{tr}A=1}\langle X,A\rangle.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $X\in\mathbb{S}^n$.
+\end{bullets}
+}
+
+\varmapStart
+\var{X}{symmetric matrix.}
+\var{\tau}{tolerance bound.}
+\var{A}{PSD test matrix with unit trace.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2: $\lambda_{\max}$ is support function of the spectrahedron
+$\{A\succeq 0:\ \operatorname{tr}A=1\}$.
+}
+
+\GOVERN{
+\[
+\lambda_{\max}(X)\le \tau \iff \langle X,A\rangle\le \tau\ \forall A\succeq 0,
+\ \operatorname{tr}A=1.
+\]
+}
+
+\INPUTS{$X=\begin{bmatrix}1&2\\2&0\end{bmatrix}$, $\tau=3$.}
+
+\DERIVATION{
+\begin{align*}
+&\lambda_{\max}(X)=\max_{\|u\|=1} u^\top X u
+=\max_{A=uu^\top}\langle X,A\rangle, \\
+&\text{and convexification over }A\succeq 0,\ \operatorname{tr}A=1
+\text{ yields same maximum.} \\
+&\text{Compute }\lambda_{\max}(X):\ \det\begin{bmatrix}1-\lambda&2\\2&-\lambda\end{bmatrix}
+=\lambda^2-\lambda-4=0, \\
+&\ \lambda_{\max}=\tfrac{1+\sqrt{17}}{2}\approx 2.561 < 3. \\
+&\text{Hence }\langle X,A\rangle\le 3\ \forall A \text{ of the set.}
+\end{align*}
+}
+
+\RESULT{
+Equivalence holds; the given $X$ satisfies the constraint for $\tau=3$.
+}
+
+\UNITCHECK{
+All quantities scalar; spectrahedron is compact and convex; maxima attained.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $\tau<\lambda_{\max}(X)$, there exists $A=uu^\top$ with
+$\langle X,A\rangle>\tau$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use semidefinite programming duality to derive the support function.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically sample random $A$ to verify bounds are respected.
+\end{bullets}
+}
+
+\INTUITION{
+Bounding the top eigenvalue is equivalent to bounding all Rayleigh
+quotients, which are linear in $A$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Support function view of $\lambda_{\max}$.
+\end{bullets}
+}
+
+\ProblemPage{10}{Narrative: Aligning Bases to Maximize Trace}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Alice chooses $U$ to diagonalize $X$, Bob chooses $V$ for $Y$. They compete
+to maximize $\langle X,Y\rangle$. Show that alignment $U=V$ with matched
+eigenvalue order maximizes the trace and link to subdifferentials.
+
+\PROBLEM{
+Let $X=U\operatorname{diag}(\alpha)U^\top$,
+$Y=V\operatorname{diag}(\beta)V^\top$ with sorted $\alpha,\beta$.
+Prove $\langle X,Y\rangle\le \langle \alpha,\beta\rangle$. Relate this to
+the subgradient characterization in Formula 4.
+}
+
+\MODEL{
+\[
+\langle X,Y\rangle=\operatorname{tr}(U\operatorname{diag}(\alpha)U^\top
+V\operatorname{diag}(\beta)V^\top).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\alpha,\beta$ sorted nonincreasingly.
+\item Orthogonal $U,V$.
+\end{bullets}
+}
+
+\varmapStart
+\var{U,V}{eigenvector bases.}
+\var{\alpha,\beta}{sorted eigenvalue vectors.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 4 lemma (von Neumann trace inequality).
+}
+
+\GOVERN{
+\[
+\langle X,Y\rangle\le \sum_{i=1}^n \alpha_i\beta_i=\langle \alpha,\beta\rangle.
+\]
+}
+
+\INPUTS{$X,Y$ symmetric with given spectral decompositions.}
+
+\DERIVATION{
+\begin{align*}
+&\langle X,Y\rangle=\operatorname{tr}(\operatorname{diag}(\alpha) W
+\operatorname{diag}(\beta) W^\top),\ W=U^\top V. \\
+&\text{By rearrangement, maximum occurs when }W=I,\ \text{i.e., }U=V. \\
+&\text{Thus }\langle X,Y\rangle\le \sum_i \alpha_i\beta_i.
+\end{align*}
+}
+
+\RESULT{
+Trace inner product is maximized by aligned eigenbases, equal to
+$\langle \alpha,\beta\rangle$.
+}
+
+\UNITCHECK{
+Inner products scalar; orthogonal invariance preserved.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If eigenvalues repeat, any orthogonal transform within equal blocks
+preserves the maximum.
+\end{bullets}
+}
+
+\ALTERNATE{
+Apply majorization of diagonal entries and Schur-Horn theorem to reach the
+same inequality.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically sample $U,V$ and verify the bound is not exceeded.
+\end{bullets}
+}
+
+\INTUITION{
+Aligning the strongest directions of $X$ and $Y$ maximizes overlap; this
+alignment saturates the subgradient inequality in Formula 4.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item von Neumann trace inequality connects to subgradient lifting.
+\end{bullets}
+}
+
+\section{Coding Demonstrations}
+\CodeDemoPage{Numerical Verification of Spectral Convexity}
+\PROBLEM{
+Verify numerically that $F(X)=\sum_i \varphi(\lambda_i(X))$ is convex for
+$\varphi(t)=|t|$ and $\varphi(t)=t^2$ by testing
+$F(tX+(1-t)Y)\le tF(X)+(1-t)F(Y)$ on random symmetric matrices.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> obj} — parse $n$, seed, $t$.
+\item \inlinecode{def solve_case(obj) -> output} — compute inequality gaps.
+\item \inlinecode{def validate() -> None} — assert gaps are nonpositive.
+\item \inlinecode{def main() -> None} — run deterministic tests.
+\end{bullets}
+}
+
+\INPUTS{
+$n$ dimension (int), seed (int), $t\in[0,1]$ (float); we generate $X,Y$.
+}
+
+\OUTPUTS{
+Gaps $g_{abs},g_{sq}$ for $\varphi(t)=|t|$ and $\varphi(t)=t^2$.
+}
+
+\FORMULA{
+\[
+g=F(tX+(1-t)Y)-tF(X)-(1-t)F(Y)\le 0.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    parts = s.split()
+    n = int(parts[0]); seed = int(parts[1]); t = float(parts[2])
+    return n, seed, t
+
+def sym_rand(n, rng):
+    A = rng.standard_normal((n, n))
+    return (A + A.T) / 2.0
+
+def spec_fun_abs(X):
+    w = np.linalg.eigvalsh(X)
+    return float(np.abs(w).sum())
+
+def spec_fun_sq(X):
+    w = np.linalg.eigvalsh(X)
+    return float((w ** 2).sum())
+
+def solve_case(obj):
+    n, seed, t = obj
+    rng = np.random.default_rng(seed)
+    X = sym_rand(n, rng)
+    Y = sym_rand(n, rng)
+    Z = t * X + (1 - t) * Y
+    g_abs = spec_fun_abs(Z) - (t * spec_fun_abs(X) + (1 - t) * spec_fun_abs(Y))
+    g_sq = spec_fun_sq(Z) - (t * spec_fun_sq(X) + (1 - t) * spec_fun_sq(Y))
+    return g_abs, g_sq
+
+def validate():
+    n, seed, t = 5, 0, 0.3
+    g_abs, g_sq = solve_case((n, seed, t))
+    assert g_abs <= 1e-10
+    assert g_sq <= 1e-10
+
+def main():
+    validate()
+    g_abs, g_sq = solve_case(read_input("6 1 0.4"))
+    print("gap_abs", round(g_abs, 12), "gap_sq", round(g_sq, 12))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    n, seed, t = s.split()
+    return int(n), int(seed), float(t)
+
+def solve_case(obj):
+    n, seed, t = obj
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal((n, n))
+    B = rng.standard_normal((n, n))
+    X = (A + A.T) / 2.0
+    Y = (B + B.T) / 2.0
+    Z = t * X + (1 - t) * Y
+    evals = np.linalg.eigvalsh
+    F_abs = lambda M: float(np.abs(evals(M)).sum())
+    F_sq = lambda M: float((evals(M) ** 2).sum())
+    g_abs = F_abs(Z) - (t * F_abs(X) + (1 - t) * F_abs(Y))
+    g_sq = F_sq(Z) - (t * F_sq(X) + (1 - t) * F_sq(Y))
+    return g_abs, g_sq
+
+def validate():
+    g_abs, g_sq = solve_case((4, 2, 0.25))
+    assert g_abs <= 1e-10
+    assert g_sq <= 1e-10
+
+def main():
+    validate()
+    g_abs, g_sq = solve_case(read_input("5 3 0.6"))
+    print("gap_abs", round(g_abs, 12), "gap_sq", round(g_sq, 12))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Time $\mathcal{O}(n^3)$ due to eigenvalue computations; space $\mathcal{O}(n^2)$.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Non-symmetric input would break spectral assumptions; enforce symmetry.
+\item Numerical roundoff may give tiny positive gaps; allow small tolerance.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Symmetrization ensures real eigenvalues via \inlinecode{eigvalsh}.
+\item Use tolerances to handle floating error.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Assertions that gaps $\le 1e{-}10$.
+\item Multiple seeds and sizes confirm robustness.
+\end{bullets}
+}
+
+\RESULT{
+Both variants produce nonpositive gaps within tolerance, confirming convexity.
+}
+
+\EXPLANATION{
+We evaluate $F$ at $X,Y$, and the mixture. Since $F$ is spectral convex,
+the inequality holds; eigenvalue routines realize $f(\lambda(X))$.
+}
+
+\EXTENSION{
+Test additional convex scalars $\varphi$ and larger dimensions.
+}
+
+\CodeDemoPage{Subgradient Check for $\lambda_{\max}$}
+\PROBLEM{
+Compute a subgradient $G=uu^\top$ at $X$ using the top eigenvector $u$ and
+verify the subgradient inequality for random $Y$.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> obj} — parse $n$, seed.
+\item \inlinecode{def solve_case(obj) -> output} — compute worst violation.
+\item \inlinecode{def validate() -> None} — assert worst violation $\le 0$.
+\item \inlinecode{def main() -> None} — orchestrate tests.
+\end{bullets}
+}
+
+\INPUTS{
+$n$ dimension, seed. We generate a random symmetric $X$ and test $Y_i$.
+}
+
+\OUTPUTS{
+Maximum value of $h(Y)=\lambda_{\max}(X)+\langle G,Y-X\rangle-\lambda_{\max}(Y)$.
+}
+
+\FORMULA{
+\[
+\lambda_{\max}(Y)\ge \lambda_{\max}(X)+\langle uu^\top, Y-X\rangle.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    n, seed = s.split()
+    return int(n), int(seed)
+
+def sym_rand(n, rng):
+    A = rng.standard_normal((n, n))
+    return (A + A.T) / 2.0
+
+def top_eigpair(X):
+    w, V = np.linalg.eigh(X)
+    idx = np.argmax(w)
+    return float(w[idx]), V[:, idx]
+
+def solve_case(obj):
+    n, seed = obj
+    rng = np.random.default_rng(seed)
+    X = sym_rand(n, rng)
+    lam, u = top_eigpair(X)
+    G = np.outer(u, u)
+    worst = -1e9
+    for k in range(50):
+        Y = sym_rand(n, rng)
+        lhs = lam + float(np.sum(G * (Y - X)))
+        rhs = top_eigpair(Y)[0]
+        worst = max(worst, lhs - rhs)
+    return worst
+
+def validate():
+    worst = solve_case((5, 0))
+    assert worst <= 1e-10
+
+def main():
+    validate()
+    print("worst_violation", round(solve_case(read_input("6 1")), 12))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    n, seed = s.split()
+    return int(n), int(seed)
+
+def solve_case(obj):
+    n, seed = obj
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal((n, n))
+    X = (A + A.T) / 2.0
+    w, V = np.linalg.eigh(X)
+    u = V[:, np.argmax(w)]
+    G = np.outer(u, u)
+    worst = -1e9
+    for k in range(50):
+        B = rng.standard_normal((n, n))
+        Y = (B + B.T) / 2.0
+        lamX = float(np.max(w))
+        lhs = lamX + float(np.sum(G * (Y - X)))
+        lamY = float(np.linalg.eigvalsh(Y)[-1])
+        worst = max(worst, lhs - lamY)
+    return worst
+
+def validate():
+    assert solve_case((4, 3)) <= 1e-10
+
+def main():
+    validate()
+    print("worst_violation", round(solve_case(read_input("5 9")), 12))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Time $\mathcal{O}(m n^3)$ for $m$ test matrices; space $\mathcal{O}(n^2)$.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item If top eigenvalue is multiple, any $G$ in the convex hull works;
+choosing a single vector still yields validity.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Use \inlinecode{eigvalsh}/\inlinecode{eigh} for Hermitian stability.
+\item Tolerance accounts for roundoff.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Assert worst violation is nonpositive within tolerance.
+\end{bullets}
+}
+
+\RESULT{
+Worst violation is near zero (nonpositive), confirming subgradient validity.
+}
+
+\EXPLANATION{
+Rayleigh-Ritz gives the inequality; $G=uu^\top$ lifts the vector
+subgradient to the matrix setting.
+}
+
+\section{Applied Domains — Detailed End-to-End Scenarios}
+\DomainPage{Machine Learning}
+\SCENARIO{
+Estimate the precision matrix of a Gaussian model by minimizing the convex
+objective $-\log\det X + \langle S,X\rangle$; verify convexity numerically
+via Jensen along a line in $\mathbb{S}_{++}^n$.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Observations are i.i.d. Gaussian with covariance $\Sigma$.
+\item Sample covariance $S$ is SPD (enough samples).
+\end{bullets}
+}
+\WHICHFORMULA{
+Formula 3: convexity and gradient of $-\log\det$; minimizer $X^\star=S^{-1}$.
+}
+\varmapStart
+\var{S}{sample covariance matrix.}
+\var{X}{precision variable in $\mathbb{S}_{++}^n$.}
+\var{t}{interpolation parameter.}
+\varmapEnd
+
+\PIPELINE{
+\begin{bullets}
+\item Generate Gaussian data; compute $S$.
+\item Form two SPD points $X_1,X_2$; test convexity of $F$ on the segment.
+\item Compute $X^\star=S^{-1}$ and evaluate objective.
+\end{bullets}
+}
+
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def gen_data(n=1000, d=3, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal((d, d))
+    Sigma = A @ A.T + d * np.eye(d)
+    X = rng.multivariate_normal(np.zeros(d), Sigma, size=n)
+    S = (X.T @ X) / n
+    return S
+
+def F(X, S):
+    sign, logdet = np.linalg.slogdet(X)
+    assert sign == 1
+    return float(-logdet + np.sum(S * X))
+
+def main():
+    S = gen_data()
+    X1 = S + np.eye(S.shape[0])
+    X2 = S + 2 * np.eye(S.shape[0])
+    t = 0.3
+    Z = t * X1 + (1 - t) * X2
+    fZ = F(Z, S)
+    bound = t * F(X1, S) + (1 - t) * F(X2, S)
+    print("convex_gap", round(fZ - bound, 12))
+    Xinvt = np.linalg.inv(S)
+    print("opt_val", round(F(Xinvt, S), 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{Implementation (Library Version)}
+\begin{codepy}
+import numpy as np
+
+def sample_cov(X):
+    Xc = X - X.mean(axis=0, keepdims=True)
+    return (Xc.T @ Xc) / X.shape[0]
+
+def main():
+    np.random.seed(0)
+    d, n = 3, 800
+    A = np.random.randn(d, d)
+    Sigma = A @ A.T + d * np.eye(d)
+    X = np.random.multivariate_normal(np.zeros(d), Sigma, size=n)
+    S = sample_cov(X)
+    F = lambda M: -np.linalg.slogdet(M)[1] + float(np.sum(S * M))
+    X1, X2, t = S + np.eye(d), S + 2 * np.eye(d), 0.4
+    Z = t * X1 + (1 - t) * X2
+    print("convex_gap", round(F(Z) - (t * F(X1) + (1 - t) * F(X2)), 12))
+    print("opt_val", round(F(np.linalg.inv(S)), 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\METRICS{Convex gap $F(Z)-[tF(X_1)+(1-t)F(X_2)]\le 0$; objective at $S^{-1}$.}
+\INTERPRET{
+Confirms spectral convexity and closed-form precision estimate in the
+Gaussian model.
+}
+\NEXTSTEPS{
+Add $\ell_1$ penalty for sparsity (graphical lasso) while preserving
+convexity.
+}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Assess diversification via $-\log\det$ of a covariance estimate. Show that
+shrinkage $C(\alpha)=\alpha S+(1-\alpha)I$ yields a convex $-\log\det$
+curve in $\alpha$.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Returns have SPD covariance $S$.
+\item Identity shrinkage keeps SPD.
+\end{bullets}
+}
+\WHICHFORMULA{
+Formula 3: $-\log\det$ convex on $\mathbb{S}_{++}^n$, hence convex in
+$\alpha$ along affine paths.
+}
+\varmapStart
+\var{S}{covariance estimate.}
+\var{\alpha}{shrinkage weight in $[0,1]$.}
+\varmapEnd
+
+\PIPELINE{
+\begin{bullets}
+\item Simulate returns and compute $S$.
+\item Evaluate $g(\alpha)=-\log\det(\alpha S+(1-\alpha)I)$ at a grid.
+\item Check mid-point convexity numerically.
+\end{bullets}
+}
+
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def simulate_cov(n=2000, d=4, seed=1):
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal((d, d))
+    Sigma = A @ A.T + d * np.eye(d)
+    X = rng.multivariate_normal(np.zeros(d), Sigma, size=n)
+    S = (X.T @ X) / n
+    return S
+
+def neglogdet(M):
+    sign, ld = np.linalg.slogdet(M)
+    assert sign == 1
+    return float(-ld)
+
+def main():
+    S = simulate_cov()
+    a1, a2 = 0.2, 0.8
+    M1 = a1 * S + (1 - a1) * np.eye(S.shape[0])
+    M2 = a2 * S + (1 - a2) * np.eye(S.shape[0])
+    mid = 0.5 * (M1 + M2)
+    g_mid = neglogdet(mid)
+    bound = 0.5 * (neglogdet(M1) + neglogdet(M2))
+    print("midpoint_gap", round(g_mid - bound, 12))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\METRICS{Midpoint convexity gap $\le 0$.}
+\INTERPRET{
+Higher $-\log\det$ indicates poorer diversification; convexity ensures
+predictable behavior under shrinkage.
+}
+\NEXTSTEPS{
+Optimize $\alpha$ to trade off estimation error and diversification.
+}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Penalize a symmetric weight matrix by $\lambda_{\max}$ to control Lipschitz
+constant. Verify convexity in the penalty along linear interpolations.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Symmetric weight $W\in\mathbb{S}^n$ after symmetrization.
+\item $\lambda_{\max}$ convex per Formula 2.
+\end{bullets}
+}
+\WHICHFORMULA{
+Formula 2: $\lambda_{\max}(tW_1+(1-t)W_2)\le t\lambda_{\max}(W_1)+(1-t)\lambda_{\max}(W_2)$.
+}
+\varmapStart
+\var{W_1,W_2}{symmetric weights.}
+\var{t}{interpolation parameter.}
+\varmapEnd
+
+\PIPELINE{
+\begin{bullets}
+\item Generate random $W_1,W_2$ and symmetrize.
+\item Check convexity inequality numerically.
+\item Report penalty values.
+\end{bullets}
+}
+
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+
+def symm(W):
+    return (W + W.T) / 2.0
+
+def lam_max(W):
+    return float(np.linalg.eigvalsh(W)[-1])
+
+def main():
+    np.random.seed(0)
+    W1 = symm(np.random.randn(5, 5))
+    W2 = symm(np.random.randn(5, 5))
+    t = 0.35
+    Z = t * W1 + (1 - t) * W2
+    gap = lam_max(Z) - (t * lam_max(W1) + (1 - t) * lam_max(W2))
+    print("convex_gap", round(gap, 12))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\METRICS{Convexity gap for $\lambda_{\max}$.}
+\INTERPRET{
+Confirms convex regularizer behavior for symmetric weight matrices.
+}
+\NEXTSTEPS{
+Use power iteration to approximate $\lambda_{\max}$ during training.
+}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Perform EDA on a correlation-like symmetric matrix using the nuclear norm
+$\sum_i |\lambda_i|$ as a convex spectral summary; verify convexity along
+averages of such matrices.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Symmetric inputs; eigenvalues real.
+\item Nuclear norm on symmetric equals sum of absolute eigenvalues.
+\end{bullets}
+}
+\WHICHFORMULA{
+Formula 1 with $\varphi(t)=|t|$ ensures convexity.
+}
+\PIPELINE{
+\begin{bullets}
+\item Create two synthetic symmetric correlation-like matrices.
+\item Compute spectral summary $F=\sum_i |\lambda_i|$.
+\item Verify convexity under averaging.
+\end{bullets}
+}
+
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def spectral_abs_sum(M):
+    return float(np.abs(np.linalg.eigvalsh(M)).sum())
+
+def make_corr_like(seed=0, d=4):
+    np.random.seed(seed)
+    A = np.random.randn(d, d)
+    S = (A @ A.T) / d
+    D = np.diag(1.0 / np.sqrt(np.diag(S) + 1e-12))
+    C = D @ S @ D
+    return C
+
+def main():
+    C1 = make_corr_like(0)
+    C2 = make_corr_like(1)
+    F1, F2 = spectral_abs_sum(C1), spectral_abs_sum(C2)
+    Z = 0.5 * (C1 + C2)
+    FZ = spectral_abs_sum(Z)
+    print("F1", round(F1, 6), "F2", round(F2, 6))
+    print("FZ", round(FZ, 6), "bound", round(0.5 * (F1 + F2), 6))
+    print("gap", round(FZ - 0.5 * (F1 + F2), 12))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\METRICS{Report $F_1,F_2,F_Z$ and convexity gap $\le 0$.}
+\INTERPRET{
+Spectral summary decreases under averaging, reflecting convexity and
+smoothing of eigen-spectra.
+}
+\NEXTSTEPS{
+Use eigenvalue spectra for feature engineering or anomaly detection.
+}
+
+\end{document}

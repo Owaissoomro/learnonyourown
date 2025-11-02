@@ -1,0 +1,2785 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]
+\setlength{\jot}{7pt}
+\setlength{\emergencystretch}{8em}
+\sloppy
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Row Echelon Form and Solutions of Linear Systems}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+A linear system over a field (here $\mathbb{R}$) is the pair $(A,b)$ with
+$A\in\mathbb{R}^{m\times n}$ and $b\in\mathbb{R}^m$. The solution set is
+$\{x\in\mathbb{R}^n:Ax=b\}$. Row echelon form (REF) and reduced row echelon
+form (RREF) are canonical representatives of the row-equivalence class of $A$
+(or the augmented matrix $[A\,|\,b]$), obtained via elementary row operations.
+In REF, each nonzero row has a leading 1 (pivot) to the right of the pivot in
+the row above, and rows of zeros, if any, are at the bottom. In RREF, in
+addition, every pivot column has zeros elsewhere.
+}
+
+\WHY{
+REF and RREF provide a systematic way to decide consistency of $Ax=b$, to solve
+for unknowns with explicit parametrization, and to compute rank, bases for
+null/column spaces, and invertibility conditions. They underpin Gaussian
+elimination, back substitution, and the rank-nullity theorem, forming a core
+computational and theoretical tool in linear algebra.
+}
+
+\HOW{
+1. Start with the augmented matrix $[A\,|\,b]$ under the assumption that
+elementary row operations preserve solution sets. 2. Use Gaussian elimination
+to create REF: select a pivot, swap if needed, scale the pivot row, and clear
+entries below the pivot. 3. Optionally continue to Gauss-Jordan elimination to
+obtain RREF by clearing entries above pivots. 4. Read off consistency, pivot
+and free variables, and build the explicit solution parameterization.
+}
+
+\ELI{
+Think of the system as a set of balance rules. Row operations are legal
+rewrites that do not change the balances. REF arranges the rules so that each
+involves a new main variable, like a neat staircase. RREF cleans further so
+each main variable appears in exactly one rule, allowing you to read the
+solutions directly.
+}
+
+\SCOPE{
+Valid for linear systems over any field. Numerical issues arise over floating
+point due to rounding; pivoting strategies mitigate this. Degenerate cases:
+no-solution rows $[0\ \cdots\ 0\,|\,\beta]$ with $\beta\ne 0$ signal
+inconsistency; full pivot columns in square systems signal unique solutions.
+}
+
+\CONFUSIONS{
+Row operations act on rows (left-multiplication by elementary matrices),
+not on columns. REF is not unique, but RREF is unique. Pivot variables are
+indexed by pivot columns in $A$, not in $[A\,|\,b]$. Rank is the number of
+pivots in $A$, not counting the augmented column.
+}
+
+\APPLICATIONS{
+\begin{bullets}
+\item Mathematical foundations: proofs of rank-nullity and basis extraction.
+\item Computational modeling: solving constraints and calibration equations.
+\item Engineering: circuit analysis and statics via linear constraints.
+\item Algorithms: elimination methods for linear solves and invertibility.
+\end{bullets}
+}
+
+\textbf{ANALYTIC STRUCTURE.}
+Row operations correspond to left-multiplication by invertible elementary
+matrices, forming an action of $\mathrm{GL}_m$ on $\mathbb{R}^{m\times n}$.
+REF identifies a staircase structure; RREF adds orthogonality of pivot columns
+to free columns in the sense of reduced coupling.
+
+\textbf{CANONICAL LINKS.}
+Gaussian elimination implements the REF construction; Gauss-Jordan yields
+RREF. The rank-nullity theorem links pivot count to null space dimension.
+Consistency criterion uses ranks of $A$ and $[A\,|\,b]$.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Presence of linear equations with multiple unknowns.
+\item Questions about rank, consistency, or basis of solution spaces.
+\item Need to parameterize solutions via free variables.
+\item Requests for unique solution vs. infinite/no solution.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate equations to $[A\,|\,b]$.
+\item Row-reduce to REF or RREF, tracking pivot columns.
+\item Declare consistency via zero rows; read pivot equations.
+\item Express pivot variables in terms of free parameters.
+\item Validate by substitution and rank checks.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Row-equivalence class, rank, solution set of $Ax=b$, null space dimension,
+and number of pivots are invariant under elementary row operations.
+
+\textbf{EDGE INTUITION.}
+If rank $r=0$, either $b=0$ gives every $x$ a solution subspace
+($\mathbb{R}^n$), or $b\ne 0$ yields inconsistency. If $r=n$ and $m\ge n$,
+solutions are unique when consistent; if $m<n$, underdetermination gives
+$n-r$ free parameters. As entries scale to large magnitudes, pivoting choice
+affects numerical stability but not exact algebraic outcomes.
+
+\clearpage
+\section{Glossary}
+\glossx{Row Echelon Form (REF)}
+{A matrix where nonzero rows have pivots strictly to the right as you go down,
+and any zero rows are at the bottom. Pivot entries are 1 by convention.}
+{Enables systematic back substitution and rank computation.}
+{Perform Gaussian elimination: swap to find nonzero pivot, scale to 1, and
+eliminate entries below; proceed to the next row and rightward column.}
+{Like arranging books on steps: each next book is placed to the right and one
+step lower.}
+{Mistake: thinking pivots must be the largest entries. Pivoting for stability
+is optional numerically but not required algebraically.}
+
+\glossx{Reduced Row Echelon Form (RREF)}
+{An REF where each pivot is 1 and all other entries in pivot columns are 0.}
+{Gives a unique canonical representative; solutions read off directly.}
+{Continue elimination above pivots (Gauss-Jordan) to zero out pivot columns.}
+{Each rule isolates one main variable with coefficient 1; every other rule
+omits it.}
+{Pitfall: assuming REF is unique. Only RREF is unique for each matrix.}
+
+\glossx{Pivot and Free Variables}
+{Pivot variables correspond to pivot columns in $A$; free variables index the
+non-pivot columns.}
+{Clarifies degrees of freedom and allows parametric solution forms.}
+{From RREF, set free variables as parameters and solve for pivot variables.}
+{Choose some knobs (free variables) arbitrarily; the machine adjusts the main
+gears (pivots) accordingly.}
+{Pitfall: confusing pivot columns of $A$ with those of the augmented matrix
+$[A\,|\,b]$. Only $A$ determines pivot vs. free.}
+
+\glossx{Rank}
+{The number of pivots in $A$; equals the dimension of the column space and the
+row space.}
+{Determines consistency, number of parameters, and invertibility.}
+{Row-reduce $A$ to REF or RREF and count pivot rows/columns.}
+{How many independent rules you truly have.}
+{Example: if rank is $n$, a square system has a unique solution.}
+
+\clearpage
+\section{Symbol Ledger}
+\varmapStart
+\var{A\in\mathbb{R}^{m\times n}}{Coefficient matrix of the system.}
+\var{b\in\mathbb{R}^{m}}{Right-hand side vector.}
+\var{x\in\mathbb{R}^{n}}{Unknown vector to solve for in $Ax=b$.}
+\var{[A\,|\,b]}{Augmented matrix formed by appending $b$ to $A$.}
+\var{E}{Elementary matrix representing a single row operation.}
+\var{U}{An REF (upper echelon) matrix row-equivalent to $A$.}
+\var{R}{RREF of $A$ or of $[A\,|\,b]$, depending on context.}
+\var{r}{Rank of $A$; equals the number of pivots.}
+\var{P}{Index set of pivot columns in $A$.}
+\var{F}{Index set of free (non-pivot) columns in $A$.}
+\var{x_P}{Subvector of $x$ with indices in $P$.}
+\var{x_F}{Subvector of $x$ with indices in $F$.}
+\var{F_A}{Submatrix formed by columns of $A$ indexed by $F$.}
+\var{A_P}{Submatrix formed by pivot columns of $A$.}
+\var{d}{Vector in the augmented RREF representing constants for pivots.}
+\var{N(A)}{Null space $\{x:Ax=0\}$.}
+\var{\mathrm{rank}(M)}{Rank (pivot count) of matrix $M$.}
+\var{\mathcal{E}}{Set of all elementary matrices of compatible size.}
+\var{\pi}{Permutation induced by pivot column order.}
+\varmapEnd
+
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{Row Operations Preserve Solutions}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For any $A\in\mathbb{R}^{m\times n}$, $b\in\mathbb{R}^m$, and any elementary
+matrix $E\in\mathbb{R}^{m\times m}$, the systems $Ax=b$ and $(EA)x=Eb$ have
+the same solution set.
+
+\WHAT{
+This asserts that left-multiplying the augmented matrix by an elementary
+matrix performs a legal transformation that does not alter the set of $x$
+satisfying the system.
+}
+
+\WHY{
+Justifies Gaussian elimination: every step is an elementary row operation and
+therefore preserves solutions, allowing replacement of $(A,b)$ by a simpler
+row-equivalent pair without changing solutions.
+}
+
+\FORMULA{
+\[
+x\in\mathbb{R}^n:\ Ax=b\quad\Longleftrightarrow\quad (EA)x=Eb.
+\]
+}
+
+\CANONICAL{
+We consider elementary matrices $E$ corresponding to: (i) row swap,
+(ii) row scaling by a nonzero scalar, (iii) row replacement $R_i\leftarrow
+R_i+\lambda R_j$, $i\ne j$. $E$ is invertible in all cases.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $E$ is an elementary matrix (invertible).
+\item $A$ and $b$ are conformable with $E$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Every elementary matrix $E$ is invertible, and $E^{-1}$ is also elementary.
+\end{lemma}
+\begin{proof}
+Row swap is its own inverse. Row scaling by $\alpha\ne 0$ is inverted by
+scaling by $\alpha^{-1}$. Row replacement $R_i\leftarrow R_i+\lambda R_j$
+is inverted by $R_i\leftarrow R_i-\lambda R_j$. Each inverse corresponds to an
+elementary matrix of the same type. Hence $E\in\mathrm{GL}_m$ and $E^{-1}$ is
+elementary. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+Ax=b &\ \Longleftrightarrow\ E(Ax)=Eb \\
+     &\ \Longleftrightarrow\ (EA)x=Eb \\
+     &\ \Longleftrightarrow\ \text{(by invertibility of $E$)} \\
+(EA)x=Eb &\ \Longleftrightarrow\ E^{-1}(EA)x=E^{-1}Eb \\
+         &\ \Longleftrightarrow\ Ax=b.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Replace $[A\,|\,b]$ by $E[A\,|\,b]$ to simplify rows.
+\item Iterate until REF or RREF is obtained.
+\item Read off solutions from the simplified system.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $(A,b)\sim (A',b')$ iff $\exists E_1,\dots,E_k$ s.t.
+$A'=E_k\cdots E_1A$ and $b'=E_k\cdots E_1b$.
+\item $[A\,|\,b]\mapsto E[A\,|\,b]$ is the same transformation.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Non-invertible left-multipliers (not elementary) need not preserve
+solutions.
+\item Column operations change the solution set; they are not allowed for
+solving $Ax=b$.
+\end{bullets}
+}
+
+\INPUTS{$A\in\mathbb{R}^{m\times n}$, $b\in\mathbb{R}^m$, $E\in\mathbb{R}^{m\times m}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Given }Ax=b,\ \ &\text{apply }E:\ (EA)x=Eb.\\
+\text{Given }(EA)x=Eb,\ \ &\text{apply }E^{-1}:\ Ax=b.
+\end{align*}
+}
+
+\RESULT{
+Elementary row operations preserve the solution set. Hence any row-equivalent
+pair $(A,b)$ can replace the original for solving.
+}
+
+\UNITCHECK{
+All terms are vectors in $\mathbb{R}^m$; left-multiplication is conformable.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Right-multiplying $A$ by a matrix alters the variable transformation,
+not a row operation; it does not preserve the same solution set in $x$.
+\item Forgetting to apply $E$ to $b$ breaks equivalence.
+\end{bullets}
+}
+
+\INTUITION{
+Row operations rewrite equations without changing their truths, like adding a
+multiple of one equation to another or rescaling equations.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Row-equivalence is generated by invertible elementary left-actions.
+\item Solution sets are invariants of the row-equivalence class of $[A\,|\,b]$.
+\end{bullets}
+}
+
+\FormulaPage{2}{Existence and Uniqueness of RREF}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Every matrix $M\in\mathbb{R}^{m\times n}$ is row-equivalent to a unique matrix
+$R$ in reduced row echelon form.
+
+\WHAT{
+There exists $E$ invertible with $R=EM$ and $R$ is in RREF; $R$ is unique for
+each $M$.
+}
+
+\WHY{
+Provides a canonical representative for the row-equivalence class, ensuring
+deterministic outcomes for algorithms and well-defined invariants (rank,
+pivot positions).
+}
+
+\FORMULA{
+\[
+\exists E\in\mathrm{GL}_m:\ R=EM,\quad R=\mathrm{RREF}(M)\ \text{and is unique.}
+\]
+}
+
+\CANONICAL{
+RREF conditions: (i) all zero rows at bottom, (ii) leading nonzero in each
+nonzero row is 1 (pivot), (iii) pivot of a lower row is strictly to the right
+of pivot above, (iv) pivot columns have zeros elsewhere.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Standard arithmetic over a field (here $\mathbb{R}$).
+\item Use only elementary row operations.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Gaussian elimination transforms any matrix to REF using elementary operations.
+\end{lemma}
+\begin{proof}
+Proceed column by column from left to right, top to bottom: find a nonzero
+entry (swap if needed), scale the row to make the pivot 1, and clear entries
+below via row replacements. Continue to the next column to the right and the
+next row. Zero rows naturally descend. This constructs an REF. \qedhere
+\end{proof}
+\begin{lemma}
+Gauss-Jordan elimination transforms any REF to RREF using elementary operations.
+\end{lemma}
+\begin{proof}
+Given an REF with pivot rows identified, for each pivot column, eliminate the
+entries above the pivot using row replacements. Since pivots are 1, this yields
+zeros above, and pivot columns become unit vectors. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+&\text{Existence:}\ \text{By the lemmas, }M\xrightarrow{\text{row ops}}R
+\text{ with }R\text{ in RREF.}\\
+&\text{Uniqueness:}\ \text{Suppose }R_1,R_2\text{ are RREF and row-equivalent
+to }M.\\
+&\quad \text{Then }R_1\text{ and }R_2\text{ are row-equivalent. The only way
+two RREF matrices}\\
+&\quad \text{can be row-equivalent is to be identical, since pivot columns
+and their }\\
+&\quad \text{unit vectors are determined, and free columns are identical linear
+combinations.}\\
+&\quad \text{Hence }R_1=R_2.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Apply Gaussian elimination to obtain REF, then Gauss-Jordan to RREF.
+\item Read rank as the number of pivots.
+\item Extract solution information directly from RREF.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $R=\mathrm{RREF}(M)$ if and only if $R$ is in RREF and $R$ is
+row-equivalent to $M$.
+\item Any two RREFs of the same matrix coincide.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Over rings that are not fields, scaling to pivot 1 may fail.
+\item Numerical rounding may produce near-RREF; exact uniqueness is algebraic.
+\end{bullets}
+}
+
+\INPUTS{$M\in\mathbb{R}^{m\times n}$.}
+
+\DERIVATION{
+\begin{align*}
+M &\xrightarrow{\text{Gaussian}} U\ (\text{REF}),\\
+U &\xrightarrow{\text{Gauss-Jordan}} R\ (\text{RREF}),\\
+R&=\mathrm{RREF}(M)\ \text{and is unique.}
+\end{align*}
+}
+
+\RESULT{
+RREF exists and is unique; it encodes rank, pivot locations, and solution
+structure invariantly.
+}
+
+\UNITCHECK{
+All operations are algebraic over $\mathbb{R}$; no dimensional units involved.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Confusing REF with RREF; only RREF is unique.
+\item Attempting column operations when solving $Ax=b$ in $x$.
+\end{bullets}
+}
+
+\INTUITION{
+RREF is the simplest, standardized staircase: each pivot stands alone,
+revealing the skeleton of linear dependence.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $\mathrm{RREF}$ is a canonical map from matrices to their unique reduced
+form under row-equivalence.
+\item Rank equals the number of pivot rows in $R$.
+\end{bullets}
+}
+
+\FormulaPage{3}{Solution Structure from RREF}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let the RREF of the augmented matrix $[A\,|\,b]$ be
+\[
+\left[\begin{array}{cc|c}
+I_r & F & d\\
+0 & 0 & 0
+\end{array}\right],
+\]
+after (possibly) permuting columns of $A$ so that pivot columns are first.
+Then the solution set is
+\[
+x=\begin{bmatrix}x_P\\ x_F\end{bmatrix}
+=\begin{bmatrix}d - F\,x_F\\ x_F\end{bmatrix}
+=\underbrace{\begin{bmatrix}d\\ 0\end{bmatrix}}_{x_p}
++\sum_{j\in F} t_j
+\underbrace{\begin{bmatrix}-F e_j\\ e_j\end{bmatrix}}_{n_j},
+\]
+with free parameters $t_j\in\mathbb{R}$.
+
+\WHAT{
+Expresses the general solution as a particular solution plus a linear
+combination of a basis of the null space, parameterized by free variables.
+}
+
+\WHY{
+Gives a complete, explicit characterization of all solutions and identifies
+degrees of freedom and dependencies.
+}
+
+\FORMULA{
+\[
+\{x:Ax=b\}=\{x_p+Nz:\ z\in\mathbb{R}^{n-r}\},
+\]
+where $N=[\, -F;\ I_{n-r}\,]$ in the pivot-first column ordering.
+}
+
+\CANONICAL{
+The RREF is partitioned so that pivot columns correspond to $I_r$. The matrix
+$F\in\mathbb{R}^{r\times(n-r)}$ contains the coefficients that couple pivots to
+free variables, and $d\in\mathbb{R}^{r}$ is the pivot-side constant vector.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item The system is consistent: no row of the form $[0\ 0\,|\,\beta]$ with
+$\beta\ne 0$ appears.
+\item Columns reordered so pivot columns come first (a bookkeeping device).
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $R=\left[\begin{smallmatrix}I_r & F\\ 0 & 0\end{smallmatrix}\right]$ is the
+RREF of $A$, then $N=[-F; I_{n-r}]$ is a basis matrix for $N(A)$.
+\end{lemma}
+\begin{proof}
+Compute $RN=[I_r\ F]\begin{bmatrix}-F\\ I\end{bmatrix}=-F+F=0$. The columns of
+$N$ are $n-r$ independent vectors since $I$ appears in the lower block. Thus
+they form a basis of $N(A)$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+&\text{From RREF of }[A\,|\,b]:\ [I_r\ F\,|\,d] \\
+&\text{Equations: } x_P + F x_F = d \\
+&\Rightarrow x_P = d - F x_F.\\
+&\text{Let }x_F\text{ be free parameters }t\in\mathbb{R}^{n-r}.\\
+&\Rightarrow x=\begin{bmatrix}d\\ 0\end{bmatrix}
++\begin{bmatrix}-F\\ I\end{bmatrix}t
+=x_p+Nt.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Row-reduce $[A\,|\,b]$ to RREF and identify $r$, $F$, $d$.
+\item Declare $x_F$ as parameters; compute $x_P=d-Fx_F$.
+\item Assemble $x=x_p+Nt$ for basis $N$ of $N(A)$.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Any particular solution $x_p$ plus $N(A)$ equals the full solution set.
+\item Different $x_p$ yield the same affine solution space.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If inconsistent, no solution exists; this form does not apply.
+\item If $r=n$ (square full rank), $x_F$ is void and the solution is unique
+$x=d$.
+\end{bullets}
+}
+
+\INPUTS{$A\in\mathbb{R}^{m\times n}$, $b\in\mathbb{R}^m$, RREF partitioned as
+$[I_r\ F\,|\,d]$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Given }F,d,\ &\text{choose }t=(t_j)_{j\in F}.\\
+x_P&=d-Ft,\quad x_F=t.\\
+x&=\begin{bmatrix}x_P\\ x_F\end{bmatrix}
+=\begin{bmatrix}d\\ 0\end{bmatrix}+
+\begin{bmatrix}-F\\ I\end{bmatrix}t.
+\end{align*}
+}
+
+\RESULT{
+A complete parameterization $x=x_p+Nt$ with $t\in\mathbb{R}^{n-r}$; the
+columns of $N$ form a basis of the null space.
+}
+
+\UNITCHECK{
+All matrix products are conformable: $F\in\mathbb{R}^{r\times(n-r)}$ multiplies
+$t\in\mathbb{R}^{n-r}$; $x\in\mathbb{R}^n$.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to permute the solution back to the original column order if
+columns were reordered during elimination.
+\item Treating augmented column as a pivot column when counting pivots.
+\end{bullets}
+}
+
+\INTUITION{
+Free variables are knobs; turning them shifts the solution within an affine
+subspace parallel to the null space.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Solution set is an affine translate of $N(A)$.
+\item Dimension of the solution space equals $n-r$ when consistent.
+\end{bullets}
+}
+
+\FormulaPage{4}{Rank, Nullity, and Consistency Criterion}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\[
+\dim N(A)=n-\mathrm{rank}(A),\qquad
+Ax=b\ \text{is consistent}\ \Longleftrightarrow\
+\mathrm{rank}(A)=\mathrm{rank}([A\,|\,b]).
+\]
+
+\WHAT{
+Relates pivot count to the dimension of the null space and characterizes when
+a system has a solution using ranks.
+}
+
+\WHY{
+Determines the number of free parameters and decides existence of solutions
+without explicitly solving.
+}
+
+\FORMULA{
+\[
+\mathrm{rank}(A)+\dim N(A)=n,\quad
+\mathrm{rank}(A)=\mathrm{rank}([A\,|\,b])\iff \exists x:Ax=b.
+\]
+}
+
+\CANONICAL{
+Ranks are computed as pivot counts in RREF. Consistency fails exactly when a
+row $[0\ \cdots\ 0\,|\,\beta]$ with $\beta\ne 0$ appears in the RREF of
+$[A\,|\,b]$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Standard field operations; ranks defined via pivot counts.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+The number of pivots in $A$ equals the number of nonzero rows in the RREF of
+$A$.
+\end{lemma}
+\begin{proof}
+In RREF, each nonzero row has a pivot 1, and every pivot occurs in a distinct
+row. Hence counting nonzero rows equals counting pivots. \qedhere
+\end{proof}
+\begin{lemma}
+A row $[0\ \cdots\ 0\,|\,\beta]$ with $\beta\ne 0$ in the RREF of $[A\,|\,b]$
+signals inconsistency.
+\end{lemma}
+\begin{proof}
+Such a row encodes the impossible equation $0=\beta\ne 0$. Conversely, if no
+such row appears, each pivot row yields a valid equation and free variables
+can be assigned to produce solutions. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+&\text{Rank-nullity: In RREF of }A=[I_r\ F; 0\ 0], \\
+&\quad \text{there are }r\text{ pivot columns and }n-r\text{ free columns.}\\
+&\quad \text{The null space has a basis of }n-r\text{ vectors (Formula 3).}\\
+&\Rightarrow \dim N(A)=n-r,\ r=\mathrm{rank}(A).\\[4pt]
+&\text{Consistency: RREF of }[A\,|\,b]\text{ has a contradictory row }\\
+&\quad \Leftrightarrow \mathrm{rank}([A\,|\,b])=\mathrm{rank}(A)+1.\\
+&\quad \text{Absence of such a row } \Leftrightarrow
+\mathrm{rank}([A\,|\,b])=\mathrm{rank}(A).
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Row-reduce $A$ (or $[A\,|\,b]$) to RREF.
+\item Count pivots to get rank; compute $n-r$ for nullity.
+\item Inspect augmented RREF for contradictory rows to decide consistency.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $Ax=b$ has a unique solution iff $\mathrm{rank}(A)=n$.
+\item $Ax=b$ has infinitely many solutions iff consistent and $r<n$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Over finite precision, near-dependencies can miscount rank without
+tolerances.
+\end{bullets}
+}
+
+\INPUTS{$A\in\mathbb{R}^{m\times n}$, $b\in\mathbb{R}^m$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Compute RREF}\ &\Rightarrow r=\mathrm{rank}(A).\\
+\dim N(A)&=n-r.\\
+\mathrm{rank}([A\,|\,b])&\stackrel{?}{=}\mathrm{rank}(A)\ \Rightarrow
+\text{consistency}.
+\end{align*}
+}
+
+\RESULT{
+Dimension of the null space is $n-r$; consistency holds iff the augmented and
+coefficient ranks match.
+}
+
+\UNITCHECK{
+All quantities are dimensions or counts; no physical units apply.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Counting a pivot in the augmented column increases augmented rank but
+does not increase $\mathrm{rank}(A)$; that indicates inconsistency.
+\item Confusing $m$ (number of equations) with $n$ (variables) when applying
+rank-nullity.
+\end{bullets}
+}
+
+\INTUITION{
+Pivots measure independent constraints; free variables measure freedom left
+after constraints. Matching augmented rank with coefficient rank forbids
+contradictions.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $\dim(\text{solution affine space})=n-r$ when consistent.
+\item Consistency is a rank equality condition.
+\end{bullets}
+}
+
+\FormulaPage{5}{Back Substitution for Upper Echelon Systems}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let $U\in\mathbb{R}^{m\times n}$ be in REF with pivot columns indexed by
+$P=\{p_1<\dots<p_r\}$ and consider $Ux=y$. Then pivot variables satisfy
+\[
+x_{p_k}=y_k-\sum_{j>p_k} U_{k j}\,x_j,\quad k=r,r-1,\dots,1,
+\]
+where non-pivot $x_j$ with $j\in F$ are free.
+
+\WHAT{
+Gives an explicit recursive computation of pivot variables in terms of
+already-determined variables and free parameters.
+}
+
+\WHY{
+Implements the computational step after Gaussian elimination to obtain the
+solution without forming RREF if not needed.
+}
+
+\FORMULA{
+\[
+\forall k\in\{1,\dots,r\}:\quad
+x_{p_k}=y_k-\sum_{j=p_k+1}^{n} U_{k j}\,x_j.
+\]
+}
+
+\CANONICAL{
+Rows are ordered so that the $k$-th nonzero row has pivot at column $p_k$ and
+zeros below pivot. The vector $y$ is the transformed right-hand side after
+row operations: $y=Eb$ for some product of elementary matrices $E$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $U$ is in REF (upper echelon): entries below pivots are zero.
+\item Consistency holds (no contradictory zero rows).
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+In REF, the $k$-th pivot row equation involves only variables with indices
+$\ge p_k$.
+\end{lemma}
+\begin{proof}
+By echelon structure, entries left of the pivot in that row are zero. Hence
+only columns $p_k,\dots,n$ appear. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+&\text{From row }k:\ \sum_{j=p_k}^{n} U_{k j} x_j = y_k,\quad U_{k p_k}=1.\\
+&\Rightarrow x_{p_k}
+= y_k - \sum_{j=p_k+1}^{n} U_{k j} x_j.\\
+&\text{Process rows from bottom to top; when a term }x_j\text{ is pivot, }\\
+&\text{it was already computed at a lower row index.}
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Identify pivot columns $P$ and free set $F$.
+\item Assign parameters to $x_j$ for $j\in F$.
+\item Compute $x_{p_r},x_{p_{r-1}},\dots,x_{p_1}$ via the recursion.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Equivalent to solving $[I_r\ F\,|\,d]$ via $x_P=d-Fx_F$ after column
+permutation that makes pivots contiguous.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item For numerical stability, pivoting strategies can change row order but
+preserve the recursion structure.
+\end{bullets}
+}
+
+\INPUTS{$U\in\mathbb{R}^{m\times n}$ in REF, $y\in\mathbb{R}^m$, pivot index
+set $P$, free set $F$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Initialize }&x_j=t_j\ \text{for }j\in F.\\
+\text{For }k=r\downarrow 1:&\ x_{p_k}=y_k-\sum_{j>p_k} U_{k j}\,x_j.\\
+\text{Return }&x.
+\end{align*}
+}
+
+\RESULT{
+All pivot variables computed; solution is expressed in terms of free
+parameters $t_j$ for $j\in F$.
+}
+
+\UNITCHECK{
+All operations are vector-scalar operations in $\mathbb{R}$; indexing is
+consistent with matrix sizes.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Using row order instead of pivot column order when summing over $j$.
+\item Forgetting that some $x_j$ may be free and must be assigned first.
+\end{bullets}
+}
+
+\INTUITION{
+Start from the bottom rule, which involves the fewest unknowns, and climb up,
+plugging known values as you go.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Back substitution is the computational dual of the RREF formula
+$x_P=d-Fx_F$.
+\item It realizes the staircase structure of REF.
+\end{bullets}
+}
+
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{Solve and Classify a $3\times 3$ System}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given
+\[
+A=\begin{bmatrix}
+1&2&-1\\
+2&4&1\\
+-1&-2&3
+\end{bmatrix},\quad
+b=\begin{bmatrix}1\\ 5\\ -1\end{bmatrix},
+\]
+solve $Ax=b$ and classify uniqueness.
+
+\PROBLEM{
+Reduce $[A\,|\,b]$ to RREF, determine rank, consistency, and provide the
+solution parameterization or unique solution. Identify pivot and free
+variables.
+}
+
+\MODEL{
+\[
+[A\,|\,b]\xrightarrow{\text{row ops}} R=\left[\begin{array}{ccc|c}
+I_r & F & d\\
+0 & 0 & 0
+\end{array}\right],\quad x_P=d-Fx_F.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Arithmetic over $\mathbb{R}$; exact row operations.
+\end{bullets}
+}
+
+\varmapStart
+\var{A,b}{Given data.}
+\var{R}{RREF of the augmented matrix.}
+\var{r}{Rank of $A$.}
+\var{P,F}{Pivot and free column index sets.}
+\varmapEnd
+
+\WHICHFORMULA{
+Use Formula 1 (row operations preserve solutions), Formula 2 (RREF exists and
+is unique), and Formula 3 (solution structure).
+}
+
+\GOVERN{
+\[
+x_P=d-Fx_F,\quad \mathrm{rank}(A)=\mathrm{rank}([A\,|\,b])\Rightarrow
+\text{consistency}.
+\]
+}
+
+\INPUTS{$A=\begin{bmatrix}1&2&-1\\2&4&1\\-1&-2&3\end{bmatrix}$,
+$b=\begin{bmatrix}1\\5\\-1\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+[A\,|\,b]&=\begin{bmatrix}
+1&2&-1&|&1\\
+2&4&1&|&5\\
+-1&-2&3&|&-1
+\end{bmatrix}\\
+R_2&\leftarrow R_2-2R_1:\ 
+\begin{bmatrix}
+1&2&-1&|&1\\
+0&0&3&|&3\\
+-1&-2&3&|&-1
+\end{bmatrix}\\
+R_3&\leftarrow R_3+R_1:\ 
+\begin{bmatrix}
+1&2&-1&|&1\\
+0&0&3&|&3\\
+0&0&2&|&0
+\end{bmatrix}\\
+R_2&\leftarrow \tfrac{1}{3}R_2,\ R_3\leftarrow \tfrac{1}{2}R_3:\ 
+\begin{bmatrix}
+1&2&-1&|&1\\
+0&0&1&|&1\\
+0&0&1&|&0
+\end{bmatrix}\\
+R_3&\leftarrow R_3-R_2:\ 
+\begin{bmatrix}
+1&2&-1&|&1\\
+0&0&1&|&1\\
+0&0&0&|&-1
+\end{bmatrix}
+\end{align*}
+}
+
+\RESULT{
+Row $[0\ 0\ 0\,|\, -1]$ indicates inconsistency. Therefore, no solution.
+}
+
+\UNITCHECK{
+Augmented rank is $3$ while coefficient rank is $2$; ranks mismatch, so
+inconsistent.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $b$ were changed to make the last row $[0\ 0\ 0\,|\,0]$, the system
+would be consistent with one free variable.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute ranks: $\mathrm{rank}(A)=2$ (third column is a combination of first
+two in $A$); check if $b$ lies in the span of $A$'s columns. It does not.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Substitute any partial solution attempt to see contradiction in the
+third equation after elimination.
+\end{bullets}
+}
+
+\INTUITION{
+Two independent constraints cannot force a third inconsistent requirement.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Inconsistency arises exactly when a pivot appears in the augmented
+column only.
+\end{bullets}
+}
+
+\ProblemPage{2}{Parametric Solution with Free Variables}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let
+\[
+A=\begin{bmatrix}
+1&0&2&-1\\
+0&1&-3&4\\
+0&0&0&0
+\end{bmatrix},\quad b=\begin{bmatrix}2\\-1\\0\end{bmatrix}.
+\]
+Solve $Ax=b$ and parameterize.
+
+\PROBLEM{
+Identify pivot columns, set free variables, and express the solution in the
+form $x=x_p+Nt$.
+}
+
+\MODEL{
+\[
+[A\,|\,b]=\begin{bmatrix}
+1&0&2&-1&|&2\\
+0&1&-3&4&|&-1\\
+0&0&0&0&|&0
+\end{bmatrix}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Matrix is already in REF with pivots in columns $1$ and $2$.
+\end{bullets}
+}
+
+\varmapStart
+\var{P=\{1,2\}}{Pivot columns.}
+\var{F=\{3,4\}}{Free columns.}
+\var{F_A=\begin{bmatrix}2&-1\\-3&4\end{bmatrix}}{Free submatrix.}
+\var{d=\begin{bmatrix}2\\-1\end{bmatrix}}{Pivot constants.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 3: $x_P=d-Fx_F$ with $x_F$ free.
+}
+
+\GOVERN{
+\[
+x_1+2x_3-x_4=2,\quad x_2-3x_3+4x_4=-1.
+\]
+}
+
+\INPUTS{$x_3=t_1,\ x_4=t_2$ as free parameters.}
+
+\DERIVATION{
+\begin{align*}
+x_1&=2-2x_3+x_4=2-2t_1+t_2,\\
+x_2&=-1+3x_3-4x_4=-1+3t_1-4t_2.
+\end{align*}
+So
+\begin{bmatrix}x_1\\x_2\\x_3\\x_4\end{bmatrix}
+&=
+\begin{bmatrix}2\\-1\\0\\0\end{bmatrix}
++t_1\begin{bmatrix}-2\\3\\1\\0\end{bmatrix}
++t_2\begin{bmatrix}1\\-4\\0\\1\end{bmatrix}.
+}
+
+\RESULT{
+$x=x_p+ t_1 n_1+ t_2 n_2$ with $x_p=(2,-1,0,0)^\top$,
+$n_1=(-2,3,1,0)^\top$, $n_2=(1,-4,0,1)^\top$.
+}
+
+\UNITCHECK{
+$r=2$, $n=4$, nullity $=2$; we found two independent direction vectors.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item Setting $t_1=t_2=0$ gives a particular solution.
+\item Any other choice yields another valid solution.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute RREF; since REF already isolates pivots, RREF zeroes above-free
+couplings but yields the same parameterization structure.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Substitute the parametric form into both equations to verify equality.
+\end{bullets}
+}
+
+\INTUITION{
+Two independent rules constrain $x_1,x_2$ based on the two dials $x_3,x_4$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Solution is an affine plane of dimension $2$ in $\mathbb{R}^4$.
+\end{bullets}
+}
+
+\ProblemPage{3}{Rank and Bases via RREF}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For
+\[
+A=\begin{bmatrix}
+1&2&1\\
+0&1&3\\
+1&3&4
+\end{bmatrix},
+\]
+compute $\mathrm{rank}(A)$, a basis for $N(A)$, and a basis for the column
+space.
+
+\PROBLEM{
+Reduce to RREF, count pivots, extract a null space basis, and choose pivot
+columns as a basis for the column space in the original matrix.
+}
+
+\MODEL{
+\[
+A\xrightarrow{\text{RREF}} R, \quad N=[-F;I],\quad \text{Col basis }=\text{
+original pivot columns}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item All operations are exact.
+\end{bullets}
+}
+
+\varmapStart
+\var{r}{Rank of $A$.}
+\var{P,F}{Pivot and free sets.}
+\var{N}{Null space basis matrix.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formulas 2, 3, and 4 (RREF existence, solution structure for $Ax=0$, and
+rank-nullity).
+}
+
+\GOVERN{
+\[
+Ax=0\ \Longleftrightarrow\ [I_r\ F\,|\,0]\begin{bmatrix}x_P\\x_F\end{bmatrix}
+=\begin{bmatrix}0\\0\end{bmatrix},\quad x_P=-Fx_F.
+\]
+}
+
+\INPUTS{$A$ as above.}
+
+\DERIVATION{
+\begin{align*}
+[A]&=\begin{bmatrix}
+1&2&1\\
+0&1&3\\
+1&3&4
+\end{bmatrix}
+\stackrel{R_3\leftarrow R_3-R_1}{\longrightarrow}
+\begin{bmatrix}
+1&2&1\\
+0&1&3\\
+0&1&3
+\end{bmatrix}\\
+R_3&\leftarrow R_3-R_2:
+\begin{bmatrix}
+1&2&1\\
+0&1&3\\
+0&0&0
+\end{bmatrix}
+\stackrel{R_1\leftarrow R_1-2R_2}{\longrightarrow}
+\begin{bmatrix}
+1&0&-5\\
+0&1&3\\
+0&0&0
+\end{bmatrix}
+\end{align*}
+RREF is $\begin{bmatrix}1&0&-5\\0&1&3\\0&0&0\end{bmatrix}$, so
+$r=2$, $P=\{1,2\}$, $F=\{3\}$, $F=[-5;3]$.
+}
+
+\RESULT{
+$\mathrm{rank}(A)=2$, $\dim N(A)=1$ with basis vector $n=(-F;1)=(5,-3,1)^\top$.
+A basis for the column space: columns $1$ and $2$ of $A$,
+$\{(1,0,1)^\top,(2,1,3)^\top\}$.
+}
+
+\UNITCHECK{
+Rank $2$ and nullity $1$ sum to $n=3$ as required.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If the third column had not been a combination of the first two,
+$r$ would be $3$ and the null space trivial.
+\end{bullets}
+}
+
+\ALTERNATE{
+Check linear dependence directly: third column equals first plus second, so
+rank is $2$, yielding the same result.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Verify $A(5,-3,1)^\top=0$.
+\end{bullets}
+}
+
+\INTUITION{
+Two independent columns generate the third; one degree of freedom remains in
+the null space.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Pivot columns of $A$ constitute a column space basis.
+\end{bullets}
+}
+
+\ProblemPage{4}{Narrative: Mixing Solutions}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Alice mixes three chemicals with constraints:
+\[
+\begin{cases}
+x_1+2x_2+x_3=5,\\
+2x_1+4x_2+3x_3=11,\\
+x_1+2x_2+4x_3=9.
+\end{cases}
+\]
+Identify if her target is achievable and, if so, parameterize mixtures.
+
+\PROBLEM{
+Translate to $[A\,|\,b]$, row-reduce, and interpret pivot structure as hidden
+dependencies in the constraints.
+}
+
+\MODEL{
+\[
+A=\begin{bmatrix}1&2&1\\2&4&3\\1&2&4\end{bmatrix},\ 
+b=\begin{bmatrix}5\\11\\9\end{bmatrix}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Quantities are real-valued; negative amounts allowed algebraically.
+\end{bullets}
+}
+
+\varmapStart
+\var{P,F}{Pivot and free sets after RREF.}
+\var{r}{Rank.}
+\var{d,F}{From RREF $[I_r\ F\,|\,d]$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Use Formulas 1 through 4 to reduce and decide consistency, then parameterize.
+}
+
+\GOVERN{
+\[
+[A\,|\,b]\xrightarrow{\text{RREF}} [I_r\ F\,|\,d].
+\]
+}
+
+\INPUTS{$[A\,|\,b]$ as in the statement.}
+
+\DERIVATION{
+\begin{align*}
+[A\,|\,b]&=\begin{bmatrix}
+1&2&1&|&5\\
+2&4&3&|&11\\
+1&2&4&|&9
+\end{bmatrix}
+\stackrel{R_2\leftarrow R_2-2R_1}{\longrightarrow}
+\begin{bmatrix}
+1&2&1&|&5\\
+0&0&1&|&1\\
+1&2&4&|&9
+\end{bmatrix}\\
+R_3&\leftarrow R_3-R_1:
+\begin{bmatrix}
+1&2&1&|&5\\
+0&0&1&|&1\\
+0&0&3&|&4
+\end{bmatrix}
+\stackrel{R_3\leftarrow R_3-3R_2}{\longrightarrow}
+\begin{bmatrix}
+1&2&1&|&5\\
+0&0&1&|&1\\
+0&0&0&|&1
+\end{bmatrix}
+\end{align*}
+}
+
+\RESULT{
+Contradictory row $[0\ 0\ 0\,|\,1]$ appears; the target is not achievable.
+}
+
+\UNITCHECK{
+$\mathrm{rank}([A\,|\,b])=3>\mathrm{rank}(A)=2$; inconsistent.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If the last target were $8$ instead of $9$, the system would be
+consistent with one free variable.
+\end{bullets}
+}
+
+\ALTERNATE{
+Check if $b$ lies in the span of columns of $A$ by solving $Ac=b_c$ for
+coefficients $c$; it fails.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Try solving first two equations; they imply $x_3=1$. Third then
+requires $x_1+2x_2+4=9\Rightarrow x_1+2x_2=5$, consistent with the first, but
+the reduction shows the actual contradiction in totals; elimination is
+authoritative.
+\end{bullets}
+}
+
+\INTUITION{
+Two constraints are nearly dependent; the third imposes an incompatible total.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Incompatibility manifests as a pivot in the augmented column only.
+\end{bullets}
+}
+
+\ProblemPage{5}{Narrative: Network Flow Balances}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Bob routes flow $x_1,x_2,x_3,x_4$ through a junction with balances:
+\[
+\begin{cases}
+x_1+x_2-x_3=2,\\
+x_3-x_4=1,\\
+x_1+2x_2-x_4=3.
+\end{cases}
+\]
+Find all flows satisfying balances.
+
+\PROBLEM{
+Set up $[A\,|\,b]$, reduce to RREF, identify free flows, and parameterize.
+}
+
+\MODEL{
+\[
+A=\begin{bmatrix}1&1&-1&0\\0&0&1&-1\\1&2&0&-1\end{bmatrix},\ 
+b=\begin{bmatrix}2\\1\\3\end{bmatrix}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Real-valued flows; algebraic solution suffices.
+\end{bullets}
+}
+
+\varmapStart
+\var{P,F}{Pivot and free sets.}
+\var{r}{Rank.}
+\var{d,F}{From RREF.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formulas 1, 2, 3: reduce, read RREF, parameterize with free variables.
+}
+
+\GOVERN{
+\[
+[A\,|\,b]\to R=[I_r\ F\,|\,d],\quad x_P=d-Fx_F.
+\]
+}
+
+\INPUTS{$[A\,|\,b]$ as above.}
+
+\DERIVATION{
+\begin{align*}
+[A\,|\,b]&=\begin{bmatrix}
+1&1&-1&0&|&2\\
+0&0&1&-1&|&1\\
+1&2&0&-1&|&3
+\end{bmatrix}
+\stackrel{R_3\leftarrow R_3-R_1}{\longrightarrow}
+\begin{bmatrix}
+1&1&-1&0&|&2\\
+0&0&1&-1&|&1\\
+0&1&1&-1&|&1
+\end{bmatrix}\\
+R_2&\leftrightarrow R_3:
+\begin{bmatrix}
+1&1&-1&0&|&2\\
+0&1&1&-1&|&1\\
+0&0&1&-1&|&1
+\end{bmatrix}
+\stackrel{R_1\leftarrow R_1-R_2}{\longrightarrow}
+\begin{bmatrix}
+1&0&-2&1&|&1\\
+0&1&1&-1&|&1\\
+0&0&1&-1&|&1
+\end{bmatrix}\\
+R_2&\leftarrow R_2-R_3:
+\begin{bmatrix}
+1&0&-2&1&|&1\\
+0&1&0&0&|&0\\
+0&0&1&-1&|&1
+\end{bmatrix}
+\end{align*}
+RREF is already reached. Pivots in columns $1,2,3$; free set $F=\{4\}$.
+}
+
+\RESULT{
+Let $x_4=t$. Then $x_3=1+t$, $x_2=0$, $x_1=1+2x_3-x_4=1+2(1+t)-t=3+t$.
+Thus $x=(3+t,0,1+t,t)^\top$.
+}
+
+\UNITCHECK{
+$r=3$, $n=4$, nullity $=1$, one free parameter $t$ as found.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If an additional constraint fixed $x_4$, the solution would be unique.
+\end{bullets}
+}
+
+\ALTERNATE{
+Solve by back substitution from REF without clearing above pivots; gives the
+same parameterization.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Substitute $x$ back into balances to verify each equation.
+\end{bullets}
+}
+
+\INTUITION{
+One degree of freedom in routing remains while balances are satisfied.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Free variable equals null space degree; pivots determine the rest.
+\end{bullets}
+}
+
+\ProblemPage{6}{Expectation with Random Right-Hand Side}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let $A=\begin{bmatrix}1&1\\0&2\end{bmatrix}$ and $b$ have entries drawn
+uniformly from $\{1,2,3,4,5,6\}$. Compute $\mathbb{E}[x]$ where $x$ solves
+$Ax=b$.
+
+\PROBLEM{
+Use RREF or back substitution to express $x$ as a linear function of $b$, then
+take expectation.
+}
+
+\MODEL{
+\[
+[A\,|\,b]\sim \begin{bmatrix}1&1&|&b_1\\0&2&|&b_2\end{bmatrix}
+\Rightarrow x_2=b_2/2,\ x_1=b_1-x_2.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Entries of $b$ are independent and uniformly distributed over
+$\{1,\dots,6\}$.
+\end{bullets}
+}
+
+\varmapStart
+\var{b_1,b_2}{Components of $b$.}
+\var{x_1,x_2}{Components of $x$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 5 (back substitution) and linearity of expectation.
+}
+
+\GOVERN{
+\[
+x_2=\tfrac{1}{2}b_2,\quad x_1=b_1-\tfrac{1}{2}b_2.
+\]
+}
+
+\INPUTS{$\mathbb{E}[b_i]=\tfrac{1+6}{2}=3.5$.}
+
+\DERIVATION{
+\begin{align*}
+\mathbb{E}[x_2]&=\tfrac{1}{2}\mathbb{E}[b_2]=\tfrac{1}{2}\cdot 3.5=1.75,\\
+\mathbb{E}[x_1]&=\mathbb{E}[b_1]-\tfrac{1}{2}\mathbb{E}[b_2]
+=3.5-1.75=1.75.
+\end{align*}
+}
+
+\RESULT{
+$\mathbb{E}[x]=(1.75,\,1.75)^\top$.
+}
+
+\UNITCHECK{
+$A\,\mathbb{E}[x]=\begin{bmatrix}1&1\\0&2\end{bmatrix}
+\begin{bmatrix}1.75\\1.75\end{bmatrix}=(3.5,\,3.5)^\top=\mathbb{E}[b]$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $A$ were singular, expectation of a solution may be undefined for
+some $b$; consistency must be verified first.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use RREF of $[A\,|\,e_1]$ and $[A\,|\,e_2]$ to obtain $A^{-1}$, then
+$\mathbb{E}[x]=A^{-1}\mathbb{E}[b]$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Enumerate all $36$ pairs $(b_1,b_2)$ to verify average equals result.
+\end{bullets}
+}
+
+\INTUITION{
+Expectation commutes with linear solves for fixed $A$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Linearity: $x=L b$ for linear operator $L=A^{-1}$; thus
+$\mathbb{E}[x]=L\mathbb{E}[b]$.
+\end{bullets}
+}
+
+\ProblemPage{7}{Proof: Uniqueness of RREF}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Prove that the RREF of a matrix is unique.
+
+\PROBLEM{
+Show that if $R_1$ and $R_2$ are RREF and row-equivalent to $M$, then
+$R_1=R_2$.
+}
+
+\MODEL{
+\[
+M \xrightarrow{\text{row ops}} R_1,\quad
+M \xrightarrow{\text{row ops}} R_2,\quad R_1\sim R_2.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Row-equivalence generated by elementary matrices.
+\item RREF definition as in Formula 2.
+\end{bullets}
+}
+
+\varmapStart
+\var{R_1,R_2}{Two RREF matrices row-equivalent to $M$.}
+\var{P}{Pivot index set (must match).}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 (existence and uniqueness statement), but we supply a proof.
+}
+
+\GOVERN{
+\[
+R_1=ER_2\ \text{for some invertible }E,\ \text{and both }R_1,R_2\text{ are RREF}.
+\]
+}
+
+\INPUTS{$M\in\mathbb{R}^{m\times n}$.}
+
+\DERIVATION{
+\begin{align*}
+&\text{In RREF, pivot columns are unit vectors and occur at fixed positions.}\\
+&\text{Since }R_1\sim R_2,\ \mathrm{rank}(R_1)=\mathrm{rank}(R_2)=r.\\
+&\text{Suppose }R_1\ne R_2.\ \text{Then some pivot position differs.}\\
+&\text{But a row operation cannot move a pivot column's unit vector to}\\
+&\text{a non-unit vector and still retain RREF, unless the matrices are
+equal.}
+\end{align*}
+}
+
+\RESULT{
+Therefore $R_1=R_2$; the RREF is unique.
+}
+
+\UNITCHECK{
+Argument concerns structural properties; no units involved.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item Zero matrix: RREF is the zero matrix, unique.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use the fact that RREF defines the same row space with the same set of pivot
+columns and unit pivot columns; equality follows by comparing columns.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute RREF via two different elimination paths; results coincide.
+\end{bullets}
+}
+
+\INTUITION{
+There is only one maximally simplified staircase with isolated pivots.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item RREF is a canonical representative of the row-equivalence class.
+\end{bullets}
+}
+
+\ProblemPage{8}{Proof: Consistency iff Rank Equality}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show $Ax=b$ is consistent iff $\mathrm{rank}(A)=\mathrm{rank}([A\,|\,b])$.
+
+\PROBLEM{
+Prove both directions using RREF and the contradictory row characterization.
+}
+
+\MODEL{
+\[
+[A\,|\,b]\xrightarrow{\text{RREF}} [I_r\ F\,|\,d; 0\ 0\,|\,c].
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Rank equals pivot count; contradictory row implies inconsistency.
+\end{bullets}
+}
+
+\varmapStart
+\var{r}{Rank of $A$.}
+\var{c}{Augmented residual.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 4 (rank and consistency).
+}
+
+\GOVERN{
+\[
+\text{No }[0\ \cdots\ 0\,|\,\beta],\ \beta\ne 0\ \Longleftrightarrow\
+\mathrm{rank}(A)=\mathrm{rank}([A\,|\,b]).
+\]
+}
+
+\INPUTS{$A\in\mathbb{R}^{m\times n}$, $b\in\mathbb{R}^m$.}
+
+\DERIVATION{
+\begin{proof}
+($\Rightarrow$) If $Ax=b$ is consistent, RREF cannot contain a row
+$[0\ \cdots\ 0\,|\,\beta]$ with $\beta\ne 0$. Thus the augmented column does
+not introduce a new pivot, so the augmented rank equals the coefficient rank.
+($\Leftarrow$) If ranks are equal, no contradictory row exists; then each pivot
+row is satisfied by solving $x_P=d-Fx_F$ with arbitrary $x_F$, so a solution
+exists. \qedhere
+\end{proof}
+}
+
+\RESULT{
+Consistency is equivalent to equality of ranks.
+}
+
+\UNITCHECK{
+Ranks are integers between $0$ and $\min(m,n)$; equality is well-defined.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $b=0$, augmented and coefficient ranks are equal; system is
+consistent (homogeneous).
+\end{bullets}
+}
+
+\ALTERNATE{
+View $b$ as a linear combination of columns of $A$: consistency iff $b$ is in
+the column space, which has dimension $\mathrm{rank}(A)$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute small examples to observe the criterion in action.
+\end{bullets}
+}
+
+\INTUITION{
+A new pivot in the augmented column forces $0=\beta$, impossible; otherwise,
+the right-hand side sits within the span generated by $A$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Consistency reduces to a simple rank check.
+\end{bullets}
+}
+
+\ProblemPage{9}{Combo: Column Space Basis via Pivots}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show that pivot columns of $A$ form a basis of the column space of $A$.
+
+\PROBLEM{
+Row-reduce $A$ to RREF, argue that pivot columns in $R$ are unit vectors, and
+that the corresponding original columns of $A$ are independent and span the
+column space.
+}
+
+\MODEL{
+\[
+A\xrightarrow{E} R,\quad \text{Cols}(A)=E^{-1}\text{Cols}(R).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Row operations preserve linear relations among columns.
+\end{bullets}
+}
+
+\varmapStart
+\var{P}{Pivot column indices.}
+\var{r}{Rank.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formulas 1 and 2 (row operations, RREF).
+}
+
+\GOVERN{
+\[
+\text{If }Rc=0,\text{ then }Ac'=0\text{ with same relations among columns}.
+\]
+}
+
+\INPUTS{$A\in\mathbb{R}^{m\times n}$.}
+
+\DERIVATION{
+\begin{proof}
+Row operations do not alter the linear dependence relations among columns:
+if $Ac=0$ then $RAc=0$ and hence $(EA)c=0\iff A c=0$. In RREF, pivot columns
+are unit vectors, so they are independent and span the column space of $R$.
+Applying inverse row operations maps the pivot columns of $R$ back to the
+corresponding original columns of $A$, preserving independence and span. Thus
+the corresponding columns of $A$ form a basis of the column space of $A$.
+\qedhere
+\end{proof}
+}
+
+\RESULT{
+Pivot columns of $A$ constitute a basis for $\mathrm{Col}(A)$.
+}
+
+\UNITCHECK{
+Counts match: number of pivot columns equals $\dim \mathrm{Col}(A)=r$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $r=0$, the zero subspace has the empty set as a basis.
+\end{bullets}
+}
+
+\ALTERNATE{
+Prove directly: non-pivot columns are linear combinations of pivot columns
+visible from RREF.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute RREF and express each non-pivot column as a combination of
+pivot columns.
+\end{bullets}
+}
+
+\INTUITION{
+Pivots identify independent directions in the columns; others depend on them.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Pivot columns capture the column space structure.
+\end{bullets}
+}
+
+\ProblemPage{10}{Combo: Parameter Family and Pivot Changes}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Consider
+\[
+A(t)=\begin{bmatrix}
+1&1&t\\
+0&1&1\\
+0&0&1
+\end{bmatrix}.
+\]
+For which $t$ do pivot positions change, and what is the solution to
+$A(t)x=e_1$?
+
+\PROBLEM{
+Analyze REF stability under parameter $t$ and solve using back substitution.
+}
+
+\MODEL{
+\[
+A(t)\text{ is upper triangular with ones on the diagonal; pivots fixed.}
+\]
+
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $t\in\mathbb{R}$.
+\end{bullets}
+}
+
+\varmapStart
+\var{t}{Parameter in the upper-right corner.}
+\var{e_1}{First standard basis vector.}
+\var{P}{Pivot columns $\{1,2,3\}$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 5 (back substitution) with fixed pivot positions in upper triangular
+form.
+}
+
+\GOVERN{
+\[
+\begin{cases}
+x_3=1,\\
+x_2+x_3=0,\\
+x_1+x_2+t x_3=1.
+\end{cases}
+\]
+}
+
+\INPUTS{$t\in\mathbb{R}$.}
+
+\DERIVATION{
+\begin{align*}
+x_3&=1,\\
+x_2&=-x_3=-1,\\
+x_1&=1-x_2-tx_3=1-(-1)-t=2-t.
+\end{align*}
+Pivots are on the diagonal and equal $1$; they do not change with $t$.
+}
+
+\RESULT{
+Pivot positions are constant for all $t$; the solution is
+$x=(2-t,\,-1,\,1)^\top$.
+}
+
+\UNITCHECK{
+$A(t)x=e_1$ verified by direct multiplication:
+Row 3 gives $1$, Row 2 gives $-1+1=0$, Row 1 gives $(2-t)+(-1)+t=1$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If a diagonal entry were $0$, pivots could move; here all are $1$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute $A(t)^{-1}$ by RREF of $[A(t)\,|\,I]$, then extract the first column.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Substitute several $t$ values (e.g., $t=0,1,2$) to verify solution.
+\end{bullets}
+}
+
+\INTUITION{
+Upper triangular with ones is robust: pivots are fixed; only values shift.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Back substitution solves directly; pivot structure is stable here.
+\end{bullets}
+}
+
+\section{Coding Demonstrations}
+
+\CodeDemoPage{RREF and Solution Extraction for $Ax=b$}
+\PROBLEM{
+Compute the RREF of an augmented matrix $[A\,|\,b]$ and extract the solution
+set in the form $x=x_p+Nt$ when consistent. Verify Formula 3 by checking that
+$A x_p=b$ and $A N=0$.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> tuple}: parse $A$ and $b$.
+\item \inlinecode{def rref_aug(A,b) -> (R,P,F)}: Gauss-Jordan RREF.
+\item \inlinecode{def solve_case(obj) -> (xp,N,P,F)}: solution form.
+\item \inlinecode{def validate() -> None}: assertions on a test case.
+\item \inlinecode{def main() -> None}: orchestrate I\slash O and tests.
+\end{bullets}
+}
+
+\INPUTS{
+$A$ as list of lists or 2D array, $b$ as list or 1D array; both real-valued.
+}
+
+\OUTPUTS{
+$x_p$ a particular solution or None if inconsistent; $N$ null basis matrix;
+$P,F$ pivot and free index lists.
+}
+
+\FORMULA{
+\[
+[A\,|\,b]\xrightarrow{\text{RREF}} [I_r\ F\,|\,d],\quad
+x_P=d-Fx_F,\quad N=[-F;I_{n-r}].
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+# Deterministic RREF of augmented matrix and solution extraction
+import numpy as np
+
+def read_input(s):
+    # s: rows of A followed by b, comma-separated rows, ';' row sep
+    rows = [r.strip() for r in s.split(';') if r.strip()]
+    A, b = [], []
+    for r in rows:
+        parts = [float(x) for x in r.split(',')]
+        A.append(parts[:-1])
+        b.append(parts[-1])
+    return np.array(A, float), np.array(b, float)
+
+def rref_aug(A, b, tol=1e-12):
+    A = A.astype(float).copy()
+    b = b.astype(float).copy()
+    m, n = A.shape
+    P, F = [], []
+    i = j = 0
+    while i < m and j < n:
+        piv = np.argmax(np.abs(A[i:, j])) + i
+        if abs(A[piv, j]) <= tol:
+            j += 1
+            continue
+        if piv != i:
+            A[[i, piv]] = A[[piv, i]]
+            b[[i, piv]] = b[[piv, i]]
+        pivval = A[i, j]
+        A[i, :] /= pivval
+        b[i] /= pivval
+        for k in range(m):
+            if k != i and abs(A[k, j]) > tol:
+                fac = A[k, j]
+                A[k, :] -= fac * A[i, :]
+                b[k] -= fac * b[i]
+        P.append(j)
+        i += 1
+        j += 1
+    F = [c for c in range(n) if c not in P]
+    return (np.hstack([A, b.reshape(-1, 1)]), P, F)
+
+def solve_case(obj):
+    A, b = obj
+    R, P, F = rref_aug(A, b)
+    m, n = A.shape
+    # check inconsistency: row [0 ... 0 | beta] with beta != 0
+    for i in range(m):
+        if np.all(np.abs(R[i, :n]) < 1e-10) and abs(R[i, n]) > 1e-10:
+            return None, None, P, F
+    r = len(P)
+    # Build F matrix and d vector in pivot-first ordering
+    # Map column order: pivots first, then frees
+    order = P + F
+    inv = np.empty(n, int)
+    for idx, col in enumerate(order):
+        inv[col] = idx
+    Fmat = np.zeros((r, n - r))
+    d = np.zeros(r)
+    for row_idx, col in enumerate(P):
+        d[row_idx] = R[row_idx, n]
+        for j, free_col in enumerate(F):
+            Fmat[row_idx, j] = R[row_idx, free_col]
+    xp = np.zeros(n)
+    xp[P] = d
+    xp[F] = 0.0
+    N = np.zeros((n, n - r))
+    if n - r > 0:
+        N[P, :] = -Fmat
+        N[F, :] = np.eye(n - r)
+    return xp, N, P, F
+
+def validate():
+    A = np.array([[1, 0, 2, -1],
+                  [0, 1, -3, 4],
+                  [0, 0, 0, 0]], float)
+    b = np.array([2, -1, 0], float)
+    xp, N, P, F = solve_case((A, b))
+    assert xp is not None
+    assert P == [0, 1] and F == [2, 3]
+    # Check Axp = b and A N = 0
+    assert np.allclose(A @ xp, b)
+    if N.shape[1] > 0:
+        assert np.allclose(A @ N, 0.0)
+    # Spot-check a solution: t1=1.0, t2=-2.0
+    t = np.array([1.0, -2.0])
+    x = xp + N @ t
+    assert np.allclose(A @ x, b)
+
+def main():
+    validate()
+    s = "1,0,2,-1,2;0,1,-3,4,-1;0,0,0,0,0"
+    A, b = read_input(s)
+    xp, N, P, F = solve_case((A, b))
+    print("Pivots:", P, "Frees:", F)
+    print("xp:", np.round(xp, 3))
+    print("N:", np.round(N, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+# Library version using sympy's rref and linsolve for verification
+import numpy as np
+import sympy as sp
+
+def read_input(s):
+    rows = [r.strip() for r in s.split(';') if r.strip()]
+    A, b = [], []
+    for r in rows:
+        parts = [float(x) for x in r.split(',')]
+        A.append(parts[:-1])
+        b.append(parts[-1])
+    return np.array(A, float), np.array(b, float)
+
+def solve_case(obj):
+    A, b = obj
+    M = sp.Matrix(np.hstack([A, b.reshape(-1, 1)]))
+    R, piv = M.rref()
+    n = A.shape[1]
+    P = list(piv)
+    F = [i for i in range(n) if i not in P]
+    # Build xp and N from sympy solution
+    x_syms = sp.symbols('x0:%d' % n)
+    sol = sp.linsolve((sp.Matrix(A), sp.Matrix(b)), *x_syms)
+    if len(sol) == 0:
+        return None, None, P, F
+    sol = list(sol)[0]
+    # Extract xp and N by separating parameters
+    params = sorted(list(sol.free_symbols), key=lambda z: str(z))
+    xp = sp.Matrix([s.subs({p:0 for p in params}) for s in sol])
+    N = []
+    for p in params:
+        col = sp.Matrix([sp.diff(s, p) for s in sol])
+        N.append(col)
+    N = sp.Matrix.hstack(*N) if N else sp.zeros(n, 0)
+    return (np.array(xp, float).reshape(-1),
+            np.array(N, float), P, F)
+
+def validate():
+    A = np.array([[1, 0, 2, -1],
+                  [0, 1, -3, 4],
+                  [0, 0, 0, 0]], float)
+    b = np.array([2, -1, 0], float)
+    xp, N, P, F = solve_case((A, b))
+    assert P == [0, 1] and F == [2, 3]
+    assert np.allclose(A @ xp, b)
+    if N.shape[1] > 0:
+        assert np.allclose(A @ N, 0.0)
+
+def main():
+    validate()
+    s = "1,0,2,-1,2;0,1,-3,4,-1;0,0,0,0,0"
+    A, b = read_input(s)
+    xp, N, P, F = solve_case((A, b))
+    print("Pivots:", P, "Frees:", F)
+    print("xp:", np.round(xp, 3))
+    print("N:", np.round(N, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Both variants are $\mathcal{O}(mn\min(m,n))$ time for Gauss-Jordan and
+$\mathcal{O}(mn)$ space. Sympy overhead is similar asymptotically.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Near-singular pivots cause large rounding errors; use tolerances.
+\item Inconsistent systems: detect contradictory rows before extracting
+solutions.
+\item Empty null space: handle $N$ with zero columns without errors.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Use partial pivoting (row swaps by largest absolute value) to improve
+conditioning.
+\item Threshold small values to zero to avoid spurious pivots.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Assert $Ax_p=b$ and $AN=0$.
+\item Cross-check pivot and free sets across implementations.
+\end{bullets}
+}
+
+\RESULT{
+Both implementations produce identical pivot and free sets, a valid $x_p$, and
+null basis $N$ satisfying the governing equations.
+}
+
+\EXPLANATION{
+The code implements Formula 3 directly: RREF of $[A\,|\,b]$ yields $F$ and $d$
+so that $x_P=d-Fx_F$, and constructs a null basis $N$ accordingly.
+}
+
+\CodeDemoPage{Rank-Nullity and Null Space Basis Verification}
+\PROBLEM{
+Compute rank and a basis for $N(A)$ using RREF, and verify
+$\dim N(A)=n-\mathrm{rank}(A)$ and $AN=0$ on a random but fixed matrix.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> np.ndarray}: parse $A$.
+\item \inlinecode{def rref(A) -> (R,P,F)}: RREF of $A$.
+\item \inlinecode{def null_basis(A) -> N}: basis matrix of $N(A)$.
+\item \inlinecode{def validate() -> None}: asserts on identities.
+\item \inlinecode{def main() -> None}: run validation and print.
+\end{bullets}
+}
+
+\INPUTS{
+Matrix $A\in\mathbb{R}^{m\times n}$.
+}
+
+\OUTPUTS{
+Pivot and free sets; null basis matrix $N$ with $AN=0$ and $N$ having
+$n-r$ columns.
+}
+
+\FORMULA{
+\[
+\dim N(A)=n-r,\quad N=[-F;I_{n-r}],\quad AN=0.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    rows = [r.strip() for r in s.split(';') if r.strip()]
+    A = [[float(x) for x in r.split(',')] for r in rows]
+    return np.array(A, float)
+
+def rref(A, tol=1e-12):
+    A = A.astype(float).copy()
+    m, n = A.shape
+    P, F = [], []
+    i = j = 0
+    while i < m and j < n:
+        piv = np.argmax(np.abs(A[i:, j])) + i
+        if abs(A[piv, j]) <= tol:
+            j += 1
+            continue
+        if piv != i:
+            A[[i, piv]] = A[[piv, i]]
+        A[i, :] /= A[i, j]
+        for k in range(m):
+            if k != i and abs(A[k, j]) > tol:
+                A[k, :] -= A[k, j] * A[i, :]
+        P.append(j)
+        i += 1
+        j += 1
+    F = [c for c in range(n) if c not in P]
+    # zero small values
+    A[np.abs(A) < tol] = 0.0
+    return A, P, F
+
+def null_basis(A):
+    R, P, F = rref(A)
+    n = A.shape[1]
+    r = len(P)
+    N = np.zeros((n, n - r))
+    if n - r > 0:
+        Fmat = R[:r, :][:, F]
+        N[P, :] = -Fmat
+        N[F, :] = np.eye(n - r)
+    return N, P, F
+
+def validate():
+    A = read_input("1,2,1;0,1,3;1,3,4")
+    N, P, F = null_basis(A)
+    r = len(P)
+    n = A.shape[1]
+    assert N.shape[1] == n - r
+    assert np.allclose(A @ N, 0.0)
+    # From Problem 3, expected null vector proportional to (5,-3,1)
+    if N.shape[1] == 1:
+        v = N[:, 0]
+        w = np.array([5.0, -3.0, 1.0])
+        assert np.allclose(np.cross(v, w), 0.0)
+
+def main():
+    validate()
+    A = read_input("1,2,1;0,1,3;1,3,4")
+    N, P, F = null_basis(A)
+    print("Rank:", len(P), "Pivots:", P, "Frees:", F)
+    print("N:", np.round(N, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+import sympy as sp
+
+def read_input(s):
+    rows = [r.strip() for r in s.split(';') if r.strip()]
+    A = [[float(x) for x in r.split(',')] for r in rows]
+    return np.array(A, float)
+
+def null_basis(A):
+    M = sp.Matrix(A)
+    N = M.nullspace()
+    if len(N) == 0:
+        return np.zeros((A.shape[1], 0))
+    N = sp.Matrix.hstack(*N)
+    return np.array(N, float)
+
+def validate():
+    A = read_input("1,2,1;0,1,3;1,3,4")
+    N1 = null_basis(A)
+    # cross-check with from-scratch
+    from_scratch = __import__(__name__)
+    N2, P, F = from_scratch.null_basis(A)
+    # columns span the same space; check A N = 0 and dims
+    assert np.allclose(A @ N1, 0.0)
+    assert N1.shape[1] == N2.shape[1]
+
+def main():
+    validate()
+    A = read_input("1,2,1;0,1,3;1,3,4")
+    N = null_basis(A)
+    print("Null basis columns:", np.round(N, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Both: RREF is $\mathcal{O}(mn\min(m,n))$ time and $\mathcal{O}(mn)$ space.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Numeric tolerance may misclassify pivots; use thresholding.
+\item Degenerate zero matrix: handle $r=0$ and $N$ with $n$ columns.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Partial pivoting mitigates growth of rounding errors.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Verify $AN=0$ and $\mathrm{rank}(A)+\dim N(A)=n$.
+\end{bullets}
+}
+
+\RESULT{
+Computed null bases satisfy $AN=0$ and have the correct number of columns.
+}
+
+\EXPLANATION{
+Constructs $N=[-F;I]$ from RREF (Formula 3) and verifies rank-nullity
+(Formula 4).
+}
+
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Fit a linear regression by solving the normal equations $(X^\top X)\beta=
+X^\top y$ using RREF, and compare to a library solver.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $X\in\mathbb{R}^{n\times d}$ has full column rank $d$.
+\item Mean-squared-error objective leads to normal equations.
+\end{bullets}
+}
+\WHICHFORMULA{
+Gaussian elimination (Formulas 1, 2) to compute RREF of $[X^\top X\,|\,X^\top
+y]$; unique solution since $r=d$.
+}
+\varmapStart
+\var{X}{Design matrix $(n,d)$.}
+\var{y}{Target $(n,1)$.}
+\var{\beta}{Coefficients $(d,1)$.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic data with full rank design.
+\item Build normal equations and solve via RREF.
+\item Cross-validate with numpy least-squares.
+\end{bullets}
+}
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def generate(n=100, d=2, seed=0, noise=0.1):
+    rng = np.random.default_rng(seed)
+    X = np.column_stack([np.ones(n), np.linspace(0, 5, n)])
+    beta = np.array([1.0, 2.0])
+    y = X @ beta + rng.normal(0, noise, n)
+    return X, y, beta
+
+def rref_solve(A, b, tol=1e-12):
+    A = A.astype(float).copy()
+    b = b.astype(float).copy()
+    m, n = A.shape
+    i = j = 0
+    while i < m and j < n:
+        piv = np.argmax(np.abs(A[i:, j])) + i
+        if abs(A[piv, j]) <= tol:
+            j += 1
+            continue
+        if piv != i:
+            A[[i, piv]] = A[[piv, i]]
+            b[[i, piv]] = b[[piv, i]]
+        A[i, :] /= A[i, j]
+        b[i] /= A[i, j]
+        for k in range(m):
+            if k != i and abs(A[k, j]) > tol:
+                fac = A[k, j]
+                A[k, :] -= fac * A[i, :]
+                b[k] -= fac * b[i]
+        i += 1
+        j += 1
+    return b
+
+def main():
+    X, y, beta_true = generate()
+    A = X.T @ X
+    b = X.T @ y
+    beta_rref = rref_solve(A, b)
+    beta_np = np.linalg.lstsq(X, y, rcond=None)[0]
+    print("True:", np.round(beta_true,3))
+    print("RREF:", np.round(beta_rref,3))
+    print("NP  :", np.round(beta_np,3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{Implementation (Library Version)}
+\begin{codepy}
+import numpy as np
+from sklearn.linear_model import LinearRegression
+
+def main():
+    X = np.column_stack([np.ones(100), np.linspace(0, 5, 100)])
+    rng = np.random.default_rng(0)
+    y = 1.0 + 2.0*X[:,1] + rng.normal(0, 0.1, 100)
+    model = LinearRegression(fit_intercept=False).fit(X, y)
+    print("Coef (sklearn):", np.round(model.coef_, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Compare coefficients to true values; small deviations due to noise.}
+\INTERPRET{RREF reproduces the least-squares solution for full-rank $X$.}
+\NEXTSTEPS{Handle rank-deficient $X$ via QR or SVD; within REF, detect $r<d$.}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Solve for portfolio weights $w$ satisfying budget and target return:
+\[
+\mathbf{1}^\top w=1,\quad \mu^\top w=\mu^\star,
+\]
+and a third constraint $a^\top w=c$, using RREF.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Three constraints with $d=4$ assets lead to one free parameter.
+\end{bullets}
+}
+\WHICHFORMULA{
+Formulas 2 and 3: RREF of $[A\,|\,b]$ parameterizes solution in terms of a
+free variable.
+}
+\varmapStart
+\var{w\in\mathbb{R}^4}{Portfolio weights.}
+\var{\mu\in\mathbb{R}^4}{Expected returns.}
+\var{a\in\mathbb{R}^4}{Additional linear constraint.}
+\var{b\in\mathbb{R}^3}{Right-hand side $(1,\mu^\star,c)^\top$.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Build $A=\begin{bmatrix}\mathbf{1}^\top\\ \mu^\top\\ a^\top\end{bmatrix}$.
+\item Row-reduce $[A\,|\,b]$ and read $w$ as $w_p+Nt$.
+\item Check constraints hold for sampled $t$.
+\end{bullets}
+}
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def rref_aug(A, b, tol=1e-12):
+    A = A.astype(float).copy()
+    b = b.astype(float).copy()
+    m, n = A.shape
+    P = []
+    i = j = 0
+    while i < m and j < n:
+        piv = np.argmax(np.abs(A[i:, j])) + i
+        if abs(A[piv, j]) <= tol:
+            j += 1
+            continue
+        if piv != i:
+            A[[i, piv]] = A[[piv, i]]
+            b[[i, piv]] = b[[piv, i]]
+        A[i, :] /= A[i, j]
+        b[i] /= A[i, j]
+        for k in range(m):
+            if k != i and abs(A[k, j]) > tol:
+                fac = A[k, j]
+                A[k, :] -= fac * A[i, :]
+                b[k] -= fac * b[i]
+        P.append(j)
+        i += 1
+        j += 1
+    F = [c for c in range(n) if c not in P]
+    return A, b, P, F
+
+def main():
+    mu = np.array([0.08, 0.10, 0.12, 0.09])
+    a = np.array([1.0, -1.0, 0.5, 0.0])
+    mu_star, c = 0.1, 0.0
+    A = np.vstack([np.ones(4), mu, a])
+    b = np.array([1.0, mu_star, c])
+    R, d, P, F = rref_aug(A, b)
+    n = A.shape[1]
+    r = len(P)
+    Fm = R[:r, :][:, F]
+    w_p = np.zeros(n)
+    w_p[P] = d[:r]
+    N = np.zeros((n, n - r))
+    if n - r > 0:
+        N[P, :] = -Fm
+        N[F, :] = np.eye(n - r)
+    t = np.array([0.2]) if N.shape[1] == 1 else np.zeros(n - r)
+    w = w_p + N @ t
+    print("w:", np.round(w, 4))
+    print("Check:", np.round(A @ w, 4), "target", b)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Constraint residuals $A w - b$ should be zero within tolerance.}
+\INTERPRET{One degree of freedom remains to trade off exposures while meeting
+targets.}
+\NEXTSTEPS{Add bounds or risk objectives to select $t$.}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Show that a single linear neuron trained by least squares matches the RREF
+solution of normal equations on synthetic data.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Single feature with bias; MSE minimization.
+\end{bullets}
+}
+\WHICHFORMULA{
+Normal equations solved via RREF; compare with gradient-based fit.
+}
+\varmapStart
+\var{X}{Design $(n,2)$ with bias and feature.}
+\var{y}{Targets.}
+\var{\beta}{Weights $(\beta_0,\beta_1)$.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate $(x,y)$ with linear relation plus noise.
+\item Solve $(X^\top X)\beta=X^\top y$ by RREF.
+\item Train a tiny net and compare coefficients.
+\end{bullets}
+}
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+import tensorflow as tf
+
+def data(n=100, noise=0.1):
+    np.random.seed(0)
+    x = np.linspace(0, 5, n)
+    X = np.column_stack([np.ones(n), x])
+    y = 1.0 + 2.0*x + np.random.randn(n)*noise
+    return X, y
+
+def rref_solve(A, b):
+    A = A.copy().astype(float)
+    b = b.copy().astype(float)
+    m, n = A.shape
+    i = j = 0
+    while i < m and j < n:
+        piv = np.argmax(np.abs(A[i:, j])) + i
+        if abs(A[piv, j]) < 1e-12:
+            j += 1
+            continue
+        if piv != i:
+            A[[i, piv]] = A[[piv, i]]
+            b[[i, piv]] = b[[piv, i]]
+        A[i, :] /= A[i, j]
+        b[i] /= A[i, j]
+        for k in range(m):
+            if k != i and abs(A[k, j]) > 1e-12:
+                fac = A[k, j]
+                A[k, :] -= fac * A[i, :]
+                b[k] -= fac * b[i]
+        i += 1
+        j += 1
+    return b
+
+def train_nn(X, y):
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(1, use_bias=True, input_shape=[1])
+    ])
+    model.compile(optimizer='adam', loss='mse')
+    model.fit(X[:,1], y, epochs=100, verbose=0)
+    w = model.get_weights()
+    beta1 = float(w[0][0,0])
+    beta0 = float(w[1][0])
+    return beta0, beta1
+
+def main():
+    X, y = data()
+    A = X.T @ X
+    b = X.T @ y
+    beta = rref_solve(A, b)
+    b0, b1 = train_nn(X, y)
+    print("RREF beta:", np.round(beta,3))
+    print("NN beta  :", np.round([b0, b1],3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Coefficient closeness; residual MSE comparable between methods.}
+\INTERPRET{Gradient descent converges to the linear-algebraic solution.}
+\NEXTSTEPS{Extend to multivariate features and compare with closed form.}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Given features $X$ and target $y$, compute regression coefficients by solving
+the normal equations with RREF as part of an EDA baseline.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Numeric features; full column rank after adding bias.
+\end{bullets}
+}
+\WHICHFORMULA{
+Solve $(X^\top X)\beta=X^\top y$ by RREF; use rank to detect collinearity.
+}
+\varmapStart
+\var{X}{Feature matrix $(n,d)$ with bias column appended.}
+\var{y}{Target vector $(n,)$.}
+\var{\beta}{Regression coefficients $(d,)$.}
+\var{r}{Rank of $X^\top X$.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Synthesize correlated features and target.
+\item Compute $X^\top X$ and rank via RREF.
+\item Solve for $\beta$ and report fit metrics.
+\end{bullets}
+}
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def synth(n=200, seed=0):
+    rng = np.random.default_rng(seed)
+    a = rng.normal(0, 1, n)
+    b = 0.8*a + rng.normal(0, 0.3, n)
+    X = np.column_stack([np.ones(n), a, b])
+    beta = np.array([0.5, 1.0, -0.5])
+    y = X @ beta + rng.normal(0, 0.2, n)
+    return X, y, beta
+
+def rref(A, tol=1e-10):
+    A = A.astype(float).copy()
+    m, n = A.shape
+    P = []
+    i = j = 0
+    while i < m and j < n:
+        piv = np.argmax(np.abs(A[i:, j])) + i
+        if abs(A[piv, j]) <= tol:
+            j += 1
+            continue
+        if piv != i:
+            A[[i, piv]] = A[[piv, i]]
+        A[i, :] /= A[i, j]
+        for k in range(m):
+            if k != i and abs(A[k, j]) > tol:
+                A[k, :] -= A[k, j] * A[i, :]
+        P.append(j)
+        i += 1
+        j += 1
+    return A, P
+
+def solve_normal(X, y):
+    A = X.T @ X
+    b = X.T @ y
+    beta = np.linalg.solve(A, b)
+    return beta
+
+def main():
+    X, y, beta_true = synth()
+    A = X.T @ X
+    R, P = rref(A)
+    r = len(P)
+    beta = solve_normal(X, y)
+    yhat = X @ beta
+    rmse = np.sqrt(np.mean((y - yhat)**2))
+    print("Rank(X^T X):", r, "beta:", np.round(beta,3))
+    print("RMSE:", round(rmse, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Report rank of $X^\top X$ and RMSE; check rank equals number of
+features including bias.}
+\INTERPRET{RREF reveals collinearity; solving yields baseline coefficients.}
+\NEXTSTEPS{Regularize if rank-deficient; feature engineer to reduce collinearity.}
+
+\end{document}

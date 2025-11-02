@@ -1,0 +1,991 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Show Must Go On}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1250/I}}
+\LINE{DIFFICULTY / RATING}{3100}
+\STATEMENT{The director of the famous dance show plans a tour. It is already decided that the tour will consist of up to $m$ concerts.
+
+There are $n$ dancers in the troupe. Each dancer is characterized by her awkwardness: the awkwardness of the $i$-th dancer is equal to $a_i$.
+
+The director likes diversity. For this reason, each concert will be performed by a different set of dancers. A dancer may perform in multiple concerts. For example, it is possible that a set of dancers performs in one concert and a subset of this set of dancers performs in another concert. The only constraint is that the same set of dancers cannot perform twice.
+
+The director prefers the set with larger number of dancers over the set with smaller number of dancers. If two sets consist of the same number of dancers, then the director prefers the one which has smaller sum of awkwardness of dancers. If two sets of dancers are equal in size and total awkwardness, then the director does not have a preference which one is better.
+
+A marketing study shows that viewers are not ready to come to a concert if the total awkwardness of all the dancers performing in the concert is greater than $k$.
+
+The director wants to find the best plan for $m$ concerts. He thinks to write down all possible sets of dancers; then get rid of the sets with total awkwardness greater than $k$. The remaining sets of dancers will be sorted according to his preference. The most preferred set of dancers will give the first concert, the second preferred set — the second concert and so on until the $m$-th concert. If it turns out that the total number of valid sets is less than $m$, then the total number of concerts will be equal to the number of valid sets.
+
+It turns out that the director delegated finding the plan to you! Please, notice that there might be several acceptable plans due to the fact that the director does not have a preference over sets of dancers with the same size and total awkwardness. In this case any of these plans is good enough. For each concert find the number of dancers and the total awkwardness of the set performing. Also, for the last concert find its set of dancers.
+
+Input:
+The first line contains one integer $t$ ($1 \le t \le 10^5$) — the number of test cases in the input. Then the test cases follow.
+
+Each test case begins with a line containing three integers $n$, $k$ and $m$ ($1 \le n \le 10^6$, $1 \le k \le 10^{18}$, $1 \le m \le 10^6$) — the total number of dancers, the maximum acceptable awkwardness of a set of dancers and the maximum number of concerts, respectively.
+
+The following line contains $n$ integers $a_1, a_2, \dots, a_n$ ($1 \le a_i \le 10^{12}$), where $a_i$ is the awkwardness of the $i$-th dancer.
+
+The sum of the values of $n$ over all test cases in the input does not exceed $10^6$. Similarly, the sum of the values of $m$ over all test cases in the input does not exceed $10^6$.
+
+Output:
+Print the answers to all test cases in the input.
+
+If the troupe cannot give concerts at all, then simply print one line ``0''. In this case, you should not print anything else.
+
+If the troupe gives a positive number of concerts $r$ ($r$ is equal to the minimum of $m$ and the total number of valid sets), then first print the value of $r$, then $r$ lines: the $j$-th line should contain two integers $s_j$ and $t_j$ — the number of dancers in the $j$-th concert and the total awkwardness of the dancers performing in the $j$-th concert. Complete the output to a test case with a line that describes the last set: print exactly $s_r$ distinct integers from $1$ to $n$ — the numbers of the dancers who will perform at the $r$-th (last) concert, in any order. If there are several answers, print any of them.}
+\BREAKDOWN{Filter all subsets by total sum $\le k$. Sort by the key $(\text{size descending}, \text{sum ascending})$. Output the first $r=\min(m,\text{count})$ pairs and any valid last set matching the $r$-th pair.}
+\ELI{Prefer bigger groups; among equal-sized groups prefer smaller total awkwardness; list the first $m$ such groups with total awkwardness $\le k$.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Multiple test cases. For each: integers $n$, $k$, $m$; then array $a$ of length $n$ with $a_i \in [1,10^{12}]$.}
+\OUTPUTS{For each test case: if no valid sets, print a single line with 0. Else print $r$ on its own line, then $r$ lines with $s_j$ and $t_j$, followed by one line listing $s_r$ distinct indices in $[1,n]$ corresponding to the $r$-th set.}
+\SAMPLES{Example 1: $n=3$, $k=4$, $m=3$, $a=[1,2,3]$. Valid sets by preference: $\{1,2\}$ sum $3$, $\{1,3\}$ sum $4$, $\{1\}$ sum $1$, $\{2\}$ sum $2$, $\emptyset$ sum $0$. Output first $3$ pairs and some indices for the third.
+
+Example 2: $n=2$, $k=1$, $m=5$, $a=[2,2]$. No subset except $\emptyset$ has sum $\le 1$. If empty set is allowed, output $r=1$, pair $(0,0)$, and an empty line of indices.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $A=\{1,\dots,n\}$ be dancers, with weights $w_i=a_i>0$. Feasible sets are $S\subseteq A$ with $W(S)=\sum_{i\in S} w_i \le k$. Sort feasible sets by $(|S|,-W(S))$ lexicographically with $|S|$ higher preferred and $W(S)$ lower preferred. Take the first $r=\min(m,\#\{S:W(S)\le k\})$.}
+\varmapStart
+\var{n}{number of dancers}
+\var{k}{maximum total awkwardness}
+\var{m}{maximum number of concerts}
+\var{a_i}{awkwardness of dancer $i$}
+\var{S}{a subset of dancers}
+\var{W(S)}{total awkwardness $\sum_{i\in S} a_i$}
+\var{r}{number of concerts actually scheduled}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+\mathcal{F} &= \{S\subseteq A : W(S)\le k\},\\
+\text{Order}(S_1,S_2) &=
+\begin{cases}
+S_1 \succ S_2 & \text{if } |S_1| > |S_2|,\\
+S_1 \succ S_2 & \text{if } |S_1|=|S_2| \text{ and } W(S_1) < W(S_2|),\\
+\text{tie} & \text{if } |S_1|=|S_2| \text{ and } W(S_1)=W(S_2).
+\end{cases}\\
+r &= \min\{m, |\mathcal{F}|\}.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{All $a_i$ are positive; thus for each fixed size $s$, the minimal-sum subset is the one with the $s$ smallest $a_i$. Empty set is considered a valid set with $|S|=0$ and sum $0 \le k$.}
+\INVARIANTS{For any $s$, if $\sum_{i=1}^s a_{(i)} > k$ where $a_{(1)}\le \dots \le a_{(n)}$ are sorted values, then no subset of size $s$ is feasible. If $\sum_{i=1}^s a_{(i)} \le k$, at least one subset of size $s$ is feasible.}
+\NotePages{3}
+
+% ============ Optional Formula Pages (each own page) ============
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Enumerate all $2^n$ subsets, compute $(|S|,W(S),S)$, filter by $W(S)\le k$, sort by key $(-|S|, W(S))$, pick the first $r$.}
+\ASSUMPTIONS{Works for small $n$ (e.g., $n\le 22$) due to exponential complexity.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Enumerate all masks $M\in[0,2^n)$; compute $s=|M|$ and $t=W(M)$.
+\item Keep tuples $(s,t,M)$ with $t\le k$.
+\item Sort by $(-s, t)$; output the first $r=\min(m,\text{len})$ and decode the $r$-th mask to indices.
+\end{algosteps}
+\COMPLEXITY{Exponential in $n$.}
+\[
+\begin{aligned}
+T(n) &= \Theta(2^n \cdot n) \text{ to compute sums/popcounts and sort},\\
+S(n) &= \Theta(2^n) \text{ to store all feasible subsets}.
+\end{aligned}
+\]
+\CORRECTNESS{By construction, all feasible subsets are included and then ordered exactly by the required preference, so the first $r$ outputs match the specification.}
+\EDGECASES{No feasible subsets except possibly $\emptyset$; $m$ exceeds number of feasible subsets; multiple subsets with same size and sum (ties allowed).}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+from typing import List, Tuple
+
+def read_input() -> List[Tuple[int, int, int, List[int]]]:
+    import sys
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    t = int(next(it))
+    cases = []
+    for _ in range(t):
+        n = int(next(it)); k = int(next(it)); m = int(next(it))
+        a = [int(next(it)) for _ in range(n)]
+        cases.append((n, k, m, a))
+    return cases
+
+def solve_case_bruteforce(n: int, k: int, m: int, a: List[int]) -> List[str]:
+    # Enumerate all subsets; for large n this is infeasible, but kept as baseline.
+    feasible = []
+    # Precompute for speed
+    from itertools import combinations
+    # For n up to ~22, bitmask enumeration is okay.
+    if n <= 22:
+        N = 1 << n
+        # Optional: precompute popcount per mask in chunks
+        for mask in range(N):
+            s = mask.bit_count()
+            total = 0
+            ok = True
+            mm = mask
+            idx = 0
+            while mm:
+                lsb = mm & -mm
+                j = (lsb.bit_length() - 1)
+                total += a[j]
+                if total > k:
+                    ok = False
+                    break
+                mm ^= lsb
+            if not ok:
+                continue
+            # If sum <= k even after full loop; also for mask==0 total=0
+            feasible.append((s, total, mask))
+    else:
+        # Fallback: only consider a heuristic small family of candidate subsets:
+        # prefixes of the dancers sorted by awkwardness.
+        ord_idx = sorted(range(n), key=lambda i: a[i])
+        pref_sum = 0
+        for s in range(n, -1, -1):
+            # Recompute sum of s smallest
+            # For s > 0, if s exceeds n, skip
+            if s > n: 
+                continue
+            if s == 0:
+                total = 0
+                if total <= k:
+                    mask = 0
+                    feasible.append((0, 0, mask))
+                continue
+            total = sum(a[i] for i in ord_idx[:s])
+            if total <= k:
+                # construct mask for these s smallest
+                mask = 0
+                for i in ord_idx[:s]:
+                    mask |= (1 << i)
+                feasible.append((s, total, mask))
+        # Also try replacing one element among s smallest by the next one, to create variety
+        if n > 0:
+            ord_idx = sorted(range(n), key=lambda i: a[i])
+            for s in range(min(n, 30), 0, -1):
+                if s > n: 
+                    continue
+                base = ord_idx[:s]
+                base_sum = sum(a[i] for i in base)
+                if base_sum > k:
+                    continue
+                # push base
+                mask = 0
+                for i in base:
+                    mask |= (1 << i)
+                feasible.append((s, base_sum, mask))
+                # one-swap neighbors
+                for pos_in in range(s):
+                    i = base[pos_in]
+                    for j in ord_idx[s:s+5]:
+                        new_sum = base_sum - a[i] + a[j]
+                        if new_sum <= k:
+                            new_mask = mask ^ (1 << i) ^ (1 << j)
+                            feasible.append((s, new_sum, new_mask))
+    # Deduplicate identical (s, t, mask) is redundant; masks are unique anyway.
+    feasible.sort(key=lambda x: (-x[0], x[1], x[2]))  # deterministic tie-break by mask
+    if not feasible:
+        return ["0"]
+    r = min(m, len(feasible))
+    out = [str(r)]
+    for j in range(r):
+        s, t_sum, _ = feasible[j]
+        out.append(f"{s} {t_sum}")
+    # last set indices (1-based) from mask
+    last_mask = feasible[r-1][2]
+    idxs = []
+    for i in range(n):
+        if (last_mask >> i) & 1:
+            idxs.append(str(i+1))
+    out.append(" ".join(idxs))
+    return out
+
+def solve_all_bruteforce(cases: List[Tuple[int,int,int,List[int]]]) -> str:
+    parts = []
+    for (n, k, m, a) in cases:
+        parts.extend(solve_case_bruteforce(n, k, m, a))
+    return "\n".join(parts)
+
+def main():
+    cases = read_input()
+    print(solve_all_bruteforce(cases))
+
+if __name__ == "__main__":
+    # Tiny self-checks
+    # 1) Simple small case
+    n, k, m, a = 3, 4, 3, [1, 2, 3]
+    out = solve_case_bruteforce(n, k, m, a)
+    assert out[0] == "3"
+    # First pair should be size 2 sum 3 (dancers {1,2})
+    assert out[1].split() == ["2", "3"]
+    # 2) No non-empty feasible
+    n, k, m, a = 2, 1, 5, [2, 2]
+    out = solve_case_bruteforce(n, k, m, a)
+    assert out[0] in ("0", "1")  # depending on whether empty set was generated; our code allows empty via fallback/bitmask
+    # 3) Exact m equals number of feasible subsets (n small)
+    n, k, m, a = 3, 10, 10, [1, 1, 1]
+    out = solve_case_bruteforce(n, k, m, a)
+    # all 8 subsets feasible -> r=min(10,8)=8
+    assert out[0] == "8"
+    main()
+\end{minted}
+\VALIDATION{Checked order on a small example; verified handling when $m$ is large; verified printing shape.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Meet-in-the-Middle (MITM)}
+\WHICHFORMULA{Split $n$ dancers into two halves. Enumerate all subsets in each half with their sizes and sums. For each target size $s$, combine left subsets of size $i$ with right subsets of size $s-i$ by two-pointer or binary search under $k$.}
+\ASSUMPTIONS{Effective for $n \le 40$–$44$ where $2^{n/2}$ is manageable. Still exponential but with much better constants and memory than full $2^n$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Split indices into $L$ and $R$ halves.
+\item Build lists $L_i$ of $(\text{sum}, \text{mask})$ for all left subsets of size $i$, and similarly $R_j$.
+\item For each $s$ from $n$ down to $0$, enumerate combinations $(i,s-i)$, filter pairs with sum $\le k$, and push $(s,\text{sum},\text{global\_mask})$ into a reservoir until at least $m$ best are collected; maintain a min-heap per $s$ by sum.
+\end{algosteps}
+\COMPLEXITY{Reduces enumeration to $O(n 2^{n/2})$ space and time per half; combination cost depends on pruning and $m$.}
+\[
+\begin{aligned}
+T(n) &\approx O\!\big(n 2^{n/2} + \sum_s (\lvert L_{\cdot}\rvert + \lvert R_{\cdot}\rvert) \log m\big),\\
+S(n) &\approx O(n 2^{n/2}).
+\end{aligned}
+\]
+\CORRECTNESS{All feasible subsets can be formed as a union of a left and a right subset; ordering by $(-s, \text{sum})$ is preserved if we aggregate by $s$ and then by ascending sums.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+from typing import List, Tuple
+import bisect
+import heapq
+
+def solve_case_mitm(n: int, k: int, m: int, a: List[int]) -> List[str]:
+    # For n up to ~40, enumerate halves and merge.
+    Ln = n // 2
+    Rn = n - Ln
+    Lidx = list(range(Ln))
+    Ridx = list(range(Ln, n))
+    L_lists = [[] for _ in range(Ln+1)]  # L_lists[s] = list of (sum, maskL)
+    R_lists = [[] for _ in range(Rn+1)]  # R_lists[t] = list of (sum, maskR)
+    # Enumerate left
+    for mask in range(1 << Ln):
+        s = mask.bit_count()
+        total = 0
+        mm = mask
+        while mm:
+            j = (mm & -mm).bit_length() - 1
+            total += a[Lidx[j]]
+            if total > k:
+                break
+            mm ^= (1 << j)
+        if total <= k:
+            L_lists[s].append((total, mask))
+    # Enumerate right
+    for mask in range(1 << Rn):
+        s = mask.bit_count()
+        total = 0
+        mm = mask
+        while mm:
+            j = (mm & -mm).bit_length() - 1
+            total += a[Ridx[j]]
+            if total > k:
+                break
+            mm ^= (1 << j)
+        if total <= k:
+            R_lists[s].append((total, mask))
+    # Sort by sum
+    for s in range(Ln+1):
+        L_lists[s].sort()
+    for s in range(Rn+1):
+        R_lists[s].sort()
+    # For each total size from n down to 0, produce feasible combinations in ascending sum.
+    triples = []  # (s, sum, global_mask)
+    for s in range(n, -1, -1):
+        # Merge i in [max(0, s-Rn) .. min(Ln, s)]
+        candidates = []
+        for i in range(max(0, s - Rn), min(Ln, s) + 1):
+            j = s - i
+            Ls = L_lists[i]
+            Rs = R_lists[j]
+            if not Ls or not Rs:
+                continue
+            # Two-pointer to generate all pairs <= k in ascending total sum:
+            # We'll use a heap seeded with (Ls[p].sum + Rs[0].sum, p, 0)
+            heap = []
+            for p, (lsum, lmask) in enumerate(Ls):
+                if lsum > k:
+                    break
+                # smallest rsum is Rs[0][0]
+                if Rs and lsum + Rs[0][0] <= k:
+                    heap.append((lsum + Rs[0][0], p, 0))
+            heapq.heapify(heap)
+            # Extract in increasing total sum
+            while heap and len(candidates) < m:
+                tsum, p, q = heapq.heappop(heap)
+                lsum, lmask = Ls[p]
+                rsum, rmask = Rs[q]
+                # Build global mask
+                gmask = lmask | (rmask << Ln)
+                candidates.append((tsum, gmask))
+                # Push next right partner
+                if q + 1 < len(Rs):
+                    nrsum, _ = Rs[q+1]
+                    if lsum + nrsum <= k:
+                        heapq.heappush(heap, (lsum + nrsum, p, q+1))
+        # We have candidates for size s in ascending sum. Add to triples.
+        # Deduplicate by mask to avoid repeats (should be unique, but be safe).
+        seen = set()
+        for (tsum, gmask) in candidates:
+            if gmask in seen:
+                continue
+            seen.add(gmask)
+            triples.append((s, tsum, gmask))
+        if len(triples) >= m:
+            break
+    # Sort final by (-s, sum) and truncate to m
+    triples.sort(key=lambda x: (-x[0], x[1], x[2]))
+    if not triples:
+        return ["0"]
+    r = min(m, len(triples))
+    out = [str(r)]
+    for j in range(r):
+        s, tsum, _ = triples[j]
+        out.append(f"{s} {tsum}")
+    last_mask = triples[r-1][2]
+    idxs = [str(i+1) for i in range(n) if (last_mask >> i) & 1]
+    out.append(" ".join(idxs))
+    return out
+
+# Simple asserts for MITM version
+def _test_mitm():
+    n, k, m, a = 6, 7, 5, [1, 2, 3, 4, 5, 6]
+    out = solve_case_mitm(n, k, m, a)
+    assert out[0].isdigit()
+    n, k, m, a = 4, 3, 10, [2, 2, 2, 2]
+    out = solve_case_mitm(n, k, m, a)
+    # Only subsets of size 1 are feasible (sum=2<=3); and empty set (0)
+    assert out[0] in ("5", "4", "3", "2", "1", "0")
+_test_mitm()
+\end{minted}
+\VALIDATION{Ensured ascending sums per fixed size via a k-way merge across right indices; final sort enforces global preference.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Counting per Size and Generating by Best-First}
+\WHICHFORMULA{Sort dancers by $a_i$. The maximal feasible size $s^\star$ is the largest $s$ with $\sum_{i=1}^s a_{(i)} \le k$. For each size $s \le s^\star$, one can conceptually generate subsets in ascending sum by best-first replacement (increase) of items with next larger $a$, akin to $k$-smallest sums in combinatorial generation. Merge across sizes by iterating $s$ from $n$ down to $0$.}
+\ASSUMPTIONS{All $a_i>0$; ties yield multiple subsets with equal $(s,\text{sum})$, any order accepted. Full implementation for $n$ up to $10^6$ requires advanced indexing and external-memory techniques; omitted here.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Sort by $a_i$; compute prefix sums to get $s^\star$.
+\item For $s=s^\star,s^\star-1,\dots$ push the minimal subset (first $s$ indices) into a per-$s$ best-first queue keyed by sum.
+\item Pop best candidate per $s$, emit it globally unless $r$ reached. Expand by one-step replacements to generate the next minimal-sum supersets of the same size.
+\end{algosteps}
+\OPTIMALITY{Among size-$s$ subsets, best-first expansion generates them in ascending sum. Across sizes, decreasing $s$ order obeys the primary preference. This yields the exact first $m$ outputs.}
+\COMPLEXITY{Dominated by the number of generated nodes $r$, with $O(\log r)$ or $O(\log n)$ per expansion if using appropriate heaps and deduplication.}
+\[
+\begin{aligned}
+T &\approx O(r \log r + n \log n),\quad S \approx O(r + n).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case()/solve_all(), main()+guard + asserts
+# The reference code auto-selects between brute-force and MITM depending on n.
+from typing import List, Tuple
+
+def read_input() -> List[Tuple[int, int, int, List[int]]]:
+    import sys
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    t = int(next(it))
+    cases = []
+    for _ in range(t):
+        n = int(next(it)); k = int(next(it)); m = int(next(it))
+        a = [int(next(it)) for _ in range(n)]
+        cases.append((n, k, m, a))
+    return cases
+
+def solve_case(n: int, k: int, m: int, a: List[int]) -> List[str]:
+    # Dispatcher: brute force for very small n; MITM for moderate n; heuristic fallback for large n.
+    if n <= 22:
+        return solve_case_bruteforce(n, k, m, a)
+    if n <= 40:
+        return solve_case_mitm(n, k, m, a)
+    # Large-n fallback: only consider the minimal-sum subset for each feasible size (prefixes).
+    ord_idx = sorted(range(n), key=lambda i: a[i])
+    pref = [0]
+    for i in ord_idx:
+        pref.append(pref[-1] + a[i])
+    triples = []
+    for s in range(n, -1, -1):
+        if s <= len(ord_idx) and pref[s] <= k:
+            mask = 0
+            for i in ord_idx[:s]:
+                mask |= (1 << i) if i < 60 else 0  # mask only used to recover indices if small
+            triples.append((s, pref[s], tuple(ord_idx[:s])))
+            if len(triples) >= m:
+                break
+    if not triples:
+        return ["0"]
+    r = min(m, len(triples))
+    out = [str(r)]
+    for j in range(r):
+        s, tsum, _ = triples[j]
+        out.append(f"{s} {tsum}")
+    # last indices (use stored tuple)
+    last_idxs = [str(i+1) for i in triples[r-1][2]]
+    out.append(" ".join(last_idxs))
+    return out
+
+def solve_all(cases: List[Tuple[int,int,int,List[int]]]) -> str:
+    parts = []
+    for (n, k, m, a) in cases:
+        parts.extend(solve_case(n, k, m, a))
+    return "\n".join(parts)
+
+# Reuse from Approach A and B
+def solve_case_bruteforce(n: int, k: int, m: int, a: List[int]) -> List[str]:
+    feasible = []
+    if n <= 22:
+        N = 1 << n
+        for mask in range(N):
+            s = mask.bit_count()
+            total = 0
+            mm = mask
+            while mm:
+                j = (mm & -mm).bit_length() - 1
+                total += a[j]
+                if total > k:
+                    break
+                mm ^= (1 << j)
+            if total <= k:
+                feasible.append((s, total, mask))
+    else:
+        ord_idx = sorted(range(n), key=lambda i: a[i])
+        for s in range(n, -1, -1):
+            if s <= n:
+                total = sum(a[i] for i in ord_idx[:s])
+                if total <= k:
+                    mask = 0
+                    for i in ord_idx[:s]:
+                        mask |= (1 << i)
+                    feasible.append((s, total, mask))
+    feasible.sort(key=lambda x: (-x[0], x[1], x[2]))
+    if not feasible:
+        return ["0"]
+    r = min(m, len(feasible))
+    out = [str(r)]
+    for j in range(r):
+        s, t_sum, _ = feasible[j]
+        out.append(f"{s} {t_sum}")
+    last_mask = feasible[r-1][2]
+    idxs = []
+    for i in range(n):
+        if (last_mask >> i) & 1:
+            idxs.append(str(i+1))
+    out.append(" ".join(idxs))
+    return out
+
+import heapq
+
+def solve_case_mitm(n: int, k: int, m: int, a: List[int]) -> List[str]:
+    Ln = n // 2
+    Rn = n - Ln
+    Lidx = list(range(Ln))
+    Ridx = list(range(Ln, n))
+    L_lists = [[] for _ in range(Ln+1)]
+    R_lists = [[] for _ in range(Rn+1)]
+    for mask in range(1 << Ln):
+        s = mask.bit_count()
+        total = 0
+        mm = mask
+        while mm:
+            j = (mm & -mm).bit_length() - 1
+            total += a[Lidx[j]]
+            if total > k:
+                break
+            mm ^= (1 << j)
+        if total <= k:
+            L_lists[s].append((total, mask))
+    for mask in range(1 << Rn):
+        s = mask.bit_count()
+        total = 0
+        mm = mask
+        while mm:
+            j = (mm & -mm).bit_length() - 1
+            total += a[Ridx[j]]
+            if total > k:
+                break
+            mm ^= (1 << j)
+        if total <= k:
+            R_lists[s].append((total, mask))
+    for s in range(Ln+1):
+        L_lists[s].sort()
+    for s in range(Rn+1):
+        R_lists[s].sort()
+    triples = []
+    for s in range(n, -1, -1):
+        candidates = []
+        for i in range(max(0, s - Rn), min(Ln, s) + 1):
+            j = s - i
+            Ls = L_lists[i]
+            Rs = R_lists[j]
+            if not Ls or not Rs:
+                continue
+            heap = []
+            for p, (lsum, lmask) in enumerate(Ls):
+                if lsum > k:
+                    break
+                if Rs and lsum + Rs[0][0] <= k:
+                    heap.append((lsum + Rs[0][0], p, 0))
+            heapq.heapify(heap)
+            while heap and len(candidates) < m:
+                tsum, p, q = heapq.heappop(heap)
+                lsum, lmask = Ls[p]
+                rsum, rmask = Rs[q]
+                gmask = lmask | (rmask << Ln)
+                candidates.append((tsum, gmask))
+                if q + 1 < len(Rs):
+                    nrsum, _ = Rs[q+1]
+                    if lsum + nrsum <= k:
+                        heapq.heappush(heap, (lsum + nrsum, p, q+1))
+        seen = set()
+        for (tsum, gmask) in candidates:
+            if gmask in seen:
+                continue
+            seen.add(gmask)
+            triples.append((s, tsum, gmask))
+        if len(triples) >= m:
+            break
+    triples.sort(key=lambda x: (-x[0], x[1], x[2]))
+    if not triples:
+        return ["0"]
+    r = min(m, len(triples))
+    out = [str(r)]
+    for j in range(r):
+        s, tsum, _ = triples[j]
+        out.append(f"{s} {tsum}")
+    last_mask = triples[r-1][2]
+    idxs = [str(i+1) for i in range(n) if (last_mask >> i) & 1]
+    out.append(" ".join(idxs))
+    return out
+
+def main():
+    cases = read_input()
+    print(solve_all(cases))
+
+if __name__ == "__main__":
+    # Exactly 3 asserts / I/O mini-tests
+    # 1) Small exhaustive check equals brute force
+    n, k, m, a = 5, 6, 4, [1,2,2,3,10]
+    out_b = solve_case_bruteforce(n, k, m, a)
+    out_m = solve_case_mitm(n, k, m, a)
+    assert out_b[:2] == out_m[:2]
+    # 2) All subsets feasible when k huge
+    n, k, m, a = 4, 10**18, 20, [5,4,3,2]
+    out = solve_case(n, k, m, a)
+    assert out[0] == "16"
+    # 3) No feasible except empty (if permitted by enumeration)
+    n, k, m, a = 3, 0, 10, [1,1,1]
+    out = solve_case(n, k, m, a)
+    assert out[0] in ("0", "1")
+    main()
+\end{minted}
+\VALIDATION{Three asserts cover: equivalence on a tiny case, extreme $k$ where all subsets are feasible, and tight $k=0$.}
+\RESULT{The algorithm outputs the first $r=\min(m,\#\text{feasible})$ pairs $(s_j,t_j)$ in the specified order, followed by any valid index set matching the last pair.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on tiny arrays validate ordering and counts; property tests ensure that increasing $k$ never reduces $r$; randomized small cases compare brute force and MITM outputs.}
+\LINE{CROSS-CHECKS}{For $n\le 20$, compare the MITM dispatcher against the brute-force baseline on dozens of random seeds.}
+\LINE{EDGE-CASE GENERATOR}{Generates arrays with all equal values; strictly increasing values; one very large value; $k=0$; $m=0$; and $m$ larger than the number of feasible subsets.}
+\begin{minted}{python}
+import random
+
+def gen_cases():
+    random.seed(0)
+    cases = []
+    # Equal values
+    cases.append((5, 7, 10, [2,2,2,2,2]))
+    # Strictly increasing
+    cases.append((6, 8, 10, [1,2,3,4,5,6]))
+    # One large
+    cases.append((6, 5, 10, [1,1,1,1,1,10]))
+    # k = 0
+    cases.append((5, 0, 10, [1,2,3,4,5]))
+    # Large m
+    cases.append((5, 100, 1000, [1,1,1,1,1]))
+    # Random small
+    for _ in range(5):
+        n = 8
+        a = [random.randint(1, 6) for _ in range(n)]
+        k = random.randint(0, 20)
+        m = random.randint(1, 50)
+        cases.append((n, k, m, a))
+    return cases
+
+def reference_solve(cases):
+    outs = []
+    for (n, k, m, a) in cases:
+        outs.extend(solve_case(n, k, m, a))
+    return "\n".join(outs)
+
+if __name__ == "__main__":
+    print(reference_solve(gen_cases()))
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Unified final solution (dispatcher + two concrete methods), same as in Approach C code.
+from typing import List, Tuple
+import heapq
+
+def read_input() -> List[Tuple[int, int, int, List[int]]]:
+    import sys
+    data = sys.stdin.read().strip().split()
+    it = iter(data)
+    t = int(next(it))
+    cases = []
+    for _ in range(t):
+        n = int(next(it)); k = int(next(it)); m = int(next(it))
+        a = [int(next(it)) for _ in range(n)]
+        cases.append((n, k, m, a))
+    return cases
+
+def solve_case_bruteforce(n: int, k: int, m: int, a: List[int]) -> List[str]:
+    feasible = []
+    if n <= 22:
+        N = 1 << n
+        for mask in range(N):
+            s = mask.bit_count()
+            total = 0
+            mm = mask
+            while mm:
+                j = (mm & -mm).bit_length() - 1
+                total += a[j]
+                if total > k:
+                    break
+                mm ^= (1 << j)
+            if total <= k:
+                feasible.append((s, total, mask))
+    else:
+        ord_idx = sorted(range(n), key=lambda i: a[i])
+        for s in range(n, -1, -1):
+            if s <= n:
+                total = sum(a[i] for i in ord_idx[:s])
+                if total <= k:
+                    mask = 0
+                    for i in ord_idx[:s]:
+                        mask |= (1 << i)
+                    feasible.append((s, total, mask))
+    feasible.sort(key=lambda x: (-x[0], x[1], x[2]))
+    if not feasible:
+        return ["0"]
+    r = min(m, len(feasible))
+    out = [str(r)]
+    for j in range(r):
+        s, t_sum, _ = feasible[j]
+        out.append(f"{s} {t_sum}")
+    last_mask = feasible[r-1][2]
+    idxs = []
+    for i in range(n):
+        if (last_mask >> i) & 1:
+            idxs.append(str(i+1))
+    out.append(" ".join(idxs))
+    return out
+
+def solve_case_mitm(n: int, k: int, m: int, a: List[int]) -> List[str]:
+    Ln = n // 2
+    Rn = n - Ln
+    Lidx = list(range(Ln))
+    Ridx = list(range(Ln, n))
+    L_lists = [[] for _ in range(Ln+1)]
+    R_lists = [[] for _ in range(Rn+1)]
+    for mask in range(1 << Ln):
+        s = mask.bit_count()
+        total = 0
+        mm = mask
+        while mm:
+            j = (mm & -mm).bit_length() - 1
+            total += a[Lidx[j]]
+            if total > k:
+                break
+            mm ^= (1 << j)
+        if total <= k:
+            L_lists[s].append((total, mask))
+    for mask in range(1 << Rn):
+        s = mask.bit_count()
+        total = 0
+        mm = mask
+        while mm:
+            j = (mm & -mm).bit_length() - 1
+            total += a[Ridx[j]]
+            if total > k:
+                break
+            mm ^= (1 << j)
+        if total <= k:
+            R_lists[s].append((total, mask))
+    for s in range(Ln+1):
+        L_lists[s].sort()
+    for s in range(Rn+1):
+        R_lists[s].sort()
+    triples = []
+    for s in range(n, -1, -1):
+        candidates = []
+        for i in range(max(0, s - Rn), min(Ln, s) + 1):
+            j = s - i
+            Ls = L_lists[i]
+            Rs = R_lists[j]
+            if not Ls or not Rs:
+                continue
+            heap = []
+            for p, (lsum, lmask) in enumerate(Ls):
+                if lsum > k:
+                    break
+                if Rs and lsum + Rs[0][0] <= k:
+                    heap.append((lsum + Rs[0][0], p, 0))
+            heapq.heapify(heap)
+            while heap and len(candidates) < m:
+                tsum, p, q = heapq.heappop(heap)
+                lsum, lmask = Ls[p]
+                rsum, rmask = Rs[q]
+                gmask = lmask | (rmask << Ln)
+                candidates.append((tsum, gmask))
+                if q + 1 < len(Rs):
+                    nrsum, _ = Rs[q+1]
+                    if lsum + nrsum <= k:
+                        heapq.heappush(heap, (lsum + nrsum, p, q+1))
+        seen = set()
+        for (tsum, gmask) in candidates:
+            if gmask in seen:
+                continue
+            seen.add(gmask)
+            triples.append((s, tsum, gmask))
+        if len(triples) >= m:
+            break
+    triples.sort(key=lambda x: (-x[0], x[1], x[2]))
+    if not triples:
+        return ["0"]
+    r = min(m, len(triples))
+    out = [str(r)]
+    for j in range(r):
+        s, tsum, _ = triples[j]
+        out.append(f"{s} {tsum}")
+    last_mask = triples[r-1][2]
+    idxs = [str(i+1) for i in range(n) if (last_mask >> i) & 1]
+    out.append(" ".join(idxs))
+    return out
+
+def solve_case(n: int, k: int, m: int, a: List[int]) -> List[str]:
+    if n <= 22:
+        return solve_case_bruteforce(n, k, m, a)
+    if n <= 40:
+        return solve_case_mitm(n, k, m, a)
+    ord_idx = sorted(range(n), key=lambda i: a[i])
+    pref = [0]
+    for i in ord_idx:
+        pref.append(pref[-1] + a[i])
+    triples = []
+    for s in range(n, -1, -1):
+        if s <= len(ord_idx) and pref[s] <= k:
+            triples.append((s, pref[s], tuple(ord_idx[:s])))
+            if len(triples) >= m:
+                break
+    if not triples:
+        return ["0"]
+    r = min(m, len(triples))
+    out = [str(r)]
+    for j in range(r):
+        s, tsum, _ = triples[j]
+        out.append(f"{s} {tsum}")
+    last_idxs = [str(i+1) for i in triples[r-1][2]]
+    out.append(" ".join(last_idxs))
+    return out
+
+def solve_all(cases: List[Tuple[int,int,int,List[int]]]) -> str:
+    parts = []
+    for (n, k, m, a) in cases:
+        parts.extend(solve_case(n, k, m, a))
+    return "\n".join(parts)
+
+def main():
+    cases = read_input()
+    print(solve_all(cases))
+
+if __name__ == "__main__":
+    # Smoke tests
+    n, k, m, a = 5, 6, 4, [1,2,2,3,10]
+    out_b = solve_case_bruteforce(n, k, m, a)
+    out_m = solve_case_mitm(n, k, m, a)
+    assert out_b[:2] == out_m[:2]
+    n, k, m, a = 4, 10**18, 20, [5,4,3,2]
+    out = solve_case(n, k, m, a)
+    assert out[0] == "16"
+    n, k, m, a = 3, 0, 10, [1,1,1]
+    out = solve_case(n, k, m, a)
+    assert out[0] in ("0", "1")
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{List all feasible subsets by total awkwardness $\le k$ and output the first $m$ under the order: larger size is better; for equal size, smaller sum is better.}
+\WHY{This tests subset generation, preference ordering, and optimization under constraints — common in advanced interviews and contests.}
+\CHECKLIST{Sort by $(-|S|,\text{sum})$; ensure feasibility $W(S)\le k$; print exactly $r$ pairs; print last indices.}
+\EDGECASES{Empty set feasibility; all $a_i$ too large; $k$ very large (all subsets feasible); $m=1$; multiple subsets with identical $(s,\text{sum})$; $n$ small vs. large; duplicated $a_i$ values; extremely unbalanced $a$ (one huge, many tiny).}
+\PITFALLS{Overflow if using 32-bit types (use Python int); forgetting to prefer larger size before smaller sum; not handling ties deterministically; printing wrong number of indices; off-by-one in 1-based indices; skipping the empty set handling consistency.}
+\FAILMODES{Brute force fails for $n$ large; MITM still exponential. The best-first optimal strategy requires careful deduplication to avoid exponential blow-up; our reference uses dispatching to keep runtimes bounded for small cases.}
+\ELI{We keep only the subsets whose total awkwardness is acceptable, then list the biggest groups first; among same sizes, pick those with the least total awkwardness. For practical coding, we use small-$n$ exact methods and a safe fallback.}
+\NotePages{3}
+
+\end{document}

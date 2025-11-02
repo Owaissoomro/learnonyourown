@@ -1,0 +1,939 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Double Lexicographically Minimum}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1799/C}}
+\LINE{DIFFICULTY / RATING}{1700}
+\STATEMENT{You are given a string $s$. You can reorder the characters to form a string $t$. Define $t_{\mathrm{max}}$ to be the lexicographical maximum of $t$ and $t$ in reverse order.
+
+Given $s$ determine the lexicographically minimum value of $t_{\mathrm{max}}$ over all reorderings $t$ of $s$.
+
+A string $a$ is lexicographically smaller than a string $b$ if and only if one of the following holds:
+\begin{bullets}
+\item $a$ is a prefix of $b$, but $a \ne b$;
+\item in the first position where $a$ and $b$ differ, the string $a$ has a letter that appears earlier in the alphabet than the corresponding letter in $b$.
+\end{bullets}
+
+Input: The first line contains a single integer $t$ ($1 \le t \le 10^5$) — the number of test cases. Descriptions of test cases follow.
+
+The first and only line of each test case contains a string $s$ ($1 \le |s| \le 10^5$). $s$ consists of only lowercase English letters.
+
+It is guaranteed that the sum of $|s|$ over all test cases does not exceed $10^5$.
+
+Output: For each test case print the lexicographically minimum value of $t_{\mathrm{max}}$ over all reorderings $t$ of $s$.
+
+Note: For the first test case, there is only one reordering of $s$, namely ``a''.
+
+For the second test case, there are three reorderings of $s$.
+\begin{bullets}
+\item $t = \mathtt{aab}$: $t_{\mathrm{max}} = \max(\mathtt{aab}, \mathtt{baa}) = \mathtt{baa}$
+\item $t = \mathtt{aba}$: $t_{\mathrm{max}} = \max(\mathtt{aba}, \mathtt{aba}) = \mathtt{aba}$
+\item $t = \mathtt{baa}$: $t_{\mathrm{max}} = \max(\mathtt{baa}, \mathtt{aab}) = \mathtt{baa}$
+\end{bullets}
+The lexicographical minimum of $t_{\mathrm{max}}$ over all cases is ``aba''.}
+\BREAKDOWN{We need to choose a permutation $t$ such that $\max(t,\mathrm{rev}(t))$ is lexicographically minimal. Equivalently, among all permutations $u$ of $s$ with $u \ge \mathrm{rev}(u)$, minimize $u$. Construct $u$ greedily from the outside inward, deciding whether to place an equal pair or to force the first mismatch with the two smallest distinct letters.}
+\ELI{Make the string as symmetric as possible with the smallest letters; if you cannot match, force a mismatch using the two smallest different letters so that the left side is just slightly bigger, then finish with the smallest remaining letters.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Multiple test cases. For each test: a single lowercase string $s$ with $1 \le |s| \le 10^5$. The total length over all tests $\le 10^5$.}
+\OUTPUTS{For each test, print one string: the lexicographically minimum possible value of $t_{\mathrm{max}}$ over all reorderings $t$ of $s$.}
+\SAMPLES{Examples:
+\begin{bullets}
+\item $s=\texttt{a} \Rightarrow$ answer: \texttt{a}.
+\item $s=\texttt{aab} \Rightarrow$ answer: \texttt{aba}.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $\Sigma=\{a,\ldots,z\}$ and $M$ be the multiset of letters of $s$. Consider the set $\mathcal{P}(M)$ of all permutations of $M$. Define $f(t)=\max(t,\mathrm{rev}(t))$ under lex order. We seek $\min_{t \in \mathcal{P}(M)} f(t)$. Equivalently, the set of attainable values is exactly $\{u \in \mathcal{P}(M) : u \ge \mathrm{rev}(u)\}$, and we want the lexicographically minimum element of this set.}
+\varmapStart
+\var{s}{input string}
+\var{n}{length of $s$}
+\var{\mathrm{cnt}[c]}{frequency of letter $c$}
+\var{u}{a candidate permutation with $u \ge \mathrm{rev}(u)$}
+\var{i,j}{left/right fill pointers}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+\text{Goal: } &\min u \\
+\text{s.t. } &\text{$u$ is a permutation of $s$ and } u \ge \mathrm{rev}(u) \text{ in lex order.}
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Standard lex order on strings over $\Sigma$. We compare $u$ and $\mathrm{rev}(u)$ positionally.}
+\INVARIANTS{
+\begin{bullets}
+\item Before the first mismatch, we can enforce $u[i]=u[n-1-i]$ using available pairs.
+\item If we cannot or do not want to pair at some $i$, we must force $u[i]>u[n-1-i]$ using two distinct letters, establishing $u \ge \mathrm{rev}(u)$ permanently.
+\item After establishing the first mismatch, filling the remaining positions in increasing order minimizes $u$.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Enumerate all distinct permutations $t$ of $s$ (for tiny $n$), compute $f(t)=\max(t,\mathrm{rev}(t))$, and select the minimum.}
+\ASSUMPTIONS{Feasible only for very small $|s|$ due to factorial growth.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Generate unique permutations of $s$.
+\item For each $t$, form $t_{\max}=\max(t,\mathrm{rev}(t))$.
+\item Track the lexicographically smallest $t_{\max}$.
+\end{algosteps}
+\COMPLEXITY{Exponential: $T(n)=\Theta(n!\,)$ in the worst case; space $S(n)=O(n)$.}
+\[
+\begin{aligned}
+T(n) &= \text{number of unique permutations} \\
+     &= \frac{n!}{\prod_{c \in \Sigma} \mathrm{cnt}[c]!}.
+\end{aligned}
+\]
+\CORRECTNESS{By exhaustive enumeration, the minimum over all reorderings is found.}
+\EDGECASES{All identical letters; all distinct letters; repeated characters.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+from itertools import permutations
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return []
+    t = int(data[0])
+    return data[1:1+t]
+
+def brute_min_tmax(s: str) -> str:
+    # For tiny n only
+    best = None
+    seen = set()
+    for p in set(permutations(s)):
+        t = ''.join(p)
+        r = t[::-1]
+        cand = t if t >= r else r
+        if best is None or cand < best:
+            best = cand
+    return best
+
+def solve_case(s: str) -> str:
+    # Use brute for n <= 8; otherwise fallback to greedy optimal (from Approach C)
+    if len(s) <= 8:
+        return brute_min_tmax(s)
+    return solve_case_greedy(s)
+
+def solve_case_greedy(s: str) -> str:
+    cnt = [0]*26
+    for ch in s:
+        cnt[ord(ch)-97] += 1
+    n = len(s)
+    res = ['?']*n
+    i, j = 0, n-1
+
+    def smallest_pair():
+        for c in range(26):
+            if cnt[c] >= 2:
+                return c
+        return None
+
+    def two_smallest_distinct():
+        first = None
+        for c in range(26):
+            if cnt[c] > 0:
+                if first is None:
+                    first = c
+                else:
+                    return (first, c)
+        return None
+
+    while i < j:
+        sp = smallest_pair()
+        tsd = two_smallest_distinct()
+        if sp is None and tsd is None:
+            break
+        choose_mismatch = False
+        if sp is None:
+            choose_mismatch = True
+        elif tsd is not None:
+            a, b = tsd  # a < b
+            # Prefer mismatch if it yields a strictly smaller or equal first char
+            if b <= sp:
+                choose_mismatch = True
+        if choose_mismatch:
+            a, b = two_smallest_distinct()
+            res[i] = chr(b + 97)
+            res[j] = chr(a + 97)
+            cnt[b] -= 1
+            cnt[a] -= 1
+            i += 1
+            j -= 1
+            # Fill the remaining segment in increasing order for minimal u
+            for c in range(26):
+                while cnt[c] > 0 and i <= j:
+                    res[i] = chr(c + 97)
+                    cnt[c] -= 1
+                    i += 1
+            break
+        else:
+            c = sp
+            res[i] = res[j] = chr(c + 97)
+            cnt[c] -= 2
+            i += 1
+            j -= 1
+
+    if i == j:
+        for c in range(26):
+            if cnt[c] > 0:
+                res[i] = chr(c + 97)
+                cnt[c] -= 1
+                break
+    # Fill any residual (should not happen, but be safe)
+    k = 0
+    for idx in range(n):
+        if res[idx] == '?':
+            while k < 26 and cnt[k] == 0:
+                k += 1
+            if k < 26:
+                res[idx] = chr(k + 97)
+                cnt[k] -= 1
+    return ''.join(res)
+
+def solve_all(cases):
+    return [solve_case(s) for s in cases]
+
+def main():
+    cases = read_input()
+    if not cases:
+        return
+    ans = solve_all(cases)
+    print('\n'.join(ans))
+
+# Basic asserts (tiny)
+def _check():
+    assert brute_min_tmax("a") == "a"
+    assert brute_min_tmax("aab") == "aba"
+    assert brute_min_tmax("abc") == "bca"
+    assert brute_min_tmax("abcc") == "bcca"
+    # Cross-check greedy equals brute for small
+    for s in ["a", "ab", "aba", "abc", "aabb", "aabc", "aaabbc", "abcde"]:
+        if len(s) <= 8:
+            assert solve_case_greedy(s) == brute_min_tmax(s)
+
+_check()
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Checked against brute force for small strings: \texttt{"a"}, \texttt{"aab"}, \texttt{"abc"}, \texttt{"abcc"}, \texttt{"aaabbc"}, \texttt{"abcde"}.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Greedy Symmetric Pairing With Early Mismatch}
+\WHICHFORMULA{Construct $u$ directly as the lexicographically minimum permutation satisfying $u \ge \mathrm{rev}(u)$. At each step, compare using an equal pair versus forcing the first mismatch with the two smallest distinct letters.}
+\ASSUMPTIONS{Alphabet size is $26$, so scanning for smallest letters is $O(26)$ per step.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Count frequencies $\mathrm{cnt}[c]$ for $c \in \{0,\ldots,25\}$.
+\item Maintain pointers $i=0$, $j=n-1$, and an array $u$ of length $n$.
+\item Repeat while $i<j$:
+\begin{bullets}
+\item Let $p$ be the smallest letter with $\mathrm{cnt}[p]\ge 2$ (if any).
+\item Let $(a,b)$ be the two smallest distinct letters with positive counts (if any), $a<b$.
+\item If $b \le p$ (or $p$ does not exist), place $u[i]=b$, $u[j]=a$ (first mismatch established), then fill the remaining $u[i..j]$ in increasing order and stop.
+\item Otherwise, place $u[i]=u[j]=p$ and continue.
+\end{bullets}
+\item If $i=j$ at the end, place the smallest remaining letter at the center.
+\end{algosteps}
+\COMPLEXITY{Each placement reduces counts; each scan is over $26$ letters. Total $T(n)=O(26\cdot n)=O(n)$, $S(n)=O(1)$ beyond output.}
+\[
+\begin{aligned}
+T(n) &= \sum_{k=1}^{n/2} O(26) + O(26) = O(n).
+\end{aligned}
+\]
+\CORRECTNESS{Among all feasible choices at position $i$, the left character of $u$ is minimized by taking either the smallest pair letter or the larger of the two smallest distinct letters. If we can mismatch with a left letter $\le$ the smallest pair letter, doing so strictly minimizes the current prefix and irrevocably ensures $u \ge \mathrm{rev}(u)$; finishing in increasing order then yields the lexicographically smallest completion. Otherwise, pairing keeps the prefix minimal and defers the first mismatch, which cannot lead to a smaller first letter.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return []
+    t = int(data[0])
+    return data[1:1+t]
+
+def solve_case(s: str) -> str:
+    cnt = [0]*26
+    for ch in s:
+        cnt[ord(ch)-97] += 1
+    n = len(s)
+    res = ['?']*n
+    i, j = 0, n-1
+
+    def smallest_pair():
+        for c in range(26):
+            if cnt[c] >= 2:
+                return c
+        return None
+
+    def two_smallest_distinct():
+        first = None
+        for c in range(26):
+            if cnt[c] > 0:
+                if first is None:
+                    first = c
+                else:
+                    return (first, c)
+        return None
+
+    while i < j:
+        sp = smallest_pair()
+        tsd = two_smallest_distinct()
+        if sp is None and tsd is None:
+            break
+        choose_mismatch = False
+        if sp is None:
+            choose_mismatch = True
+        elif tsd is not None:
+            a, b = tsd  # a < b
+            if b <= sp:
+                choose_mismatch = True
+        if choose_mismatch:
+            a, b = two_smallest_distinct()
+            res[i] = chr(b + 97)
+            res[j] = chr(a + 97)
+            cnt[b] -= 1
+            cnt[a] -= 1
+            i += 1
+            j -= 1
+            for c in range(26):
+                while cnt[c] > 0 and i <= j:
+                    res[i] = chr(c + 97)
+                    cnt[c] -= 1
+                    i += 1
+            break
+        else:
+            c = sp
+            res[i] = res[j] = chr(c + 97)
+            cnt[c] -= 2
+            i += 1
+            j -= 1
+
+    if i == j:
+        for c in range(26):
+            if cnt[c] > 0:
+                res[i] = chr(c + 97)
+                cnt[c] -= 1
+                break
+
+    # Safety completion (should be fully filled already)
+    k = 0
+    for idx in range(n):
+        if res[idx] == '?':
+            while k < 26 and cnt[k] == 0:
+                k += 1
+            if k < 26:
+                res[idx] = chr(k + 97)
+                cnt[k] -= 1
+
+    return ''.join(res)
+
+def solve_all(cases):
+    return [solve_case(s) for s in cases]
+
+def main():
+    cases = read_input()
+    if not cases:
+        return
+    print('\n'.join(solve_all(cases)))
+
+# Asserts
+def _check():
+    def brute(s: str) -> str:
+        from itertools import permutations
+        best = None
+        for p in set(permutations(s)):
+            t = ''.join(p)
+            r = t[::-1]
+            cand = t if t >= r else r
+            if best is None or cand < best:
+                best = cand
+        return best
+    for s in ["a", "aab", "abc", "abcc", "aaabbc", "abcde"]:
+        if len(s) <= 8:
+            assert solve_case(s) == brute(s)
+
+_check()
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Compared to brute force for $|s| \le 8$ on several cases; edge cases with all equal letters and all distinct letters are covered.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Greedy Min-First-Char With Early Mismatch and Ascending Completion}
+\WHICHFORMULA{At each outer position, minimize the current character by choosing between:
+\begin{bullets}
+\item equal pair using the smallest letter with $\mathrm{cnt}\ge 2$,
+\item or forcing the first mismatch with the two smallest distinct letters $(a<b)$ by placing $b$ on the left and $a$ on the right,
+\end{bullets}
+preferring mismatch on tie. After forcing the first mismatch, fill the remaining positions in increasing order.}
+\ASSUMPTIONS{Finite alphabet of size $26$; lex order; frequency counts.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Count letters. Set $i=0$, $j=n-1$.
+\item While $i<j$:
+\begin{bullets}
+\item Find $p$ = smallest letter with at least two remaining.
+\item Find $(a,b)$ = two smallest distinct remaining letters, $a<b$.
+\item If $p$ does not exist or $b \le p$: set $u[i]=b$, $u[j]=a$, decrease counts, then fill $u[i..j]$ in increasing order and stop.
+\item Else: set $u[i]=u[j]=p$, decrease counts, continue.
+\end{bullets}
+\item If $i=j$, place the smallest remaining letter at center.
+\end{algosteps}
+\OPTIMALITY{The first position determines the lexicographic lower bound. The smallest feasible first character is $\min\{p, b\}$; if $b\le p$ we can realize that bound by forcing a mismatch with left $b$ and right $a$. This immediately guarantees $u \ge \mathrm{rev}(u)$ and allows the lexicographically smallest completion (sorted ascending). Otherwise, pairing by $p$ strictly minimizes the prefix and defers the mismatch without increasing the first character. Tie-breaking in favor of mismatch minimizes the remainder since the completion is globally minimal after fixing the prefix.}
+\COMPLEXITY{$T(n)=O(n)$, $S(n)=O(1)$ beyond output.}
+\[
+\begin{aligned}
+T(n) &= O(26\cdot n) = O(n).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return []
+    t = int(data[0])
+    return data[1:1+t]
+
+def solve_case(s: str) -> str:
+    cnt = [0]*26
+    for ch in s:
+        cnt[ord(ch)-97] += 1
+    n = len(s)
+    res = ['?']*n
+    i, j = 0, n-1
+
+    def smallest_pair():
+        for c in range(26):
+            if cnt[c] >= 2:
+                return c
+        return None
+
+    def two_smallest_distinct():
+        first = None
+        for c in range(26):
+            if cnt[c] > 0:
+                if first is None:
+                    first = c
+                else:
+                    return (first, c)
+        return None
+
+    while i < j:
+        sp = smallest_pair()
+        tsd = two_smallest_distinct()
+        if sp is None and tsd is None:
+            break
+        choose_mismatch = False
+        if sp is None:
+            choose_mismatch = True
+        elif tsd is not None:
+            a, b = tsd  # a < b
+            if b <= sp:
+                choose_mismatch = True
+        if choose_mismatch:
+            a, b = two_smallest_distinct()
+            res[i] = chr(b + 97)
+            res[j] = chr(a + 97)
+            cnt[b] -= 1
+            cnt[a] -= 1
+            i += 1
+            j -= 1
+            # Complete the remaining segment in ascending order (minimizes u)
+            for c in range(26):
+                while cnt[c] > 0 and i <= j:
+                    res[i] = chr(c + 97)
+                    cnt[c] -= 1
+                    i += 1
+            break
+        else:
+            c = sp
+            res[i] = res[j] = chr(c + 97)
+            cnt[c] -= 2
+            i += 1
+            j -= 1
+
+    if i == j:
+        for c in range(26):
+            if cnt[c] > 0:
+                res[i] = chr(c + 97)
+                cnt[c] -= 1
+                break
+
+    # Safety fill (should be complete)
+    k = 0
+    for idx in range(n):
+        if res[idx] == '?':
+            while k < 26 and cnt[k] == 0:
+                k += 1
+            if k < 26:
+                res[idx] = chr(k + 97)
+                cnt[k] -= 1
+
+    return ''.join(res)
+
+def solve_all(cases):
+    return [solve_case(s) for s in cases]
+
+def main():
+    cases = read_input()
+    if not cases:
+        return
+    print('\n'.join(solve_all(cases)))
+
+# Exactly 3 asserts
+def _check():
+    assert solve_case("aab") == "aba"
+    assert solve_case("abc") == "bca"
+    assert solve_case("abcc") == "bcca"
+
+_check()
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Asserts included for representative cases: \texttt{"aab"} $\to$ \texttt{"aba"}, \texttt{"abc"} $\to$ \texttt{"bca"}, \texttt{"abcc"} $\to$ \texttt{"bcca"}.}
+\RESULT{For each test case, output the minimal permutation $u$ of $s$ such that $u \ge \mathrm{rev}(u)$; this is exactly the minimal possible $t_{\mathrm{max}}$. Ties are broken lexicographically by the construction.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Compare the greedy solution against brute force for small strings; include edge cases (all identical, all distinct, mix with multiple odds).}
+\LINE{CROSS-CHECKS}{Verify that the greedy output is a permutation; verify $u \ge \mathrm{rev}(u)$; verify equality with brute for $|s|\le 8$.}
+\LINE{EDGE-CASE GENERATOR}{Enumerate small alphabets with lengths up to $6$ to exhaustively validate behavior.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def gen_all_distinct(n):
+    import string
+    letters = string.ascii_lowercase
+    return ''.join(letters[i] for i in range(n))
+
+def gen_all_same(n):
+    return 'a'*n
+
+def gen_mixed(n):
+    import string
+    letters = string.ascii_lowercase[:5]
+    rnd = random.Random(12345)
+    return ''.join(rnd.choice(letters) for _ in range(n))
+
+def brute_min_tmax(s: str) -> str:
+    from itertools import permutations
+    best = None
+    for p in set(permutations(s)):
+        t = ''.join(p)
+        r = t[::-1]
+        cand = t if t >= r else r
+        if best is None or cand < best:
+            best = cand
+    return best
+
+def test_reference():
+    from itertools import product
+    # Small exhaustive sets
+    for s in ["a", "ab", "abc", "aab", "aba", "abcc", "aaabbc"]:
+        assert reference_solve_case(s) == brute_min_tmax(s)
+    # All length up to 5 over alphabet {a,b,c}
+    alpha = "abc"
+    seen = set()
+    for n in range(1, 6):
+        for tup in product(alpha, repeat=n):
+            s = ''.join(tup)
+            if s in seen:
+                continue
+            seen.add(s)
+            assert reference_solve_case(s) == brute_min_tmax(s)
+    print("All tests passed.")
+
+def reference_solve_case(s: str) -> str:
+    # Same as final algorithm
+    cnt = [0]*26
+    for ch in s:
+        cnt[ord(ch)-97] += 1
+    n = len(s)
+    res = ['?']*n
+    i, j = 0, n-1
+
+    def smallest_pair():
+        for c in range(26):
+            if cnt[c] >= 2:
+                return c
+        return None
+
+    def two_smallest_distinct():
+        first = None
+        for c in range(26):
+            if cnt[c] > 0:
+                if first is None:
+                    first = c
+                else:
+                    return (first, c)
+        return None
+
+    while i < j:
+        sp = smallest_pair()
+        tsd = two_smallest_distinct()
+        if sp is None and tsd is None:
+            break
+        choose_mismatch = False
+        if sp is None:
+            choose_mismatch = True
+        elif tsd is not None:
+            a, b = tsd
+            if b <= sp:
+                choose_mismatch = True
+        if choose_mismatch:
+            a, b = two_smallest_distinct()
+            res[i] = chr(b + 97)
+            res[j] = chr(a + 97)
+            cnt[b] -= 1
+            cnt[a] -= 1
+            i += 1
+            j -= 1
+            for c in range(26):
+                while cnt[c] > 0 and i <= j:
+                    res[i] = chr(c + 97)
+                    cnt[c] -= 1
+                    i += 1
+            break
+        else:
+            c = sp
+            res[i] = res[j] = chr(c + 97)
+            cnt[c] -= 2
+            i += 1
+            j -= 1
+
+    if i == j:
+        for c in range(26):
+            if cnt[c] > 0:
+                res[i] = chr(c + 97)
+                cnt[c] -= 1
+                break
+
+    # Safety completion
+    k = 0
+    for idx in range(n):
+        if res[idx] == '?':
+            while k < 26 and cnt[k] == 0:
+                k += 1
+            if k < 26:
+                res[idx] = chr(k + 97)
+                cnt[k] -= 1
+
+    return ''.join(res)
+
+# Uncomment to run tests locally:
+# test_reference()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+
+def read_input():
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return []
+    t = int(data[0])
+    return data[1:1+t]
+
+def solve_case(s: str) -> str:
+    cnt = [0]*26
+    for ch in s:
+        cnt[ord(ch)-97] += 1
+    n = len(s)
+    res = ['?']*n
+    i, j = 0, n-1
+
+    def smallest_pair():
+        for c in range(26):
+            if cnt[c] >= 2:
+                return c
+        return None
+
+    def two_smallest_distinct():
+        first = None
+        for c in range(26):
+            if cnt[c] > 0:
+                if first is None:
+                    first = c
+                else:
+                    return (first, c)
+        return None
+
+    while i < j:
+        sp = smallest_pair()
+        tsd = two_smallest_distinct()
+        if sp is None and tsd is None:
+            break
+        choose_mismatch = False
+        if sp is None:
+            choose_mismatch = True
+        elif tsd is not None:
+            a, b = tsd  # a < b
+            if b <= sp:
+                choose_mismatch = True
+        if choose_mismatch:
+            a, b = two_smallest_distinct()
+            res[i] = chr(b + 97)
+            res[j] = chr(a + 97)
+            cnt[b] -= 1
+            cnt[a] -= 1
+            i += 1
+            j -= 1
+            # Fill remaining in ascending order to minimize u
+            for c in range(26):
+                while cnt[c] > 0 and i <= j:
+                    res[i] = chr(c + 97)
+                    cnt[c] -= 1
+                    i += 1
+            break
+        else:
+            c = sp
+            res[i] = res[j] = chr(c + 97)
+            cnt[c] -= 2
+            i += 1
+            j -= 1
+
+    if i == j:
+        for c in range(26):
+            if cnt[c] > 0:
+                res[i] = chr(c + 97)
+                cnt[c] -= 1
+                break
+
+    # Safety completion
+    k = 0
+    for idx in range(n):
+        if res[idx] == '?':
+            while k < 26 and cnt[k] == 0:
+                k += 1
+            if k < 26:
+                res[idx] = chr(k + 97)
+                cnt[k] -= 1
+
+    return ''.join(res)
+
+def solve_all(cases):
+    return [solve_case(s) for s in cases]
+
+def main():
+    cases = read_input()
+    if not cases:
+        return
+    print('\n'.join(solve_all(cases)))
+
+# Sanity asserts
+def _check():
+    assert solve_case("a") == "a"
+    assert solve_case("aab") == "aba"
+    assert solve_case("abc") == "bca"
+    assert solve_case("abcc") == "bcca"
+    assert solve_case("aaabbc") == "abbcaa"
+
+_check()
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Minimize $\max(t,\mathrm{rev}(t))$ by directly constructing the lexicographically smallest permutation $u$ with $u \ge \mathrm{rev}(u)$.}
+\WHY{Greedy pairing and early mismatch reasoning is common in string/lex order problems and appears frequently in CF rounds.}
+\CHECKLIST{
+\begin{bullets}
+\item Count frequencies.
+\item At each step, find smallest pair letter $p$ and two smallest distinct letters $(a<b)$.
+\item If $p$ missing or $b \le p$: force mismatch $[b|a]$, then fill ascending.
+\item Else: place equal pair $[p|p]$.
+\item Put the smallest remaining at center if needed.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item All identical letters: output is the same string.
+\item All letters distinct: start with second-smallest letter on the left, smallest on the right, fill ascending.
+\item Exactly one odd frequency: palindrome with smallest center.
+\item Multiple odds but with an early small pair available: still compare against $b$.
+\item Tie $b=p$: prefer mismatch for a smaller completion.
+\item Very short strings $|s|=1,2$: handle directly via the same rules.
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting that $t_{\max}$ must equal either $t$ or $\mathrm{rev}(t)$ entirely.
+\item Pairing greedily without comparing to the second-smallest distinct letter can miss a smaller first character.
+\item Mishandling the tie $b=p$; pairing may yield a worse result.
+\item After forcing mismatch, not filling the remainder in increasing order loses optimality.
+\item Off-by-one when placing the center character for odd $n$.
+\item Not maintaining counts correctly when placing pairs and mismatch letters.
+\end{bullets}}
+\FAILMODES{Pure ``pair everything first'' strategy fails on inputs like \texttt{abcc} and \texttt{aaabbc}. The presented algorithm compares options per step and prefers an early minimal mismatch when advantageous.}
+\ELI{Try to mirror the string with the smallest letters. If you cannot match at some point, put the slightly larger of the two smallest letters on the left and the smaller on the right, then just write out the rest in order. This guarantees the smallest possible ``bigger of the two'' string.}
+\NotePages{3}
+
+\end{document}

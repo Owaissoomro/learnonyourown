@@ -1,0 +1,832 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — GCD of Polynomials}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/901/B}}
+\LINE{DIFFICULTY / RATING}{2200}
+\STATEMENT{Suppose you have two polynomials $A(x) = \sum_{k=0}^{n} a_k x^k$ and $B(x) = \sum_{k=0}^{m} b_k x^k$. Then polynomial $A(x)$ can be uniquely represented in the following way:
+\begin{BreakableEquation*}
+A(x) = B(x) \cdot D(x) + R(x),\ \deg R(x) < \deg B(x).
+\end{BreakableEquation*}
+This can be done using long division. Here, $\deg P(x)$ denotes the degree of polynomial $P(x)$. $R(x)$ is called the remainder of division of polynomial $A(x)$ by polynomial $B(x)$, it is also denoted as $A \bmod B$.
+
+Since there is a way to divide polynomials with remainder, we can define Euclid's algorithm of finding the greatest common divisor of two polynomials. The algorithm takes two polynomials $(A,B)$. If the polynomial $B(x)$ is zero, the result is $A(x)$, otherwise the result is the value the algorithm returns for pair $(B, A \bmod B)$. On each step the degree of the second argument decreases, so the algorithm works in finite number of steps. But how large that number could be? You are to answer this question.
+
+You are given an integer $n$. You have to build two polynomials with degrees not greater than $n$, such that their coefficients are integers not exceeding $1$ by their absolute value, the leading coefficients (ones with the greatest power of $x$) are equal to one, and the described Euclid's algorithm performs exactly $n$ steps finding their greatest common divisor. Moreover, the degree of the first polynomial should be greater than the degree of the second. By a step of the algorithm we mean the transition from pair $(A,B)$ to pair $(B, A \bmod B)$.
+
+Input:
+You are given a single integer $n$ ($1 \le n \le 150$) — the number of steps of the algorithm you need to reach.
+
+Output:
+Print two polynomials in the following format.
+
+In the first line print a single integer $m$ ($0 \le m \le n$) — the degree of the polynomial.
+
+In the second line print $m + 1$ integers between $-1$ and $1$ — the coefficients of the polynomial, from constant to leading.
+
+The degree of the first polynomial should be greater than the degree of the second polynomial, the leading coefficients should be equal to $1$. Euclid's algorithm should perform exactly $n$ steps when called using these polynomials.
+
+If there is no answer for the given $n$, print $-1$.
+
+If there are multiple answer, print any of them.
+
+Note:
+In the second example you can print polynomials $x^2 - 1$ and $x$. The sequence of transitions is
+\begin{BreakableEquation*}
+(x^2 - 1, x) \to (x, -1) \to (-1, 0).
+\end{BreakableEquation*}
+There are two steps in it.}
+\BREAKDOWN{Construct two monic polynomials with coefficients in $\{-1,0,1\}$, degrees $\le n$, such that the Euclidean algorithm takes exactly $n$ steps: $(A,B) \mapsto (B, A \bmod B)$ until the second becomes $0$.}
+\ELI{Build a special pair whose divisions always drop the degree by one, lasting exactly $n$ moves, while keeping all coefficients in $\{-1,0,1\}$.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single integer $n$ with $1 \le n \le 150$.}
+\OUTPUTS{Two polynomials:
+- First print degree $m_A$ ($0 \le m_A \le n$), then $m_A+1$ integers in $[-1,1]$ (constant to leading) for $A(x)$.
+- Then print degree $m_B$ ($0 \le m_B < m_A$), then $m_B+1$ integers in $[-1,1]$ (constant to leading) for $B(x)$.
+Must be monic and make Euclid run exactly $n$ steps.}
+\SAMPLES{Examples:
+- $n=1$: possible answer $A(x)=x$, $B(x)=1$.
+- $n=2$: possible answer $A(x)=x^2 \pm 1$, $B(x)=x$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{We seek a sequence of monic polynomials $\{P_k\}_{k\ge 1}$ with integer coefficients in $\{-1,0,1\}$ satisfying
+\begin{BreakableEquation*}
+P_{k+1}(x) = x\,P_k(x) + s_k\,P_{k-1}(x),\quad s_k \in \{-1, +1\},
+\end{BreakableEquation*}
+with seeds $P_1(x)=1$, $P_2(x)=x$. Then the pair $\bigl(P_{n+1}, P_n\bigr)$ has degrees $n$ and $n-1$ and yields exactly $n$ Euclid steps.}
+\varmapStart
+\var{P_k}{the $k$-th polynomial in the sequence (degree $k-1$)}
+\var{s_k}{chosen sign in $\{-1,+1\}$ to keep coefficients within $\{-1,0,1\}$}
+\var{A,B}{output polynomials $A=P_{n+1}$, $B=P_n$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+P_1(x) &= 1,\quad P_2(x)=x,\\
+P_{k+1}(x) &= x\,P_k(x) + s_k\,P_{k-1}(x),\quad s_k \in \{-1,+1\},\\
+\text{Euclid steps:}\quad &(P_{k+1},P_k) \mapsto (P_k, s_k P_{k-1}) \mapsto \cdots \mapsto (P_2,P_1) \mapsto (P_1,0).
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Polynomials over $\mathbb{Z}$; divisors are monic so long division stays in $\mathbb{Z}[x]$. We choose $s_k$ to avoid coefficient magnitude $2$ at all positions.}
+\INVARIANTS{ 
+- Monicity: leading coefficient of $P_k$ is $1$ for all $k$ (immediate from the recurrence).
+- Coefficient bound: all coefficients of $P_k$ lie in $\{-1,0,1\}$ (by choosing $s_k$ to cancel overlaps).
+- Degree drop per Euclid step: from $(P_{k+1},P_k)$ to $(P_k, s_k P_{k-1})$ reduces the second degree by $1$.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Try to directly search polynomials with coefficients in $\{-1,0,1\}$ and test Euclid step count.}
+\ASSUMPTIONS{Enumerate small polynomials and check via long division; infeasible beyond tiny $n$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Enumerate candidate monic $A,B$ with degrees $\le n$ and coefficients in $\{-1,0,1\}$.
+\item Simulate Euclid's algorithm to count steps until the second polynomial becomes $0$.
+\item If the count equals $n$ and $\deg A > \deg B$, output $A,B$.
+\end{algosteps}
+\COMPLEXITY{Exponential in degree: $T(n)=\Theta(3^{n})$ or worse; $S(n)$ exponential to hold candidates.}
+\[
+\begin{aligned}
+T(n) &\approx \sum_{d=0}^{n} 3^{d} \cdot \sum_{e=0}^{d-1} 3^{e} = \Theta(9^{n}),\\
+S(n) &= \Theta(3^{n}).
+\end{aligned}
+\]
+\CORRECTNESS{Brute force checks all possibilities, so correctness is trivial but impractical.}
+\EDGECASES{Ensuring monicity, handling zero polynomial, ensuring $\deg A > \deg B$.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# CF TEMPLATE (baseline placeholder; not practical for large n).
+# We keep structure for completeness but immediately raise for n>5.
+
+from typing import List, Tuple
+
+def read_input() -> int:
+    import sys
+    data = sys.stdin.read().strip().split()
+    return int(data[0]) if data else 1
+
+def poly_trim(a: List[int]) -> List[int]:
+    while len(a) > 0 and a[-1] == 0:
+        a.pop()
+    return a
+
+def poly_degree(a: List[int]) -> int:
+    a = poly_trim(a[:])
+    return len(a) - 1
+
+def poly_divmod_monic(a: List[int], b: List[int]) -> Tuple[List[int], List[int]]:
+    a = poly_trim(a[:])
+    b = poly_trim(b[:])
+    if not b:
+        raise ZeroDivisionError("division by zero polynomial")
+    da, db = len(a) - 1, len(b) - 1
+    if da < db:
+        return [0], a[:]
+    q = [0] * (da - db + 1)
+    r = a[:]
+    while len(r) - 1 >= db and any(r):
+        dr = len(r) - 1
+        coeff = r[-1]  # monic divisor implies integer
+        shift = dr - db
+        q[shift] += coeff
+        # r -= coeff * x^shift * b
+        for i in range(db + 1):
+            r[shift + i] -= coeff * b[i]
+        r = poly_trim(r)
+    return poly_trim(q), poly_trim(r)
+
+def euclid_steps(a: List[int], b: List[int]) -> int:
+    # Count steps (A,B) -> (B, A mod B)
+    steps = 0
+    A, B = poly_trim(a[:]), poly_trim(b[:])
+    while B:
+        _, R = poly_divmod_monic(A, B)
+        A, B = B, R
+        steps += 1
+    return steps
+
+def solve_case_baseline(n: int) -> Tuple[List[int], List[int]]:
+    # Not implementing brute force due to explosion.
+    if n <= 2:
+        # Hand small constructions:
+        if n == 1:
+            return [0,1], [1]  # x, 1
+        else:
+            return [1,0,1], [0,1]  # x^2+1, x
+    raise RuntimeError("Baseline infeasible for n > 2")
+
+def main():
+    n = read_input()
+    A, B = solve_case_baseline(n)
+    # Output format:
+    import sys
+    da, db = poly_degree(A), poly_degree(B)
+    out = []
+    out.append(str(da))
+    out.append(" ".join(map(str, A + [0]*(da+1-len(A)))))
+    out.append(str(db))
+    out.append(" ".join(map(str, B + [0]*(db+1-len(B)))))
+    sys.stdout.write("\n".join(out))
+
+if __name__ == "__main__":
+    # Tiny asserts to validate formatting and step counts for small n
+    assert euclid_steps([0,1], [1]) == 1  # (x,1) -> (1,0)
+    assert euclid_steps([1,0,1], [0,1]) == 2  # (x^2+1, x) -> ...
+    # Do not run main in baseline by default
+    pass
+\end{minted}
+\VALIDATION{We only validate tiny $n$ in the baseline, since exhaustive search is infeasible.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Constructive Recurrence with Sign Control}
+\WHICHFORMULA{Use $P_{k+1} = x P_k + s_k P_{k-1}$ with $s_k \in \{-1,+1\}$ picked to keep coefficients in $\{-1,0,1\}$. Output $(P_{n+1}, P_n)$.}
+\ASSUMPTIONS{Seeds $P_1=1$, $P_2=x$. Both are monic and within bounds. Each step keeps monicity and degree increases by $1$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Initialize $P_1=[1]$, $P_2=[0,1]$ as coefficient lists (constant to leading).
+\item For $k=2$ to $n$: compute $A=\text{shift}(P_k)$, and choose $s_k \in \{-1,+1\}$ so that $C=A+s_k P_{k-1}$ has all coefficients in $\{-1,0,1\}$. Set $P_{k+1}=C$.
+\item Return $A=P_{n+1}$, $B=P_n$.
+\end{algosteps}
+\COMPLEXITY{Each step is vector addition/shift of length $O(k)$. Total:
+\begin{BreakableEquation*}
+T(n)=\sum_{k=1}^{n} O(k)=O(n^2),\quad S(n)=O(n).
+\end{BreakableEquation*}
+}
+\CORRECTNESS{By construction $P_{k+1}=xP_k+s_k P_{k-1}$. Division $(P_{k+1}\div P_k)$ has quotient $x$ and remainder $s_k P_{k-1}$, hence the Euclid sequence starting from $(P_{n+1},P_n)$ is
+\begin{BreakableEquation*}
+(P_{n+1},P_n)\to(P_n,s_n P_{n-1})\to\cdots\to(P_2,s_2 P_1)\to(P_1,0),
+\end{BreakableEquation*}
+which has exactly $n$ steps. Monicity holds and the sign choice prevents any coefficient from reaching magnitude $2$.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Constructive O(n^2) builder with sign control and validation.
+
+from typing import List, Tuple
+
+def read_input() -> int:
+    import sys
+    return int(sys.stdin.read().strip())
+
+def poly_trim(a: List[int]) -> List[int]:
+    while len(a) > 0 and a[-1] == 0:
+        a.pop()
+    return a
+
+def poly_degree(a: List[int]) -> int:
+    return len(poly_trim(a[:])) - 1
+
+def poly_divmod_monic(a: List[int], b: List[int]) -> Tuple[List[int], List[int]]:
+    a = poly_trim(a[:]); b = poly_trim(b[:])
+    if not b:
+        raise ZeroDivisionError("division by zero polynomial")
+    da, db = len(a)-1, len(b)-1
+    if da < db:
+        return [0], a[:]
+    q = [0]*(da-db+1)
+    r = a[:]
+    while len(r)-1 >= db and any(r):
+        dr = len(r)-1
+        coeff = r[-1]  # monic divisor
+        shift = dr - db
+        q[shift] += coeff
+        for i in range(db+1):
+            r[shift+i] -= coeff * b[i]
+        r = poly_trim(r)
+    return poly_trim(q), poly_trim(r)
+
+def euclid_steps(a: List[int], b: List[int]) -> int:
+    steps = 0
+    A, B = poly_trim(a[:]), poly_trim(b[:])
+    while B:
+        _, R = poly_divmod_monic(A, B)
+        A, B = B, R
+        steps += 1
+    return steps
+
+def add_with_sign(shifted: List[int], prev: List[int], s: int) -> List[int]:
+    # C = shifted + s * prev
+    m = max(len(shifted), len(prev))
+    C = [0]*m
+    for i in range(m):
+        v = (shifted[i] if i < len(shifted) else 0) + s * (prev[i] if i < len(prev) else 0)
+        C[i] = v
+    # Leading term is from shifted; ensure it's 1
+    C = poly_trim(C)
+    return C
+
+def choose_sign(shifted: List[int], prev: List[int]) -> int:
+    # Prefer sign that avoids any |coeff|=2. Try to cancel overlaps deterministically.
+    # Check overlaps
+    overlap_idx = [i for i in range(min(len(shifted), len(prev))) if shifted[i] != 0 and prev[i] != 0]
+    if not overlap_idx:
+        return 1  # arbitrary
+    # If all overlaps have same product sign, cancel them
+    prod = shifted[overlap_idx[0]] * prev[overlap_idx[0]]
+    same = all(shifted[i] * prev[i] == prod for i in overlap_idx)
+    if same:
+        return -prod  # cancels to 0 at overlaps
+    # Fallback: try both signs and pick valid one
+    for s in (1, -1):
+        C = add_with_sign(shifted, prev, s)
+        if all(abs(c) <= 1 for c in C):
+            return s
+    # If both fail (should not happen under invariant), raise
+    raise RuntimeError("No valid sign found to keep coefficients within {-1,0,1}")
+
+def build_pair(n: int) -> Tuple[List[int], List[int]]:
+    # P1=1, P2=x; build up to P_{n+1}
+    Pm1 = [1]      # P1
+    P = [0, 1]     # P2
+    if n == 1:
+        return P, Pm1  # (P2, P1)
+    for k in range(2, n+1):
+        shifted = [0] + P  # x * P
+        s = choose_sign(shifted, Pm1)
+        C = add_with_sign(shifted, Pm1, s)
+        # Sanity: leading coeff must be 1 and all |coeff|<=1
+        assert C and C[-1] == 1
+        assert all(abs(c) <= 1 for c in C)
+        Pm1, P = P, C
+    # Now P is P_{n+1}, Pm1 is P_n
+    return P, Pm1
+
+def solve_case(n: int) -> Tuple[List[int], List[int]]:
+    A, B = build_pair(n)
+    # Validate step count exactly n
+    assert euclid_steps(A, B) == n
+    return A, B
+
+def main():
+    n = read_input()
+    A, B = solve_case(n)
+    import sys
+    da, db = poly_degree(A), poly_degree(B)
+    print(da)
+    print(" ".join(map(str, A + [0]*(da+1-len(A)))))
+    print(db)
+    print(" ".join(map(str, B + [0]*(db+1-len(B)))))
+
+if __name__ == "__main__":
+    # Deterministic checks
+    A1, B1 = build_pair(1)
+    assert euclid_steps(A1, B1) == 1
+    A2, B2 = build_pair(2)
+    assert euclid_steps(A2, B2) == 2
+    A5, B5 = build_pair(5)
+    assert euclid_steps(A5, B5) == 5
+    # Do not invoke main during tests
+    pass
+\end{minted}
+\VALIDATION{Checks for $n\in\{1,2,5\}$ that the Euclid step count equals $n$. Also asserts monicity and coefficient bounds at each build step.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Monic Chain with Quotient $x$}
+\WHICHFORMULA{Use the continuant-like recurrence $P_{k+1}=xP_k+s_k P_{k-1}$ with $s_k\in\{-1,+1\}$ to ensure each Euclid step uses quotient $x$ and drops the second degree by exactly $1$.}
+\ASSUMPTIONS{Start from $P_1=1$, $P_2=x$. For each $k$, choose $s_k$ so that overlaps between $xP_k$ and $P_{k-1}$ cancel rather than sum.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Maintain polynomials as integer lists (constant to leading), with coefficients restricted to $\{-1,0,1\}$.
+\item For $k=2$ to $n$:
+  - Form $xP_k$ by prefixing zero.
+  - Determine the set of overlapping indices with $P_{k-1}$; if nonempty and all overlaps have the same sign, pick $s_k$ to cancel them; otherwise, test $s_k\in\{+1,-1\}$ and pick the one that keeps all coefficients in bounds.
+\item Output $(A,B)=(P_{n+1},P_n)$.
+\end{algosteps}
+\OPTIMALITY{Each Euclid step reduces the second degree by exactly one, and there are $n$ such reductions from degrees $(n,n-1)$ down to $(1,0)$, hence exactly $n$ steps. Coefficients never exceed magnitude $1$, so constraints are met.}
+\COMPLEXITY{$T(n)=O(n^2)$ time and $S(n)=O(n)$ space.}
+\[
+\begin{aligned}
+T(n) &= \sum_{k=1}^{n} O(k) = O(n^2).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case(), main()+guard + asserts. Deterministic and self-validated.
+
+from typing import List, Tuple
+
+def read_input() -> int:
+    import sys
+    data = sys.stdin.read().strip().split()
+    return int(data[0]) if data else 1
+
+def poly_trim(a: List[int]) -> List[int]:
+    while len(a) > 0 and a[-1] == 0:
+        a.pop()
+    return a
+
+def poly_degree(a: List[int]) -> int:
+    return len(poly_trim(a[:])) - 1
+
+def poly_divmod_monic(a: List[int], b: List[int]) -> Tuple[List[int], List[int]]:
+    a = poly_trim(a[:]); b = poly_trim(b[:])
+    if not b:
+        raise ZeroDivisionError("division by zero polynomial")
+    da, db = len(a)-1, len(b)-1
+    if da < db:
+        return [0], a[:]
+    q = [0]*(da-db+1)
+    r = a[:]
+    while len(r)-1 >= db and any(r):
+        dr = len(r)-1
+        coeff = r[-1]  # divisor leading coeff is 1
+        shift = dr - db
+        q[shift] += coeff
+        for i in range(db+1):
+            r[shift+i] -= coeff * b[i]
+        r = poly_trim(r)
+    return poly_trim(q), poly_trim(r)
+
+def euclid_steps(a: List[int], b: List[int]) -> int:
+    steps = 0
+    A, B = poly_trim(a[:]), poly_trim(b[:])
+    while B:
+        _, R = poly_divmod_monic(A, B)
+        A, B = B, R
+        steps += 1
+    return steps
+
+def add_with_sign(shifted: List[int], prev: List[int], s: int) -> List[int]:
+    m = max(len(shifted), len(prev))
+    C = [0]*m
+    for i in range(m):
+        C[i] = (shifted[i] if i < len(shifted) else 0) + s * (prev[i] if i < len(prev) else 0)
+    return poly_trim(C)
+
+def choose_sign(shifted: List[int], prev: List[int]) -> int:
+    overlap_idx = [i for i in range(min(len(shifted), len(prev))) if shifted[i] != 0 and prev[i] != 0]
+    if not overlap_idx:
+        return 1
+    prod = shifted[overlap_idx[0]] * prev[overlap_idx[0]]
+    if all(shifted[i] * prev[i] == prod for i in overlap_idx):
+        return -prod
+    # Fallback: try both signs, pick valid
+    for s in (1, -1):
+        C = add_with_sign(shifted, prev, s)
+        if all(abs(c) <= 1 for c in C):
+            return s
+    raise RuntimeError("No valid sign found")
+
+def build_pair(n: int) -> Tuple[List[int], List[int]]:
+    P1 = [1]      # P_1(x) = 1
+    P2 = [0, 1]   # P_2(x) = x
+    if n == 1:
+        return P2, P1
+    Pm1, P = P1, P2
+    for k in range(2, n+1):
+        shifted = [0] + P  # x * P
+        s = choose_sign(shifted, Pm1)
+        C = add_with_sign(shifted, Pm1, s)
+        assert C and C[-1] == 1
+        assert all(abs(c) <= 1 for c in C)
+        Pm1, P = P, C
+    return P, Pm1  # (P_{n+1}, P_n)
+
+def solve_case(n: int) -> Tuple[List[int], List[int]]:
+    A, B = build_pair(n)
+    assert euclid_steps(A, B) == n
+    return A, B
+
+def main():
+    n = read_input()
+    A, B = solve_case(n)
+    da, db = poly_degree(A), poly_degree(B)
+    print(da)
+    print(" ".join(map(str, A + [0]*(da+1-len(A)))))
+    print(db)
+    print(" ".join(map(str, B + [0]*(db+1-len(B)))))
+
+if __name__ == "__main__":
+    # Exactly 3 asserts (validation)
+    A1, B1 = build_pair(1); assert euclid_steps(A1, B1) == 1
+    A2, B2 = build_pair(2); assert euclid_steps(A2, B2) == 2
+    A7, B7 = build_pair(7); assert euclid_steps(A7, B7) == 7
+    # main()  # not auto-running during validation
+\end{minted}
+\VALIDATION{Exactly three asserts: for $n=1,2,7$ we check the Euclid step count equals $n$.}
+\RESULT{Outputs $A(x)=P_{n+1}(x)$ of degree $n$ and $B(x)=P_n(x)$ of degree $n-1$, both monic, coefficients in $\{-1,0,1\}$, yielding exactly $n$ steps.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit-test the builder for a few $n$, verify: monicity, coefficient bounds, and exact step count via polynomial long division.}
+\LINE{CROSS-CHECKS}{Compare step counts for multiple $n$; ensure the quotient in each Euclid step is $x$ and remainder agrees with the constructed recurrence.}
+\LINE{EDGE-CASE GENERATOR}{Test smallest $n=1$, small $n=2,3$, and a larger $n$ (e.g., $n=50$) deterministically.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+
+from typing import List, Tuple
+
+def poly_trim(a: List[int]) -> List[int]:
+    while len(a) > 0 and a[-1] == 0:
+        a.pop()
+    return a
+
+def poly_degree(a: List[int]) -> int:
+    return len(poly_trim(a[:])) - 1
+
+def poly_divmod_monic(a: List[int], b: List[int]) -> Tuple[List[int], List[int]]:
+    a = poly_trim(a[:]); b = poly_trim(b[:])
+    if not b:
+        raise ZeroDivisionError
+    da, db = len(a)-1, len(b)-1
+    if da < db:
+        return [0], a[:]
+    q = [0]*(da-db+1)
+    r = a[:]
+    while len(r)-1 >= db and any(r):
+        dr = len(r)-1
+        coeff = r[-1]
+        shift = dr - db
+        q[shift] += coeff
+        for i in range(db+1):
+            r[shift+i] -= coeff * b[i]
+        r = poly_trim(r)
+    return poly_trim(q), poly_trim(r)
+
+def euclid_steps(a: List[int], b: List[int]) -> int:
+    steps = 0
+    A, B = poly_trim(a[:]), poly_trim(b[:])
+    while B:
+        _, R = poly_divmod_monic(A, B)
+        A, B = B, R
+        steps += 1
+    return steps
+
+def build_pair(n: int) -> Tuple[List[int], List[int]]:
+    P1 = [1]; P2 = [0,1]
+    if n == 1:
+        return P2, P1
+    Pm1, P = P1, P2
+    for _ in range(2, n+1):
+        shifted = [0] + P
+        # choose sign to cancel overlaps if any
+        overlap_idx = [i for i in range(min(len(shifted), len(Pm1))) if shifted[i] != 0 and Pm1[i] != 0]
+        if not overlap_idx:
+            s = 1
+        else:
+            prod = shifted[overlap_idx[0]] * Pm1[overlap_idx[0]]
+            if all(shifted[i] * Pm1[i] == prod for i in overlap_idx):
+                s = -prod
+            else:
+                # try both
+                def ok(ss: int) -> bool:
+                    m = max(len(shifted), len(Pm1))
+                    for i in range(m):
+                        v = (shifted[i] if i < len(shifted) else 0) + ss * (Pm1[i] if i < len(Pm1) else 0)
+                        if abs(v) > 1:
+                            return False
+                    return True
+                s = 1 if ok(1) else -1
+        # build next
+        m = max(len(shifted), len(Pm1))
+        C = [0]*m
+        for i in range(m):
+            C[i] = (shifted[i] if i < len(shifted) else 0) + s * (Pm1[i] if i < len(Pm1) else 0)
+        while len(C) > 0 and C[-1] == 0:
+            C.pop()
+        assert C and C[-1] == 1 and all(abs(x) <= 1 for x in C)
+        Pm1, P = P, C
+    return P, Pm1
+
+def reference_solve(n: int) -> Tuple[List[int], List[int]]:
+    A, B = build_pair(n)
+    assert euclid_steps(A, B) == n
+    return A, B
+
+# Quick deterministic checks
+for t in [1, 2, 3, 5, 10, 50]:
+    A, B = reference_solve(t)
+    assert poly_degree(A) == t and poly_degree(B) == t-1
+    assert all(abs(c) <= 1 for c in A) and all(abs(c) <= 1 for c in B)
+    assert euclid_steps(A, B) == t
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Final reference solution (CF-ready). Reads n, outputs two polynomials.
+
+from typing import List, Tuple
+
+def read_input() -> int:
+    import sys
+    return int(sys.stdin.read().strip())
+
+def poly_trim(a: List[int]) -> List[int]:
+    while len(a) > 0 and a[-1] == 0:
+        a.pop()
+    return a
+
+def poly_degree(a: List[int]) -> int:
+    return len(poly_trim(a[:])) - 1
+
+def poly_divmod_monic(a: List[int], b: List[int]) -> Tuple[List[int], List[int]]:
+    a = poly_trim(a[:]); b = poly_trim(b[:])
+    if not b:
+        raise ZeroDivisionError("division by zero polynomial")
+    da, db = len(a)-1, len(b)-1
+    if da < db:
+        return [0], a[:]
+    q = [0]*(da-db+1)
+    r = a[:]
+    while len(r)-1 >= db and any(r):
+        dr = len(r)-1
+        coeff = r[-1]
+        shift = dr - db
+        q[shift] += coeff
+        for i in range(db+1):
+            r[shift+i] -= coeff * b[i]
+        r = poly_trim(r)
+    return poly_trim(q), poly_trim(r)
+
+def euclid_steps(a: List[int], b: List[int]) -> int:
+    steps = 0
+    A, B = poly_trim(a[:]), poly_trim(b[:])
+    while B:
+        _, R = poly_divmod_monic(A, B)
+        A, B = B, R
+        steps += 1
+    return steps
+
+def choose_sign(shifted: List[int], prev: List[int]) -> int:
+    overlap_idx = [i for i in range(min(len(shifted), len(prev))) if shifted[i] != 0 and prev[i] != 0]
+    if not overlap_idx:
+        return 1
+    prod = shifted[overlap_idx[0]] * prev[overlap_idx[0]]
+    if all(shifted[i] * prev[i] == prod for i in overlap_idx):
+        return -prod
+    # Fallback: try both signs and pick the valid one
+    for s in (1, -1):
+        m = max(len(shifted), len(prev))
+        ok = True
+        for i in range(m):
+            v = (shifted[i] if i < len(shifted) else 0) + s * (prev[i] if i < len(prev) else 0)
+            if abs(v) > 1:
+                ok = False
+                break
+        if ok:
+            return s
+    raise RuntimeError("No valid sign found to keep coefficients within {-1,0,1}")
+
+def build_pair(n: int) -> Tuple[List[int], List[int]]:
+    P1 = [1]      # P_1
+    P2 = [0, 1]   # P_2
+    if n == 1:
+        return P2, P1
+    Pm1, P = P1, P2
+    for _ in range(2, n+1):
+        shifted = [0] + P  # x * P
+        s = choose_sign(shifted, Pm1)
+        m = max(len(shifted), len(Pm1))
+        C = [0]*m
+        for i in range(m):
+            C[i] = (shifted[i] if i < len(shifted) else 0) + s * (Pm1[i] if i < len(Pm1) else 0)
+        while len(C) > 0 and C[-1] == 0:
+            C.pop()
+        assert C and C[-1] == 1 and all(abs(c) <= 1 for c in C)
+        Pm1, P = P, C
+    return P, Pm1  # (P_{n+1}, P_n)
+
+def solve_all() -> None:
+    n = read_input()
+    A, B = build_pair(n)
+    # Validate exact step count (can be kept in submission; cost is tiny for n<=150)
+    assert euclid_steps(A, B) == n
+    da, db = poly_degree(A), poly_degree(B)
+    print(da)
+    print(" ".join(map(str, A + [0]*(da+1-len(A)))))
+    print(db)
+    print(" ".join(map(str, B + [0]*(db+1-len(B)))))
+
+def main():
+    solve_all()
+
+if __name__ == "__main__":
+    # Quick asserts
+    A1, B1 = build_pair(1); assert euclid_steps(A1, B1) == 1
+    A3, B3 = build_pair(3); assert euclid_steps(A3, B3) == 3
+    A10, B10 = build_pair(10); assert euclid_steps(A10, B10) == 10
+    # main()  # not auto-invoked in doc tests
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Construct monic $\{-1,0,1\}$-coefficient polynomials $(A,B)$ of degrees $(n,n-1)$ so that Euclid's algorithm runs exactly $n$ steps.}
+\WHY{Tests constructive reasoning with polynomial Euclid, coefficient control, and continued-fraction style recurrences.}
+\CHECKLIST{
+- Start with $P_1=1$, $P_2=x$.
+- For $k=2..n$: set $P_{k+1}=xP_k+s_k P_{k-1}$ choosing $s_k\in\{-1,+1\}$ to avoid $\pm 2$.
+- Output $(P_{n+1}, P_n)$.
+- Verify monicity, coefficient bounds, and exact step count.}
+\EDGECASES{
+- $n=1$: output $(x,1)$.
+- Small $n=2$: $(x^2\pm 1, x)$.
+- Ensure no trailing zeros in coefficient lists.
+- Avoid zero divisor ($B\ne 0$).
+- Leading coefficients must be $1$.}
+\PITFALLS{
+- Using seeds that are not monic breaks integer long division.
+- Forgetting that degrees are printed as integers and coefficients from constant to leading.
+- Producing $A=P_n, B=P_{n-1}$ gives $n-1$ steps, not $n$.
+- Overlaps summed with the wrong sign can produce coefficients of magnitude $2$.
+- Mishandling trimming may create incorrect degrees.}
+\FAILMODES{Brute force will time out; naive Fibonacci-like $P_{k+1}=xP_k+P_{k-1}$ quickly creates coefficient $2$. The sign-controlled construction avoids this by canceling overlaps.}
+\ELI{We build a ladder of polynomials where each rung plus a careful $\pm$ creates the next rung with only $-1,0,1$ coefficients. Dividing by the previous rung always leaves the one before that, so the Euclid steps count down neatly to zero in exactly $n$ moves.}
+\NotePages{3}
+
+\end{document}

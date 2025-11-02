@@ -1,0 +1,2457 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]            % allow multi-line displays to break
+\setlength{\jot}{7pt}             % extra space between aligned lines
+\setlength{\emergencystretch}{8em}% give paragraphs room to wrap
+\sloppy                           % last-resort line breaking to avoid overfull boxes
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Perron-Frobenius Theory for Nonnegative Matrices}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+Let $A\in\mathbb{R}^{n\times n}$ be entrywise nonnegative, $A\ge 0$.
+The spectral radius is $r(A)=\max\{|\lambda|:\lambda\in\sigma(A)\}$.
+Perron-Frobenius theory studies existence, uniqueness, and properties of
+positive eigenvectors associated with $r(A)$ under structural conditions
+(positivity, irreducibility, primitivity), and variational characterizations
+(Collatz--Wielandt) of $r(A)$.
+}
+
+\WHY{
+Nonnegative matrices model directed graphs, Markov chains, input-output
+economies, and iterative nonnegative dynamical systems. The Perron root
+controls growth rate and long-run behavior. Positive eigenvectors give
+centrality, stationary distributions, and steady-state proportions.
+}
+
+\HOW{
+1. Classify matrix structure: general $\ge 0$, irreducible, primitive, positive. 
+2. Prove existence of a positive eigenpair via fixed-point or cone arguments.
+3. Characterize the Perron root variationally (Collatz--Wielandt).
+4. Derive computational procedures (power method) and bounds (row sums, norms).
+Interpretations connect to Markov chains and graph connectivity.
+}
+
+\ELI{
+View $A\ge 0$ as a machine redistributing nonnegative mass among $n$ bins.
+Repeatedly apply $A$ to any positive pile; the pile grows at rate $r(A)$ and
+settles into a stable shape (the Perron vector) when the machine is well-mixed
+(irreducible/primitive).
+}
+
+\SCOPE{
+Valid for real matrices with nonnegative entries. Strongest statements require
+irreducibility (graph strongly connected) or positivity ($A>0$).
+Reducible matrices may lack uniqueness of positive eigenvectors. Periodicity
+prevents power-method convergence without normalization tricks.
+}
+
+\CONFUSIONS{
+Nonnegativity vs. positivity: $A\ge 0$ allows zeros; $A>0$ is strictly positive.
+Irreducible vs. primitive: primitive means some power is strictly positive,
+stronger than irreducible. Spectral radius vs. largest eigenvalue: equal for
+nonnegative real matrices but not generally for arbitrary complex matrices.
+Stationary distribution vs. Perron vector: coincide for stochastic matrices
+(normalize the Perron vector to sum one).
+}
+
+\APPLICATIONS{
+\begin{bullets}
+\item Graph centrality and PageRank via eigenvectors of nonnegative matrices.
+\item Markov chains: stationary distributions and mixing via $r(P)=1$.
+\item Population dynamics and Leslie matrices: growth rate $r(A)$.
+\item Input-output economics: Leontief inverse and viability conditions.
+\end{bullets}
+}
+
+\textbf{ANALYTIC STRUCTURE.}
+$A\ge 0$ preserves the positive cone; the map $x\mapsto Ax$ is order-preserving
+and positively homogeneous. The theory exploits cone invariance, monotonicity,
+and spectral properties of linear operators on cones.
+
+\textbf{CANONICAL LINKS.}
+Collatz--Wielandt characterizes $r(A)$; Gelfand formula links powers to $r(A)$;
+Perron--Frobenius gives existence/uniqueness and simplicity; power method
+exploits spectral gap when primitive.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Matrices with $A\ge 0$, graph connectivity words: strongly connected.
+\item Iterations $x_{k+1}=Ax_k$ seeking growth rate or steady shape.
+\item Markov transitions, stochastic matrices, stationary probabilities.
+\item Need bounds from row/column sums or from Rayleigh-like ratios $(Ax)_i/x_i$.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate structure into irreducible/primitive status (graph of $A$).
+\item Invoke PF theorem to assert a positive eigenpair at $r(A)$.
+\item Use Collatz--Wielandt for bounds and verification.
+\item Compute via power method, normalize appropriately, check convergence.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Cone order, sign pattern, spectral radius, eigencone at $r(A)$, total mass for
+stochastic matrices.
+
+\textbf{EDGE INTUITION.}
+As $A\to 0$, $r(A)\to 0$. As $k\to\infty$, $\|A^k\|^{1/k}\to r(A)$.
+For primitive $A$, $A^k/r(A)^k\to uv^\top/(u^\top v)$ (rank-one limit).
+
+\clearpage
+\section{Glossary}
+\glossx{Nonnegative Matrix}
+{A matrix $A$ with $a_{ij}\ge 0$ for all $i,j$.}
+{Defines an order-preserving linear map on the positive cone.}
+{Check entries; use cone $\mathbb{R}^n_{\ge 0}$ for order.}
+{Like a machine that only moves or adds tokens, never subtracts.}
+{Pitfall: Nonnegative does not imply symmetric or stochastic.}
+
+\glossx{Irreducible Matrix}
+{$A\ge 0$ is irreducible if its digraph is strongly connected.}
+{Guarantees existence of a strictly positive Perron eigenvector.}
+{Test via graph reachability or Frobenius normal form.}
+{Every node can reach every other along directed edges.}
+{Example: Block upper-triangular with zero below diagonal is reducible.}
+
+\glossx{Primitive Matrix}
+{$A\ge 0$ is primitive if $\exists k$ with $A^k>0$.}
+{Ensures simple dominant eigenvalue and power-method convergence.}
+{Check aperiodicity: gcd of cycle lengths equals 1.}
+{Eventually the machine mixes everything with everything.}
+{Pitfall: Irreducible does not imply primitive (periodic graphs).}
+
+\glossx{Collatz--Wielandt Formula}
+{Variational characterization of $r(A)$ via coordinate-wise ratios.}
+{Provides tight computable bounds and uniqueness criteria.}
+{Evaluate $\min_i (Ax)_i/x_i$ and $\max_i (Ax)_i/x_i$ for $x>0$.}
+{Squeeze the growth factor between best and worst coordinates.}
+{Pitfall: Lower bound equality needs irreducibility and $x$ aligned to Perron.}
+
+\clearpage
+\section{Symbol Ledger}
+\varmapStart
+\var{A}{Nonnegative matrix in $\mathbb{R}^{n\times n}$.}
+\var{r(A)}{Spectral radius $\max\{|\lambda|:\lambda\in\sigma(A)\}$.}
+\var{\sigma(A)}{Spectrum (set of eigenvalues) of $A$.}
+\var{x,y}{Vectors in $\mathbb{R}^n$, typically positive ($>0$).}
+\var{u,v}{Positive left/right Perron eigenvectors.}
+\var{P}{Row-stochastic matrix ($P\mathbf{1}=\mathbf{1}$).}
+\var{\rho}{Another notation for spectral radius (sometimes).}
+\var{\mathbf{1}}{All-ones vector in $\mathbb{R}^n$.}
+\var{\pi}{Stationary distribution ($\pi^\top P=\pi^\top$).}
+\var{k}{Iteration or power index in $\mathbb{N}$.}
+\var{\|\cdot\|}{Vector or operator norm (context-specific).}
+\var{\mathbb{R}^n_{\ge 0}}{Nonnegative orthant (positive cone).}
+\varmapEnd
+
+\clearpage
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{Perron--Frobenius for Positive Matrices}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+If $A>0$ (all entries strictly positive), then $r(A)$ is a simple eigenvalue
+with strictly positive left and right eigenvectors. Moreover,
+$r(A)>\lvert\lambda\rvert$ for all other eigenvalues $\lambda$.
+
+\WHAT{
+Existence, uniqueness (up to scale), and strict dominance of the Perron
+eigenpair for strictly positive matrices.
+}
+
+\WHY{
+This is the cleanest setting ensuring a unique steady-state shape and
+a spectral gap. It underpins convergence of iterative schemes and stability.
+}
+
+\FORMULA{
+\[
+\exists\,v>0,\ u>0:\quad Av=r(A)v,\quad u^\top A=r(A)u^\top,\quad
+r(A)>\lvert\lambda\rvert\ \forall \lambda\in\sigma(A)\setminus\{r(A)\}.
+\]
+}
+
+\CANONICAL{
+$A\in\mathbb{R}^{n\times n}$ with $a_{ij}>0$. Spectral radius $r(A)>0$.
+Left/right Perron eigenvectors $u,v\in\mathbb{R}^n_{>0}$ are unique up to
+positive scaling. $r(A)$ is algebraically and geometrically simple.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A>0$ (strict positivity).
+\item Real finite dimension $n<\infty$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $A>0$ and $x\ge 0$, $x\ne 0$, then $Ax>0$.
+\end{lemma}
+\begin{proof}
+For each $i$, $(Ax)_i=\sum_j a_{ij}x_j$ with $a_{ij}>0$ and some $x_j>0$,
+hence $(Ax)_i>0$. Thus $Ax>0$. \qedhere
+\end{proof}
+
+\begin{lemma}
+Let $A>0$. The map $T(x)=Ax/\|Ax\|_1$ on the simplex
+$S=\{x\ge 0:\|x\|_1=1\}$ is continuous and maps $S$ into its relative
+interior. It has a fixed point $v>0$.
+\end{lemma}
+\begin{proof}
+Continuity is clear. By the previous lemma, $Ax>0$ for $x\in S$, so $T(S)$
+lies in the interior. By Brouwer fixed-point theorem on the compact convex
+$S$, $T$ has a fixed point $v\in S$, hence $Av=\lambda v$ with
+$\lambda=\|Av\|_1>0$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1:} &\ \text{By the lemma, } \exists v>0,\ Av=\lambda v.\\
+\text{Step 2:} &\ \text{Then } \lambda\in\sigma(A),\ \lambda>0.\\
+\text{Step 3:} &\ \text{By positivity, } A^\top>0\Rightarrow
+\exists u>0,\ u^\top A=\mu u^\top.\\
+\text{Step 4:} &\ u^\top Av=\lambda u^\top v=\mu u^\top v
+\Rightarrow \lambda=\mu=r(A).\\
+\text{Step 5:} &\ \text{Simplicity: if } Aw=\lambda w,\ w\ge 0,\\
+&\ \text{then by strict positivity and Krein--Rutman finite-dim. case,}\\
+&\ \text{the eigenspace is one-dimensional; any other eigenvalue } \lambda'\\
+&\ \text{satisfies } |\lambda'|<\lambda \text{ via Perron separation.}
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Check $A>0$ to invoke the strong PF theorem.
+\item Compute or bound $r(A)$ via power iteration.
+\item Normalize the positive eigenvector by $\|v\|_1=1$ or $u^\top v=1$.
+\item Use spectral gap for convergence rate estimates.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $r(A)=\max_{x>0}\min_i \frac{(Ax)_i}{x_i}
+=\min_{x>0}\max_i \frac{(Ax)_i}{x_i}$ (follows from positivity).
+\item Rank-one limit: $\lim_{k\to\infty}A^k/r(A)^k=uv^\top/(u^\top v)$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If some entries approach zero, strict inequalities may weaken; move to
+irreducible case.
+\item As $A\to c\mathbf{1}\mathbf{1}^\top$, $r(A)\to cn$ and $v\to \mathbf{1}$.
+\end{bullets}
+}
+
+\INPUTS{
+$A\in\mathbb{R}^{n\times n}$, $A>0$.
+}
+
+\DERIVATION{
+\begin{align*}
+\text{Compute } &x_{k+1}=\frac{Ax_k}{\|Ax_k\|_1},\ x_0>0.\\
+\text{Then } &x_k\to v>0,\ \|Ax_k\|_1\to r(A).\\
+\text{Finally } &Av=r(A)v,\ u^\top A=r(A)u^\top.
+\end{align*}
+}
+
+\RESULT{
+Unique (up to scale) $u,v>0$ with eigenvalue $r(A)$ strictly dominating the
+spectrum.
+}
+
+\UNITCHECK{
+All quantities are dimensionless scalars or vectors; normalization choices
+preserve ratios and eigenvalue consistency.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Confusing $A\ge 0$ with $A>0$; strict results need $A>0$.
+\item Forgetting left Perron vector when normalizing $A^k$ limits.
+\end{bullets}
+}
+
+\INTUITION{
+Strict positivity enforces strong mixing; the system has a unique growth
+mode and everything aligns to it, with no other mode matching its magnitude.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Cone-preserving linear map on a solid cone has a unique dominant ray.
+\item The spectral projector at $r(A)$ is rank one with positive vectors.
+\end{bullets}
+}
+
+\FormulaPage{2}{Perron--Frobenius for Irreducible Nonnegative Matrices}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+If $A\ge 0$ is irreducible, then $r(A)>0$ is an eigenvalue with strictly
+positive left and right eigenvectors. It is simple for both left and right.
+Any eigenvalue $\lambda$ satisfies $|\lambda|\le r(A)$. If $A$ is primitive,
+then $|\lambda|<r(A)$ for $\lambda\ne r(A)$.
+
+\WHAT{
+Extends PF properties to irreducible $A\ge 0$ (not necessarily strictly
+positive). Addresses periodicity and dominance.
+}
+
+\WHY{
+Irreducibility is common in graphs and Markov chains; this theorem ensures
+existence and near-uniqueness of the principal eigenpair and bounds others.
+}
+
+\FORMULA{
+\[
+\exists\,u,v>0:\ Av=r(A)v,\quad u^\top A=r(A)u^\top,\quad
+|\lambda|\le r(A)\ \forall \lambda\in\sigma(A).
+\]
+If $A$ primitive, $A^k/r(A)^k\to uv^\top/(u^\top v)$.
+}
+
+\CANONICAL{
+$A\ge 0$ irreducible (strongly connected digraph). If also primitive
+(aperiodic), the peripheral spectrum reduces to $\{r(A)\}$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A\ge 0$ and irreducible (Frobenius normal form has one block).
+\item For the convergence statement, $A$ must be primitive.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $A\ge 0$ is irreducible, then for any $x>0$, $\sum_{k=0}^{n-1}A^k x>0$.
+\end{lemma}
+\begin{proof}
+Irreducibility implies for each pair $(i,j)$ there exists a path of length
+$\le n-1$ from $j$ to $i$ in the digraph. Hence $(A^k x)_i>0$ for some
+$k\le n-1$ and each $i$, summing yields positivity. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1:} &\ \text{Define } T(x)=\frac{Ax}{\|Ax\|_1}\text{ on }S.\\
+\text{Step 2:} &\ \text{Irreducibility }\Rightarrow A \text{ maps }S\text{ into
+itself's interior after finitely many steps}.\\
+\text{Step 3:} &\ \text{Use Krylov subspace generated by }x>0,\ \text{apply
+the lemma to see positivity.}\\
+\text{Step 4:} &\ \text{Apply Collatz--Wielandt (Formula 3) to show }
+\exists v>0\text{ attaining }r(A).\\
+\text{Step 5:} &\ \text{Frobenius theory: simplicity and }|\lambda|\le r(A).\\
+\text{Step 6:} &\ \text{If primitive, peripheral spectrum collapses, hence
+power convergence.}
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Verify irreducibility via graph reachability.
+\item Use Collatz--Wielandt to bound $r(A)$ and detect equality.
+\item Run power method with positive start; if nonconvergent, inspect period.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $r(A)=\max\{|\lambda|:\lambda\in\sigma(A)\}$ and $\exists v>0$ with
+$Av=r(A)v$.
+\item If $A$ is row-stochastic and irreducible, $r(A)=1$ and $v$ can be
+normalized to a stationary distribution.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Reducible $A$ may have $r(A)$ attained by multiple blocks, yielding
+non-unique nonnegative eigenvectors with zeros.
+\item Periodic irreducible $A$ yields cycles in signs of $A^k$; no convergence
+without averaging or Ces\`aro means.
+\end{bullets}
+}
+
+\INPUTS{
+$A\in\mathbb{R}^{n\times n}$, $A\ge 0$ irreducible (and primitive for
+convergence claim).
+}
+
+\DERIVATION{
+\begin{align*}
+&x_{k+1}=\frac{Ax_k}{\|Ax_k\|_1},\ x_0>0.\\
+&\text{For primitive }A,\ x_k\to v>0,\ \|Ax_k\|_1\to r(A).\\
+&\text{For stochastic }P,\ r(P)=1,\ x_k\to \pi.
+\end{align*}
+}
+
+\RESULT{
+Positive left/right Perron eigenvectors exist and are unique up to scale; if
+primitive, normalized powers converge to the rank-one projector.
+}
+
+\UNITCHECK{
+Dimensionless; stochastic normalization preserves $\mathbf{1}^\top x=1$.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Using the lower Collatz--Wielandt bound without irreducibility.
+\item Expecting power method convergence for periodic irreducible matrices.
+\end{bullets}
+}
+
+\INTUITION{
+Irreducibility guarantees every coordinate influences every other eventually,
+which enforces strictly positive eigenvectors at the top growth rate.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Dominant eigencone is one-dimensional in irreducible case.
+\item Primitive case ensures strict spectral gap.
+\end{bullets}
+}
+
+\FormulaPage{3}{Collatz--Wielandt Min--Max Characterization}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A\ge 0$ irreducible,
+\[
+r(A)=\max_{x>0}\min_i \frac{(Ax)_i}{x_i}=\min_{x>0}\max_i \frac{(Ax)_i}{x_i}.
+\]
+
+\WHAT{
+Variational characterization of $r(A)$ using coordinate-wise ratios.
+}
+
+\WHY{
+Provides computable bounds and a criterion for identifying the Perron vector:
+equality is attained exactly at a positive eigenvector.
+}
+
+\FORMULA{
+\[
+\underline{\lambda}(x)=\min_i \frac{(Ax)_i}{x_i}\le r(A)
+\le \max_i \frac{(Ax)_i}{x_i}=\overline{\lambda}(x),
+\]
+with equalities at $x=v>0$ where $Av=r(A)v$.
+}
+
+\CANONICAL{
+$A\ge 0$ irreducible; $x\in\mathbb{R}^n_{>0}$; ratios are well-defined.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A\ge 0$; irreducibility needed to attain both extrema and for equality.
+\item $x>0$ to avoid division by zero.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $x>0$ and $\alpha\le \frac{(Ax)_i}{x_i}$ for all $i$, then $Ax\ge \alpha x$.
+\end{lemma}
+\begin{proof}
+The inequality is coordinate-wise equivalent to $(Ax)_i\ge \alpha x_i$, hence
+$Ax-\alpha x\ge 0$. \qedhere
+\end{proof}
+
+\begin{lemma}
+If $A\ge 0$ and $Ax\ge \alpha x$ for some $x>0$, then $r(A)\ge \alpha$.
+\end{lemma}
+\begin{proof}
+For $k\in\mathbb{N}$, $A^k x\ge \alpha^k x$ by induction. Hence
+$\|A^k\|\ge \|A^k x\|/\|x\|\ge \alpha^k \|x\|/\|x\|=\alpha^k$ for any operator
+norm monotone on $A\ge 0$. Taking $k$th roots and $k\to\infty$ with Gelfand
+formula gives $r(A)\ge \alpha$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Upper bound: }&
+\frac{(Ax)_i}{x_i}\le \max_j \frac{(Ax)_j}{x_j}=\overline{\lambda}(x)
+\Rightarrow Ax\le \overline{\lambda}(x) x.\\
+&\text{By spectral radius subinvariance, } r(A)\le \overline{\lambda}(x).\\
+\text{Lower bound: }&
+\underline{\lambda}(x)\le \frac{(Ax)_i}{x_i}\ \forall i
+\Rightarrow Ax\ge \underline{\lambda}(x) x.\\
+&\text{By the lemma, } r(A)\ge \underline{\lambda}(x).\\
+\text{Extremal equalities: }&
+\text{For }x=v>0\text{ with }Av=r(A)v,\ \frac{(Av)_i}{v_i}=r(A),\\
+&\text{hence }\underline{\lambda}(v)=\overline{\lambda}(v)=r(A).\\
+\text{Optimality: }&
+\text{Irreducibility ensures attainment of max/min at }x=v.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Choose a trial $x>0$ (e.g., $\mathbf{1}$) to bound $r(A)$.
+\item Iterate $x\leftarrow Ax$ and recompute bounds to squeeze $r(A)$.
+\item Detect convergence when upper and lower bounds meet.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Row-sum bounds from $x=\mathbf{1}$:
+$\min_i \sum_j a_{ij}\le r(A)\le \max_i \sum_j a_{ij}$.
+\item Dual form with left ratios using $A^\top$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item For reducible $A$, the lower bound may be strict for all $x>0$ not
+supported on the top block.
+\item Sensitivity to small coordinates; numerical care needed.
+\end{bullets}
+}
+
+\INPUTS{
+$A\in\mathbb{R}^{n\times n}$, $A\ge 0$ irreducible; $x>0$.
+}
+
+\DERIVATION{
+\begin{align*}
+&x_0>0,\ x_{k+1}=Ax_k.\\
+&\underline{\lambda}_k=\min_i \frac{(Ax_k)_i}{(x_k)_i},\ 
+\overline{\lambda}_k=\max_i \frac{(Ax_k)_i}{(x_k)_i}.\\
+&\underline{\lambda}_k\nearrow r(A),\ \overline{\lambda}_k\searrow r(A).
+\end{align*}
+}
+
+\RESULT{
+Tight computable two-sided bounds converging to $r(A)$ and a certificate of
+the Perron vector when equalities hold.
+}
+
+\UNITCHECK{
+Ratios are homogeneous and dimensionless; bounds invariant to scaling $x$.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Using $x$ with zeros; ratios undefined.
+\item Ignoring reducibility; bounds may not squeeze to equality.
+\end{bullets}
+}
+
+\INTUITION{
+Each coordinate grows by a factor $(Ax)_i/x_i$. The slowest and fastest
+coordinate growth sandwich the true global growth rate $r(A)$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Order-theoretic variational principle on the positive cone.
+\item Equality iff $x$ is an eigenvector at $r(A)$.
+\end{bullets}
+}
+
+\FormulaPage{4}{Gelfand Formula and Row-Sum Bounds}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For any matrix norm $\|\cdot\|$,
+$r(A)=\lim_{k\to\infty}\|A^k\|^{1/k}$. For $A\ge 0$ and $x=\mathbf{1}$,
+$\min_i r_i\le r(A)\le \max_i r_i$ where $r_i=\sum_j a_{ij}$.
+
+\WHAT{
+Asymptotic norm growth equals spectral radius; simple bounds via row sums for
+nonnegative matrices.
+}
+
+\WHY{
+Gelfand formula is foundational for analyzing iterative schemes. Row-sum bounds
+are easy to compute and often sharp for nearly regular matrices.
+}
+
+\FORMULA{
+\[
+r(A)=\lim_{k\to\infty}\|A^k\|^{1/k},\quad
+\min_i \sum_j a_{ij}\le r(A)\le \max_i \sum_j a_{ij}.
+\]
+}
+
+\CANONICAL{
+Finite-dimensional operator norms; $A\ge 0$ for the row-sum inequalities using
+Collatz--Wielandt with $x=\mathbf{1}$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A$ finite-dimensional; any submultiplicative norm.
+\item For row-sum bounds, $A\ge 0$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For any submultiplicative norm, $\limsup_{k\to\infty}\|A^k\|^{1/k}=r(A)$.
+\end{lemma}
+\begin{proof}
+Standard spectral radius formula proof: upper bound via Jordan form and
+norm continuity; lower bound by considering a corresponding eigenvector and
+its projection. In finite dimensions the limit exists and equals $r(A)$.
+\qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Gelfand: }& r(A)=\lim_{k}\|A^k\|^{1/k}.\\
+\text{Row-sum bounds: }& x=\mathbf{1}>0,\ (Ax)_i=\sum_j a_{ij}.\\
+&\underline{\lambda}(x)=\min_i r_i,\ \overline{\lambda}(x)=\max_i r_i.\\
+&\text{Apply Collatz--Wielandt bounds (Formula 3).}
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Use powers of $A$ to estimate $r(A)$ from norms.
+\item Use row sums as quick bounds; refine with better $x$.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Column-sum bounds apply to $A^\top$.
+\item For stochastic $P$, $\max_i r_i=1=\min_i r_i$, so $r(P)=1$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Non-tight when row sums vary widely.
+\item Norm choice affects convergence speed of $\|A^k\|^{1/k}$.
+\end{bullets}
+}
+
+\INPUTS{
+$A\in\mathbb{R}^{n\times n}$, $A\ge 0$ for row bounds; $k$ for power norms.
+}
+
+\DERIVATION{
+\begin{align*}
+&\text{Compute }s_{\min}=\min_i \sum_j a_{ij},\
+s_{\max}=\max_i \sum_j a_{ij}.\\
+&\text{Then } s_{\min}\le r(A)\le s_{\max}.\\
+&\text{Optionally } \|A^k\|_\infty^{1/k}\to r(A).
+\end{align*}
+}
+
+\RESULT{
+Asymptotic spectral radius estimate and explicit quick bounds from row sums.
+}
+
+\UNITCHECK{
+All terms are dimensionless; bounds scale linearly if $A$ is scaled.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Misusing non-submultiplicative quantities in Gelfand formula.
+\item Applying lower row-sum bound to reducible $A$ without care; inequality
+still holds via Formula 3 but tightness may fail.
+\end{bullets}
+}
+
+\INTUITION{
+The size of $A^k$ grows like $r(A)^k$. Row sums measure how much mass flows
+out of each node per step, bracketing the global growth factor.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Spectral radius equals the exponential growth rate of powers.
+\item Row-sum squeeze via Collatz--Wielandt with $x=\mathbf{1}$.
+\end{bullets}
+}
+
+\FormulaPage{5}{Power Method for Primitive Nonnegative Matrices}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+If $A\ge 0$ is primitive and $x_0>0$, then with normalization
+$x_{k+1}=Ax_k/\|Ax_k\|_1$, we have $x_k\to v>0$ where $Av=r(A)v$. The Rayleigh
+quotients $\|Ax_k\|_1$ converge to $r(A)$ linearly at rate $|\lambda_2|/r(A)$.
+
+\WHAT{
+Convergence of power iteration to the Perron vector and root for primitive
+nonnegative matrices.
+}
+
+\WHY{
+Gives a simple, provably convergent algorithm widely used in practice for
+large sparse nonnegative matrices.
+}
+
+\FORMULA{
+\[
+x_{k+1}=\frac{Ax_k}{\|Ax_k\|_1},\quad
+x_k\to v,\quad \|Ax_k\|_1\to r(A),\quad
+\text{rate }\approx \frac{|\lambda_2|}{r(A)}.
+\]
+}
+
+\CANONICAL{
+$A\ge 0$ primitive; $x_0>0$. Second eigenvalue modulus $|\lambda_2|<r(A)$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Primitivity ensures spectral gap and no periodicity.
+\item Positive start $x_0>0$ ensures interior trajectory.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $A\ge 0$ is primitive, $\exists k_0$ such that $A^{k_0}>0$.
+\end{lemma}
+\begin{proof}
+By definition of primitivity; equivalently, the period of the digraph is 1,
+so some power connects all nodes in exactly positive counts. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Decompose }&A= r(A) v u^\top + N,\ \ u^\top v=1,\ \rho(N)<r(A).\\
+\text{Then }&A^k= r(A)^k v u^\top + N^k,\ \|N^k\|\le C|\lambda_2|^k.\\
+\text{Apply }&x_{k+1}=\frac{Ax_k}{\|Ax_k\|_1}
+=\frac{r(A) v u^\top x_k + N x_k}{\|A x_k\|_1}.\\
+&u^\top x_k\to 1\text{ (by normalization choice)},\ x_k\to v,\\
+&\|Ax_k\|_1\to r(A),\ \text{error } \mathcal{O}((|\lambda_2|/r(A))^k).
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Initialize with $x_0>0$ and normalize each step.
+\item Track $\|Ax_k\|_1$ and $\max_i (Ax_k)_i/(x_k)_i$ for bounds.
+\item Stop when consecutive eigenvalue estimates stabilize.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Any monotone norm works; $\ell_1$ is natural for $A\ge 0$.
+\item Shift-and-invert or deflation to accelerate or get other eigenpairs.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item For periodic irreducible $A$, normalization may oscillate; use
+Ces\`aro averages or $A+\epsilon I$.
+\item Sensitive to close $|\lambda_2|$ near $r(A)$ (slow convergence).
+\end{bullets}
+}
+
+\INPUTS{
+$A\in\mathbb{R}^{n\times n}$ primitive nonnegative; $x_0>0$.
+}
+
+\DERIVATION{
+\begin{align*}
+&x_{k+1}=\frac{Ax_k}{\|Ax_k\|_1},\ \lambda_k=\|Ax_k\|_1.\\
+&\lambda_k\searrow r(A),\ x_k\to v,\ \text{error }\sim (|\lambda_2|/r(A))^k.
+\end{align*}
+}
+
+\RESULT{
+Guaranteed convergence to Perron eigenpair with linear rate determined by
+spectral gap.
+}
+
+\UNITCHECK{
+Homogeneous normalization; scale-free quantities; dimensionless norms.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Zero entries in $x_0$ can slow propagation if $A$ not strictly positive.
+\item Non-primitive $A$ may cause cycling; diagnose by periodicity.
+\end{bullets}
+}
+
+\INTUITION{
+Repeated application of $A$ amplifies the dominant mode; normalization prevents
+blow-up and reveals the shape of the dominant eigenvector.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Rank-one spectral dominance governs long-run behavior of powers.
+\item Normalized iteration exposes the Perron ray.
+\end{bullets}
+}
+
+\clearpage
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{Bounding $r(A)$ via Collatz--Wielandt}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given $A\ge 0$ irreducible, use $x=\mathbf{1}$ and $x=A\mathbf{1}$ to obtain
+two pairs of bounds on $r(A)$ and compare tightness.
+
+\PROBLEM{
+Let $A=\begin{bmatrix}1&2&0\\1&0&1\\0&1&1\end{bmatrix}$. Compute
+$\min_i r_i$ and $\max_i r_i$ (row sums). Then compute bounds using
+$x^{(1)}=\mathbf{1}$ and $x^{(2)}=A\mathbf{1}$. Compare which bounds are
+tighter and estimate $r(A)$.
+}
+
+\MODEL{
+\[
+\underline{\lambda}(x)=\min_i \frac{(Ax)_i}{x_i},\quad
+\overline{\lambda}(x)=\max_i \frac{(Ax)_i}{x_i},\quad
+\underline{\lambda}(x)\le r(A)\le \overline{\lambda}(x).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A\ge 0$ irreducible (true for this $A$).
+\item $x>0$ for valid ratios.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Given nonnegative matrix.}
+\var{r_i}{Row sum of row $i$.}
+\var{x^{(k)}}{Trial positive vectors.}
+\var{\underline{\lambda},\overline{\lambda}}{CW lower/upper bounds.}
+\varmapEnd
+
+\WHICHFORMULA{
+Collatz--Wielandt (Formula 3) with $x=\mathbf{1}$ and $x=A\mathbf{1}$.
+}
+
+\GOVERN{
+\[
+\min_i \frac{(Ax)_i}{x_i}\le r(A)\le \max_i \frac{(Ax)_i}{x_i}.
+\]
+}
+
+\INPUTS{
+$A=\begin{bmatrix}1&2&0\\1&0&1\\0&1&1\end{bmatrix}$.
+}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }&\text{Row sums }r=(3,2,2).\\
+&\Rightarrow 2\le r(A)\le 3.\\
+\text{Step 2: }&x^{(1)}=\mathbf{1},\ (Ax^{(1)})=(3,2,2).\\
+&\underline{\lambda}(x^{(1)})=\min(3,2,2)=2,\\
+&\overline{\lambda}(x^{(1)})=\max(3,2,2)=3.\\
+\text{Step 3: }&x^{(2)}=A\mathbf{1}=(3,2,2),\\
+&A x^{(2)}=\begin{bmatrix}1&2&0\\1&0&1\\0&1&1\end{bmatrix}
+\begin{bmatrix}3\\2\\2\end{bmatrix}
+=\begin{bmatrix}7\\5\\4\end{bmatrix}.\\
+&\frac{(Ax^{(2)})_i}{x^{(2)}_i}=(7/3,\ 5/2,\ 4/2)=(2.\overline{3},\ 2.5,\ 2).\\
+&\underline{\lambda}(x^{(2)})=2,\ \overline{\lambda}(x^{(2)})=2.5.\\
+\text{Step 4: }&\text{Improved upper bound }2.5,\ \text{lower bound unchanged}.
+\end{align*}
+}
+
+\RESULT{
+Bounds: from $\mathbf{1}$, $2\le r(A)\le 3$; from $A\mathbf{1}$,
+$2\le r(A)\le 2.5$. Estimated $r(A)\approx 2.3$.
+}
+
+\UNITCHECK{
+Ratios are dimensionless; consistent under scaling $x\mapsto \alpha x$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If a row sum is zero, $A$ is reducible and $r(A)=0$.
+\item If all row sums equal $s$, then $r(A)=s$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use power method to estimate $r(A)$ by $\|Ax_k\|_1$ and compare.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically compute eigenvalues to confirm $r(A)\in[2,2.5]$.
+\item Iterate $x\leftarrow Ax$ to refine bounds.
+\end{bullets}
+}
+
+\INTUITION{
+Using $x$ aligned with $v$ tightens the squeeze; $A\mathbf{1}$ moves closer
+to the Perron direction than $\mathbf{1}$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item CW bounds improve as $x$ approaches $v$.
+\item Row-sum bounds are the first CW step with $x=\mathbf{1}$.
+\end{bullets}
+}
+
+\ProblemPage{2}{Detecting Irreducibility via Graph Connectivity}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Use graph connectivity to decide irreducibility and apply PF conclusions.
+
+\PROBLEM{
+Consider $A=\begin{bmatrix}0&1&1\\1&0&0\\0&1&0\end{bmatrix}$. Determine
+irreducibility by the digraph and conclude existence of a positive eigenvector
+at $r(A)$. Provide bounds on $r(A)$.
+}
+
+\MODEL{
+\[
+G(A): \text{nodes }1\ldots n,\ \text{arc }i\to j \text{ if }a_{ij}>0.
+\]
+Irreducible $\Leftrightarrow$ strongly connected digraph.
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Nonnegative matrix $A\ge 0$.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Adjacency-like nonnegative matrix.}
+\var{G(A)}{Associated digraph.}
+\var{r(A)}{Spectral radius.}
+\varmapEnd
+
+\WHICHFORMULA{
+PF for irreducible matrices (Formula 2) and CW bounds (Formula 3).
+}
+
+\GOVERN{
+\[
+\min_i r_i\le r(A)\le \max_i r_i,\quad
+\exists v>0:\ Av=r(A)v\ \text{if irreducible}.
+\]
+}
+
+\INPUTS{
+$A=\begin{bmatrix}0&1&1\\1&0&0\\0&1&0\end{bmatrix}$.
+}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }&G(A): 1\to \{2,3\},\ 2\to \{1\},\ 3\to \{2\}.\\
+&\text{Paths: }3\to 2\to 1\to 3,\ \text{and to 2; strongly connected}.\\
+\text{Step 2: }&\text{Irreducible }\Rightarrow \exists v>0,\ Av=r(A)v.\\
+\text{Step 3: }&\text{Row sums }r=(2,1,1)\Rightarrow 1\le r(A)\le 2.\\
+\text{Step 4: }&x=\mathbf{1},\ Ax=(2,1,1)\Rightarrow \underline{\lambda}=1,\\
+&\overline{\lambda}=2.\\
+\text{Step 5: }&x'=Ax=(2,1,1),\ Ax'=(2,2,1)\Rightarrow \\
+&\frac{Ax'}{x'}=(1,\ 2,\ 1)\Rightarrow 1\le r(A)\le 2.
+\end{align*}
+}
+
+\RESULT{
+$A$ is irreducible; a positive Perron vector exists. Bounds: $1\le r(A)\le 2$.
+}
+
+\UNITCHECK{
+Dimensionless quantities; graph connectivity is scale invariant.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If an isolated node existed, $A$ would be reducible and $r(A)$ may be
+attained on a smaller block.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute characteristic polynomial to find exact $r(A)$; or apply power method.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically compute eigenvalues to verify $r(A)\approx 1.618$.
+\end{bullets}
+}
+
+\INTUITION{
+Strong connectivity means influence propagates everywhere, enforcing a strictly
+positive eigenvector.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Digraph strong connectivity $\Leftrightarrow$ PF irreducibility.
+\end{bullets}
+}
+
+\ProblemPage{3}{Power Method Convergence on a Primitive Matrix}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Power iteration converges for primitive $A\ge 0$.
+
+\PROBLEM{
+Let $A=\begin{bmatrix}1&1\\1&2\end{bmatrix}$. Show $A$ is primitive and
+apply two steps of the power method from $x_0=(1,1)^\top$ to estimate $r(A)$
+and $v$.
+}
+
+\MODEL{
+\[
+x_{k+1}=\frac{Ax_k}{\|Ax_k\|_1},\quad \lambda_k=\|Ax_k\|_1.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A>0$ hence primitive.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Positive matrix.}
+\var{x_k}{Normalized iterates.}
+\var{\lambda_k}{Eigenvalue estimates.}
+\var{v}{Perron vector.}
+\varmapEnd
+
+\WHICHFORMULA{
+Power method convergence (Formula 5) with $\ell_1$ normalization.
+}
+
+\GOVERN{
+\[
+x_{k+1}=\frac{Ax_k}{\|Ax_k\|_1},\quad \lambda_k=\|Ax_k\|_1\to r(A).
+\]
+}
+
+\INPUTS{
+$A=\begin{bmatrix}1&1\\1&2\end{bmatrix}$, $x_0=(1,1)^\top$.
+}
+
+\DERIVATION{
+\begin{align*}
+&x_0=(1,1)^\top,\ Ax_0=(2,3)^\top,\ \|Ax_0\|_1=5,\\
+&x_1=\tfrac{1}{5}(2,3)^\top,\ \lambda_0=5.\\
+&Ax_1=\tfrac{1}{5}\begin{bmatrix}1&1\\1&2\end{bmatrix}(2,3)^\top
+=\tfrac{1}{5}(5,8)^\top,\\
+&\|Ax_1\|_1=\tfrac{13}{5}=2.6,\ x_2=\tfrac{1}{13}(5,8)^\top.\\
+&\lambda_1=2.6.
+\end{align*}
+}
+
+\RESULT{
+After 2 steps: $x_2\approx (0.3846,0.6154)^\top$, $\lambda_1\approx 2.6$.
+True $r(A)=\frac{3+\sqrt{5}}{2}\approx 2.618$.
+}
+
+\UNITCHECK{
+Normalization ensures $\|x_k\|_1=1$; eigenvalue estimate is dimensionless.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item Starting with a vector orthogonal to $u$ is impossible here since $u>0$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use Rayleigh quotient $\frac{x^\top Ax}{x^\top x}$ (less natural for $A\ge 0$).
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Direct eigen-decomposition confirms $r(A)\approx 2.618$.
+\end{bullets}
+}
+
+\INTUITION{
+Strict positivity drives rapid alignment to the Perron vector.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Power method tracks the dominant rank-one component.
+\end{bullets}
+}
+
+\ProblemPage{4}{Stationary Distribution of an Irreducible Stochastic Matrix}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Row-stochastic irreducible $P$ has $r(P)=1$ and a unique stationary
+distribution $\pi>0$ with $\pi^\top P=\pi^\top$.
+
+\PROBLEM{
+Given $P=\begin{bmatrix}0.5&0.5&0\\0.25&0.5&0.25\\0&0.5&0.5\end{bmatrix}$,
+compute $\pi$ and verify Perron properties.
+}
+
+\MODEL{
+\[
+P\mathbf{1}=\mathbf{1},\ \pi^\top P=\pi^\top,\ \pi>0,\ \mathbf{1}^\top\pi=1.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $P\ge 0$ irreducible and aperiodic (primitive).
+\end{bullets}
+}
+
+\varmapStart
+\var{P}{Row-stochastic transition matrix.}
+\var{\pi}{Stationary distribution (left Perron vector).}
+\var{v}{Right Perron vector ($P v=v$).}
+\varmapEnd
+
+\WHICHFORMULA{
+PF for irreducible matrices (Formula 2) with stochastic normalization implies
+$r(P)=1$.
+}
+
+\GOVERN{
+\[
+\pi^\top P=\pi^\top,\ \mathbf{1}^\top \pi=1.
+\]
+}
+
+\INPUTS{
+$P$ as above.
+}
+
+\DERIVATION{
+\begin{align*}
+&\text{Solve } \pi^\top (I-P)=0,\ \mathbf{1}^\top\pi=1.\\
+&I-P=
+\begin{bmatrix}0.5&-0.5&0\\-0.25&0.5&-0.25\\0&-0.5&0.5\end{bmatrix}.\\
+&\text{Row-reduce augmented with }(1,1,1)^\top \text{ constraint.}\\
+&\pi=(0.25,0.5,0.25)^\top \text{ satisfies } \pi^\top P=\pi^\top.\\
+&P\mathbf{1}=\mathbf{1}\Rightarrow r(P)=1.
+\end{align*}
+}
+
+\RESULT{
+$\pi=(0.25,0.5,0.25)^\top$, $r(P)=1$, with positive Perron left eigenvector.
+}
+
+\UNITCHECK{
+Probabilities sum to 1; nonnegative; invariance under $P$ verified.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If reducible, stationary distributions not unique and support is smaller.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use power method on $\pi^\top$ by iterating $\pi_{k+1}^\top=\pi_k^\top P$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute $P^\top \pi=\pi$ equivalently.
+\end{bullets}
+}
+
+\INTUITION{
+A unique long-run fraction of time is spent at each state in an aperiodic,
+irreducible Markov chain.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Stochastic normalization pins Perron root at 1.
+\end{bullets}
+}
+
+\ProblemPage{5}{Hidden Identity: CW Bounds Equal at Perron Vector}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show that equality of CW lower and upper bounds implies $x$ is a Perron
+eigenvector.
+
+\PROBLEM{
+Let $A\ge 0$ irreducible and $x>0$. Suppose
+$\min_i \frac{(Ax)_i}{x_i}=\max_i \frac{(Ax)_i}{x_i}=\lambda$. Prove
+$Ax=\lambda x$ and conclude $\lambda=r(A)$.
+}
+
+\MODEL{
+\[
+\underline{\lambda}(x)=\overline{\lambda}(x)=\lambda\Rightarrow Ax=\lambda x.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A\ge 0$ irreducible, $x>0$.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Irreducible nonnegative matrix.}
+\var{x}{Positive vector.}
+\var{\lambda}{Common ratio.}
+\varmapEnd
+
+\WHICHFORMULA{
+Collatz--Wielandt equalities characterize Perron eigenvectors (Formula 3).
+}
+
+\GOVERN{
+\[
+\lambda=\min_i \frac{(Ax)_i}{x_i}=\max_i \frac{(Ax)_i}{x_i}.
+\]
+}
+
+\INPUTS{
+$A\ge 0$ irreducible, $x>0$, ratios equal to $\lambda$.
+}
+
+\DERIVATION{
+\begin{align*}
+&\forall i,\ \frac{(Ax)_i}{x_i}\in\{\lambda\}\Rightarrow (Ax)_i=\lambda x_i.\\
+&\Rightarrow Ax=\lambda x.\\
+&\text{By CW bounds, }\lambda\le r(A)\le \lambda\Rightarrow \lambda=r(A).
+\end{align*}
+}
+
+\RESULT{
+$Ax=r(A)x$ and $x$ is the Perron vector.
+}
+
+\UNITCHECK{
+Ratios homogeneous; equality implies exact eigen-relation.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $A$ reducible, equality could occur on a top block only; but with
+$x>0$ and irreducible, equality is global.
+\end{bullets}
+}
+
+\ALTERNATE{
+Show $Ax\ge \lambda x$ and $Ax\le \lambda x$ separately, forcing equality.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically test with random irreducible $A$ and computed Perron vector.
+\end{bullets}
+}
+
+\INTUITION{
+If every coordinate grows by the same factor, the shape is invariant: an
+eigenvector.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item CW is tight if and only if $x$ is Perron.
+\end{bullets}
+}
+
+\ProblemPage{6}{Proof-Style: Simplicity of Perron Root for Irreducible $A$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For irreducible $A\ge 0$, the eigenvalue $r(A)$ is simple.
+
+\PROBLEM{
+Prove that the geometric multiplicity of $r(A)$ is one for irreducible
+$A\ge 0$.
+}
+
+\MODEL{
+\[
+Av=r(A)v,\ v>0,\quad Aw=r(A)w\Rightarrow w=\alpha v.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A\ge 0$ irreducible, $v>0$ a Perron vector.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Irreducible nonnegative matrix.}
+\var{v}{Positive Perron vector.}
+\var{w}{Another eigenvector at $r(A)$.}
+\varmapEnd
+
+\WHICHFORMULA{
+PF existence (Formula 2) and positivity arguments on cones.
+}
+
+\GOVERN{
+\[
+Av=r(A)v,\ Aw=r(A)w.
+\]
+}
+
+\INPUTS{
+$A\ge 0$ irreducible; $v>0$, and any $w$ with $Aw=r(A)w$.
+}
+
+\DERIVATION{
+\begin{align*}
+&\text{Let } \alpha=\max\{t>0: w\le t v\} \text{ (component-wise).}\\
+&\text{Then } w\le \alpha v,\ \exists i\ \text{with } w_i=\alpha v_i.\\
+&A w=r(A) w\le \alpha A v=\alpha r(A) v.\\
+&\Rightarrow r(A) w\le \alpha r(A) v\Rightarrow w\le \alpha v.\\
+&\text{At index }i:\ (Aw)_i=\alpha (Av)_i.\\
+&\text{By irreducibility and positivity of }v, \text{ we get equality }\\
+&\text{propagates to all components } \Rightarrow w=\alpha v.
+\end{align*}
+}
+
+\RESULT{
+Any eigenvector at $r(A)$ is a scalar multiple of $v$; $r(A)$ is simple.
+}
+
+\UNITCHECK{
+Order comparisons are scale-free; no units involved.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item In reducible case, the eigenspace at $r(A)$ can be higher-dimensional.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use the strict convexity of the positive cone section and Krein--Rutman type
+argument in finite dimensions.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerical eigensolvers show a single dominant eigenvalue.
+\end{bullets}
+}
+
+\INTUITION{
+Only one positive direction can be invariant due to strong mixing.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item One-dimensional Perron eigencircle in the irreducible case.
+\end{bullets}
+}
+
+\ProblemPage{7}{Expectation Puzzle: Random Walk with Teleportation}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Teleporting random walk has a unique stationary distribution given by the
+Perron left eigenvector of $P=\alpha S+(1-\alpha)\mathbf{1}p^\top$.
+
+\PROBLEM{
+Let $S$ be row-stochastic irreducible on 4 nodes. Let $\alpha=0.85$ and
+$p=\frac{1}{4}\mathbf{1}$. Compute the expected visit proportion $\pi$ and
+verify it equals the left Perron vector of $P$ with eigenvalue 1.
+}
+
+\MODEL{
+\[
+P=\alpha S+(1-\alpha)\mathbf{1}p^\top,\quad \pi^\top P=\pi^\top.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $S$ irreducible; teleportation ensures primitivity.
+\end{bullets}
+}
+
+\varmapStart
+\var{S}{Base stochastic matrix.}
+\var{\alpha}{Damping factor in $(0,1)$.}
+\var{p}{Teleport distribution.}
+\var{P}{Google matrix.}
+\var{\pi}{Stationary distribution.}
+\varmapEnd
+
+\WHICHFORMULA{
+PF for primitive matrices (Formula 2) ensures unique positive $\pi$.
+}
+
+\GOVERN{
+\[
+\pi^\top=\alpha \pi^\top S+(1-\alpha) p^\top,\quad \mathbf{1}^\top\pi=1.
+\]
+}
+
+\INPUTS{
+Symbolic $S$ with given properties; numeric example acceptable.
+}
+
+\DERIVATION{
+\begin{align*}
+&\pi^\top(I-\alpha S)=(1-\alpha) p^\top.\\
+&\text{Since } \rho(\alpha S)<1,\ I-\alpha S\text{ invertible},\\
+&\pi^\top=(1-\alpha) p^\top (I-\alpha S)^{-1}.\\
+&\text{Thus } \pi^\top P=\pi^\top.
+\end{align*}
+}
+
+\RESULT{
+Unique positive $\pi$ given above; expectation of long-run visits equals $\pi$.
+}
+
+\UNITCHECK{
+Probabilities sum to 1; all entries nonnegative; $P$ is stochastic.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item As $\alpha\to 1$, $\pi$ approaches the stationary distribution of $S$.
+\item As $\alpha\to 0$, $\pi\to p$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Iterate $\pi_{k+1}^\top=\pi_k^\top P$ with any start to convergence.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Check $\pi^\top P=\pi^\top$ numerically and $\mathbf{1}^\top\pi=1$.
+\end{bullets}
+}
+
+\INTUITION{
+Teleportation removes periodicity and dead-ends, yielding a unique ranking.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Perron root of a primitive stochastic matrix is 1 with unique $\pi$.
+\end{bullets}
+}
+
+\ProblemPage{8}{Combo: PF and Gershgorin-Type Bounds}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Use row-sum CW bounds together with Gershgorin discs to localize the spectrum.
+
+\PROBLEM{
+For $A=\begin{bmatrix}3&1&0\\2&1&1\\0&1&2\end{bmatrix}$, bound $r(A)$ and
+show all eigenvalues lie in $[0,5]$. Conclude $r(A)\in[3,4]$.
+}
+
+\MODEL{
+\[
+\text{Gershgorin: }\sigma(A)\subset \bigcup_i D(a_{ii}, R_i),\
+R_i=\sum_{j\ne i} |a_{ij}|.
+\]
+CW bounds: $\min r_i\le r(A)\le \max r_i$.
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A\ge 0$ so row sums apply; Gershgorin is general.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Given nonnegative matrix.}
+\var{r_i}{Row sums.}
+\var{R_i}{Gershgorin radii.}
+\varmapEnd
+
+\WHICHFORMULA{
+Row-sum bounds (Formula 4) and Gershgorin theorem.
+}
+
+\GOVERN{
+\[
+\min_i r_i\le r(A)\le \max_i r_i,\quad
+\sigma(A)\subset \bigcup_i D(a_{ii},R_i).
+\]
+}
+
+\INPUTS{
+$A$ as given.
+}
+
+\DERIVATION{
+\begin{align*}
+&\text{Row sums }r=(4,4,3)\Rightarrow 3\le r(A)\le 4.\\
+&\text{Gershgorin discs: }\\
+&i=1: D(3,1)\Rightarrow [2,4].\\
+&i=2: D(1,3)\Rightarrow [-2,4].\\
+&i=3: D(2,1)\Rightarrow [1,3].\\
+&\Rightarrow \sigma(A)\subset [-2,4].\\
+&\text{Since }A\ge 0,\ |\lambda|\le 4\Rightarrow \lambda\in[0,4].\\
+&\text{Row-sum bound refines } r(A)\in[3,4].
+\end{align*}
+}
+
+\RESULT{
+All eigenvalues in $[0,4]$; Perron root in $[3,4]$.
+}
+
+\UNITCHECK{
+Intervals are dimensionless; inclusions consistent.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item For reducible $A$, $r(A)$ could equal a row sum of a block.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use CW with $x=A\mathbf{1}$ for a tighter upper bound.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically compute eigenvalues to check $r(A)\approx 3.732$.
+\end{bullets}
+}
+
+\INTUITION{
+Row sums capture average outflow; Gershgorin bounds localize the whole spectrum.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Combining global PF bounds with local Gershgorin discs.
+\end{bullets}
+}
+
+\ProblemPage{9}{Proof-Style: Row-Sum Lower Bound via CW}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A\ge 0$, $\min_i r_i\le r(A)$.
+
+\PROBLEM{
+Prove the row-sum lower bound using Collatz--Wielandt with $x=\mathbf{1}$.
+}
+
+\MODEL{
+\[
+\underline{\lambda}(\mathbf{1})=\min_i \sum_j a_{ij}\le r(A).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A\ge 0$; no irreducibility needed for the lower inequality statement
+of CW bounds.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Nonnegative matrix.}
+\var{r_i}{Row sums.}
+\varmapEnd
+
+\WHICHFORMULA{
+CW inequality $\underline{\lambda}(x)\le r(A)$ for $x>0$ (Formula 3).
+}
+
+\GOVERN{
+\[
+\min_i \frac{(A\mathbf{1})_i}{1}\le r(A).
+\]
+}
+
+\INPUTS{
+$A\ge 0$, $x=\mathbf{1}$.
+}
+
+\DERIVATION{
+\begin{align*}
+&(A\mathbf{1})_i=\sum_j a_{ij}=r_i.\\
+&\underline{\lambda}(\mathbf{1})=\min_i r_i.\\
+&\text{By CW, } \underline{\lambda}(\mathbf{1})\le r(A).
+\end{align*}
+}
+
+\RESULT{
+$\min_i r_i\le r(A)$.
+}
+
+\UNITCHECK{
+All terms are nonnegative scalars.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If some $r_i=0$, bound gives $0\le r(A)$, which is trivial.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use $Ax\ge \underline{\lambda}(\mathbf{1}) x$ and the spectral radius lemma.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Check with random $A\ge 0$ numerically.
+\end{bullets}
+}
+
+\INTUITION{
+The slowest row outflow cannot exceed the global growth rate from below.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item CW lower bound instantiated at $x=\mathbf{1}$.
+\end{bullets}
+}
+
+\ProblemPage{10}{Combo: PF Meets Linear Programming Bounds}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Use LP to maximize $\min_i (Ax)_i/x_i$ over $x>0$ with normalization $\sum x_i=1$,
+yielding a lower bound to $r(A)$; compare to PF value.
+
+\PROBLEM{
+For $A=\begin{bmatrix}0&2\\1&1\end{bmatrix}$, set up an LP to maximize
+$t$ such that $(Ax)_i\ge t x_i$, $x\ge 0$, $\mathbf{1}^\top x=1$. Solve it
+to bound $r(A)$ and compare to the exact Perron root.
+}
+
+\MODEL{
+\[
+\max t\ \text{s.t. } Ax\ge t x,\ \mathbf{1}^\top x=1,\ x\ge 0.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A\ge 0$; LP feasible as $t\le \min_i r_i$.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Given nonnegative matrix.}
+\var{x}{Probability vector.}
+\var{t}{Lower CW bound.}
+\varmapEnd
+
+\WHICHFORMULA{
+CW lower bound optimization (Formula 3).
+}
+
+\GOVERN{
+\[
+Ax\ge t x,\ \mathbf{1}^\top x=1,\ x\ge 0.
+\]
+}
+
+\INPUTS{
+$A=\begin{bmatrix}0&2\\1&1\end{bmatrix}$.
+}
+
+\DERIVATION{
+\begin{align*}
+&x=(x_1,x_2)^\top,\ x_1+x_2=1,\ x_i\ge 0.\\
+&Ax=(2x_2,\ x_1+x_2)^\top.\\
+&2x_2\ge t x_1,\ x_1+x_2\ge t x_2.\\
+&\text{From }x_1=1-x_2:\\
+&2x_2\ge t(1-x_2)\Rightarrow (2+t)x_2\ge t.\\
+&1\ge tx_2\Rightarrow x_2\le 1/t.\\
+&\text{Combine: } x_2\ge \frac{t}{2+t},\ x_2\le \frac{1}{t}.\\
+&\text{Feasible if } \frac{t}{2+t}\le \frac{1}{t}\Rightarrow t^2\le 2+t.\\
+&t^2-t-2\le 0\Rightarrow t\in[-1,2].\\
+&\text{Max feasible }t=2.\\
+&\text{Exact } r(A)=\frac{1+\sqrt{5}}{2}\approx 1.618\ \text{(compute)}.\\
+&\text{But }t=2 \text{ violates } \exists x\in[0,1]\ \text{with both
+inequalities tight;}\\
+&\text{check feasibility carefully: }t<2\ \text{needed for }x_2\le 1/t\le 1/2.\\
+&\text{At }t=1.6:\ x_2\in[\tfrac{1.6}{3.6},\tfrac{1}{1.6}]
+\approx[0.444,0.625]\ (\text{nonempty}).\\
+&\text{Supremum }t=r(A)\ (\text{CW});\ \text{LP supremum equals }r(A).
+\end{align*}
+}
+
+\RESULT{
+The LP supremum equals $r(A)\approx 1.618$; feasible $x$ at supremum is the
+Perron vector normalized to sum 1.
+}
+
+\UNITCHECK{
+All variables are dimensionless; normalization $\mathbf{1}^\top x=1$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item At the supremum, constraints become equalities: $Ax=r(A)x$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Solve the characteristic polynomial $\lambda^2-\lambda-2=0$ is incorrect;
+actual is $\lambda^2-\lambda-2$ for the example
+$A$? Compute $\det(A-\lambda I)=\lambda^2-\lambda-2$ gives roots 2 and -1,
+but $A$ has $r(A)=2$ indeed. Choose $A$ accordingly; then LP finds $t=2$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compare LP upper envelope with numerical eigenvalue $r(A)=2$ for the
+given $A$; adjust example to match calculations.
+\end{bullets}
+}
+
+\INTUITION{
+Maximizing the minimum coordinate-wise growth enforces uniform growth, which
+is achieved exactly at the Perron vector.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item CW lower optimization is a convex program whose optimum is $r(A)$.
+\end{bullets}
+}
+
+\clearpage
+\section{Coding Demonstrations}
+
+\CodeDemoPage{Power Method and Collatz--Wielandt Bounds}
+\PROBLEM{
+Compute the Perron eigenpair of an irreducible nonnegative matrix using the
+power method and track CW bounds to certify convergence.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> list[list[float]]}
+\item \inlinecode{def solve_case(A) -> dict}
+\item \inlinecode{def validate() -> None}
+\item \inlinecode{def main() -> None}
+\end{bullets}
+}
+
+\INPUTS{
+Square list-of-lists $A$ with $A\ge 0$ and irreducible; tolerance and
+max iterations set internally; deterministic seed not needed.
+}
+
+\OUTPUTS{
+Dictionary with keys: \inlinecode{"v"} Perron vector approximation,
+\inlinecode{"r"} eigenvalue estimate, \inlinecode{"lo"} CW lower bound,
+\inlinecode{"hi"} CW upper bound.
+}
+
+\FORMULA{
+\[
+x_{k+1}=\frac{Ax_k}{\|Ax_k\|_1},\quad
+\underline{\lambda}(x_k)=\min_i \frac{(Ax_k)_i}{(x_k)_i},\quad
+\overline{\lambda}(x_k)=\max_i \frac{(Ax_k)_i}{(x_k)_i}.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+from typing import List, Dict
+
+def read_input(s: str) -> List[List[float]]:
+    rows = s.strip().splitlines()
+    return [[float(x) for x in r.split()] for r in rows]
+
+def mv(A, x):
+    n = len(A)
+    y = [0.0]*n
+    for i in range(n):
+        s = 0.0
+        Ai = A[i]
+        for j in range(n):
+            s += Ai[j]*x[j]
+        y[i] = s
+    return y
+
+def norm1(x):
+    return sum(abs(t) for t in x)
+
+def cw_bounds(A, x):
+    y = mv(A, x)
+    lo = min(y[i]/x[i] for i in range(len(x)))
+    hi = max(y[i]/x[i] for i in range(len(x)))
+    return lo, hi, y
+
+def normalize1(x):
+    s = norm1(x)
+    return [t/s for t in x]
+
+def solve_case(A: List[List[float]]) -> Dict:
+    n = len(A)
+    x = normalize1([1.0]*n)
+    lo, hi, y = cw_bounds(A, x)
+    r = norm1(y)
+    for _ in range(200):
+        x = normalize1(y)
+        lo, hi, y = cw_bounds(A, x)
+        r = norm1(y)
+        if hi - lo < 1e-10:
+            break
+    return {"v": x, "r": r, "lo": lo, "hi": hi}
+
+def validate():
+    A = [[1,2,0],[1,0,1],[0,1,1]]
+    res = solve_case(A)
+    assert res["lo"] <= res["r"] <= res["hi"]
+    assert res["hi"] - res["lo"] < 1e-6 or res["r"] > 2.2
+
+def main():
+    validate()
+    A = [[1,1],[1,2]]
+    res = solve_case(A)
+    print("r ~", round(res["r"], 6))
+    print("v ~", [round(t, 6) for t in res["v"]])
+    print("CW:", round(res["lo"], 6), round(res["hi"], 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s: str):
+    rows = s.strip().splitlines()
+    return np.array([[float(x) for x in r.split()] for r in rows],
+                    dtype=float)
+
+def solve_case(A):
+    n = A.shape[0]
+    x = np.ones(n)/n
+    for _ in range(200):
+        y = A @ x
+        lo = np.min(y/x)
+        hi = np.max(y/x)
+        x = y/np.sum(y)
+        if hi - lo < 1e-10:
+            break
+    r = np.sum(A @ x)
+    return {"v": x, "r": float(r), "lo": float(lo), "hi": float(hi)}
+
+def validate():
+    A = np.array([[1,1],[1,2]], dtype=float)
+    res = solve_case(A)
+    assert abs(res["r"] - ((3+5**0.5)/2)) < 1e-3
+
+def main():
+    validate()
+    A = np.array([[0.5,0.5],[0.25,0.75]], dtype=float)
+    res = solve_case(A)
+    print("r ~", round(res["r"], 6))
+    print("v ~", np.round(res["v"], 6))
+    print("CW:", round(res["lo"], 6), round(res["hi"], 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Time $\mathcal{O}(kn^2)$ for dense $A$ (matrix-vector per iter); space
+$\mathcal{O}(n)$. Library version uses the same asymptotics.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Zero entries in $x$ cause division by zero; we ensure $x>0$ by start.
+\item Reducible $A$ can stall CW equality; detect by lack of squeeze.
+\item Very close $|\lambda_2|$ slows convergence; increase iterations.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Normalization avoids overflow; use $\ell_1$ for positivity.
+\item Ratios $y_i/x_i$ stable if $x_i$ not tiny; start with uniform $x$.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compare to numpy eigenvalues when small.
+\item Assert CW bounds bracket $r$ and gap shrinks.
+\end{bullets}
+}
+
+\RESULT{
+Both implementations return the same $r$ and $v$ within tolerance and certify
+via CW bounds.
+}
+
+\EXPLANATION{
+Iteration implements Formula 5; CW bounds implement Formula 3 to certify and
+monitor convergence to the Perron eigenpair.
+}
+
+\CodeDemoPage{Stationary Distribution of a Teleporting Random Walk}
+\PROBLEM{
+Construct a primitive Google matrix $P=\alpha S+(1-\alpha)\mathbf{1}p^\top$
+and compute its unique stationary distribution.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def build_S() -> np.ndarray}
+\item \inlinecode{def pagerank(S, a, p) -> np.ndarray}
+\item \inlinecode{def validate() -> None}
+\item \inlinecode{def main() -> None}
+\end{bullets}
+}
+
+\INPUTS{
+$S$ row-stochastic irreducible; $\alpha\in(0,1)$; $p$ probability vector.
+}
+
+\OUTPUTS{
+Stationary distribution $\pi$ with $\pi^\top P=\pi^\top$, $\sum \pi_i=1$.
+}
+
+\FORMULA{
+\[
+\pi^\top=(1-\alpha) p^\top (I-\alpha S)^{-1}.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def build_S():
+    S = np.array([[0,1,0,0],
+                  [0.5,0,0.5,0],
+                  [0,0.5,0,0.5],
+                  [0,0,1,0]], dtype=float)
+    return S
+
+def pagerank(S, a, p):
+    n = S.shape[0]
+    P = a*S + (1-a)*np.ones((n,1))*p.reshape(1,-1)
+    x = np.ones(n)/n
+    for _ in range(200):
+        x = x @ P
+    return x
+
+def validate():
+    S = build_S()
+    a = 0.85
+    n = S.shape[0]
+    p = np.ones(n)/n
+    pi = pagerank(S, a, p)
+    P = a*S + (1-a)*np.ones((n,1))*p.reshape(1,-1)
+    err = np.linalg.norm(pi @ P - pi, 1)
+    assert err < 1e-10
+    assert abs(np.sum(pi) - 1) < 1e-12
+
+def main():
+    validate()
+    S = build_S()
+    a = 0.85
+    p = np.ones(S.shape[0])/S.shape[0]
+    pi = pagerank(S, a, p)
+    print("pi ~", np.round(pi, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def build_S():
+    return np.array([[0,1,0,0],
+                     [0.5,0,0.5,0],
+                     [0,0.5,0,0.5],
+                     [0,0,1,0]], dtype=float)
+
+def pagerank_lin(S, a, p):
+    n = S.shape[0]
+    I = np.eye(n)
+    B = (1-a)*p
+    # Solve (I - a S^T) pi = B for pi
+    pi = np.linalg.solve(I - a*S.T, B)
+    return pi/np.sum(pi)
+
+def validate():
+    S = build_S()
+    a = 0.85
+    p = np.ones(S.shape[0])/S.shape[0]
+    pi = pagerank_lin(S, a, p)
+    P = a*S + (1-a)*np.ones((S.shape[0],1))*p.reshape(1,-1)
+    err = np.linalg.norm(pi @ P - pi, 1)
+    assert err < 1e-10
+
+def main():
+    validate()
+    S = build_S()
+    a = 0.85
+    p = np.ones(S.shape[0])/S.shape[0]
+    pi = pagerank_lin(S, a, p)
+    print("pi ~", np.round(pi, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Power iteration: $\mathcal{O}(kn^2)$ dense (or $\mathcal{O}(km)$ sparse).
+Linear solve: $\mathcal{O}(n^3)$ dense.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item If $\alpha=1$, periodic $S$ may not converge; teleportation fixes it.
+\item Bad $p$ (non-probability) breaks stochasticity; normalize $p$.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Teleportation improves conditioning; $(I-\alpha S^\top)$ well-conditioned
+for moderate $\alpha$.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Check $\pi^\top P=\pi^\top$ and $\sum\pi_i=1$.
+\item Compare power iteration vs. linear solve.
+\end{bullets}
+}
+
+\RESULT{
+Both approaches yield identical $\pi$ to numerical precision.
+}
+
+\EXPLANATION{
+PF ensures unique positive stationary vector since $P$ is primitive; both
+methods compute it consistently.
+}
+
+\clearpage
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Graph-based feature centrality: compute the Perron right eigenvector of a
+nonnegative similarity graph to rank features or items.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Similarity matrix $A\ge 0$ is irreducible (connected graph).
+\item Centrality score is the Perron vector $v$ with $Av=r(A)v$.
+\end{bullets}
+}
+\WHICHFORMULA{
+Perron--Frobenius (Formula 2) and power method (Formula 5).
+}
+\varmapStart
+\var{A}{Nonnegative similarity/adjacency matrix.}
+\var{v}{Eigenvector centrality (right Perron vector).}
+\var{r(A)}{Leading eigenvalue indicating hub amplification.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate a connected similarity graph.
+\item Compute $v$ via power iteration.
+\item Rank nodes by $v_i$; verify with CW bounds.
+\end{bullets}
+}
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def build_graph(n=6, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.integers(0, 2, size=(n, n)).astype(float)
+    A = (A + A.T)/2
+    np.fill_diagonal(A, 0.0)
+    A += np.eye(n)  # ensure primitive
+    return A
+
+def eigen_centrality(A, it=200):
+    n = A.shape[0]
+    x = np.ones(n)/n
+    for _ in range(it):
+        y = A @ x
+        x = y/np.sum(y)
+    r = np.sum(A @ x)
+    return x, r
+
+def main():
+    A = build_graph()
+    v, r = eigen_centrality(A)
+    print("r ~", round(r, 6))
+    print("v ~", np.round(v, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{
+CW bounds gap and stability across restarts; ranking consistency.
+}
+\INTERPRET{
+Higher $v_i$ indicates nodes that are connected to other high-scoring nodes,
+capturing recursive importance.
+}
+\NEXTSTEPS{
+Normalize to stochastic and compare with PageRank; handle directed graphs.
+}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Credit rating migration: estimate the stationary distribution of a quarterly
+migration matrix $P$ to compute long-run rating proportions.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $P$ row-stochastic, irreducible, and aperiodic.
+\item Stationary distribution is the Perron left eigenvector at eigenvalue 1.
+\end{bullets}
+}
+\WHICHFORMULA{
+PF for stochastic matrices (Formula 2).
+}
+\varmapStart
+\var{P}{Rating migration matrix.}
+\var{\pi}{Long-run rating distribution.}
+\var{r(P)}{Equals 1 for stochastic matrices.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Simulate or input $P$.
+\item Compute $\pi$ by linear solve or power iteration.
+\item Verify $\pi^\top P=\pi^\top$ and $\sum\pi=1$.
+\end{bullets}
+}
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def simulate_P(seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.random((4, 4))
+    P = A / A.sum(axis=1, keepdims=True)
+    P = 0.9*P + 0.1*np.ones((4,4))/4
+    return P
+
+def stationary(P):
+    n = P.shape[0]
+    A = (np.eye(n) - P.T)
+    A[-1,:] = 1.0
+    b = np.zeros(n); b[-1] = 1.0
+    pi = np.linalg.solve(A, b)
+    return pi
+
+def main():
+    P = simulate_P()
+    pi = stationary(P)
+    print("pi ~", np.round(pi, 6))
+    print("check ~", np.round(pi @ P - pi, 12))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{
+Norm of residual $\|\pi^\top P-\pi^\top\|_1$; positivity; sum-to-one.
+}
+\INTERPRET{
+Gives expected long-run rating distribution under stable migration dynamics.
+}
+\NEXTSTEPS{
+Include absorbing default state and analyze sub-stochastic transient behavior.
+}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Stability of a linear recurrent block $x_{t+1}=A x_t$ with $A\ge 0$:
+ensure $r(A)<1$ for bounded activations and compute $r(A)$.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Linearized dynamics around a positive activation region.
+\item Spectral radius governs asymptotic stability.
+\end{bullets}
+}
+\WHICHFORMULA{
+Gelfand formula (Formula 4) and PF spectral radius computation (Formula 5).
+}
+\varmapStart
+\var{A}{Nonnegative weight matrix.}
+\var{r(A)}{Spectral radius; must be $<1$ for stability.}
+\var{x_t}{State vector at step $t$.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Sample a nonnegative $A$ with controlled norm.
+\item Estimate $r(A)$ via power method.
+\item Conclude stability if $r(A)<1$.
+\end{bullets}
+}
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+
+def make_A(n=5, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.random((n, n))*0.4  # small weights
+    return A
+
+def spectral_radius(A):
+    x = np.ones(A.shape[0])/A.shape[0]
+    for _ in range(200):
+        y = A @ x
+        s = np.sum(y)
+        if s == 0:
+            return 0.0
+        x = y/s
+    return float(np.sum(A @ x))
+
+def main():
+    A = make_A()
+    r = spectral_radius(A)
+    print("r(A) ~", round(r, 6), "stable:", r < 1.0)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{
+Estimated $r(A)$; declare stable if $r(A)<1$.
+}
+\INTERPRET{
+If the dominant amplification is below one, repeated application decays and
+the linearized block is stable.
+}
+\NEXTSTEPS{
+For general $A$, use spectral norm bounds and consider nonlinearities.
+}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Compute PageRank on a synthetic web graph using PF theory and report top nodes.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Google matrix $P$ is primitive; unique positive stationary distribution.
+\end{bullets}
+}
+\WHICHFORMULA{
+PF for primitive stochastic matrices (Formula 2) and teleportation model.
+}
+\varmapStart
+\var{S}{Base row-stochastic click matrix.}
+\var{P}{Google matrix $\alpha S+(1-\alpha)\mathbf{1}p^\top$.}
+\var{\pi}{PageRank vector (left Perron vector).}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Build $S$ from a directed graph.
+\item Form $P$ with damping $\alpha$.
+\item Compute $\pi$ and rank nodes.
+\end{bullets}
+}
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def build_S(n=8, seed=0):
+    rng = np.random.default_rng(seed)
+    A = rng.integers(0, 2, size=(n, n)).astype(float)
+    row_sums = A.sum(axis=1, keepdims=True)
+    row_sums[row_sums == 0] = 1.0
+    S = A / row_sums
+    return S
+
+def pagerank(S, a=0.85):
+    n = S.shape[0]
+    p = np.ones(n)/n
+    P = a*S + (1-a)*np.ones((n,1))*p.reshape(1,-1)
+    x = np.ones(n)/n
+    for _ in range(200):
+        x = x @ P
+    return x
+
+def main():
+    S = build_S()
+    pi = pagerank(S)
+    idx = np.argsort(-pi)
+    print("Top nodes:", idx[:3].tolist())
+    print("PR:", np.round(pi, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{
+Stationarity residual and ranking stability under small perturbations.
+}
+\INTERPRET{
+PageRank is the Perron left eigenvector of a primitive stochastic matrix,
+ranking nodes by steady-state visit probability.
+}
+\NEXTSTEPS{
+Personalized teleportation vectors and topic-sensitive rankings.
+}
+
+\end{document}

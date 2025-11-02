@@ -1,0 +1,932 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Expected Components}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1630/E}}
+\LINE{DIFFICULTY / RATING}{2900}
+\STATEMENT{Given a cyclic array $a$ of size $n$, where $a_i$ is the value of $a$ in the $i$-th position, there may be repeated values. A permutation of $a$ is considered equal to another permutation of $a$ if and only if their values are the same for each position $i$ or we can transform them to each other by performing some cyclic rotation. For a cyclic array $b$, define its number of components as the number of connected components in a graph where the vertices are the positions of $b$ and we add an edge between each pair of adjacent positions of $b$ with equal values (note that in a cyclic array the first and last positions are also adjacent).
+
+Find the expected value of components of a permutation of $a$ if we select it equiprobably over the set of all the different permutations of $a$.
+
+Input:
+The input consists of multiple test cases. The first line contains a single integer $t$ ($1 \le t \le 10^5$) — the number of test cases. Description of the test cases follows.
+
+The first line of each test case contains a single integer $n$ ($1 \le n \le 10^6$) — the size of the cyclic array $a$.
+
+The second line of each test case contains $n$ integers, the $i$-th of them is the value $a_i$ ($1 \le a_i \le n$).
+
+It is guaranteed that the sum of $n$ over all test cases does not exceed $10^6$.
+
+It is guaranteed that the total number of different permutations of $a$ is not divisible by $M$.
+
+Output:
+For each test case print a single integer — the expected value of components of a permutation of $a$ if we select it equiprobably over the set of all the different permutations of $a$ modulo $998{,}244{,}353$.
+
+Formally, let $M = 998{,}244{,}353$. It can be shown that the answer can be expressed as an irreducible fraction $\tfrac{p}{q}$, where $p$ and $q$ are integers and $q \not\equiv 0 \pmod{M}$. Output the integer equal to $p \cdot q^{-1} \bmod M$. In other words, output such an integer $x$ that $0 \le x < M$ and $x \cdot q \equiv p \pmod{M}$.
+
+Note:
+In the first test case there is only $1$ different permutation of $a$:
+- $[1, 1, 1, 1]$ has $1$ component.
+- Therefore the expected value of components is $\tfrac{1}{1} = 1$.
+
+In the second test case there are $4$ ways to permute the cyclic array $a$, but there is only $1$ different permutation of $a$:
+- $[1, 1, 1, 2]$, $[1, 1, 2, 1]$, $[1, 2, 1, 1]$ and $[2, 1, 1, 1]$ are the same permutation and have $2$ components.
+- Therefore the expected value of components is $\tfrac{2}{1} = 2$.
+
+In the third test case there are $6$ ways to permute the cyclic array $a$, but there are only $2$ different permutations of $a$:
+- $[1, 1, 2, 2]$, $[2, 1, 1, 2]$, $[2, 2, 1, 1]$ and $[1, 2, 2, 1]$ are the same permutation and have $2$ components.
+- $[1, 2, 1, 2]$ and $[2, 1, 2, 1]$ are the same permutation and have $4$ components.
+- Therefore the expected value of components is $\tfrac{2+4}{2} = \tfrac{6}{2} = 3$.
+
+In the fourth test case there are $120$ ways to permute the cyclic array $a$, but there are only $24$ different permutations of $a$:
+- Any permutation of $a$ has $5$ components.
+- Therefore the expected value of components is $\tfrac{24\cdot 5}{24} = \tfrac{120}{24} = 5$.}
+\BREAKDOWN{Rephrase the goal as computing the average number of equal-value runs on a cycle, over all circular permutations of a multiset, i.e., modulo rotations. Use Burnside's lemma to average a rotation-invariant quantity: reduce to sums over divisors of $n$, counting fixed sequences and summing components over those. Precompute factorials and Euler's totient to handle all test cases within constraints.}
+\ELI{The answer is the average number of blocks of equal numbers on a circle if you place the multiset values around the circle, counting two arrangements the same if one is a rotation of the other.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Multiple test cases. For each test case:
+- Integer $n$ ($1 \le n \le 10^6$).
+- $n$ integers $a_i$ ($1 \le a_i \le n$). The total $\sum n \le 10^6$.}
+\OUTPUTS{For each test case, output a single integer: the expected number of components over distinct permutations modulo $998{,}244{,}353$. Formally, if the expectation is $\tfrac{p}{q}$ in lowest terms, print $p \cdot q^{-1} \bmod 998{,}244{,}353$.}
+\SAMPLES{Examples:
+- Input: $n=4$, $a=[1,1,1,1]$ $\to$ Output: $1$.
+- Input: $n=4$, $a=[1,1,2,2]$ $\to$ Output: $3$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $n = |a|$, and $c_v$ be counts of each distinct value $v$. We consider the group action of cyclic rotations $C_n$ on positionings of multiset $a$. The number of components of a placement $b$ is rotation-invariant and equals the number of equal-value runs on the cycle (with the special case that a constant cycle has $1$ component). We seek the average of this invariant over the set of rotation-orbits (distinct cyclic permutations).}
+\varmapStart
+\var{n}{length of the cyclic array}
+\var{c_v}{multiplicity of value $v$ in $a$}
+\var{g}{$\gcd$ of all $c_v$}
+\var{L}{a divisor of $g$; periodicity multiplier}
+\var{d}{base length $d=n/L$}
+\var{b_v}{reduced counts $b_v=c_v/L$}
+\var{\varphi(L)}{Euler's totient}
+\var{M}{modulus $998{,}244{,}353$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+\text{Let } A(b) &= \frac{d!}{\prod_v b_v!},\quad S_2(b)=\sum_v b_v^2.\\
+\text{If at least two } b_v>0:&\quad \sum_{\text{arrangements }B} \mathrm{components}(B) \\
+&= d \cdot A(b) - d \cdot \sum_{\text{arrangements }B} \mathbf{1}[B_1=B_2] \\
+&= d \cdot \frac{d!}{\prod b_v!} - d \cdot \frac{(d-2)!}{\prod b_v!} \sum_v b_v(b_v-1) \\
+&= \frac{d\,(d-2)!}{\prod b_v!}\,\bigl(d^2 - S_2(b)\bigr).
+\end{aligned}
+\]
+Using Burnside's lemma for rotation-invariant statistics over orbits:
+\begin{BreakableEquation*}
+\mathbb{E} = \frac{\sum_{L \mid g} \varphi(L)\,(d-2)!\, \bigl(d^2 - S_2(b)\bigr)\,\Big/\prod b_v!}{\tfrac{1}{n}\sum_{L \mid g} \varphi(L)\, d!\,\Big/\prod b_v!} = \frac{S}{D},\quad \text{with } E = \frac{S}{D}.
+\end{BreakableEquation*}
+Equivalently (computationally stable):
+\[
+\begin{aligned}
+S &= \sum_{L \mid g} \varphi(L)\,(d-2)!\, \bigl(d^2 - S_2(b)\bigr)\,\Big/\prod b_v!,\\
+D' &= \sum_{L \mid g} \varphi(L)\, d!\,\Big/\prod b_v!,\quad \text{and}\quad \mathbb{E} \equiv S \cdot \frac{n}{D'} \pmod{M}.
+\end{aligned}
+\]
+If all $b_v$ vanish except one (constant cycle), the total components sum equals $1$ and is handled separately.}
+\ASSUMPTIONS{Values are labels only. Distinct permutations are modulo rotation. Factorials and inverses are modulo $M$ with precomputation. The group is cyclic and Burnside applies.}
+\INVARIANTS{Rotation-invariance of components. For $L \mid g$, the fixed configurations under rotation by $n/L$ are $L$-periodic repetitions of a base string of length $d=n/L$.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{For small $n$, enumerate all permutations, canonicalize by minimal rotation to deduplicate orbits, and average the component count.}
+\ASSUMPTIONS{Feasible only for very small $n$ (e.g., $n \le 8$) due to factorial growth. Used here for validation tests only.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Generate all unique permutations of $a$ (respecting duplicates).
+\item For each, compute a canonical representative under rotation and count components.
+\item Average components over unique canonical representatives; output modulo $M$.
+\end{algosteps}
+\COMPLEXITY{Brute force is $O(n! \cdot n)$ time and $O(n)$ extra space; infeasible for large $n$.}
+\[
+\begin{aligned}
+T(n) &\approx n! \cdot n, \\
+S(n) &= O(n).
+\end{aligned}
+\]
+\CORRECTNESS{By enumerating all orbits explicitly, we compute the exact expected value.}
+\EDGECASES{All equal values $\Rightarrow$ expectation $=1$. Two values alternating $\Rightarrow$ maximal components.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys, os, math
+from collections import Counter, defaultdict
+from itertools import permutations
+
+MOD = 998244353
+
+def modinv(x, mod=MOD):
+    return pow(x, mod-2, mod)
+
+def components_of_cycle(seq):
+    n = len(seq)
+    # Special-case constant cycle
+    all_same = True
+    for i in range(1, n):
+        if seq[i] != seq[0]:
+            all_same = False
+            break
+    if all_same:
+        return 1
+    cnt = 0
+    for i in range(n):
+        if seq[i] != seq[(i+1) % n]:
+            cnt += 1
+    return cnt
+
+def canonical_rotation(seq):
+    # Minimal rotation lexicographically as a canonical representative
+    n = len(seq)
+    best = None
+    for s in range(n):
+        rot = tuple(seq[s:]+seq[:s])
+        if best is None or rot < best:
+            best = rot
+    return best
+
+def brute_expected(a):
+    n = len(a)
+    # Unique permutations with duplicates respected
+    # Use Counter to avoid duplicates via set construction
+    seen_perms = set()
+    for p in set(permutations(a)):
+        seen_perms.add(p)
+    orbit_comp = {}
+    for p in seen_perms:
+        key = canonical_rotation(list(p))
+        if key not in orbit_comp:
+            orbit_comp[key] = components_of_cycle(list(key))
+    num = sum(orbit_comp.values())
+    den = len(orbit_comp)
+    return (num * modinv(den)) % MOD
+
+# --- Optimized solver (used for real constraints) ---
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.read().strip().split()
+    it = iter(data)
+    t = int(next(it))
+    cases = []
+    maxn = 0
+    for _ in range(t):
+        n = int(next(it))
+        arr = [int(next(it)) for _ in range(n)]
+        cases.append(arr)
+        maxn = max(maxn, n)
+    return t, cases, maxn
+
+def precompute(maxn):
+    # factorials
+    fact = [1]*(maxn+5)
+    invfact = [1]*(maxn+5)
+    for i in range(1, maxn+5):
+        fact[i] = (fact[i-1]*i) % MOD
+    invfact[maxn+4] = modinv(fact[maxn+4])
+    for i in range(maxn+4, 0, -1):
+        invfact[i-1] = (invfact[i]*i) % MOD
+    # Euler's totient up to maxn
+    phi = list(range(maxn+5))
+    for i in range(2, maxn+5):
+        if phi[i] == i:
+            for j in range(i, maxn+5, i):
+                phi[j] -= phi[j] // i
+    return fact, invfact, phi
+
+def solve_case(arr, fact, invfact, phi):
+    n = len(arr)
+    cnt = Counter(arr)
+    if len(cnt) == 1:
+        return 1
+    # Build frequency of counts
+    count_freq = Counter(cnt.values())
+    # gcd of counts
+    g = 0
+    for x in count_freq:
+        g = math.gcd(g, x)
+    # Divisors of g
+    divs = []
+    i = 1
+    while i*i <= g:
+        if g % i == 0:
+            divs.append(i)
+            if i*i != g:
+                divs.append(g//i)
+        i += 1
+    # Accumulate S and D'
+    S = 0
+    Dsum = 0
+    for L in divs:
+        d = n // L
+        # denomInv = prod invfact[count/L]^{freq}
+        denomInv = 1
+        S2_b_mod = 0
+        for c, f in count_freq.items():
+            x = c // L
+            denomInv = (denomInv * pow(invfact[x], f, MOD)) % MOD
+            S2_b_mod = (S2_b_mod + f * (x % MOD) * (x % MOD)) % MOD
+        term_phi = phi[L]
+        termD = term_phi * fact[d] % MOD
+        termD = termD * denomInv % MOD
+        Dsum = (Dsum + termD) % MOD
+        # (d-2)! only valid for d >= 2; given len(cnt) >= 2, and L | all counts, we have d >= 2
+        if d >= 2:
+            val = ( (d % MOD) * (d % MOD) - S2_b_mod ) % MOD
+            termS = term_phi * fact[d-2] % MOD
+            termS = termS * val % MOD
+            termS = termS * denomInv % MOD
+            S = (S + termS) % MOD
+        else:
+            # d == 1 cannot occur when there are >= 2 distinct values
+            pass
+    ans = S * (n % MOD) % MOD
+    ans = ans * modinv(Dsum) % MOD
+    return ans
+
+def solve_all(cases):
+    maxn = max(len(a) for a in cases) if cases else 0
+    fact, invfact, phi = precompute(maxn)
+    out = []
+    for arr in cases:
+        out.append(str(solve_case(arr, fact, invfact, phi)))
+    return "\n".join(out)
+
+def main():
+    t, cases, maxn = read_input()
+    fact, invfact, phi = precompute(maxn)
+    out_lines = []
+    for arr in cases:
+        out_lines.append(str(solve_case(arr, fact, invfact, phi)))
+    sys.stdout.write("\n".join(out_lines))
+
+def _run_unit_tests():
+    # Tiny sanity tests comparing brute vs optimized
+    fact, invfact, phi = precompute(20)
+    tests = [
+        [1,1,1,1],
+        [1,1,1,2],
+        [1,1,2,2],
+        [1,2,3,4,5],
+        [1,1,1,1,1,1],
+        [1,1,2,3],
+        [2,2,2,3,3,4],
+    ]
+    for arr in tests:
+        got = solve_case(arr, fact, invfact, phi)
+        if len(arr) <= 8:
+            want = brute_expected(arr)
+            assert got == want, (arr, got, want)
+    # Specific expected values
+    assert solve_case([1,1,1,1], fact, invfact, phi) == 1
+    assert solve_case([1,1,1,2], fact, invfact, phi) == 2
+    assert solve_case([1,1,2,2], fact, invfact, phi) == 3
+    assert solve_case([1,2,3,4,5], fact, invfact, phi) == 5
+
+if __name__ == "__main__":
+    if "TEST" in os.environ:
+        _run_unit_tests()
+    else:
+        main()
+\end{minted}
+\VALIDATION{Cross-check against brute force for $n \le 8$ on random and structured cases; assert known examples.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Burnside Averaging with Period Grouping}
+\WHICHFORMULA{Use Burnside's lemma to average a rotation-invariant quantity over orbits by summing over stabilizers (rotations). Group rotations by $L = n/\gcd(n,k)$ and require $L \mid c_v$ for all $v$.}
+\ASSUMPTIONS{Precompute factorials and totients up to $\max n$; reduce per-test work to iterating over divisors of $g=\gcd(c_v)$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Count multiplicities $c_v$ and build a histogram of counts.
+\item Compute $g=\gcd_v c_v$ and enumerate its divisors $L$; set $d=n/L$.
+\item For each $L$, compute:
+\begin{bullets}
+\item $A(b) = \dfrac{d!}{\prod (c_v/L)!}$ via factorial tables.
+\item $S_2(b)=\sum (c_v/L)^2$ from the histogram.
+\item Accumulate $D' \mathrel{+}= \varphi(L)\,A(b)$ and $S \mathrel{+}= \varphi(L)\,(d-2)!\,(d^2 - S_2(b))/\prod (c_v/L)!$.
+\end{bullets}
+\item Output $E \equiv S \cdot n \cdot (D')^{-1} \bmod M$, unless all $c_v$ belong to one value (then answer is $1$).}
+\end{algosteps}
+\COMPLEXITY{Per test, $O(\tau(g) \cdot K)$ multiplications where $\tau(g)$ is the number of divisors of $g$ and $K$ is the number of distinct count values. Precomputation $O(\max n)$ for factorials and totients.}
+\[
+\begin{aligned}
+T_{\text{pre}} &= O(\max n),\quad T_{\text{per test}} = O(\tau(g)\cdot K),\\
+S &= O(\max n).
+\end{aligned}
+\]
+\CORRECTNESS{Burnside's lemma ensures averaging over orbits. For a fixed period $d$, components sum over fixed configurations equals $L$ times components sum over base sequences; this yields cancellation of $n$ in the numerator and a clean denominator.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys, os, math
+from collections import Counter
+
+MOD = 998244353
+def modinv(x): return pow(x, MOD-2, MOD)
+
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.read().strip().split()
+    it = iter(data)
+    t = int(next(it))
+    cases = []
+    maxn = 0
+    for _ in range(t):
+        n = int(next(it))
+        arr = [int(next(it)) for _ in range(n)]
+        cases.append(arr)
+        maxn = max(maxn, n)
+    return t, cases, maxn
+
+def precompute(maxn):
+    fact = [1]*(maxn+5)
+    invfact = [1]*(maxn+5)
+    for i in range(1, maxn+5):
+        fact[i] = (fact[i-1]*i) % MOD
+    invfact[maxn+4] = modinv(fact[maxn+4])
+    for i in range(maxn+4, 0, -1):
+        invfact[i-1] = (invfact[i]*i) % MOD
+    phi = list(range(maxn+5))
+    for i in range(2, maxn+5):
+        if phi[i] == i:
+            for j in range(i, maxn+5, i):
+                phi[j] -= phi[j] // i
+    return fact, invfact, phi
+
+def solve_case(arr, fact, invfact, phi):
+    n = len(arr)
+    cnt = Counter(arr)
+    if len(cnt) == 1:
+        return 1
+    count_freq = Counter(cnt.values())
+    g = 0
+    for x in count_freq:
+        g = math.gcd(g, x)
+    divs = []
+    i = 1
+    while i*i <= g:
+        if g % i == 0:
+            divs.append(i)
+            if i*i != g:
+                divs.append(g//i)
+        i += 1
+    S = 0
+    Dsum = 0
+    for L in divs:
+        d = n // L
+        denomInv = 1
+        S2_b_mod = 0
+        for c, f in count_freq.items():
+            x = c // L
+            denomInv = (denomInv * pow(invfact[x], f, MOD)) % MOD
+            S2_b_mod = (S2_b_mod + f * (x % MOD) * (x % MOD)) % MOD
+        term_phi = phi[L]
+        Dsum = (Dsum + term_phi * fact[d] % MOD * denomInv) % MOD
+        if d >= 2:
+            val = ( (d % MOD) * (d % MOD) - S2_b_mod ) % MOD
+            S = (S + term_phi * fact[d-2] % MOD * val % MOD * denomInv) % MOD
+    return (S * (n % MOD) % MOD) * modinv(Dsum) % MOD
+
+def solve_all(cases):
+    maxn = max(len(a) for a in cases) if cases else 0
+    fact, invfact, phi = precompute(maxn)
+    return "\n".join(str(solve_case(arr, fact, invfact, phi)) for arr in cases)
+
+def main():
+    t, cases, maxn = read_input()
+    fact, invfact, phi = precompute(maxn)
+    out = []
+    for arr in cases:
+        out.append(str(solve_case(arr, fact, invfact, phi)))
+    sys.stdout.write("\n".join(out))
+
+def _tests():
+    fact, invfact, phi = precompute(20)
+    # Known examples
+    assert solve_case([1,1,1,1], fact, invfact, phi) == 1
+    assert solve_case([1,1,1,2], fact, invfact, phi) == 2
+    assert solve_case([1,1,2,2], fact, invfact, phi) == 3
+    assert solve_case([1,2,3,4,5], fact, invfact, phi) == 5
+    # Mixed
+    assert solve_case([1,1,2,3], fact, invfact, phi) >= 2  # sanity lower bound
+
+if __name__ == "__main__":
+    if "TEST" in os.environ:
+        _tests()
+    else:
+        main()
+\end{minted}
+\VALIDATION{Checks include exact known answers and sanity on mixed cases.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Burnside + Factorials + Totients}
+\WHICHFORMULA{Compute
+\[
+S=\sum_{L \mid g}\varphi(L)\,(d-2)!\,(d^2 - \sum_v (c_v/L)^2)\,\Big/\prod_v (c_v/L)!,\quad
+D'=\sum_{L \mid g}\varphi(L)\,d!\,\Big/\prod_v (c_v/L)!,
+\]
+then $\text{answer} \equiv S \cdot n \cdot (D')^{-1} \pmod{M}$ (unless all values equal $\Rightarrow 1$).}
+\ASSUMPTIONS{All factorials and $\varphi(\cdot)$ are precomputed up to $\max n$. Only divisors of $g=\gcd(c_v)$ are iterated, which is small.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Count multiplicities $c_v$ and histogram by count value.
+\item Compute $g=\gcd$ of all counts; enumerate divisors $L$.
+\item For each $L$: set $d=n/L$, compute $\prod (c_v/L)!$ via the histogram and $S_2=\sum (c_v/L)^2$.
+\item Accumulate $S$ and $D'$ using factorial tables and $\varphi(L)$.
+\item Return $S \cdot n \cdot (D')^{-1} \bmod M$; if only one distinct value overall, return $1$.
+\end{algosteps}
+\OPTIMALITY{Runs in near-linear precomputation plus small per-test overhead. This matches editorial bounds and is optimal under standard models.}
+\COMPLEXITY{Precompute $O(\max n)$; per-test $O(\tau(g)\cdot K)$ where $K$ is the number of distinct count values and $\tau(g)$ is the divisor count of $g$. Memory $O(\max n)$.}
+\[
+\begin{aligned}
+T_{\text{total}} &= O(\max n + \sum \tau(g)\cdot K),\quad S = O(\max n).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys, os, math
+from collections import Counter
+
+MOD = 998244353
+def modinv(x): return pow(x, MOD-2, MOD)
+
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.read().strip().split()
+    it = iter(data)
+    t = int(next(it))
+    cases = []
+    maxn = 0
+    for _ in range(t):
+        n = int(next(it))
+        arr = [int(next(it)) for _ in range(n)]
+        cases.append(arr)
+        maxn = max(maxn, n)
+    return t, cases, maxn
+
+def precompute(maxn):
+    size = maxn + 5
+    fact = [1]*size
+    invfact = [1]*size
+    for i in range(1, size):
+        fact[i] = (fact[i-1]*i) % MOD
+    invfact[size-1] = modinv(fact[size-1])
+    for i in range(size-1, 0, -1):
+        invfact[i-1] = (invfact[i]*i) % MOD
+    phi = list(range(size))
+    for i in range(2, size):
+        if phi[i] == i:
+            for j in range(i, size, i):
+                phi[j] -= phi[j] // i
+    return fact, invfact, phi
+
+def solve_case(arr, fact, invfact, phi):
+    n = len(arr)
+    cnt = Counter(arr)
+    if len(cnt) == 1:
+        return 1
+    count_freq = Counter(cnt.values())
+    g = 0
+    for x in count_freq:
+        g = math.gcd(g, x)
+    divs = []
+    i = 1
+    while i*i <= g:
+        if g % i == 0:
+            divs.append(i)
+            if i*i != g:
+                divs.append(g//i)
+        i += 1
+    S = 0
+    Dsum = 0
+    for L in divs:
+        d = n // L
+        denomInv = 1
+        S2_b_mod = 0
+        for c, f in count_freq.items():
+            x = c // L
+            denomInv = (denomInv * pow(invfact[x], f, MOD)) % MOD
+            S2_b_mod = (S2_b_mod + f * (x % MOD) * (x % MOD)) % MOD
+        term_phi = phi[L]
+        Dsum = (Dsum + term_phi * fact[d] % MOD * denomInv) % MOD
+        if d >= 2:
+            val = ( (d % MOD) * (d % MOD) - S2_b_mod ) % MOD
+            S = (S + term_phi * fact[d-2] % MOD * val % MOD * denomInv) % MOD
+    return (S * (n % MOD) % MOD) * modinv(Dsum) % MOD
+
+def solve_all(cases):
+    maxn = max((len(a) for a in cases), default=0)
+    fact, invfact, phi = precompute(maxn)
+    out = []
+    for arr in cases:
+        out.append(str(solve_case(arr, fact, invfact, phi)))
+    return "\n".join(out)
+
+def main():
+    t, cases, maxn = read_input()
+    fact, invfact, phi = precompute(maxn)
+    out = []
+    for arr in cases:
+        out.append(str(solve_case(arr, fact, invfact, phi)))
+    sys.stdout.write("\n".join(out))
+
+def _tests():
+    fact, invfact, phi = precompute(50)
+    assert solve_case([1,1,1,1], fact, invfact, phi) == 1
+    assert solve_case([1,1,1,2], fact, invfact, phi) == 2
+    assert solve_case([1,1,2,2], fact, invfact, phi) == 3
+
+if __name__ == "__main__":
+    if "TEST" in os.environ:
+        _tests()
+    else:
+        main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts on canonical small arrays.}
+\RESULT{An integer in $[0,M)$ equal to the expected components modulo $M$, with ties irrelevant since expectation is unique.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on small arrays cross-checked against brute force; edge tests with all equal, all distinct, and mixed multiplicities; randomized small stress.}
+\LINE{CROSS-CHECKS}{Compare brute vs optimized for $n \le 8$. Ensure agreement on samples and random cases.}
+\LINE{EDGE-CASE GENERATOR}{Generate arrays with: all equal; two values; many singletons; counts sharing large $\gcd$; prime $n$ vs composite $n$.}
+\begin{minted}{python}
+import random, os
+
+def gen_all_equal(n, val=1):
+    return [val]*n
+
+def gen_two_values(n, a=1, b=2, k=None):
+    if k is None:
+        k = n//2
+    return [a]*k + [b]*(n-k)
+
+def gen_all_distinct(n):
+    return list(range(1, n+1))
+
+def gen_random_multiset(n, maxv=None):
+    if maxv is None:
+        maxv = n
+    return [random.randint(1, maxv) for _ in range(n)]
+
+def reference_solution_io():
+    # Ready-to-submit wrapper using the optimal solver from Approach C
+    import sys, math
+    from collections import Counter
+
+    MOD = 998244353
+    def modinv(x): return pow(x, MOD-2, MOD)
+
+    def read_input():
+        data = sys.stdin.read().strip().split()
+        it = iter(data)
+        t = int(next(it))
+        cases = []
+        maxn = 0
+        for _ in range(t):
+            n = int(next(it))
+            arr = [int(next(it)) for _ in range(n)]
+            cases.append(arr)
+            maxn = max(maxn, n)
+        return t, cases, maxn
+
+    def precompute(maxn):
+        size = maxn + 5
+        fact = [1]*size
+        invfact = [1]*size
+        for i in range(1, size):
+            fact[i] = (fact[i-1]*i) % MOD
+        invfact[size-1] = modinv(fact[size-1])
+        for i in range(size-1, 0, -1):
+            invfact[i-1] = (invfact[i]*i) % MOD
+        phi = list(range(size))
+        for i in range(2, size):
+            if phi[i] == i:
+                for j in range(i, size, i):
+                    phi[j] -= phi[j] // i
+        return fact, invfact, phi
+
+    def solve_case(arr, fact, invfact, phi):
+        n = len(arr)
+        cnt = Counter(arr)
+        if len(cnt) == 1:
+            return 1
+        count_freq = Counter(cnt.values())
+        g = 0
+        for x in count_freq:
+            g = math.gcd(g, x)
+        divs = []
+        i = 1
+        while i*i <= g:
+            if g % i == 0:
+                divs.append(i)
+                if i*i != g:
+                    divs.append(g//i)
+            i += 1
+        S = 0
+        Dsum = 0
+        for L in divs:
+            d = n // L
+            denomInv = 1
+            S2_b_mod = 0
+            for c, f in count_freq.items():
+                x = c // L
+                denomInv = (denomInv * pow(invfact[x], f, MOD)) % MOD
+                S2_b_mod = (S2_b_mod + f * (x % MOD) * (x % MOD)) % MOD
+            term_phi = phi[L]
+            Dsum = (Dsum + term_phi * fact[d] % MOD * denomInv) % MOD
+            if d >= 2:
+                val = ( (d % MOD) * (d % MOD) - S2_b_mod ) % MOD
+                S = (S + term_phi * fact[d-2] % MOD * val % MOD * denomInv) % MOD
+        return (S * (n % MOD) % MOD) * modinv(Dsum) % MOD
+
+    def main():
+        t, cases, maxn = read_input()
+        fact, invfact, phi = precompute(maxn)
+        out = []
+        for arr in cases:
+            out.append(str(solve_case(arr, fact, invfact, phi)))
+        sys.stdout.write("\n".join(out))
+
+    if __name__ == "__main__":
+        main()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys, math
+from collections import Counter
+
+MOD = 998244353
+def modinv(x): return pow(x, MOD-2, MOD)
+
+def read_input(data=None):
+    if data is None:
+        data = sys.stdin.read().strip().split()
+    it = iter(data)
+    t = int(next(it))
+    cases = []
+    maxn = 0
+    for _ in range(t):
+        n = int(next(it))
+        arr = [int(next(it)) for _ in range(n)]
+        cases.append(arr)
+        maxn = max(maxn, n)
+    return t, cases, maxn
+
+def precompute(maxn):
+    size = maxn + 5
+    fact = [1]*size
+    invfact = [1]*size
+    for i in range(1, size):
+        fact[i] = (fact[i-1]*i) % MOD
+    invfact[size-1] = modinv(fact[size-1])
+    for i in range(size-1, 0, -1):
+        invfact[i-1] = (invfact[i]*i) % MOD
+    phi = list(range(size))
+    for i in range(2, size):
+        if phi[i] == i:
+            for j in range(i, size, i):
+                phi[j] -= phi[j] // i
+    return fact, invfact, phi
+
+def solve_case(arr, fact, invfact, phi):
+    n = len(arr)
+    cnt = Counter(arr)
+    if len(cnt) == 1:
+        return 1
+    count_freq = Counter(cnt.values())
+    g = 0
+    for x in count_freq:
+        g = math.gcd(g, x)
+    divs = []
+    i = 1
+    while i*i <= g:
+        if g % i == 0:
+            divs.append(i)
+            if i*i != g:
+                divs.append(g//i)
+        i += 1
+    S = 0
+    Dsum = 0
+    for L in divs:
+        d = n // L
+        denomInv = 1
+        S2_b_mod = 0
+        for c, f in count_freq.items():
+            x = c // L
+            denomInv = (denomInv * pow(invfact[x], f, MOD)) % MOD
+            S2_b_mod = (S2_b_mod + f * (x % MOD) * (x % MOD)) % MOD
+        term_phi = phi[L]
+        Dsum = (Dsum + term_phi * fact[d] % MOD * denomInv) % MOD
+        if d >= 2:
+            val = ( (d % MOD) * (d % MOD) - S2_b_mod ) % MOD
+            S = (S + term_phi * fact[d-2] % MOD * val % MOD * denomInv) % MOD
+    return (S * (n % MOD) % MOD) * modinv(Dsum) % MOD
+
+def main():
+    t, cases, maxn = read_input()
+    fact, invfact, phi = precompute(maxn)
+    out = []
+    for arr in cases:
+        out.append(str(solve_case(arr, fact, invfact, phi)))
+    sys.stdout.write("\n".join(out))
+
+def _asserts():
+    fact, invfact, phi = precompute(50)
+    assert solve_case([1,1,1,1], fact, invfact, phi) == 1
+    assert solve_case([1,1,1,2], fact, invfact, phi) == 2
+    assert solve_case([1,1,2,2], fact, invfact, phi) == 3
+    assert solve_case([1,2,3,4,5], fact, invfact, phi) == 5
+
+if __name__ == "__main__":
+    if "TEST" in os.environ:
+        _asserts()
+    else:
+        main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Average the number of equal-value runs on a cycle over distinct circular permutations using Burnside's lemma.}
+\WHY{Combines group actions with combinatorics and modular arithmetic — a classic pattern in hard interviews and advanced competitive problems.}
+\CHECKLIST{
+- Count multiplicities $c_v$ and histogram them.
+- Compute $g=\gcd(c_v)$ and enumerate divisors $L$.
+- For each $L$: compute $d=n/L$, $S_2$, and denominator via factorial tables.
+- Accumulate $S$ and $D'$ with $\varphi(L)$ weights.
+- Output $S \cdot n / D'$ modulo $M$; handle all-equal case as $1$.}
+\EDGECASES{
+- All elements equal $\Rightarrow$ answer $1$.
+- All elements distinct $\Rightarrow$ answer $n$.
+- Two values with counts $(k, n-k)$ including $k=1$ and $k=n-1$.
+- Prime $n$ vs composite $n$.
+- Large $n$ with $\gcd$ small ($=1$) vs large ($>1$).
+- $n=1$ and $n=2$ edge lengths.}
+\PITFALLS{
+- Forgetting the special constant-cycle case (components $=1$, not $0$).
+- Missing the factor $n$ in $S \cdot n / D'$ after Burnside cancellation.
+- Integer division $c_v/L$ must be exact; only iterate $L \mid g$.
+- Modular inverses: precompute factorial inverses; avoid dividing directly.
+- Overflow or slowness if recomputing factorials per test.
+- Incorrect totient computation or wrong grouping by rotations.}
+\FAILMODES{A naive average over all linear permutations (not mod rotations) yields a biased result. Ignoring the periodicity constraint for fixed rotations invalidates counts. This method survives by exact Burnside aggregation.}
+\ELI{Imagine placing colored beads around a bracelet. We average how many color blocks appear, but only distinct bracelets matter. Burnside counts bracelets by looking at symmetries (rotations), and a tidy formula with factorials and Euler's totient gives the final expected number.}
+\NotePages{3}
+
+\end{document}

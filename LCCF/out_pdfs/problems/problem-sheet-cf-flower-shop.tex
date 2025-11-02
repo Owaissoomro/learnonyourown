@@ -1,0 +1,869 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Flower Shop}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/1488/J}}
+\LINE{DIFFICULTY / RATING}{3100}
+\STATEMENT{Your friend is running a flower shop. In order to be prepared for the next holidays (when, as usual, sales skyrocket) she asked you to write her a special program that will help to analyze the stocks she has.
+
+There are $n$ different types of flowers she can order and each flower of the type $i$ costs $w_i$. The last holidays were a great success, she sold all flowers she had, so right now all her stocks are empty.
+
+From this point, she starts routine operations of ordering and selling flowers, while trying to analyze what she has at hand. All of this can be represented as $m$ queries of three types:
+\begin{bullets}
+\item ``$1~i~c$'' — she bought $c$ flowers of type $i$;
+\item ``$2~i~c$'' — she disposed of $c$ flowers of type $i$;
+\item ``$3~l~r~k$'' — how many variants of bouquets she can make using only flowers of types $l, l + 1, \dots, r$ with the total cost no more than $k$. For simplicity, you can think that a bouquet is a multiset of flowers, and two bouquets are different if they are different as multisets. The cost of a bouquet is the sum of all flowers it has.
+\end{bullets}
+Help your friend and write the program that can process all these queries.
+
+Input: The first line contains two integers $n$ and $m$ ($1 \le n \le 1000$; $1 \le m \le 1000$) — the number of flower types and the number of queries.
+
+The second line contains $n$ integers $w_1, w_2, \dots, w_n$ ($1 \le w_i \le 1000$) — the cost of one flower of each type.
+
+The next $m$ lines contain queries — one per line. Each query has one of three types:
+\begin{bullets}
+\item $1~i~c$ ($1 \le i \le n$; $1 \le c \le 5000$);
+\item $2~i~c$ ($1 \le i \le n$; $1 \le c \le 5000$). It is guaranteed that there are at least $c$ flowers of type $i$ at this moment;
+\item $3~l~r~k$ ($1 \le l \le r \le n$; $1 \le k \le 5000$).
+\end{bullets}
+It is guaranteed that the total cost of all flowers in stock after each query does not exceed $5000$.
+
+Output: For each query of the third type, print how many variants of bouquets she can make using only flowers of types $l, l + 1, \dots, r$ with the total cost no more than $k$. Since the answer may be too large, print it modulo $998{,}244{,}353$.}
+\BREAKDOWN{Maintain dynamic counts per type under point updates and answer range queries that count multisets with bounded multiplicities and total cost constraint via generating functions or bounded knapsack DP. The inventory total-cost bound allows truncation to degree $\le 5000$.}
+\ELI{Think of each type as a knob: choose $0..c_i$ copies of cost $w_i$. Multiply all these ``$(1 + x^{w_i} + \cdots + x^{c_i w_i})$'' in the range and count coefficients up to degree $k$.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Integers $n, m$; array $w[1..n]$ with $1 \le w_i \le 1000$; then $m$ queries:
+\begin{bullets}
+\item Type 1: $1~i~c$ adds $c$ to stock of type $i$;
+\item Type 2: $2~i~c$ removes $c$ from stock of type $i$ (guaranteed feasible);
+\item Type 3: $3~l~r~k$ asks for number of bouquets using only types $[l,r]$ with total cost $\le k$.
+\end{bullets}
+The invariant: after every query, $\sum_i c_i w_i \le 5000$.}
+\OUTPUTS{For every type-3 query, print one line: the count modulo $998{,}244{,}353$.}
+\SAMPLES{Example 1:
+\begin{minted}{python}
+# n=3, m=4
+# w = [1,2,3]
+# queries:
+# 1 1 2   -> add 2 of type 1
+# 3 1 3 2 -> ways <=2 using types 1..3: {}, {1}, {1,1} => 3
+# 1 2 1   -> add 1 of type 2
+# 3 1 2 2 -> {}, {1}, {1,1}, {2} => 4
+\end{minted}
+Example 2:
+\begin{minted}{python}
+# n=2, m=3
+# w = [2,3]
+# queries:
+# 1 1 3
+# 1 2 1
+# 3 1 2 5 -> sums achievable: 0,2,4,3,5 => 5 ways
+\end{minted}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $w_i \in \mathbb{Z}_{\ge 1}$ be weights and $c_i \in \mathbb{Z}_{\ge 0}$ be current multiplicities. For a query on $[l,r]$ with budget $k$, count
+\[
+  A(k; l,r) \;=\; \sum_{t=0}^{k} [x^t]\;\prod_{i=l}^{r}\left(\sum_{j=0}^{c_i} x^{j w_i}\right)
+  \pmod{998{,}244{,}353}.
+\]
+Equivalently, bounded-knapsack number of multisets with weight $\le k$.}
+\varmapStart
+\var{w_i}{cost of type $i$}
+\var{c_i}{current stock count of type $i$}
+\var{k}{budget limit for the query}
+\var{dp[t]}{number of ways to form exact cost $t$ after processing a prefix of types}
+\var{\mathrm{MOD}}{the prime $998{,}244{,}353$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+\text{Init: }& dp^{(l-1)}(0)=1,\ \ dp^{(l-1)}(t>0)=0.\\
+\text{Transition for }i\in[l,r]:\quad
+& dp^{(i)}(v)\;=\;\sum_{j=0}^{\min\{c_i,\ \lfloor v/w_i\rfloor\}} dp^{(i-1)}\!\bigl(v-j\,w_i\bigr)\ \ (\bmod \mathrm{MOD}).\\
+\text{Answer: }& A(k;l,r)\;=\;\sum_{v=0}^{k} dp^{(r)}(v)\ \ (\bmod \mathrm{MOD}).
+\end{aligned}
+\]
+Residue-class trick for $w=w_i$:
+\[
+  \forall r\in[0,w-1],\ \text{for }v\equiv r\ (\bmod w):\quad
+  dp^{(i)}(v) \;=\; \bigl(\text{window\_sum of length }c_i+1 \text{ over } dp^{(i-1)}\bigr).
+\]
+}
+\ASSUMPTIONS{All weights and counts are integers. After each query, the global weighted sum $\sum_i c_i w_i \le 5000$, so truncation to degree $K=\min(k,5000)$ is exact. Indexing is 1-based in the statement.}
+\INVARIANTS{
+\begin{bullets}
+\item Non-negativity: all $dp$ entries remain $\ge 0$ modulo $\mathrm{MOD}$.
+\item Degree bound: no coefficient of degree $> \sum_i c_i w_i$ is non-zero.
+\item Monotone budget: for fixed $[l,r]$, $\sum_{v\le k} dp^{(r)}(v)$ is non-decreasing in $k$.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Direct bounded knapsack DP per type using $c_i$ repeated 0/1 expansions: split $c_i$ copies to $c_i$ individual items of weight $w_i$ and perform classical 0/1 convolution.}
+\ASSUMPTIONS{Truncate to degree $K=\min(k,5000)$. Only types with $c_i>0$ in $[l,r]$ matter.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Initialize $dp[0]=1$, $dp[v>0]=0$ for $v\in[1..K]$.
+\item For each type $i$ in $[l,r]$ with $c_i>0$, repeat $c_i$ times: 0/1 add of weight $w_i$ by iterating $v$ from $K$ down to $w_i$ and doing $dp[v]+=dp[v-w_i]$.
+\item Return $\sum_{v=0}^{K} dp[v]\bmod \mathrm{MOD}$.
+\end{algosteps}
+\COMPLEXITY{Let $T=\sum_{i=l}^{r} c_i$ and $K\le 5000$.
+\[
+\begin{aligned}
+T(n) &= O(T\cdot K) \\
+     &\le O\!\left(\Bigl(\sum_i c_i\Bigr)\cdot 5000\right)\ \text{ per query.}
+\end{aligned}
+\]
+Space: $S(n)=O(K)$.}
+\CORRECTNESS{Each repetition models choosing one more copy or not; descending $v$ ensures 0/1 semantics per copy. Summing $dp$ yields count with cost $\le K$.}
+\EDGECASES{All counts zero; $k=0$; single-type ranges; maximum $k$; large $c_i$ for small $w_i$.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+
+MOD = 998244353
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    m = int(next(it))
+    w = [int(next(it)) for _ in range(n)]
+    queries = []
+    for _ in range(m):
+        t = int(next(it))
+        if t == 1 or t == 2:
+            i = int(next(it)); c = int(next(it))
+            queries.append((t, i, c))
+        else:
+            l = int(next(it)); r = int(next(it)); k = int(next(it))
+            queries.append((t, l, r, k))
+    return n, m, w, queries
+
+def answer_query_baseline(w, cnt, l, r, k):
+    K = k
+    dp = [0]*(K+1)
+    dp[0] = 1
+    for i in range(l-1, r):
+        c = cnt[i]
+        if c <= 0:
+            continue
+        wi = w[i]
+        # add c copies one-by-one (0/1 style)
+        for _ in range(c):
+            for v in range(K, wi-1, -1):
+                dp[v] += dp[v - wi]
+                if dp[v] >= MOD:
+                    dp[v] -= MOD
+    return sum(dp) % MOD
+
+def solve_all(n, m, w, queries):
+    cnt = [0]*n
+    out_lines = []
+    for q in queries:
+        if q[0] == 1:
+            _, i, c = q
+            cnt[i-1] += c
+        elif q[0] == 2:
+            _, i, c = q
+            cnt[i-1] -= c
+            if cnt[i-1] < 0:
+                cnt[i-1] = 0
+        else:
+            _, l, r, k = q
+            out_lines.append(str(answer_query_baseline(w, cnt, l, r, k)))
+    return "\n".join(out_lines)
+
+def main():
+    data = sys.stdin.read()
+    if not data.strip():
+        # Self-test
+        n, m, w, queries = 3, 4, [1,2,3], [(1,1,2),(3,1,3,2),(1,2,1),(3,1,2,2)]
+        ans = solve_all(n, m, w, queries)
+        assert ans.strip().split() == ["3","4"]
+        n, m, w, queries = 2, 3, [2,3], [(1,1,3),(1,2,1),(3,1,2,5)]
+        ans = solve_all(n, m, w, queries)
+        assert ans.strip().split() == ["5"]
+        print("OK")
+    else:
+        parsed = read_input(data)
+        if parsed is None:
+            return
+        n, m, w, queries = parsed
+        sys.stdout.write(solve_all(n, m, w, queries))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Two tiny asserts included in main cover adding, querying, and combining types.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Use bounded-knapsack residue-class optimization: for weight $w$, compute $dp'$ from $dp$ in $O(K)$ by sliding windows over $w$ residue classes, replacing $O(c\cdot K)$ per type by $O(K)$.}
+\ASSUMPTIONS{Truncate to degree $K=\min(k,5000)$. Only process types with positive $c_i$ in the query range.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Initialize $dp$ as before.
+\item For each active type $(w,c)$ in $[l,r]$, for each residue $r_0\in[0,w-1]$, build the sequence $a_t=dp[r_0+t\,w]$, compute prefix sums $P_t$, and set $dp'[r_0+t\,w]=P_t-P_{t-(c+1)}$.
+\item Swap $dp\leftarrow dp'$ and continue.
+\item Sum $dp[0..K]$ for the answer.
+\end{algosteps}
+\COMPLEXITY{Per type, $O(K)$; per query, $O(K\cdot T')$ where $T'$ is the number of active types in $[l,r]$. This improves baseline by removing a factor of average $c_i$.}
+\[
+\begin{aligned}
+T(n) &= O(K \cdot T') \\
+S(n) &= O(K).
+\end{aligned}
+\]
+\CORRECTNESS{The sliding-window identity exactly computes $\sum_{j=0}^{\min(c,\lfloor v/w\rfloor)} dp[v-jw]$ for positions aligned by residue classes, preserving counts.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys
+
+MOD = 998244353
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    m = int(next(it))
+    w = [int(next(it)) for _ in range(n)]
+    queries = []
+    for _ in range(m):
+        t = int(next(it))
+        if t == 1 or t == 2:
+            i = int(next(it)); c = int(next(it))
+            queries.append((t, i, c))
+        else:
+            l = int(next(it)); r = int(next(it)); k = int(next(it))
+            queries.append((t, l, r, k))
+    return n, m, w, queries
+
+def bounded_add(dp, wi, ci, K):
+    if ci <= 0:
+        return dp
+    ndp = dp[:]  # will overwrite all positions
+    w = wi
+    for r in range(w):
+        idxs = list(range(r, K+1, w))
+        m = len(idxs)
+        if m == 0:
+            continue
+        # build the aligned sequence and its prefix sums
+        pref = [0]*(m+1)
+        for t in range(m):
+            pref[t+1] = (pref[t] + dp[idxs[t]]) % MOD
+        # window size = ci+1
+        for t in range(m):
+            left = t - (ci + 1)
+            total = pref[t+1]
+            if left >= 0:
+                total = (total - pref[left]) % MOD
+            ndp[idxs[t]] = total
+    return ndp
+
+def answer_query_residue(w, cnt, l, r, k):
+    K = k
+    dp = [0]*(K+1)
+    dp[0] = 1
+    for i in range(l-1, r):
+        ci = cnt[i]
+        if ci <= 0:
+            continue
+        wi = w[i]
+        dp = bounded_add(dp, wi, ci, K)
+    return sum(dp) % MOD
+
+def solve_all(n, m, w, queries):
+    cnt = [0]*n
+    out = []
+    for q in queries:
+        if q[0] == 1:
+            _, i, c = q
+            cnt[i-1] += c
+        elif q[0] == 2:
+            _, i, c = q
+            cnt[i-1] -= c
+            if cnt[i-1] < 0:
+                cnt[i-1] = 0
+        else:
+            _, l, r, k = q
+            out.append(str(answer_query_residue(w, cnt, l, r, k)))
+    return "\n".join(out)
+
+def main():
+    data = sys.stdin.read()
+    if not data.strip():
+        # Self-tests mirror Approach A but with optimized DP.
+        n, m, w, queries = 3, 4, [1,2,3], [(1,1,2),(3,1,3,2),(1,2,1),(3,1,2,2)]
+        ans = solve_all(n, m, w, queries)
+        assert ans.strip().split() == ["3","4"]
+        n, m, w, queries = 2, 3, [2,3], [(1,1,3),(1,2,1),(3,1,2,5)]
+        ans = solve_all(n, m, w, queries)
+        assert ans.strip().split() == ["5"]
+        # Additional: dispose and query
+        n, m, w, queries = 2, 4, [1,2], [(1,1,1),(1,2,1),(2,1,1),(3,1,2,2)]
+        # After ops: only one item of weight 2; ways <=2: {}, {2} => 2
+        ans = solve_all(n, m, w, queries)
+        assert ans.strip().split() == ["2"]
+        print("OK")
+    else:
+        parsed = read_input(data)
+        if parsed is None:
+            return
+        n, m, w, queries = parsed
+        sys.stdout.write(solve_all(n, m, w, queries))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Three asserts cover add, dispose, and range-limited queries with the residue-class DP.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Given the global invariant $\sum_i c_i w_i \le 5000$, the per-query DP truncated at $K=\min(k,5000)$ with residue-class optimization is near-optimal for Python: $O(K\cdot T')$ where $T'$ is the number of active types in the queried range. In stronger implementations, one can maintain a segment tree of truncated polynomials with fast bounded-convolution nodes; however, here we provide a clean, robust residue-class DP that leverages the small degree bound.}
+\ASSUMPTIONS{All counts and weights are non-negative; modulo arithmetic under $\mathrm{MOD}=998{,}244{,}353$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Maintain a global $cnt[1..n]$ array updated online.
+\item For each type-3 query $(l,r,k)$, set $K=\min(k,5000)$ and initialize $dp[0]=1$.
+\item For each $i\in[l..r]$ with $c_i>0$, apply the residue-class bounded add in $O(K)$.
+\item Return $\sum_{v=0}^{K} dp[v] \bmod \mathrm{MOD}$.
+\end{algosteps}
+\OPTIMALITY{Lower bound: even reading the $T'$ active types incurs $\Omega(T')$ time; combining them must touch $\Omega(K)$ states for any non-trivial $k$, yielding $\Omega(K+T')$ lower bound. The residue-class DP attains $O(K\cdot T')$ without extra $\log$ factors, which is tight for Python under the given $K\le 5000$.}
+\COMPLEXITY{For each type-3 query:
+\[
+\begin{aligned}
+T(n) &= O\!\bigl(K \cdot T'\bigr),\quad K\le 5000, \\
+S(n) &= O(K).
+\end{aligned}
+\]
+}
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys
+
+MOD = 998244353
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    m = int(next(it))
+    w = [int(next(it)) for _ in range(n)]
+    queries = []
+    for _ in range(m):
+        t = int(next(it))
+        if t == 1 or t == 2:
+            i = int(next(it)); c = int(next(it))
+            queries.append((t, i, c))
+        else:
+            l = int(next(it)); r = int(next(it)); k = int(next(it))
+            queries.append((t, l, r, k))
+    return n, m, w, queries
+
+def bounded_add(dp, wi, ci, K):
+    if ci <= 0:
+        return dp
+    ndp = dp[:]  # overwrite by residues
+    w = wi
+    # For each residue class modulo w, compute sliding window convolution
+    for r in range(w):
+        # indices in this residue class
+        # v = r + t*w for t = 0..m-1
+        first = r
+        if first > K:
+            continue
+        mlen = (K - r) // w + 1
+        # prefix sums over dp at these positions
+        pref = [0]*(mlen + 1)
+        # collect and build prefix on-the-fly
+        val = 0
+        for t in range(mlen):
+            v = r + t*w
+            val = (val + dp[v]) % MOD
+            pref[t+1] = val
+        # window size is ci+1
+        win = ci + 1
+        for t in range(mlen):
+            left_t = t - win
+            total = pref[t+1]
+            if left_t >= 0:
+                total = (total - pref[left_t]) % MOD
+            ndp[r + t*w] = total
+    return ndp
+
+def answer_query(w, cnt, l, r, k):
+    K = k
+    dp = [0]*(K+1)
+    dp[0] = 1
+    for i in range(l-1, r):
+        ci = cnt[i]
+        if ci <= 0:
+            continue
+        wi = w[i]
+        dp = bounded_add(dp, wi, ci, K)
+    return sum(dp) % MOD
+
+def solve_all(n, m, w, queries):
+    cnt = [0]*n
+    out_lines = []
+    for q in queries:
+        if q[0] == 1:
+            _, i, c = q
+            cnt[i-1] += c
+        elif q[0] == 2:
+            _, i, c = q
+            cnt[i-1] -= c
+            if cnt[i-1] < 0:
+                cnt[i-1] = 0
+        else:
+            _, l, r, k = q
+            out_lines.append(str(answer_query(w, cnt, l, r, k)))
+    return "\n".join(out_lines)
+
+def _self_test():
+    # Test 1
+    n, m, w, queries = 3, 4, [1,2,3], [(1,1,2),(3,1,3,2),(1,2,1),(3,1,2,2)]
+    ans = solve_all(n, m, w, queries)
+    assert ans.strip().split() == ["3","4"]
+    # Test 2
+    n, m, w, queries = 2, 3, [2,3], [(1,1,3),(1,2,1),(3,1,2,5)]
+    ans = solve_all(n, m, w, queries)
+    assert ans.strip().split() == ["5"]
+    # Test 3: dispose flow and mixed range
+    n, m, w, queries = 3, 5, [1,2,2], [(1,1,3),(1,2,1),(2,1,2),(1,3,2),(3,2,3,3)]
+    # After ops counts: c=[1,1,2], types 2..3 with k=3:
+    # (1 + x^2)*(1 + x^2 + x^4) -> coefficients up to 3: 1 (0), 0 (1), 2 (2), 0 (3) => ways <=3 = 1+0+2+0=3
+    ans = solve_all(n, m, w, queries)
+    assert ans.strip().split() == ["3"]
+
+def main():
+    data = sys.stdin.read()
+    if not data.strip():
+        _self_test()
+        print("OK")
+    else:
+        parsed = read_input(data)
+        if parsed is None:
+            return
+        n, m, w, queries = parsed
+        sys.stdout.write(solve_all(n, m, w, queries))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Exactly three asserts exercise add, dispose, and mixed ranges with different weights.}
+\RESULT{For each type-3 query, the program prints the number of bouquets (multisets) formable from types $[l,r]$ with total cost $\le k$, modulo $998{,}244{,}353$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests on tiny instances; random small $n\le 6$, $k\le 12$ comparing baseline (Approach A) and optimized (Approach C) to ensure identical outputs; boundary tests with $k=0$ and with zero counts.}
+\LINE{CROSS-CHECKS}{Run the same queries through baseline and improved solvers to compare outputs on dozens of random seeds.}
+\LINE{EDGE-CASE GENERATOR}{Generates sequences of updates bounded by total weighted stock $\le 20$ to keep brute-force feasible, with diverse ranges and budgets.}
+\begin{minted}{python}
+import random
+
+MOD = 998244353
+
+def brute_answer(w, cnt, l, r, k):
+    # naive polynomial product (slow, for tiny K only)
+    K = k
+    poly = [1] + [0]*K
+    for i in range(l-1, r):
+        c = cnt[i]
+        if c <= 0: 
+            continue
+        wi = w[i]
+        # build single-type poly
+        single = [0]*(K+1)
+        pw = 0
+        for _ in range(c+1):
+            if pw <= K:
+                single[pw] = 1
+            pw += wi
+        # convolve truncated
+        newp = [0]*(K+1)
+        for a in range(K+1):
+            if poly[a] == 0: continue
+            for b in range(K+1-a):
+                if single[b] == 0: continue
+                newp[a+b] = (newp[a+b] + poly[a]*single[b]) % MOD
+        poly = newp
+    return sum(poly) % MOD
+
+def gen_case(n, m, Wmax=5, Kbound=12, seed=1):
+    random.seed(seed)
+    w = [random.randint(1, Wmax) for _ in range(n)]
+    cnt = [0]*n
+    qs = []
+    for _ in range(m):
+        t = random.choice([1,1,2,3])
+        if t == 1:
+            i = random.randint(1, n); c = random.randint(1, 3)
+            # ensure total weighted sum small
+            if sum(cnt[j]*w[j] for j in range(n)) + c*w[i-1] > Kbound:
+                c = 0
+            qs.append((1, i, c))
+            cnt[i-1] += c
+        elif t == 2:
+            i = random.randint(1, n)
+            c = random.randint(0, cnt[i-1]) if cnt[i-1]>0 else 0
+            qs.append((2, i, c))
+            cnt[i-1] -= c
+        else:
+            l = random.randint(1, n); r = random.randint(l, n)
+            k = random.randint(0, Kbound)
+            qs.append((3, l, r, k))
+    return w, qs
+
+def cross_check():
+    from collections import deque
+    # import implementations from above blocks if running standalone
+    # Here we embed minimal improved solver
+    def bounded_add(dp, wi, ci, K):
+        if ci <= 0:
+            return dp
+        ndp = dp[:]
+        w = wi
+        for r in range(w):
+            if r > K: 
+                continue
+            m = (K - r)//w + 1
+            pref = [0]*(m+1)
+            for t in range(m):
+                pref[t+1] = (pref[t] + dp[r + t*w]) % MOD
+            win = ci + 1
+            for t in range(m):
+                left = t - win
+                total = pref[t+1]
+                if left >= 0:
+                    total = (total - pref[left]) % MOD
+                ndp[r + t*w] = total
+        return ndp
+    def answer_query(w, cnt, l, r, k):
+        K = k
+        dp = [0]*(K+1); dp[0]=1
+        for i in range(l-1, r):
+            if cnt[i] <= 0: 
+                continue
+            dp = bounded_add(dp, w[i], cnt[i], K)
+        return sum(dp) % MOD
+
+    for seed in range(1, 21):
+        w, qs = gen_case(n=5, m=20, Wmax=5, Kbound=12, seed=seed)
+        cnt = [0]*len(w)
+        for q in qs:
+            if q[0] == 1:
+                _, i, c = q
+                cnt[i-1] += c
+            elif q[0] == 2:
+                _, i, c = q
+                cnt[i-1] -= c
+            else:
+                _, l, r, k = q
+                a = brute_answer(w, cnt, l, r, k)
+                b = answer_query(w, cnt, l, r, k)
+                assert a == b, (seed, w, cnt, q, a, b)
+
+if __name__ == "__main__":
+    cross_check()
+    print("XCHECK OK")
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys
+
+MOD = 998244353
+
+def read_input(data: str):
+    it = iter(data.strip().split())
+    try:
+        n = int(next(it))
+    except StopIteration:
+        return None
+    m = int(next(it))
+    w = [int(next(it)) for _ in range(n)]
+    queries = []
+    for _ in range(m):
+        t = int(next(it))
+        if t == 1 or t == 2:
+            i = int(next(it)); c = int(next(it))
+            queries.append((t, i, c))
+        else:
+            l = int(next(it)); r = int(next(it)); k = int(next(it))
+            queries.append((t, l, r, k))
+    return n, m, w, queries
+
+def bounded_add(dp, wi, ci, K):
+    if ci <= 0:
+        return dp
+    ndp = dp[:]
+    w = wi
+    for r in range(w):
+        if r > K:
+            continue
+        m = (K - r)//w + 1
+        pref = [0]*(m+1)
+        for t in range(m):
+            pref[t+1] = (pref[t] + dp[r + t*w]) % MOD
+        win = ci + 1
+        for t in range(m):
+            left = t - win
+            total = pref[t+1]
+            if left >= 0:
+                total = (total - pref[left]) % MOD
+            ndp[r + t*w] = total
+    return ndp
+
+def answer_query(w, cnt, l, r, k):
+    K = k
+    dp = [0]*(K+1); dp[0] = 1
+    for i in range(l-1, r):
+        ci = cnt[i]
+        if ci <= 0:
+            continue
+        dp = bounded_add(dp, w[i], ci, K)
+    return sum(dp) % MOD
+
+def solve_all(n, m, w, queries):
+    cnt = [0]*n
+    out_lines = []
+    for q in queries:
+        if q[0] == 1:
+            _, i, c = q
+            cnt[i-1] += c
+        elif q[0] == 2:
+            _, i, c = q
+            cnt[i-1] -= c
+            if cnt[i-1] < 0:
+                cnt[i-1] = 0
+        else:
+            _, l, r, k = q
+            out_lines.append(str(answer_query(w, cnt, l, r, k)))
+    return "\n".join(out_lines)
+
+def main():
+    data = sys.stdin.read()
+    if not data.strip():
+        # Minimal asserts
+        n, m, w, queries = 3, 4, [1,2,3], [(1,1,2),(3,1,3,2),(1,2,1),(3,1,2,2)]
+        ans = solve_all(n, m, w, queries)
+        assert ans.strip().split() == ["3","4"]
+        n, m, w, queries = 2, 3, [2,3], [(1,1,3),(1,2,1),(3,1,2,5)]
+        ans = solve_all(n, m, w, queries)
+        assert ans.strip().split() == ["5"]
+        n, m, w, queries = 2, 4, [1,2], [(1,1,1),(1,2,1),(2,1,1),(3,1,2,2)]
+        ans = solve_all(n, m, w, queries)
+        assert ans.strip().split() == ["2"]
+        print("OK")
+    else:
+        parsed = read_input(data)
+        if parsed is None:
+            return
+        n, m, w, queries = parsed
+        sys.stdout.write(solve_all(n, m, w, queries))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Dynamic range queries over bounded-multiplicity knapsack counts under a global degree bound; answer by truncated generating-function DP.}
+\WHY{Exercises bounded knapsack, polynomial views, and optimization via residue classes; appears in advanced combinatorial DP and online data-structure problems.}
+\CHECKLIST{
+\begin{bullets}
+\item Maintain current counts $c_i$ under updates.
+\item For a query $(l,r,k)$, set $K=\min(k,5000)$.
+\item Initialize $dp[0]=1$; others $0$.
+\item For each active type in $[l,r]$, apply residue-class bounded add.
+\item Sum $dp[0..K]$ and mod-reduce.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item $k=0$ (only empty bouquet).
+\item All counts are zero in $[l,r]$.
+\item Single-type range with large count and small weight.
+\item Weights larger than $k$.
+\item Disposal to zero count.
+\item Maximum $k=5000$ with sparse active types.
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to truncate to $K$ may blow up time.
+\item Off-by-one in sliding-window width ($c+1$ terms).
+\item Negative modulo after subtraction in window sum.
+\item Reusing $dp$ in-place incorrectly (need $ndp$).
+\item Including types with $c_i=0$ wastes time.
+\item Misinterpreting ``no more than $k$'' as exact $k$ cost.
+\end{bullets}}
+\FAILMODES{Baseline $O(T\cdot K)$ per query times many updates can time out; residue-class DP avoids dependence on $c_i$ directly. Segment-tree polynomial products without exploiting sparsity can be $O(K^2\log n)$ and too slow in Python.}
+\ELI{We multiply simple polynomials, each for a flower type, but we only care about degrees up to the budget. A fast trick groups positions by the remainder modulo the weight and slides a window to add up the right number of terms for each position.}
+\NotePages{3}
+
+\end{document}

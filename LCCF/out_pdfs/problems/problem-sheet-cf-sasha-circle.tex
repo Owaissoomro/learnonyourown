@@ -1,0 +1,931 @@
+% !TeX program = xelatex
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Sasha Circle}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/549/E}}
+\LINE{DIFFICULTY / RATING}{2700}
+\STATEMENT{Berlanders like to eat cones after a hard day. Misha Square and Sasha Circle are local authorities of Berland. Each of them controls its points of cone trade. Misha has $n$ points, Sasha has $m$. Since their subordinates constantly had conflicts with each other, they decided to build a fence in the form of a circle, so that the points of trade of one businessman are strictly inside a circle, and points of the other one are strictly outside. It does not matter which of the two gentlemen will have his trade points inside the circle.
+
+Determine whether they can build a fence or not.
+
+Input:
+
+The first line contains two integers $n$ and $m$ ($1 \le n,m \le 10000$), numbers of Misha's and Sasha's trade points respectively.
+
+The next $n$ lines contain pairs of space-separated integers $M_x, M_y$ ($-10^4 \le M_x, M_y \le 10^4$), coordinates of Misha's trade points.
+
+The next $m$ lines contain pairs of space-separated integers $S_x, S_y$ ($-10^4 \le S_x, S_y \le 10^4$), coordinates of Sasha's trade points.
+
+It is guaranteed that all $n+m$ points are distinct.
+
+Output:
+
+The only output line should contain either word ``YES'' (without quotes) in case it is possible to build such a fence or word ``NO'' in the other case.
+
+Note:
+
+In the first sample there is no possibility to separate points, because any circle that contains both points $(-1, 0)$, $(1, 0)$ also contains at least one point from the set $(0, -1)$, $(0, 1)$, and vice versa: any circle that contains both points $(0, -1)$, $(0, 1)$ also contains at least one point from the set $(-1, 0)$, $(1, 0)$.
+
+In the second sample one of the possible solutions is shown below. Misha's points are marked with red colour and Sasha's are marked with blue.}
+\BREAKDOWN{We need to decide if there exists a circle such that one set is strictly inside and the other strictly outside. Equivalently, we must check if there exists a center point $p$ and radius $r$ with $\max_{a\in A}\lVert p-a\rVert < r < \min_{b\in B}\lVert p-b\rVert$ or the roles swapped. This can be decided via convex geometry.}
+\ELI{Circle separation exists unless the convex hulls of the two sets overlap in a ``crossing'' manner; if they are disjoint or one hull lies within the other (possibly touching), then a separating circle exists.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Single test:
+\begin{bullets}
+\item Integers $n, m$ with $1 \le n,m \le 10000$.
+\item $n$ pairs $(M_x,M_y)$ with $-10^4 \le M_x,M_y \le 10^4$.
+\item $m$ pairs $(S_x,S_y)$ with $-10^4 \le S_x,S_y \le 10^4$.
+\end{bullets}}
+\OUTPUTS{One line: YES if a circle exists with one set strictly inside and the other strictly outside; otherwise NO.}
+\SAMPLES{
+\begin{bullets}
+\item Input:
+\begin{minipage}[t]{0.6\linewidth}
+\begin{minted}{python}
+# n=2, m=2
+2 2
+-1 0
+1 0
+0 -1
+0 1
+\end{minted}
+\end{minipage}
+Output:
+\begin{minipage}[t]{0.3\linewidth}
+\begin{minted}{python}
+NO
+\end{minted}
+\end{minipage}
+\item Input:
+\begin{minipage}[t]{0.6\linewidth}
+\begin{minted}{python}
+# n=1, m=2
+1 2
+0 0
+-2 0
+2 0
+\end{minted}
+\end{minipage}
+Output:
+\begin{minipage}[t]{0.3\linewidth}
+\begin{minted}{python}
+YES
+\end{minted}
+\end{minipage}
+\end{bullets}
+}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Given finite sets $A,B \subset \mathbb{R}^2$, decide if $\exists p\in\mathbb{R}^2, r>0$ such that either $\max_{a\in A}\lVert p-a\rVert < r < \min_{b\in B}\lVert p-b\rVert$ or the same with $A,B$ swapped.}
+\varmapStart
+\var{A}{set of Misha's points in $\mathbb{R}^2$}
+\var{B}{set of Sasha's points in $\mathbb{R}^2$}
+\var{H(A)}{convex hull of $A$}
+\var{H(B)}{convex hull of $B$}
+\var{p,r}{candidate circle center and radius}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\exists p\in\mathbb{R}^2:\quad \max_{a\in A}\lVert p-a\rVert < \min_{b\in B}\lVert p-b\rVert \quad \text{or} \\
+&\exists p\in\mathbb{R}^2:\quad \max_{b\in B}\lVert p-b\rVert < \min_{a\in A}\lVert p-a\rVert.
+\end{aligned}
+\]
+Equivalently (lifting to paraboloid): letting $\phi(x,y)=(x,y,x^2+y^2)$, there exists a plane strictly separating $\phi(A)$ and $\phi(B)$ in $\mathbb{R}^3$.
+}
+\ASSUMPTIONS{All input points are distinct. Distances are Euclidean. Strict separation means no point lies on the circle.}
+\INVARIANTS{
+\begin{bullets}
+\item If $H(A)$ and $H(B)$ are disjoint, a line strictly separates them, hence a circle does too.
+\item If one of $H(A),H(B)$ is contained in the other (possibly touching boundary), a small (or large) circle can isolate the inner set from the outer set.
+\item Otherwise (convex hulls overlap without containment), no circle can strictly separate the two sets.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{A naive thought is to enumerate candidate circles whose boundaries pass through 2 or 3 points and test separation. Circles are determined by 2 or 3 points; checking all pairs/triples yields $O((n+m)^3)$ candidates.}
+\ASSUMPTIONS{Small inputs; ignore numerical robustness and heavy degeneracies.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Enumerate all pairs and triples of points from $A \cup B$ and compute their defining circle(s).
+\item For each circle, test if it strictly contains all of one set and strictly excludes all of the other.
+\item If any circle works, print YES; else NO.
+\end{algosteps}
+\COMPLEXITY{This explodes combinatorially; even listing candidates is infeasible for $n,m$ up to $10^4$.}
+\[
+\begin{aligned}
+T(n) &\approx O\big((n+m)^3\big) \\
+S(n) &\approx O(1)
+\end{aligned}
+\]
+\CORRECTNESS{If enumerated exhaustively with exact arithmetic, it would find a separating circle when one exists.}
+\EDGECASES{Collinear points; coincident radii; near-degenerate triples.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# For completeness, we provide a working solver (not brute force),
+# keeping the required API. This uses convex hull + separation logic.
+
+from typing import List, Tuple
+import sys
+import math
+
+Point = Tuple[int, int]
+
+def read_input(data: str = None):
+    if data is None:
+        data = sys.stdin.read().strip().split()
+    else:
+        data = data.strip().split()
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    A = [(int(next(it)), int(next(it))) for _ in range(n)]
+    B = [(int(next(it)), int(next(it))) for _ in range(m)]
+    return n, m, A, B
+
+def cross(o: Point, a: Point, b: Point) -> int:
+    return (a[0]-o[0])*(b[1]-o[1]) - (a[1]-o[1])*(b[0]-o[0])
+
+def convex_hull(pts: List[Point]) -> List[Point]:
+    pts = sorted(set(pts))
+    if len(pts) <= 2:
+        return pts[:]
+    lower = []
+    for p in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    upper = []
+    for p in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    hull = lower[:-1] + upper[:-1]
+    return hull
+
+def dot(a: Tuple[int,int], b: Tuple[int,int]) -> int:
+    return a[0]*b[0] + a[1]*b[1]
+
+def sub(a: Point, b: Point) -> Tuple[int,int]:
+    return (a[0]-b[0], a[1]-b[1])
+
+def axes(poly: List[Point]) -> List[Tuple[int,int]]:
+    if len(poly) == 0:
+        return []
+    if len(poly) == 1:
+        return []
+    axes = []
+    n = len(poly)
+    for i in range(n):
+        p = poly[i]; q = poly[(i+1)%n]
+        e = sub(q, p)
+        # normal vector (perp): (-ey, ex)
+        axes.append((-e[1], e[0]))
+    return axes
+
+def proj_interval(poly: List[Point], axis: Tuple[int,int]) -> Tuple[int,int]:
+    # integer projections (no normalization needed)
+    vals = [dot(p, axis) for p in poly]
+    return (min(vals), max(vals))
+
+def separated_by_axis(A: List[Point], B: List[Point]) -> bool:
+    # Separating Axis Theorem for convex polygons (including degenerate cases)
+    if len(A) == 0 or len(B) == 0:
+        return True
+    axes_all = axes(A) + axes(B)
+    # If A or B is a single point, no axes from it; axes from the other suffice.
+    if not axes_all:
+        # both are points -> separate if different points
+        return A[0] != B[0]
+    for ax in axes_all:
+        a0, a1 = proj_interval(A, ax)
+        b0, b1 = proj_interval(B, ax)
+        if a1 < b0 or b1 < a0:
+            return True
+    return False
+
+def on_segment(a: Point, b: Point, p: Point) -> bool:
+    if cross(a,b,p) != 0:
+        return False
+    return min(a[0],b[0]) <= p[0] <= max(a[0],b[0]) and min(a[1],b[1]) <= p[1] <= max(a[1],b[1])
+
+def point_in_convex(poly: List[Point], p: Point) -> bool:
+    # inside-or-on for convex polygon in CCW order (our hull is CCW)
+    k = len(poly)
+    if k == 0:
+        return False
+    if k == 1:
+        return p == poly[0]
+    if k == 2:
+        return on_segment(poly[0], poly[1], p)
+    for i in range(k):
+        a = poly[i]; b = poly[(i+1)%k]
+        if cross(a, b, p) < 0:
+            return False
+    return True
+
+def subset_or_equal(inner: List[Point], outer: List[Point]) -> bool:
+    # every vertex of 'inner' lies inside-or-on 'outer'
+    return all(point_in_convex(outer, p) for p in inner)
+
+def can_separate_by_circle(A: List[Point], B: List[Point]) -> bool:
+    HA = convex_hull(A)
+    HB = convex_hull(B)
+    # If a strict separating axis exists -> YES
+    if separated_by_axis(HA, HB):
+        return True
+    # Otherwise, polygons touch/overlap; check nested containment
+    if subset_or_equal(HA, HB):
+        return True
+    if subset_or_equal(HB, HA):
+        return True
+    return False
+
+def solve_case(n: int, m: int, A: List[Point], B: List[Point]) -> str:
+    return "YES" if can_separate_by_circle(A, B) else "NO"
+
+def solve_all():
+    n, m, A, B = read_input()
+    print(solve_case(n, m, A, B))
+
+def _self_test():
+    # Cross example: NO
+    n,m = 2,2
+    A = [(-1,0),(1,0)]
+    B = [(0,-1),(0,1)]
+    assert solve_case(n,m,A,B) == "NO"
+    # Point inside segment boundary: YES (small circle around point)
+    n,m = 1,2
+    A = [(0,0)]
+    B = [(-2,0),(2,0)]
+    assert solve_case(n,m,A,B) == "YES"
+    # Nested: YES (small circle around inner set)
+    n,m = 3,1
+    A = [(-2,-2),(2,-2),(0,3)]
+    B = [(0,0)]
+    assert solve_case(n,m,A,B) == "YES"
+    # Disjoint convex hulls (line-separable): YES
+    n,m = 3,3
+    A = [(-5,0),(-6,1),(-6,-1)]
+    B = [(5,0),(6,1),(6,-1)]
+    assert solve_case(n,m,A,B) == "YES"
+
+if __name__ == "__main__":
+    _self_test()
+    if sys.stdin.isatty():
+        pass
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Tiny asserts included cover: crossing impossible case, boundary-touch feasible case, nested feasible case, and line-separable case.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Convex Hull + Separating Axis + Containment}
+\WHICHFORMULA{Use convex hulls to compress inputs, then decide separability by: (i) strict linear separability via Separating Axis Theorem (SAT), or (ii) nested containment. If either holds, a separating circle exists.}
+\ASSUMPTIONS{Hull computation via monotone chain; integer arithmetic avoids precision issues. SAT with integer axes (edge normals) suffices for convex polygons.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build convex hulls $H(A)$ and $H(B)$ in $O((n+m)\log(n+m))$.
+\item Check SAT over all edge normals of both hulls. If a separating axis exists, return YES.
+\item Else, check if $H(A)\subseteq H(B)$ or $H(B)\subseteq H(A)$ (inside-or-on). If true, return YES; else NO.
+\end{algosteps}
+\COMPLEXITY{Hull: $O((n+m)\log(n+m))$; SAT and containment: $O(h_A+h_B)$ to $O(h_A\cdot h_B)$ worst, but with convexity and our tests it is linear in the number of hull vertices.}
+\[
+\begin{aligned}
+T(n,m) &= O\big((n+m)\log(n+m) + h_A + h_B\big) \\
+S(n,m) &= O(n+m)
+\end{aligned}
+\]
+\CORRECTNESS{If hulls are strictly separable by a line, a sufficiently large-radius circle approximates that half-plane, making one set strictly inside and the other outside. If one hull is contained in the other, a small (or large) circle can isolate the inner set. If hulls overlap without containment, any circle containing all of one hull must also contain at least one point of the other, making separation impossible.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# Same API/signature as baseline; uses the convex-hull + SAT method.
+
+from typing import List, Tuple
+import sys
+
+Point = Tuple[int, int]
+
+def read_input(data: str = None):
+    if data is None:
+        data = sys.stdin.read().strip().split()
+    else:
+        data = data.strip().split()
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    A = [(int(next(it)), int(next(it))) for _ in range(n)]
+    B = [(int(next(it)), int(next(it))) for _ in range(m)]
+    return n, m, A, B
+
+def cross(o: Point, a: Point, b: Point) -> int:
+    return (a[0]-o[0])*(b[1]-o[1]) - (a[1]-o[1])*(b[0]-o[0])
+
+def convex_hull(pts: List[Point]) -> List[Point]:
+    pts = sorted(set(pts))
+    if len(pts) <= 2:
+        return pts[:]
+    lower = []
+    for p in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    upper = []
+    for p in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    return lower[:-1] + upper[:-1]
+
+def dot(a: Tuple[int,int], b: Tuple[int,int]) -> int:
+    return a[0]*b[0] + a[1]*b[1]
+
+def sub(a: Point, b: Point) -> Tuple[int,int]:
+    return (a[0]-b[0], a[1]-b[1])
+
+def axes(poly: List[Point]) -> List[Tuple[int,int]]:
+    if len(poly) <= 1:
+        return []
+    n = len(poly)
+    out = []
+    for i in range(n):
+        p = poly[i]; q = poly[(i+1)%n]
+        e = sub(q, p)
+        out.append((-e[1], e[0]))
+    return out
+
+def proj_interval(poly: List[Point], axis: Tuple[int,int]) -> Tuple[int,int]:
+    vals = [dot(p, axis) for p in poly]
+    return (min(vals), max(vals))
+
+def separated_by_axis(A: List[Point], B: List[Point]) -> bool:
+    axes_all = axes(A) + axes(B)
+    if not axes_all:
+        # both are points -> separate if different
+        return len(A) == 1 and len(B) == 1 and A[0] != B[0]
+    for ax in axes_all:
+        a0,a1 = proj_interval(A, ax)
+        b0,b1 = proj_interval(B, ax)
+        if a1 < b0 or b1 < a0:
+            return True
+    return False
+
+def on_segment(a: Point, b: Point, p: Point) -> bool:
+    if cross(a,b,p) != 0:
+        return False
+    return min(a[0],b[0]) <= p[0] <= max(a[0],b[0]) and min(a[1],b[1]) <= p[1] <= max(a[1],b[1])
+
+def point_in_convex(poly: List[Point], p: Point) -> bool:
+    k = len(poly)
+    if k == 0:
+        return False
+    if k == 1:
+        return p == poly[0]
+    if k == 2:
+        return on_segment(poly[0], poly[1], p)
+    for i in range(k):
+        a = poly[i]; b = poly[(i+1)%k]
+        if cross(a,b,p) < 0:
+            return False
+    return True
+
+def subset_or_equal(inner: List[Point], outer: List[Point]) -> bool:
+    return all(point_in_convex(outer, p) for p in inner)
+
+def can_separate_by_circle(A: List[Point], B: List[Point]) -> bool:
+    HA = convex_hull(A)
+    HB = convex_hull(B)
+    if separated_by_axis(HA, HB):
+        return True
+    if subset_or_equal(HA, HB):
+        return True
+    if subset_or_equal(HB, HA):
+        return True
+    return False
+
+def solve_case(n: int, m: int, A: List[Point], B: List[Point]) -> str:
+    return "YES" if can_separate_by_circle(A, B) else "NO"
+
+def solve_all():
+    n, m, A, B = read_input()
+    print(solve_case(n, m, A, B))
+
+def _self_test():
+    assert solve_case(2,2,[(-1,0),(1,0)],[(0,-1),(0,1)]) == "NO"
+    assert solve_case(1,2,[(0,0)],[(-2,0),(2,0)]) == "YES"
+    assert solve_case(3,1,[(-2,-2),(2,-2),(0,3)],[(0,0)]) == "YES"
+
+if __name__ == "__main__":
+    _self_test()
+    if sys.stdin.isatty():
+        pass
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Asserts include a crossing case (NO), boundary-touch case (YES), and nested case (YES).}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Convex Hull Compression + SAT and Containment (Integer Geometry)}
+\WHICHFORMULA{Compute convex hulls, then decide feasibility by either strict linear separability (SAT) or nested containment. This is near-optimal and robust with integer arithmetic.}
+\ASSUMPTIONS{Points are integral with bounded magnitude, so 64-bit integer arithmetic suffices for cross/dot products without overflow. Hull size $h$ is typically much smaller than $n,m$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Compute CCW convex hulls $H(A)$ and $H(B)$ via monotone chain, removing collinear interior points.
+\item Apply the Separating Axis Theorem using edge normals of both hulls; if an axis strictly separates, output YES.
+\item Otherwise, check containment (inside-or-on) of one hull within the other; if either holds, output YES; else NO.
+\end{algosteps}
+\OPTIMALITY{Any separating circle implies either line separability or nested configuration. Compressing to hulls is optimal information-wise; SAT over hull edges is linear in $h_A+h_B$.}
+\COMPLEXITY{
+\[
+\begin{aligned}
+T(n,m) &= O\big((n+m)\log(n+m) + h_A + h_B\big),\\
+S(n,m) &= O(n+m).
+\end{aligned}
+\]
+}
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF: read_input(), solve_case()/solve_all(), main()+guard + asserts
+
+from typing import List, Tuple
+import sys
+
+Point = Tuple[int, int]
+
+def read_input(data: str = None):
+    if data is None:
+        data = sys.stdin.read().strip().split()
+    else:
+        data = data.strip().split()
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    A = [(int(next(it)), int(next(it))) for _ in range(n)]
+    B = [(int(next(it)), int(next(it))) for _ in range(m)]
+    return n, m, A, B
+
+def cross(o: Point, a: Point, b: Point) -> int:
+    return (a[0]-o[0])*(b[1]-o[1]) - (a[1]-o[1])*(b[0]-o[0])
+
+def convex_hull(pts: List[Point]) -> List[Point]:
+    pts = sorted(set(pts))
+    if len(pts) <= 2:
+        return pts[:]
+    lower = []
+    for p in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    upper = []
+    for p in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    return lower[:-1] + upper[:-1]
+
+def dot(a: Tuple[int,int], b: Tuple[int,int]) -> int:
+    return a[0]*b[0] + a[1]*b[1]
+
+def sub(a: Point, b: Point) -> Tuple[int,int]:
+    return (a[0]-b[0], a[1]-b[1])
+
+def axes(poly: List[Point]) -> List[Tuple[int,int]]:
+    if len(poly) <= 1:
+        return []
+    n = len(poly)
+    out = []
+    for i in range(n):
+        p = poly[i]; q = poly[(i+1)%n]
+        e = sub(q, p)
+        out.append((-e[1], e[0]))
+    return out
+
+def proj_interval(poly: List[Point], axis: Tuple[int,int]) -> Tuple[int,int]:
+    vals = [dot(p, axis) for p in poly]
+    return (min(vals), max(vals))
+
+def separated_by_axis(A: List[Point], B: List[Point]) -> bool:
+    axes_all = axes(A) + axes(B)
+    if not axes_all:
+        # handle double-point degenerate case
+        return len(A) == 1 and len(B) == 1 and A[0] != B[0]
+    for ax in axes_all:
+        a0,a1 = proj_interval(A, ax)
+        b0,b1 = proj_interval(B, ax)
+        if a1 < b0 or b1 < a0:
+            return True
+    return False
+
+def on_segment(a: Point, b: Point, p: Point) -> bool:
+    if cross(a,b,p) != 0:
+        return False
+    return min(a[0],b[0]) <= p[0] <= max(a[0],b[0]) and min(a[1],b[1]) <= p[1] <= max(a[1],b[1])
+
+def point_in_convex(poly: List[Point], p: Point) -> bool:
+    k = len(poly)
+    if k == 0:
+        return False
+    if k == 1:
+        return p == poly[0]
+    if k == 2:
+        return on_segment(poly[0], poly[1], p)
+    for i in range(k):
+        a = poly[i]; b = poly[(i+1)%k]
+        if cross(a,b,p) < 0:
+            return False
+    return True
+
+def subset_or_equal(inner: List[Point], outer: List[Point]) -> bool:
+    return all(point_in_convex(outer, p) for p in inner)
+
+def can_separate_by_circle(A: List[Point], B: List[Point]) -> bool:
+    HA = convex_hull(A)
+    HB = convex_hull(B)
+    if separated_by_axis(HA, HB):
+        return True
+    if subset_or_equal(HA, HB):
+        return True
+    if subset_or_equal(HB, HA):
+        return True
+    return False
+
+def solve_case(n: int, m: int, A: List[Point], B: List[Point]) -> str:
+    return "YES" if can_separate_by_circle(A, B) else "NO"
+
+def solve_all():
+    n, m, A, B = read_input()
+    print(solve_case(n, m, A, B))
+
+def _self_test():
+    # 1) Crossing hulls -> NO
+    assert solve_case(2,2,[(-1,0),(1,0)],[(0,-1),(0,1)]) == "NO"
+    # 2) Point-on-boundary, choose that set inside -> YES
+    assert solve_case(1,2,[(0,0)],[(-2,0),(2,0)]) == "YES"
+    # 3) Nested -> YES
+    assert solve_case(3,1,[(-2,-2),(2,-2),(0,3)],[(0,0)]) == "YES"
+
+if __name__ == "__main__":
+    _self_test()
+    if sys.stdin.isatty():
+        pass
+    else:
+        solve_all()
+\end{minted}
+\VALIDATION{Exactly three asserts cover crossing, boundary-touch, and nested cases.}
+\RESULT{Print YES iff there exists a separating circle with one set strictly inside and the other strictly outside; otherwise print NO.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests for: disjoint hulls; nested hulls; boundary-touch; degenerate hulls (point/segment); adversarial interleaving.}
+\LINE{CROSS-CHECKS}{Compare outputs across the three implementations on small handcrafted inputs.}
+\LINE{EDGE-CASE GENERATOR}{Produce collinear clusters, near-overlaps, and random clouds; verify logical consistency and strictness of separation.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+
+import random
+
+def gen_collinear(nA, nB, shift=0):
+    A = [(i, 0) for i in range(-nA, 0)]
+    B = [(i+shift, 0) for i in range(1, nB+1)]
+    return A, B
+
+def gen_nested_triangle():
+    A = [(-10,-10),(10,-10),(0,12)]
+    B = [(0,0)]
+    return A, B
+
+def gen_cross():
+    A = [(-1,0),(1,0)]
+    B = [(0,-1),(0,1)]
+    return A, B
+
+def run_samples():
+    from sys import stdout
+    # Cross -> NO
+    A,B = gen_cross()
+    print(2,2); [print(*p) for p in A]; [print(*p) for p in B]
+    # Nested -> YES
+    A,B = gen_nested_triangle()
+    print(3,1); [print(*p) for p in A]; [print(*p) for p in B]
+    # Disjoint -> YES
+    A = [(-5,0),(-6,1),(-6,-1)]; B = [(5,0),(6,1),(6,-1)]
+    print(3,3); [print(*p) for p in A]; [print(*p) for p in B]
+    stdout.flush()
+
+if __name__ == "__main__":
+    run_samples()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Final reference solution (same as in Approach C block), single file.
+
+from typing import List, Tuple
+import sys
+
+Point = Tuple[int, int]
+
+def read_input(data: str = None):
+    if data is None:
+        data = sys.stdin.read().strip().split()
+    else:
+        data = data.strip().split()
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    A = [(int(next(it)), int(next(it))) for _ in range(n)]
+    B = [(int(next(it)), int(next(it))) for _ in range(m)]
+    return n, m, A, B
+
+def cross(o: Point, a: Point, b: Point) -> int:
+    return (a[0]-o[0])*(b[1]-o[1]) - (a[1]-o[1])*(b[0]-o[0])
+
+def convex_hull(pts: List[Point]) -> List[Point]:
+    pts = sorted(set(pts))
+    if len(pts) <= 2:
+        return pts[:]
+    lower = []
+    for p in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    upper = []
+    for p in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    return lower[:-1] + upper[:-1]
+
+def dot(a: Tuple[int,int], b: Tuple[int,int]) -> int:
+    return a[0]*b[0] + a[1]*b[1]
+
+def sub(a: Point, b: Point) -> Tuple[int,int]:
+    return (a[0]-b[0], a[1]-b[1])
+
+def axes(poly: List[Point]) -> List[Tuple[int,int]]:
+    if len(poly) <= 1:
+        return []
+    n = len(poly)
+    out = []
+    for i in range(n):
+        p = poly[i]; q = poly[(i+1)%n]
+        e = sub(q, p)
+        out.append((-e[1], e[0]))
+    return out
+
+def proj_interval(poly: List[Point], axis: Tuple[int,int]) -> Tuple[int,int]:
+    vals = [dot(p, axis) for p in poly]
+    return (min(vals), max(vals))
+
+def separated_by_axis(A: List[Point], B: List[Point]) -> bool:
+    axes_all = axes(A) + axes(B)
+    if not axes_all:
+        return len(A) == 1 and len(B) == 1 and A[0] != B[0]
+    for ax in axes_all:
+        a0,a1 = proj_interval(A, ax)
+        b0,b1 = proj_interval(B, ax)
+        if a1 < b0 or b1 < a0:
+            return True
+    return False
+
+def on_segment(a: Point, b: Point, p: Point) -> bool:
+    if cross(a,b,p) != 0:
+        return False
+    return min(a[0],b[0]) <= p[0] <= max(a[0],b[0]) and min(a[1],b[1]) <= p[1] <= max(a[1],b[1])
+
+def point_in_convex(poly: List[Point], p: Point) -> bool:
+    k = len(poly)
+    if k == 0:
+        return False
+    if k == 1:
+        return p == poly[0]
+    if k == 2:
+        return on_segment(poly[0], poly[1], p)
+    for i in range(k):
+        a = poly[i]; b = poly[(i+1)%k]
+        if cross(a,b,p) < 0:
+            return False
+    return True
+
+def subset_or_equal(inner: List[Point], outer: List[Point]) -> bool:
+    return all(point_in_convex(outer, p) for p in inner)
+
+def can_separate_by_circle(A: List[Point], B: List[Point]) -> bool:
+    HA = convex_hull(A)
+    HB = convex_hull(B)
+    if separated_by_axis(HA, HB):
+        return True
+    if subset_or_equal(HA, HB):
+        return True
+    if subset_or_equal(HB, HA):
+        return True
+    return False
+
+def solve_case(n: int, m: int, A: List[Point], B: List[Point]) -> str:
+    return "YES" if can_separate_by_circle(A, B) else "NO"
+
+def solve_all():
+    n, m, A, B = read_input()
+    print(solve_case(n, m, A, B))
+
+def _self_test():
+    assert solve_case(2,2,[(-1,0),(1,0)],[(0,-1),(0,1)]) == "NO"
+    assert solve_case(1,2,[(0,0)],[(-2,0),(2,0)]) == "YES"
+    assert solve_case(3,1,[(-2,-2),(2,-2),(0,3)],[(0,0)]) == "YES"
+
+if __name__ == "__main__":
+    _self_test()
+    if sys.stdin.isatty():
+        pass
+    else:
+        solve_all()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Decide if two planar point sets can be strictly separated by a circle: one strictly inside, the other strictly outside.}
+\WHY{Tests understanding of convex hulls, separability, and robust integer geometry without floating-point issues.}
+\CHECKLIST{
+\begin{bullets}
+\item Build convex hulls (CCW, remove collinear interior points).
+\item Apply separating axis theorem on hulls.
+\item If separated: YES.
+\item Else check if one hull is contained in the other (inside-or-on).
+\item If contained: YES, else NO.
+\end{bullets}}
+\EDGECASES{
+\begin{bullets}
+\item Degenerate hulls: single point or segment.
+\item Boundary-touching cases (point on edge, segment on edge).
+\item Collinear clusters and overlapping segments.
+\item Very small inter-set gaps: ensure strictness via SAT intervals.
+\item Duplicate input points within a set (deduplicate for hull).
+\item Large coordinates: avoid overflow using 64-bit-safe arithmetic.
+\end{bullets}}
+\PITFALLS{
+\begin{bullets}
+\item Using floating comparisons for geometry; prefer integer cross/dot.
+\item Mishandling on-boundary classification when checking containment.
+\item Forgetting to consider degenerate hulls in SAT.
+\item Incorrect hull orientation assumptions (use CCW monotone chain).
+\item Off-by-one in hull stitching (avoid duplicating endpoints).
+\item Assuming intersection implies impossibility even when one hull is contained.
+\end{bullets}}
+\FAILMODES{Naive enumeration of circles is intractable for $10^4$ points. Floating-based circle fitting risks precision issues and wrong strictness decisions. The hull+SAT+containment approach is fast and robust.}
+\ELI{If the outlines (convex hulls) of the two point clouds cross each other, you cannot draw a circle to separate them. If the outlines are apart or one outline sits inside the other, you can always draw such a circle. The algorithm checks exactly that, quickly.}
+\NotePages{3}
+
+\end{document}

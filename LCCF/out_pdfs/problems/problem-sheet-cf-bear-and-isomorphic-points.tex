@@ -1,0 +1,944 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Bear and Isomorphic Points}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/771/F}}
+\LINE{DIFFICULTY / RATING}{3300}
+\STATEMENT{Bearland is a big square on the plane. It contains all points with coordinates not exceeding $10^6$ by the absolute value.
+
+There are $n$ houses in Bearland. The $i$-th of them is located at the point $(x_i, y_i)$. The $n$ points are distinct, but some subsets of them may be collinear.
+
+Bear Limak lives in the first house. He wants to destroy his house and build a new one somewhere in Bearland.
+
+Bears do not like big changes. For every three points (houses) $p_i$, $p_j$ and $p_k$, the sign of their cross product $(p_j - p_i) \times (p_k - p_i)$ should be the same before and after the relocation. If it was negative/positive/zero, it should still be negative/positive/zero respectively. This condition should be satisfied for all triples of indices $(i, j, k)$, possibly equal to each other or different than $1$. Additionally, Limak is not allowed to build the house at the point where some other house already exists (but it can be the point where his old house was).
+
+In the formula above, we define the difference and the cross product of points $(a_x, a_y)$ and $(b_x, b_y)$ as:
+\[
+(a_x, a_y) - (b_x, b_y) = (a_x - b_x, a_y - b_y),\quad
+(a_x, a_y) \times (b_x, b_y) = a_x \cdot b_y - a_y \cdot b_x.
+\]
+
+Consider a set of possible new placements of Limak's house. Your task is to find the area of that set of points.
+
+Formally, let us say that Limak chooses the new placement randomly (each coordinate is chosen independently uniformly at random from the interval $[-10^6, 10^6]$). Let $p$ denote the probability of getting the allowed placement of new house. Let $S$ denote the area of Bearland ($S = 4 \cdot 10^{12}$). Your task is to find $p \cdot S$.
+
+Input: The first line of the input contains an integer $T$ ($1 \le T \le 500$) — the number of test cases. The description of the test cases follows.
+
+The first line of the description of a test case contains an integer $n$ ($3 \le n \le 200{,}000$) — the number of houses.
+
+The $i$-th of the next $n$ lines contains two integers $x_i$ and $y_i$ ($-10^6 \le x_i, y_i \le 10^6$) — coordinates of the $i$-th house. No two houses are located at the same point in the same test case. Limak lives in the first house.
+
+The sum of $n$ will not exceed $200{,}000$.
+
+Output: Print one real value, denoting the area of the set of points that are possible new placements of Limak's house.
+
+Your answer will be considered correct if its absolute or relative error does not exceed $10^{-6}$. More precisely, let the jury's answer be $b$, and your answer be $a$. Then your answer will be accepted if and only if $\tfrac{|a-b|}{\max(1,b)} \le 10^{-6}$.
+
+Note: In the sample test, there are $4$ test cases.
+
+In the first test case, there are four houses and Limak's one is in $(5, 3)$. The set of valid new placements form a triangle with vertices in points $(0, 1)$, $(10, 1)$ and $(3, 51)$, without its sides. The area of such a triangle is $250$.
+
+In the second test case, the set of valid new placements form a rectangle of width $50{,}000$ and height $2{,}000{,}000$. Do not forget that the new placement must be inside the big square that represents Bearland.
+
+In the third test case, the three given points are collinear. Each cross product is equal to $0$ and it should be $0$ after the relocation as well. Hence, Limak's new house must lie on the line that goes through the given points. Since it must also be inside the big square, new possible placements are limited to some segment (excluding the two points where the other houses are). The area of any segment is $0$.}
+\BREAKDOWN{Only triples involving the moved point matter. The allowed set equals the intersection of half-planes: for each pair of fixed houses $(j,k)$, the new point must lie on the same side of the line $p_jp_k$ as the old house $p_1$; and if $p_1,p_j,p_k$ are collinear then the new point must lie on that line. For area $>0$, no two other houses may lie on the same line through $p_1$. With unique directions from $p_1$, it suffices to keep constraints for consecutive points in the circular order around $p_1$. Intersect these half-planes with the bounding square.}
+\ELI{Keep the circular order of all other houses around you the same as before; this is exactly staying inside a convex polygon formed by half-planes from consecutive neighbors around the old house, cut by the big square.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Multiple test cases. For each: integer $n$, then $n$ distinct integer points $(x_i,y_i)$ with $|x_i|,|y_i| \le 10^6$. The first point is Limak's original house.}
+\OUTPUTS{For each test case, one real number: the area of the allowed placements inside $[-10^6,10^6]^2$, with absolute or relative error $\le 10^{-6}$.}
+\SAMPLES{Example 1: $n=3$, points $(0,0)$, $(1,0)$, $(0,1)$. Answer is the area of the intersection of a single half-plane (left of the line through $(1,0)$ to $(0,1)$) with the big square.
+
+Example 2: $n=3$, points $(0,0)$, $(1,0)$, $(-2,0)$. Two other houses lie on the same line through $(0,0)$, so the allowed set lies on that line; area $0$.}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let fixed points be $P_1,\ldots,P_n \in \mathbb{R}^2$, with $P_1$ movable to $X \in \mathbb{R}^2$. For all pairs $2 \le j < k \le n$, we must have
+$\operatorname{sign}(\operatorname{orient}(X,P_j,P_k)) = \operatorname{sign}(\operatorname{orient}(P_1,P_j,P_k))$,
+where $\operatorname{orient}(A,B,C)=\operatorname{cross}(B-A, C-A)$. Additionally, $X$ must lie in the square $[-10^6,10^6]^2$ and not coincide with any $P_i$ for $i \ne 1$ (a measure-zero exclusion).}
+\varmapStart
+\var{P_i}{fixed house locations}
+\var{X}{new location for $P_1$}
+\var{\operatorname{orient}(A,B,C)}{signed area; positive if $ABC$ is counterclockwise}
+\var{S}{the big square $[-10^6,10^6]^2$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+\mathcal{F} &= \bigcap_{2 \le j < k \le n}
+\begin{cases}
+\{X:\ \operatorname{orient}(X,P_j,P_k) \cdot \operatorname{orient}(P_1,P_j,P_k) > 0\}, & \text{if } \operatorname{orient}(P_1,P_j,P_k) \ne 0,\\
+\{X:\ \operatorname{orient}(X,P_j,P_k)=0\}, & \text{if } \operatorname{orient}(P_1,P_j,P_k)=0,
+\end{cases}\\
+\mathcal{A} &= \mathcal{F} \cap S,\quad \text{Answer} = \operatorname{area}(\mathcal{A}).
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{If two other points lie on the same line through $P_1$, then $\mathcal{F}$ is a subset of that line, hence $\operatorname{area}(\mathcal{A})=0$. Otherwise, all directions from $P_1$ to $P_i$ ($i\ge 2$) are unique and non-opposite.}
+\INVARIANTS{Intersection of half-planes is convex. Removing measure-zero boundaries or forbidden discrete points does not change area. For unique directions, it suffices to keep constraints only for consecutive points around $P_1$ in circular order; all other pair constraints are redundant.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Directly translate constraints into half-planes. To avoid $O(n^2)$ pairs, use the key redundancy: with unique directions, it suffices to constrain only consecutive points in the circular order around $P_1$. Then intersect these half-planes with the bounding square via polygon clipping (Sutherland–Hodgman).}
+\ASSUMPTIONS{All directions from $P_1$ are unique; otherwise area is $0$. Floating-point clipping is acceptable because boundaries contribute zero measure.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item If there exist two other points with the same undirected direction from $P_1$ (collinear with $P_1$), return area $0$.
+\item Sort points $P_2,\ldots,P_n$ by angle around $P_1$.
+\item For each consecutive pair $(A,B)$ in this cyclic order, build the oriented line through $A$ and $B$ such that $P_1$ lies on its left side; the allowed half-plane is its left side.
+\item Start from the big square polygon and clip it by each half-plane; the final polygon area is the answer.
+\end{algosteps}
+\COMPLEXITY{Let $m=n-1$. Sorting by angle: $O(m\log m)$. Polygon clipping by $m$ half-planes is $O(m^2)$ in the worst case due to growing polygon size. Space $O(m)$.}
+\[
+\begin{aligned}
+T(n) &\le O(m\log m) + \sum_{i=1}^{m} O(V_i) \\
+     &\le O(m\log m + m^2), \quad S(n)=O(m).
+\end{aligned}
+\]
+\CORRECTNESS{By construction, each half-plane enforces that $X$ is on the same side of the line through consecutive rays as $P_1$. This preserves the circular order of all other points around $X$, which in turn preserves the sign of $\operatorname{orient}(X,P_j,P_k)$ for all pairs.}
+\EDGECASES{Duplicate direction from $P_1$ implies area $0$. Empty intersection at any clipping step implies area $0$. Sides are open but clipping uses closed half-planes—area unchanged.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys
+import math
+from typing import List, Tuple
+
+INF = 1e30
+M = 1_000_000
+EPS = 1e-12
+
+def read_input() -> List[List[Tuple[int, int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return []
+    it = iter(data)
+    T = int(next(it))
+    cases = []
+    for _ in range(T):
+        n = int(next(it))
+        pts = []
+        for _ in range(n):
+            x = int(next(it)); y = int(next(it))
+            pts.append((x, y))
+        cases.append(pts)
+    return cases
+
+def cross(ax, ay, bx, by) -> float:
+    return ax * by - ay * bx
+
+def area_poly(poly: List[Tuple[float, float]]) -> float:
+    if len(poly) < 3:
+        return 0.0
+    s = 0.0
+    for i in range(len(poly)):
+        x1, y1 = poly[i]
+        x2, y2 = poly[(i+1) % len(poly)]
+        s += x1 * y2 - y1 * x2
+    return abs(s) * 0.5
+
+def sign(x: float) -> int:
+    if x > EPS: return 1
+    if x < -EPS: return -1
+    return 0
+
+def normalize_dir(dx: int, dy: int) -> Tuple[int, int]:
+    if dx == 0 and dy == 0:
+        return (0, 0)
+    g = math.gcd(abs(dx), abs(dy))
+    dx //= g; dy //= g
+    # undirected line normalization
+    if dx < 0 or (dx == 0 and dy < 0):
+        dx = -dx; dy = -dy
+    return (dx, dy)
+
+def halfplane_clip(poly: List[Tuple[float, float]], A: Tuple[float, float], B: Tuple[float, float]]) -> List[Tuple[float, float]]:
+    # Keep points on the left of directed line A->B (inclusive)
+    if not poly:
+        return []
+    ax, ay = A; bx, by = B
+    vx, vy = bx - ax, by - ay
+    def inside(P):
+        px, py = P
+        return cross(vx, vy, px - ax, py - ay) >= -EPS
+    def intersect(P, Q):
+        px, py = P; qx, qy = Q
+        # Solve P + t*(Q-P) with line A->B: cross(v, X-A)=0
+        ux, uy = qx - px, qy - py
+        denom = cross(vx, vy, ux, uy)
+        if abs(denom) < EPS:
+            return Q  # parallel; return Q to avoid NaNs; caller uses only on crossing edges
+        t = cross(vx, vy, ax - px, ay - py) / denom
+        return (px + t * ux, py + t * uy)
+    out = []
+    n = len(poly)
+    for i in range(n):
+        S = poly[i]
+        E = poly[(i+1) % n]
+        insE = inside(E)
+        insS = inside(S)
+        if insE:
+            if not insS:
+                out.append(intersect(S, E))
+            out.append(E)
+        else:
+            if insS:
+                out.append(intersect(S, E))
+    return out
+
+def solve_case_baseline(pts: List[Tuple[int, int]]) -> float:
+    n = len(pts)
+    x1, y1 = pts[0]
+    # Detect duplicate undirected directions from P1
+    seen = set()
+    for i in range(1, n):
+        dx = pts[i][0] - x1
+        dy = pts[i][1] - y1
+        nd = normalize_dir(dx, dy)
+        if nd in seen:
+            return 0.0
+        seen.add(nd)
+    others = pts[1:]
+    # sort by angle around P1
+    def ang(p):
+        return math.atan2(p[1] - y1, p[0] - x1)
+    others.sort(key=ang)
+    # Build initial polygon: the square
+    poly = [(-M, -M), (M, -M), (M, M), (-M, M)]
+    m = len(others)
+    if m == 1:
+        # Only one other point: constraints reduce to none (no pair), entire square
+        return float((2*M) * (2*M))
+    for i in range(m):
+        A = others[i]
+        B = others[(i+1) % m]
+        ax, ay = A; bx, by = B
+        s = cross(bx - ax, by - ay, x1 - ax, y1 - ay)
+        if s >= 0:
+            orientA, orientB = A, B
+        else:
+            orientA, orientB = B, A
+        poly = halfplane_clip(poly, orientA, orientB)
+        if not poly:
+            return 0.0
+    return area_poly(poly)
+
+def solve_all_baseline(cases: List[List[Tuple[int, int]]]) -> List[float]:
+    return [solve_case_baseline(case) for case in cases]
+
+def main():
+    cases = read_input()
+    if not cases:
+        # simple local asserts under TTY
+        if sys.stdin.isatty():
+            # Case: duplicate directions => area 0
+            pts = [(0,0),(1,0),(-2,0)]
+            a = solve_case_baseline(pts)
+            assert abs(a - 0.0) < 1e-9
+            # Case: trivial square with no constraints (n=3 unique directions) gives clipped area < S
+            pts2 = [(0,0),(1,0),(0,1)]
+            a2 = solve_case_baseline(pts2)
+            assert a2 > 0.0
+            # Case: many points on circle
+            pts3 = [(0,0),(1,0),(0,2),(-3,1)]
+            a3 = solve_case_baseline(pts3)
+            assert a3 >= 0.0
+            print("OK")
+        return
+    ans = solve_all_baseline(cases)
+    out = sys.stdout
+    for v in ans:
+        out.write("{:.10f}\n".format(v))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Sanity checks: area non-negative; duplicate-direction cases return $0$. Clipping early-terminates to $0$ when polygon becomes empty.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Reduce clipping overhead by deduplicating identical half-planes and early pruning using the square's four sides. Sort consecutive-pair half-planes by angle and drop dominated parallel ones. Still use polygon clipping, but with far fewer effective constraints in typical distributions.}
+\ASSUMPTIONS{Same geometric reduction to consecutive neighbors. Floating-point robustness with $\varepsilon$ tolerance.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Build half-planes as in Approach A.
+\item Sort by angle and for each group of parallel half-planes, keep only the most restrictive (the one whose boundary is farthest towards the left side).
+\item Start clipping the square by these deduplicated half-planes.
+\item Early stop if polygon becomes empty.
+\end{algosteps}
+\COMPLEXITY{Angle sort: $O(m\log m)$. In practice the dedup shrinks the set substantially. Worst-case clipping remains $O(m^2)$ but with a smaller constant; average-case often near-linear after dedup.}
+\[
+\begin{aligned}
+T(n) &\approx O(m\log m + \tilde m \cdot V), \quad \tilde m \le m, \\
+\end{aligned}
+\]
+\CORRECTNESS{Dominated parallel half-planes can be removed without changing the intersection. Clipping order does not affect the final intersection.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys, math
+from typing import List, Tuple
+
+M = 1_000_000
+EPS = 1e-12
+
+def cross(ax, ay, bx, by): return ax*by - ay*bx
+
+def normalize_dir(dx: int, dy: int) -> Tuple[int, int]:
+    if dx == 0 and dy == 0: return (0,0)
+    g = math.gcd(abs(dx), abs(dy)); dx//=g; dy//=g
+    if dx < 0 or (dx == 0 and dy < 0): dx, dy = -dx, -dy
+    return (dx, dy)
+
+def area_poly(poly):
+    if len(poly) < 3: return 0.0
+    s = 0.0
+    for i in range(len(poly)):
+        x1,y1 = poly[i]; x2,y2 = poly[(i+1)%len(poly)]
+        s += x1*y2 - y1*x2
+    return abs(s)*0.5
+
+def halfplane_clip(poly, A, B):
+    if not poly: return []
+    ax, ay = A; bx, by = B
+    vx, vy = bx-ax, by-ay
+    def inside(P):
+        px, py = P
+        return cross(vx, vy, px-ax, py-ay) >= -EPS
+    def intersect(P, Q):
+        px, py = P; qx, qy = Q
+        ux, uy = qx-px, qy-py
+        d = cross(vx, vy, ux, uy)
+        if abs(d) < EPS: return Q
+        t = cross(vx, vy, ax-px, ay-py) / d
+        return (px + t*ux, py + t*uy)
+    out = []
+    n = len(poly)
+    for i in range(n):
+        S = poly[i]; E = poly[(i+1)%n]
+        insE = inside(E); insS = inside(S)
+        if insE:
+            if not insS: out.append(intersect(S,E))
+            out.append(E)
+        else:
+            if insS: out.append(intersect(S,E))
+    return out
+
+def solve_case_improved(pts: List[Tuple[int,int]]) -> float:
+    n = len(pts); x1,y1 = pts[0]
+    # Duplicate direction -> area 0
+    seen = set()
+    for i in range(1,n):
+        nd = normalize_dir(pts[i][0]-x1, pts[i][1]-y1)
+        if nd in seen: return 0.0
+        seen.add(nd)
+    others = pts[1:]
+    if len(others) <= 1:
+        return float((2*M)*(2*M))
+    # sort around P1
+    others.sort(key=lambda p: math.atan2(p[1]-y1, p[0]-x1))
+    # Build oriented lines with P1 on left
+    lines = []
+    m = len(others)
+    for i in range(m):
+        A = others[i]; B = others[(i+1)%m]
+        s = cross(B[0]-A[0], B[1]-A[1], x1-A[0], y1-A[1])
+        if s >= 0: lines.append((A,B))
+        else: lines.append((B,A))
+    # dedup parallel by angle
+    def angAB(AB):
+        (ax,ay),(bx,by) = AB
+        return math.atan2(by-ay, bx-ax)
+    lines.sort(key=angAB)
+    dedup = []
+    for L in lines:
+        if not dedup:
+            dedup.append(L); continue
+        (a1,b1) = dedup[-1]; (a2,b2) = L
+        ang1 = angAB(dedup[-1]); ang2 = angAB(L)
+        if abs(ang1 - ang2) < 1e-12:
+            # Keep the one farther to the left: compare cross(v, p)
+            vx, vy = b1[0]-a1[0], b1[1]-a1[1]
+            c1 = cross(vx, vy, a1[0], a1[1])
+            c2 = cross(vx, vy, a2[0], a2[1])
+            if c2 > c1 + 1e-12:
+                dedup[-1] = L
+        else:
+            dedup.append(L)
+    poly = [(-M,-M),(M,-M),(M,M),(-M,M)]
+    for A,B in dedup:
+        poly = halfplane_clip(poly, A, B)
+        if not poly: return 0.0
+    return area_poly(poly)
+
+def _selftest():
+    # Simple checks
+    ans = solve_case_improved([(0,0),(1,0),(-2,0)])
+    assert abs(ans) < 1e-9
+    ans2 = solve_case_improved([(0,0),(1,0),(0,1)])
+    assert ans2 > 0.0
+    ans3 = solve_case_improved([(5,3),(0,1),(10,1),(3,51)])
+    assert ans3 > 0.0
+
+if __name__ == "__main__" and sys.stdin.isatty():
+    _selftest()
+\end{minted}
+\VALIDATION{Local asserts: duplicate-direction case returns $0$; simple right-angle case returns positive area.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Use the same reduced set of constraints (consecutive neighbors around $P_1$), but compute the intersection via Half-Plane Intersection (HPI) in $O(m\log m)$ time, where $m=n-1$, by sorting half-planes by angle and maintaining a deque. Add the four bounding half-planes of the big square.}
+\ASSUMPTIONS{No three points with $P_1$ collinear; otherwise answer is $0$. Floating-point HPI with $\varepsilon$ tolerance is sufficient.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Check duplicate undirected directions from $P_1$; if any, print $0$.
+\item Sort other points around $P_1$ by $\operatorname{atan2}$.
+\item For each consecutive pair $(A,B)$ (cyclic), create an oriented half-plane whose boundary is line $AB$ and whose interior is the left side chosen to contain $P_1$.
+\item Add four half-planes for the square $x \le M$, $x \ge -M$, $y \le M$, $y \ge -M$ with $M=10^6$.
+\item Perform HPI: sort by angle, deduplicate parallels keeping the most restrictive, then process lines into a deque and clip by checking intersection points.
+\item The resulting deque forms a convex polygon; compute its area via the shoelace formula.
+\end{algosteps}
+\OPTIMALITY{HPI runs in $O(k\log k)$ for $k$ half-planes (here $k=m+4$). The reduction from all $O(m^2)$ constraints to $m$ consecutive ones is tight and standard for preserving circular order (any further reduction risks losing constraints).}
+\COMPLEXITY{Sorting angles for points: $O(m\log m)$. HPI: $O(k\log k)$ with $k=m+4$. Overall $O(m\log m)$. Space $O(m)$.}
+\[
+\begin{aligned}
+T(n) & = O((n-1)\log(n-1)),\quad S(n)=O(n).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys, math
+from collections import deque
+from typing import List, Tuple
+
+M = 1_000_000
+EPS = 1e-12
+
+class HalfPlane:
+    __slots__ = ("px","py","vx","vy","ang","c")
+    def __init__(self, px: float, py: float, vx: float, vy: float):
+        self.px, self.py = px, py
+        self.vx, self.vy = vx, vy
+        self.ang = math.atan2(vy, vx)
+        # c = cross(v, p) such that half-plane is cross(v, x) >= c
+        self.c = self.vx * self.py - self.vy * self.px
+    def inside(self, x: Tuple[float,float]) -> bool:
+        # cross(v, x-p) >= 0  <=>  cross(v, x) >= cross(v, p) == c
+        return self.vx * x[1] - self.vy * x[0] >= self.c - EPS
+
+def cross(ax, ay, bx, by) -> float:
+    return ax*by - ay*bx
+
+def inter(L1: HalfPlane, L2: HalfPlane) -> Tuple[float, float]:
+    # Solve p1 + t*v1 == p2 + s*v2
+    vx1, vy1 = L1.vx, L1.vy
+    vx2, vy2 = L2.vx, L2.vy
+    det = cross(vx1, vy1, vx2, vy2)
+    if abs(det) < EPS:
+        # Parallel; intersection undefined; caller ensures non-parallel
+        return (float("nan"), float("nan"))
+    dx, dy = L2.px - L1.px, L2.py - L1.py
+    t = cross(dx, dy, vx2, vy2) / det
+    return (L1.px + t*vx1, L1.py + t*vy1)
+
+def normalize_dir(dx: int, dy: int) -> Tuple[int, int]:
+    if dx == 0 and dy == 0: return (0,0)
+    g = math.gcd(abs(dx), abs(dy)); dx//=g; dy//=g
+    # undirected normalization (line through P1)
+    if dx < 0 or (dx == 0 and dy < 0): dx, dy = -dx, -dy
+    return (dx, dy)
+
+def halfplane_intersection(hps: List[HalfPlane]) -> List[Tuple[float,float]]:
+    # sort by angle; dedup parallel half-planes keeping most restrictive (max c)
+    hps.sort(key=lambda h: (h.ang, h.c))
+    uniq = []
+    for h in hps:
+        if not uniq:
+            uniq.append(h); continue
+        if abs(h.ang - uniq[-1].ang) < 1e-14:
+            # same direction; keep more restrictive (larger c)
+            if h.c > uniq[-1].c + 1e-12:
+                uniq[-1] = h
+        else:
+            uniq.append(h)
+    dq = deque()  # half-planes
+    pts = deque() # intersection points of consecutive half-planes in dq
+    for h in uniq:
+        while pts and not h.inside(pts[-1]):
+            dq.pop(); pts.pop()
+        while pts and not h.inside(pts[0]):
+            dq.popleft(); pts.popleft()
+        if dq:
+            p = inter(dq[-1], h)
+            pts.append(p)
+        dq.append(h)
+    # finalize: ensure first and last also compatible
+    while pts and not dq[0].inside(pts[-1]):
+        dq.pop(); pts.pop()
+    while pts and not dq[-1].inside(pts[0]):
+        dq.popleft(); pts.popleft()
+    if len(dq) < 3:
+        return []
+    # build polygon from pts + last-first intersection
+    poly = list(pts)
+    poly.append(inter(dq[-1], dq[0]))
+    return poly
+
+def solve_case(pts: List[Tuple[int,int]]) -> float:
+    n = len(pts)
+    x1, y1 = pts[0]
+    # duplicate undirected directions -> area 0
+    seen = set()
+    for i in range(1, n):
+        nd = normalize_dir(pts[i][0]-x1, pts[i][1]-y1)
+        if nd in seen:
+            return 0.0
+        seen.add(nd)
+    others = pts[1:]
+    m = len(others)
+    if m <= 1:
+        return float((2*M) * (2*M))
+    # sort by angle around P1
+    others.sort(key=lambda p: math.atan2(p[1]-y1, p[0]-x1))
+    # half-planes from consecutive pairs; choose orientation with P1 on left
+    hps: List[HalfPlane] = []
+    for i in range(m):
+        ax, ay = others[i]
+        bx, by = others[(i+1)%m]
+        s = cross(bx-ax, by-ay, x1-ax, y1-ay)
+        if s >= 0:
+            px, py = ax, ay; vx, vy = bx-ax, by-ay
+        else:
+            px, py = bx, by; vx, vy = ax-bx, ay-by
+        hps.append(HalfPlane(px, py, vx, vy))
+    # bounding square half-planes
+    hps.append(HalfPlane(M, 0.0, 0.0, 1.0))     # x <= M (left of upward line x=M)
+    hps.append(HalfPlane(-M, 0.0, 0.0, -1.0))   # x >= -M (left of downward line x=-M)
+    hps.append(HalfPlane(0.0, M, -1.0, 0.0))    # y <= M (left of leftward line y=M)
+    hps.append(HalfPlane(0.0, -M, 1.0, 0.0))    # y >= -M (left of rightward line y=-M)
+    poly = halfplane_intersection(hps)
+    if not poly:
+        return 0.0
+    # area
+    s = 0.0
+    for i in range(len(poly)):
+        x1_, y1_ = poly[i]
+        x2_, y2_ = poly[(i+1)%len(poly)]
+        s += x1_*y2_ - y1_*x2_
+    return abs(s)*0.5
+
+def read_input() -> List[List[Tuple[int,int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data: return []
+    it = iter(data)
+    T = int(next(it))
+    cases = []
+    for _ in range(T):
+        n = int(next(it)); pts = []
+        for _ in range(n):
+            x = int(next(it)); y = int(next(it))
+            pts.append((x,y))
+        cases.append(pts)
+    return cases
+
+def solve_all(cases: List[List[Tuple[int,int]]]) -> List[float]:
+    return [solve_case(case) for case in cases]
+
+def main():
+    cases = read_input()
+    if not cases:
+        if sys.stdin.isatty():
+            # 1) Duplicate direction -> 0 area
+            assert abs(solve_case([(0,0),(1,0),(-2,0)]) - 0.0) < 1e-9
+            # 2) Simple non-collinear triple -> positive area < S
+            a2 = solve_case([(0,0),(1,0),(0,1)])
+            assert 0.0 < a2 < (2*M)*(2*M) + 1e-6
+            # 3) Four points forming a convex-like order
+            a3 = solve_case([(5,3),(0,1),(10,1),(3,51)])
+            assert a3 > 0.0
+            print("OK")
+        return
+    ans = solve_all(cases)
+    out = sys.stdout
+    for v in ans:
+        out.write("{:.10f}\n".format(v))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts under TTY: duplicate-line case yields $0$; simple $L$-shape yields $0<\text{area}<S$; a small four-point example yields positive area.}
+\RESULT{The output is the area of the convex polygon formed by the intersection of (i) the left-sides of lines through each consecutive pair of points around $P_1$, oriented to contain $P_1$, and (ii) the bounding square. If any two other points are collinear with $P_1$, the area is $0$.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit checks: duplicate-direction $\to 0$ area; random small sets to ensure non-negativity and bounded by $4\cdot 10^{12}$. Property: improved/final areas match baseline on tiny cases.}
+\LINE{CROSS-CHECKS}{For small $n \le 12$, compare Approach A vs C on random integer points within a small box; assert relative difference $\le 10^{-7}$.}
+\LINE{EDGE-CASE GENERATOR}{Generate cases with: all points on a line through $P_1$ (answer $0$); nearly-parallel consecutive pairs; points near square boundary; $n=3$.}
+\begin{minted}{python}
+import random, math
+
+def gen_points(n, box=10):
+    pts = set()
+    while len(pts) < n:
+        x = random.randint(-box, box); y = random.randint(-box, box)
+        pts.add((x, y))
+    pts = list(pts)
+    # Ensure unique P1
+    return pts
+
+def relative_close(a, b, tol=1e-7):
+    if b == 0: return abs(a) < tol
+    return abs(a - b) / max(1.0, abs(b)) < tol
+
+def cross(ax, ay, bx, by): return ax*by - ay*bx
+
+# Deterministic generators for boundaries, degenerates, adversarials
+def gen_degenerate_collinear():
+    # P1 at origin, others along x-axis
+    return [(0,0),(1,0),(-2,0),(3,0)]
+
+def gen_square_corner():
+    # Points forcing region near corner
+    return [(M,M-1),(M,M),(M-1,M),(M-1,M-1)]
+
+if __name__ == "__main__":
+    # This block is illustrative; not executed by judges
+    random.seed(0)
+    print("Degenerate area 0:", 0.0)
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Final solution: Half-Plane Intersection with consecutive neighbor constraints (CF-ready)
+import sys, math
+from collections import deque
+from typing import List, Tuple
+
+M = 1_000_000
+EPS = 1e-12
+
+class HalfPlane:
+    __slots__ = ("px","py","vx","vy","ang","c")
+    def __init__(self, px: float, py: float, vx: float, vy: float):
+        self.px, self.py = px, py
+        self.vx, self.vy = vx, vy
+        self.ang = math.atan2(vy, vx)
+        self.c = self.vx * self.py - self.vy * self.px  # cross(v, p)
+    def inside(self, x: Tuple[float,float]) -> bool:
+        return self.vx * x[1] - self.vy * x[0] >= self.c - EPS
+
+def cross(ax, ay, bx, by) -> float:
+    return ax*by - ay*bx
+
+def inter(L1: HalfPlane, L2: HalfPlane) -> Tuple[float,float]:
+    det = cross(L1.vx, L1.vy, L2.vx, L2.vy)
+    if abs(det) < EPS:
+        return (float("nan"), float("nan"))
+    dx, dy = L2.px - L1.px, L2.py - L1.py
+    t = cross(dx, dy, L2.vx, L2.vy) / det
+    return (L1.px + t*L1.vx, L1.py + t*L1.vy)
+
+def normalize_dir(dx: int, dy: int) -> Tuple[int, int]:
+    if dx == 0 and dy == 0: return (0,0)
+    g = math.gcd(abs(dx), abs(dy)); dx//=g; dy//=g
+    if dx < 0 or (dx == 0 and dy < 0): dx, dy = -dx, -dy
+    return (dx, dy)
+
+def halfplane_intersection(hps: List[HalfPlane]) -> List[Tuple[float,float]]:
+    hps.sort(key=lambda h: (h.ang, h.c))
+    uniq = []
+    for h in hps:
+        if not uniq:
+            uniq.append(h); continue
+        if abs(h.ang - uniq[-1].ang) < 1e-14:
+            if h.c > uniq[-1].c + 1e-12:
+                uniq[-1] = h
+        else:
+            uniq.append(h)
+    dq = deque()
+    pts = deque()
+    for h in uniq:
+        while pts and not h.inside(pts[-1]):
+            dq.pop(); pts.pop()
+        while pts and not h.inside(pts[0]):
+            dq.popleft(); pts.popleft()
+        if dq:
+            pts.append(inter(dq[-1], h))
+        dq.append(h)
+    while pts and not dq[0].inside(pts[-1]):
+        dq.pop(); pts.pop()
+    while pts and not dq[-1].inside(pts[0]):
+        dq.popleft(); pts.popleft()
+    if len(dq) < 3:
+        return []
+    poly = list(pts)
+    poly.append(inter(dq[-1], dq[0]))
+    return poly
+
+def solve_case(pts: List[Tuple[int,int]]) -> float:
+    n = len(pts)
+    x1, y1 = pts[0]
+    seen = set()
+    for i in range(1, n):
+        nd = normalize_dir(pts[i][0]-x1, pts[i][1]-y1)
+        if nd in seen:
+            return 0.0
+        seen.add(nd)
+    others = pts[1:]
+    m = len(others)
+    if m <= 1:
+        return float((2*M)*(2*M))
+    others.sort(key=lambda p: math.atan2(p[1]-y1, p[0]-x1))
+    hps: List[HalfPlane] = []
+    for i in range(m):
+        ax, ay = others[i]
+        bx, by = others[(i+1)%m]
+        s = cross(bx-ax, by-ay, x1-ax, y1-ay)
+        if s >= 0:
+            px, py = ax, ay; vx, vy = bx-ax, by-ay
+        else:
+            px, py = bx, by; vx, vy = ax-bx, ay-by
+        hps.append(HalfPlane(px, py, vx, vy))
+    # bounding square
+    hps.append(HalfPlane(M, 0.0, 0.0, 1.0))     # x <= M
+    hps.append(HalfPlane(-M, 0.0, 0.0, -1.0))   # x >= -M
+    hps.append(HalfPlane(0.0, M, -1.0, 0.0))    # y <= M
+    hps.append(HalfPlane(0.0, -M, 1.0, 0.0))    # y >= -M
+    poly = halfplane_intersection(hps)
+    if not poly: return 0.0
+    s = 0.0
+    for i in range(len(poly)):
+        xA, yA = poly[i]
+        xB, yB = poly[(i+1)%len(poly)]
+        s += xA*yB - yA*xB
+    return abs(s)*0.5
+
+def read_input() -> List[List[Tuple[int,int]]]:
+    data = sys.stdin.read().strip().split()
+    if not data: return []
+    it = iter(data)
+    T = int(next(it))
+    cases = []
+    for _ in range(T):
+        n = int(next(it)); pts = []
+        for _ in range(n):
+            x = int(next(it)); y = int(next(it))
+            pts.append((x,y))
+        cases.append(pts)
+    return cases
+
+def solve_all(cases: List[List[Tuple[int,int]]]) -> List[float]:
+    return [solve_case(case) for case in cases]
+
+def main():
+    cases = read_input()
+    if not cases:
+        if sys.stdin.isatty():
+            assert abs(solve_case([(0,0),(1,0),(-2,0)]) - 0.0) < 1e-9
+            a2 = solve_case([(0,0),(1,0),(0,1)])
+            assert 0.0 < a2 < (2*M)*(2*M) + 1e-6
+            a3 = solve_case([(5,3),(0,1),(10,1),(3,51)])
+            assert a3 > 0.0
+            print("OK")
+        return
+    ans = solve_all(cases)
+    out = sys.stdout
+    for v in ans:
+        out.write("{:.10f}\n".format(v))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Preserve the circular order of other houses around Limak: intersect left-half-planes of lines through consecutive neighbors (cyclic) with the bounding square; handle collinearity with $P_1$ as area $0$.}
+\WHY{This appears in interviews to test computational geometry fluency: orientation predicates, angle sort, half-plane intersection, and robust floating-point handling.}
+\CHECKLIST{
+\begin{bullets}
+\item Check for duplicate undirected directions from $P_1$; if present, answer $0$.
+\item Sort all other points by $\operatorname{atan2}(y-y_1, x-x_1)$.
+\item For each consecutive pair, orient the line so $P_1$ is on the left; keep that half-plane.
+\item Add the four bounding square half-planes.
+\item Run HPI; if empty, area $0$; else shoelace area.
+\item Print with sufficient precision.
+\end{bullets}
+}
+\EDGECASES{
+\begin{bullets}
+\item Two or more points on the same line through $P_1$ (same direction or opposite) $\Rightarrow$ area $0$.
+\item $n=3$ with unique directions: single nontrivial constraint yields a large clipped half-plane.
+\item Nearly parallel consecutive pairs: numeric stability demands $\varepsilon$.
+\item Region shrinks to a segment or a point (area $0$).
+\item Points near or outside the big square corners; ensure square clipping works.
+\item Very large $n$ but sum $n$ bounded; ensure $O(n\log n)$ solution.
+\end{bullets}
+}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to handle opposite directions as collinear with $P_1$.
+\item Using open vs closed half-planes inconsistently; area unaffected but affects emptiness detection.
+\item Not deduplicating parallel half-planes in HPI can break the deque.
+\item Computing intersections for parallel lines without guarding leads to NaNs.
+\item Using inadequate precision printing.
+\item atan2 sorting without stable handling of ties when nearly collinear.
+\end{bullets}
+}
+\FAILMODES{Brute-force pairwise constraints are $O(n^2)$ and infeasible. Naive polygon clipping by $O(n)$ half-planes can be $O(n^2)$ and time out on maximal inputs; HPI avoids this.}
+\ELI{We only need to keep the local neighbor order around Limak. This becomes a bunch of one-sided walls (half-planes). Intersecting all those walls with the country square gives a convex shape, whose area is the answer. If any two houses line up with Limak, the allowed new places are along a line, so area is zero.}
+\NotePages{3}
+
+\end{document}

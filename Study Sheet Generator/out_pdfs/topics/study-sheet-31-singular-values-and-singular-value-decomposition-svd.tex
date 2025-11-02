@@ -1,0 +1,2378 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]
+\setlength{\jot}{7pt}
+\setlength{\emergencystretch}{8em}
+\sloppy
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Singular Values and Singular Value Decomposition (SVD)}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+Given $A\in\mathbb{R}^{m\times n}$, the Singular Value Decomposition (SVD) is a factorization
+$A=U\Sigma V^\top$ where $U\in\mathbb{R}^{m\times m}$ and $V\in\mathbb{R}^{n\times n}$ are
+orthogonal, and $\Sigma\in\mathbb{R}^{m\times n}$ is diagonal with nonnegative entries
+$\sigma_1\ge\cdots\ge\sigma_r>0$ and zeros elsewhere, where $r=\mathrm{rank}(A)$.
+The singular values are the square roots of the eigenvalues of $A^\top A$ (or $AA^\top$).
+}
+
+\WHY{
+SVD diagonalizes any matrix with orthogonal changes of basis, revealing intrinsic geometry:
+principal directions, condition number, numerical rank, and optimal low-rank approximations.
+It underlies least squares, pseudoinverse, PCA, compression, and regularization.
+}
+
+\HOW{
+1. Consider $A^\top A$ which is symmetric positive semidefinite. By the spectral theorem,
+$A^\top A=V\Lambda V^\top$ with $\Lambda=\mathrm{diag}(\lambda_i\ge0)$. Define
+$\sigma_i=\sqrt{\lambda_i}$ and right singular vectors as columns of $V$.
+2. Define left singular vectors $u_i = \frac{1}{\sigma_i}A v_i$ for $\sigma_i>0$, and
+complete $U$ to an orthogonal basis.
+3. Assemble $\Sigma$ with $\sigma_i$ on the diagonal; then $A=U\Sigma V^\top$.
+4. Interpret: $V$ rotates input coordinates, $\Sigma$ scales along axes, $U$ rotates outputs.
+}
+
+\ELI{
+SVD says any linear transformation is a rotation, then stretching along perpendicular axes,
+then another rotation. It finds the axes and amounts of stretch.
+}
+
+\SCOPE{
+Valid for all real (and complex) finite-dimensional matrices. Degenerate cases occur when
+$A=0$ (all singular values $0$) or when rank$<\min(m,n)$ (some zeros). Numerical issues
+arise when singular values are clustered or span many orders of magnitude.
+}
+
+\CONFUSIONS{
+SVD vs. eigen-decomposition: SVD applies to any matrix; eigen-decomposition requires
+square matrices and may fail if not diagonalizable. Right vs. left singular vectors:
+right belong to domain, left to codomain. Thin vs. full SVD: thin uses only nonzero
+singular values and their vectors.
+}
+
+\APPLICATIONS{
+\begin{bullets}
+\item Mathematical foundations: orthogonal diagonalization of $A^\top A$.
+\item Computational modeling: stable least squares, pseudoinverse, low-rank solvers.
+\item Physical/engineering: principal axes, modal analysis, denoising, compression.
+\item Statistical/algorithmic: PCA, latent semantic analysis, matrix completion.
+\end{bullets}
+}
+
+\textbf{ANALYTIC STRUCTURE.}
+Orthogonally invariant structure: singular values are unitarily invariant functions.
+Set $\{\sigma_i\}$ is symmetric, nonnegative, and Lipschitz in $A$ under spectral norm.
+
+\textbf{CANONICAL LINKS.}
+Spectral theorem for symmetric matrices; Eckart–Young–Mirsky optimality; Moore–Penrose
+pseudoinverse; norm identities $\|A\|_2=\sigma_1$, $\|A\|_F^2=\sum_i\sigma_i^2$; polar
+decomposition $A=QH$ with $Q$ orthogonal, $H\succeq0$.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Phrases: best rank-$k$ approximation, least squares, condition number, PCA.
+\item Structures: $A^\top A$ symmetric psd; low-rank constraints; orthogonal invariance.
+\item Inputs: rectangular matrices; outputs: singular values/vectors or truncated factors.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate to $A^\top A$ or $AA^\top$ and identify eigen-structure.
+\item Use $A=U\Sigma V^\top$ to express target quantity in terms of $\Sigma$.
+\item Apply orthogonal invariance of norms or projections.
+\item Truncate or invert diagonal $\Sigma$ as needed; map back via $U,V$.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Singular values invariant under orthogonal pre/post multiplication; Frobenius and spectral
+norms are unitarily invariant; rank equals number of positive singular values.
+
+\textbf{EDGE INTUITION.}
+As $\sigma_r\to0$, matrix becomes nearly rank deficient and ill-conditioned; as
+$\sigma_1\to\infty$, spectral norm grows and solutions to least squares amplify noise.
+
+\clearpage
+\section{Glossary}
+\glossx{Singular Value}{
+A nonnegative scalar $\sigma$ such that $\sigma^2$ is an eigenvalue of $A^\top A$.}{
+Measures axis-aligned stretching of a linear map; drives conditioning and energy.}{
+Compute eigenvalues of $A^\top A$, take square roots, sort decreasingly.}{
+Imagine a ball becoming an ellipsoid; radii are singular values.}{
+Pitfall: forgetting to sort or to take nonnegative square roots.}
+\glossx{Singular Value Decomposition (SVD)}{
+Factorization $A=U\Sigma V^\top$ with $U,V$ orthogonal and $\Sigma$ diagonal $\ge0$.}{
+Universal diagonalization enabling analysis, compression, and stable inversion.}{
+Diagonalize $A^\top A=V\Lambda V^\top$, set $\Sigma=\sqrt{\Lambda}$, define $U$.}{
+Like rotating a box, stretching it, then rotating again.}{
+Example: for diagonal $A$, SVD has $U=V=I$ and $\Sigma=|A|$.}
+\glossx{Spectral Norm}{
+Operator norm $\|A\|_2=\sup_{\|x\|=1}\|Ax\|$.}{
+Upper bound on amplification; equals largest singular value $\sigma_1$.}{
+Compute SVD; $\|A\|_2=\sigma_1$. Alternatively, $\sqrt{\lambda_{\max}(A^\top A)}$.}{
+How much $A$ can stretch a unit vector.}{
+Pitfall: confusing with spectral radius of $A$ (eigenvalues), which differs if $A$ nonnormal.}
+\glossx{Moore--Penrose Pseudoinverse}{
+Generalized inverse $A^+$ satisfying four Penrose conditions.}{
+Solves least squares and minimum-norm problems robustly.}{
+Using SVD: $A^+=V\Sigma^+U^\top$ with reciprocals of nonzero singular values.}{
+Like reversing a stretch along axes while ignoring zero stretches.}{
+Pitfall: using ordinary inverse when $A$ is singular or rectangular.}
+
+\clearpage
+\section{Symbol Ledger}
+\varmapStart
+\var{A\in\mathbb{R}^{m\times n}}{Input matrix.}
+\var{U\in\mathbb{R}^{m\times m}}{Left singular vectors, orthogonal.}
+\var{V\in\mathbb{R}^{n\times n}}{Right singular vectors, orthogonal.}
+\var{\Sigma\in\mathbb{R}^{m\times n}}{Diagonal nonnegative singular values.}
+\var{\sigma_i}{$i$th singular value, $\sigma_1\ge\cdots\ge\sigma_r>0$.}
+\var{r}{Rank of $A$ (number of positive singular values).}
+\var{k}{Target rank for approximation with $1\le k\le r$.}
+\var{\|\cdot\|_2}{Spectral norm (operator 2-norm).}
+\var{\|\cdot\|_F}{Frobenius norm.}
+\var{A^+}{Moore--Penrose pseudoinverse.}
+\var{Q}{Orthogonal factor in polar decomposition.}
+\var{H}{Symmetric positive semidefinite factor in polar decomposition.}
+\var{P_k}{Orthogonal projector onto top-$k$ right singular subspace.}
+\var{\kappa_2(A)}{Condition number $\sigma_1/\sigma_r$ for full-rank square $A$.}
+\varmapEnd
+
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{Existence and Structure of SVD}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Every $A\in\mathbb{R}^{m\times n}$ admits an SVD $A=U\Sigma V^\top$ with $U,V$ orthogonal
+and $\Sigma$ diagonal nonnegative, ordered $\sigma_1\ge\cdots\ge\sigma_r>0$.
+
+\WHAT{
+Orthogonal diagonalization of a general (possibly rectangular) matrix via two-sided
+orthogonal transformations into a nonnegative diagonal form.
+}
+
+\WHY{
+Provides canonical axes and scales of the linear map; foundational for pseudoinverse,
+least squares, PCA, low-rank approximation, and conditioning analysis.
+}
+
+\FORMULA{
+\[
+A=U\Sigma V^\top,\quad U^\top U=I_m,\ V^\top V=I_n,\ \Sigma=\begin{bmatrix}
+\mathrm{diag}(\sigma_1,\ldots,\sigma_r)&0\\0&0
+\end{bmatrix}.
+\]
+}
+
+\CANONICAL{
+Domain: all $A\in\mathbb{R}^{m\times n}$. Parameters: $r=\mathrm{rank}(A)$,
+singular values $\sigma_i\ge0$ sorted nonincreasingly. Left and right singular vectors
+form orthonormal bases; uniqueness up to signs and rotations in singular subspaces
+with equal singular values.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Finite-dimensional real vector spaces with Euclidean inner product.
+\item Spectral theorem for real symmetric matrices holds.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $M\in\mathbb{R}^{n\times n}$ is symmetric positive semidefinite, then there exists an
+orthogonal $V$ and diagonal $\Lambda\succeq0$ with $M=V\Lambda V^\top$.
+\end{lemma}
+\begin{proof}
+By the spectral theorem, a real symmetric matrix is orthogonally diagonalizable with real
+eigenvalues. Positive semidefiniteness ensures eigenvalues are $\ge0$. Thus $M=V\Lambda V^\top$
+with $V$ orthogonal and $\Lambda\succeq0$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1:} &\ \text{Let } A^\top A = V\Lambda V^\top,\ \Lambda=\mathrm{diag}(\lambda_i\ge0).\\
+\text{Step 2:} &\ \sigma_i=\sqrt{\lambda_i},\ \Sigma=\mathrm{diag}(\sigma_i).\\
+\text{Step 3:} &\ \text{For }\sigma_i>0,\ u_i=\frac{1}{\sigma_i}Av_i;\ \text{for zeros, complete }U.\\
+\text{Step 4:} &\ \text{Check orthonormality: }u_i^\top u_j=\frac{v_i^\top A^\top Av_j}{\sigma_i\sigma_j}
+= \frac{v_i^\top \Lambda v_j}{\sigma_i\sigma_j}=\delta_{ij}.\\
+\text{Step 5:} &\ A v_i = \sigma_i u_i\ \Rightarrow\ A V = U \Sigma\ \Rightarrow\ A=U\Sigma V^\top.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Form $A^\top A$; compute eigenpairs to get $V$ and $\sigma_i$.
+\item Form $U$ as normalized $Av_i$ for nonzero $\sigma_i$; complete an orthonormal basis.
+\item Assemble $\Sigma$ with sorted $\sigma_i$; verify $A=U\Sigma V^\top$.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Thin SVD: $A=U_r\Sigma_r V_r^\top$ with $U_r\in\mathbb{R}^{m\times r}$,
+$V_r\in\mathbb{R}^{n\times r}$, $\Sigma_r\in\mathbb{R}^{r\times r}$.
+\item Economy SVD with $U\in\mathbb{R}^{m\times r}$ and $V\in\mathbb{R}^{n\times r}$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item $A=0$: all singular values zero; $U,V$ arbitrary orthogonal.
+\item Repeated singular values: $U,V$ not unique within invariant subspaces.
+\item Square orthogonal $A$: $\Sigma=I$, $U=A$, $V=I$ up to signs.
+\end{bullets}
+}
+
+\INPUTS{$A=\mathrm{diag}(3,1,0)\in\mathbb{R}^{3\times 3}$.}
+
+\DERIVATION{
+\begin{align*}
+A^\top A&=\mathrm{diag}(9,1,0)=V\Lambda V^\top\ \text{with }V=I.\\
+\sigma&=(3,1,0),\ \Sigma=\mathrm{diag}(3,1,0).\\
+u_i&=\frac{1}{\sigma_i}Av_i=e_i\ \text{for }i=1,2;\ \text{complete }u_3=e_3.\\
+U&=I,\ V=I,\ \Rightarrow\ A=U\Sigma V^\top\ \text{verified.}
+\end{align*}
+}
+
+\RESULT{
+Existence of SVD holds and is constructed from the spectral decomposition of $A^\top A$.
+}
+
+\UNITCHECK{
+Orthogonality: $U^\top U=I$, $V^\top V=I$; dimensions: $U\Sigma V^\top$ is $m\times n$.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Failing to normalize $u_i$ when forming from $Av_i$.
+\item Not ordering singular values nonincreasingly.
+\item Confusing eigenvectors of $A$ with singular vectors when $A$ is not normal.
+\end{bullets}
+}
+
+\INTUITION{
+Diagonalizing $A^\top A$ finds the input directions of stretch; applying $A$ maps these
+to output directions with lengths equal to the singular values.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Universal factorization: $A=U\Sigma V^\top$ with $\Sigma\succeq0$ diagonal.
+\item Orthogonal invariance and sorted nonnegative spectrum characterize SVD.
+\end{bullets}
+}
+
+\FormulaPage{2}{Norm Identities and Invariants}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A=U\Sigma V^\top$ with singular values $\{\sigma_i\}$:
+$\|A\|_2=\sigma_1$, $\|A\|_F^2=\sum_i\sigma_i^2$, and if $A$ is square,
+$|\det A|=\prod_i\sigma_i$.
+
+\WHAT{
+Relates operator norm, Frobenius norm, and determinant magnitude to singular values.
+}
+
+\WHY{
+Provides immediate bounds, energy measures, and conditioning directly from SVD; enables
+unitarily invariant analysis independent of basis choices.
+}
+
+\FORMULA{
+\[
+\|A\|_2=\sigma_1,\quad \|A\|_F^2=\sum_{i=1}^{\min(m,n)}\sigma_i^2,\quad
+m=n\Rightarrow |\det A|=\prod_{i=1}^{n}\sigma_i.
+\]
+}
+
+\CANONICAL{
+Orthogonally invariant norms: $\|A\|=\|U^\top A V\|$. Determinant identity holds for
+square $A$; for rectangular matrices, product identity is not applicable.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $U,V$ orthogonal; $\Sigma$ diagonal nonnegative.
+\item Determinant identity requires $m=n$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For any orthogonal $Q_1,Q_2$, $\|Q_1 A Q_2\|_F=\|A\|_F$ and $\|Q_1 A Q_2\|_2=\|A\|_2$.
+\end{lemma}
+\begin{proof}
+Frobenius: $\|Q_1AQ_2\|_F^2=\mathrm{tr}((Q_1AQ_2)^\top(Q_1AQ_2))
+=\mathrm{tr}(Q_2^\top A^\top A Q_2)=\mathrm{tr}(A^\top A)=\|A\|_F^2$.
+Spectral: $\|Q_1AQ_2\|_2=\sup_{\|x\|=1}\|Q_1A Q_2 x\|
+=\sup_{\|y\|=1}\|Q_1A y\|=\sup_{\|y\|=1}\|Ay\|=\|A\|_2$ by orthogonality. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }& \|A\|_2=\|U\Sigma V^\top\|_2=\|\Sigma\|_2=\max_i\sigma_i=\sigma_1.\\
+\text{Step 2: }& \|A\|_F^2=\|U\Sigma V^\top\|_F^2=\|\Sigma\|_F^2
+=\sum_i \sigma_i^2.\\
+\text{Step 3: }& m=n:\ |\det A|=|\det U|\cdot|\det \Sigma|\cdot|\det V^\top|
+=\prod_i \sigma_i.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute or bound singular values; read norms off $\Sigma$.
+\item Use orthogonal invariance to simplify matrices to diagonal form.
+\item For determinant magnitude of square $A$, multiply singular values.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item $\|A\|_2=\sqrt{\lambda_{\max}(A^\top A)}$.
+\item $\|A\|_F^2=\mathrm{tr}(A^\top A)$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $A=0$, then all norms are $0$ and all $\sigma_i=0$.
+\item If $A$ orthogonal, $\|A\|_2=1$, $\|A\|_F=\sqrt{n}$.
+\end{bullets}
+}
+
+\INPUTS{$A=\begin{bmatrix}3&0\\0&4\\0&0\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+A^\top A&=\begin{bmatrix}9&0\\0&16\end{bmatrix}\Rightarrow \sigma=(4,3).\\
+\|A\|_2&=4,\ \|A\|_F^2=4^2+3^2=25,\ \|A\|_F=5.
+\end{align*}
+}
+
+\RESULT{
+Spectral and Frobenius norms match singular-value formulas; verified numerically.
+}
+
+\UNITCHECK{
+Dimensions: norms are scalars; invariance under orthogonal transforms preserved.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Using spectral radius of $A$ in place of $\|A\|_2$ for nonnormal $A$.
+\item Forgetting to square before summing for $\|A\|_F^2$.
+\end{bullets}
+}
+
+\INTUITION{
+Orthogonal rotations do not change lengths or energies; only the axis-aligned scales
+in $\Sigma$ matter for 2-norm and energy content.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $\|A\|_2=\sigma_1$ and $\|A\|_F^2=\sum \sigma_i^2$ are unitarily invariant identities.
+\item $|\det A|=\prod \sigma_i$ when $A$ is square.
+\end{bullets}
+}
+
+\FormulaPage{3}{Eckart--Young--Mirsky Optimal Low-Rank Approximation}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A=U\Sigma V^\top$ and $1\le k<r$, the best rank-$k$ approximation under any
+unitarily invariant norm is obtained by truncation: $A_k=U\Sigma_k V^\top$, where
+$\Sigma_k=\mathrm{diag}(\sigma_1,\ldots,\sigma_k,0,\ldots)$.
+
+\WHAT{
+Characterizes the unique (up to singular-subspace rotations) optimal low-rank
+approximation of a matrix in spectral or Frobenius norm.
+}
+
+\WHY{
+Enables principled compression, denoising, and reduced models with provable optimality.
+}
+
+\FORMULA{
+\[
+\min_{\mathrm{rank}(B)\le k}\|A-B\|=\|A-A_k\|,\quad
+\|A-A_k\|_2=\sigma_{k+1},\quad
+\|A-A_k\|_F^2=\sum_{i>k}\sigma_i^2.
+\]
+}
+
+\CANONICAL{
+Applies to any unitarily invariant norm; explicit error expressions given for spectral
+and Frobenius norms. Assumes singular values sorted nonincreasingly.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item SVD exists and singular values are ordered.
+\item Norm is unitarily invariant.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For any orthogonal $U,V$, $\|A\|=\|U^\top A V\|$ for unitarily invariant norms, and
+$\|A\|_F^2=\sum_{i,j} (U^\top A V)_{ij}^2$.
+\end{lemma}
+\begin{proof}
+Unitarily invariant norms depend only on singular values; left-right orthogonal
+transformations leave them unchanged. For Frobenius, proof follows from the trace
+identity as in the previous lemma. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }& \text{By invariance, reduce to diagonal } \Sigma.\\
+\text{Step 2: }& \min_{\mathrm{rank}(B)\le k}\|\Sigma - \tilde B\|,\ 
+\tilde B=U^\top B V.\\
+\text{Step 3: }& \text{Rank constraint implies }\tilde B \text{ has at most }k
+\text{ nonzero singular values.}\\
+\text{Step 4: }& \text{Diagonal choice } \tilde B=\Sigma_k \text{ minimizes entrywise
+error in Frobenius norm:}\\
+& \|\Sigma-\Sigma_k\|_F^2=\sum_{i>k}\sigma_i^2\ \text{and any off-diagonal only increases it.}\\
+\text{Step 5: }& \text{For spectral norm, } \|\Sigma-\Sigma_k\|_2=\max_{i>k}\sigma_i
+=\sigma_{k+1}.\\
+\text{Step 6: }& \text{Undo transforms: } A_k=U\Sigma_k V^\top \text{ is optimal.}
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute SVD and select top $k$ singular values and vectors.
+\item Form $A_k=U_k\Sigma_k V_k^\top$.
+\item Read error in spectral norm as $\sigma_{k+1}$ and Frobenius as tail energy.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Projection form: $A_k=U_k U_k^\top A = A V_k V_k^\top$.
+\item Variational: $U_k,V_k$ maximize $\|U_k^\top A V_k\|_F^2=\sum_{i\le k}\sigma_i^2$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $k\ge r$, $A_k=A$ and error $0$.
+\item For repeated $\sigma_k=\sigma_{k+1}$, $A_k$ not unique within the tied subspace.
+\end{bullets}
+}
+
+\INPUTS{$A=\mathrm{diag}(5,1,0),\ k=1$.}
+
+\DERIVATION{
+\begin{align*}
+\sigma&=(5,1,0),\ A_1=\mathrm{diag}(5,0,0).\\
+\|A-A_1\|_2&=\sigma_2=1,\ \|A-A_1\|_F=\sqrt{1^2+0^2}=1.
+\end{align*}
+}
+
+\RESULT{
+The best rank-$1$ approximation zeroes all but the largest singular value; error equals
+the next singular value in $\|\cdot\|_2$ and tail energy in $\|\cdot\|_F$.
+}
+
+\UNITCHECK{
+Norm units match those of $A$; projection formulas preserve dimensions.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Keeping nonleading singular vectors with smaller singular values increases error.
+\item Miscounting rank when $\sigma_k=0$.
+\end{bullets}
+}
+
+\INTUITION{
+Throw away the smallest axis stretches; what remains captures the most energy possible
+for the allowed rank budget.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Truncate SVD to rank $k$ to achieve optimal approximation.
+\item Error equals tail singular values in appropriate norms.
+\end{bullets}
+}
+
+\FormulaPage{4}{Moore--Penrose Pseudoinverse via SVD}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+If $A=U\Sigma V^\top$ with rank $r$, then $A^+=V\Sigma^+ U^\top$, where $\Sigma^+$
+inverts nonzero singular values. Least squares solution of $\min_x\|Ax-b\|_2$ is
+$x^\star=A^+b$, with minimum-norm among all minimizers.
+
+\WHAT{
+Constructs generalized inverse and solves least squares by inverting $\Sigma$ on
+its support and mapping through orthogonal factors.
+}
+
+\WHY{
+Stable and explicit solution to over/underdetermined systems, handling rank deficiency
+and ill-conditioning in a principled way.
+}
+
+\FORMULA{
+\[
+A^+=V\Sigma^+U^\top,\quad \Sigma^+=\mathrm{diag}(\sigma_1^{-1},\ldots,\sigma_r^{-1},0,\ldots),
+\quad x^\star=A^+b.
+\]
+}
+
+\CANONICAL{
+Penrose conditions: $AA^+A=A$, $A^+AA^+=A^+$, $(AA^+)^\top=AA^+$, $(A^+A)^\top=A^+A$.
+Minimum-norm solution among all least squares minimizers is $x^\star=A^+b$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item SVD of $A$ exists; nonzero $\sigma_i$ identified.
+\item Euclidean norm used for least squares optimality.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $A=U\Sigma V^\top$, then $AA^+=U\begin{bmatrix}I_r&0\\0&0\end{bmatrix}U^\top$ and
+$A^+A=V\begin{bmatrix}I_r&0\\0&0\end{bmatrix}V^\top$ are orthogonal projectors.
+\end{lemma}
+\begin{proof}
+Compute $AA^+=U\Sigma V^\top V \Sigma^+ U^\top=U(\Sigma\Sigma^+)U^\top$, where
+$\Sigma\Sigma^+$ is identity on the first $r$ coordinates and $0$ elsewhere; symmetry and
+idempotence follow. Similarly for $A^+A$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }& \min_x\|Ax-b\|=\min_y\|\Sigma y - U^\top b\|\ \text{with }y=V^\top x.\\
+\text{Step 2: }& \text{Decouple coordinates: for }i\le r,\ y_i=(u_i^\top b)/\sigma_i;\\
+& \text{for }i>r,\ y_i\ \text{free; choose }0\ \text{for min-norm}.\\
+\text{Step 3: }& y^\star=\Sigma^+ U^\top b,\ x^\star=V y^\star=V\Sigma^+U^\top b=A^+ b.\\
+\text{Step 4: }& \text{Penrose conditions hold by projector identities above.}
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute $U,\Sigma,V$.
+\item Form $\Sigma^+$ by reciprocating positive singular values.
+\item Evaluate $x^\star=V\Sigma^+U^\top b$.
+\item Optionally compute residual $r=b-Ax^\star$ and check orthogonality to $\mathrm{range}(A)$.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Normal equations: $A^\top A x=A^\top b$ when $A$ has full column rank.
+\item Ridge regularization: $(A^\top A+\lambda I)^{-1}A^\top b$ approximates $A^+ b$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $A$ is square nonsingular, $A^+=A^{-1}$.
+\item If $b\in\mathrm{range}(A)$, residual is zero; otherwise minimal in norm.
+\end{bullets}
+}
+
+\INPUTS{$A=\mathrm{diag}(2,0),\ b=(2,3)^\top$.}
+
+\DERIVATION{
+\begin{align*}
+\sigma&=(2,0),\ \Sigma^+=\mathrm{diag}(1/2,0),\ U=V=I.\\
+x^\star&=V\Sigma^+U^\top b=\begin{bmatrix}1/2&0\\0&0\end{bmatrix}\begin{bmatrix}2\\3\end{bmatrix}
+=\begin{bmatrix}1\\0\end{bmatrix}.\\
+Ax^\star&=\begin{bmatrix}2\\0\end{bmatrix},\ r=b-Ax^\star=\begin{bmatrix}0\\3\end{bmatrix}.
+\end{align*}
+}
+
+\RESULT{
+Least squares solution is $x^\star=(1,0)^\top$ with residual orthogonal to range$(A)$.
+}
+
+\UNITCHECK{
+Dimensions: $A^+$ is $n\times m$, so $x^\star\in\mathbb{R}^n$. Units invert scales of $A$.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Inverting zero singular values; must set corresponding entries to zero.
+\item Using normal equations on ill-conditioned $A^\top A$, amplifying errors.
+\end{bullets}
+}
+
+\INTUITION{
+Solve in the axes where $A$ stretches; along null directions, choose zero to minimize norm.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $A^+=V\Sigma^+U^\top$ and $x^\star=A^+b$ is minimum-norm least squares solution.
+\item Projectors $AA^+$ and $A^+A$ characterize range and domain subspaces.
+\end{bullets}
+}
+
+\FormulaPage{5}{Polar Decomposition from SVD}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Every $A\in\mathbb{R}^{m\times n}$ admits a polar decomposition $A=QH$ where
+$Q\in\mathbb{R}^{m\times n}$ has orthonormal columns ($Q^\top Q=I_n$ if $m\ge n$) and
+$H=(A^\top A)^{1/2}\succeq0$ is symmetric positive semidefinite.
+
+\WHAT{
+Expresses $A$ as a product of a partial isometry and a positive semidefinite matrix.
+}
+
+\WHY{
+Separates pure rotation (or isometry) from pure stretch; useful in optimization and
+matrix manifold methods.
+}
+
+\FORMULA{
+\[
+A=QH,\quad Q=U V^\top,\quad H=V\Sigma V^\top=(A^\top A)^{1/2}.
+\]
+}
+
+\CANONICAL{
+Constructed directly from SVD $A=U\Sigma V^\top$; $Q$ has orthonormal columns when $m\ge n$.
+For $m<n$, use row-space version $A=H'Q'$ with $H'=(A A^\top)^{1/2}$ and $Q'=U V^\top$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item SVD exists; define matrix square root $H=(A^\top A)^{1/2}$ via spectral theorem.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $A=U\Sigma V^\top$, then $(A^\top A)^{1/2}=V\Sigma V^\top$.
+\end{lemma}
+\begin{proof}
+$A^\top A=V\Sigma^2 V^\top$; by functional calculus for symmetric matrices,
+$(A^\top A)^{1/2}=V\Sigma V^\top$ since $\Sigma\succeq0$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }& A=U\Sigma V^\top.\\
+\text{Step 2: }& H=(A^\top A)^{1/2}=V\Sigma V^\top.\\
+\text{Step 3: }& Q=U V^\top\ \Rightarrow\ QH=U V^\top V\Sigma V^\top=U\Sigma V^\top=A.\\
+\text{Step 4: }& Q^\top Q=V U^\top U V^\top=I\ \text{on } \mathbb{R}^n \text{ when } m\ge n.
+\end{align*}
+}
+
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute SVD; set $Q=U V^\top$ and $H=V\Sigma V^\top$.
+\item Verify $Q^\top Q=I_n$ (if $m\ge n$) and $H\succeq0$.
+\end{bullets}
+
+\EQUIV{
+\begin{bullets}
+\item Left polar: $A=H'Q'$ with $H'=(A A^\top)^{1/2}$ and $Q'=U V^\top$.
+\item If $A$ is square and nonsingular, $Q$ is orthogonal and $H$ is positive definite.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $A$ is rank deficient, $H$ is singular and $Q$ is a partial isometry.
+\item If $A=0$, $Q$ can be any isometry; $H=0$.
+\end{bullets}
+}
+
+\INPUTS{$A=\begin{bmatrix}0&2\\0&0\\\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+A^\top A&=\begin{bmatrix}0&0\\0&4\end{bmatrix}=V\Sigma^2 V^\top,\ V=I,\ \Sigma=\mathrm{diag}(2,0).\\
+H&=V\Sigma V^\top=\mathrm{diag}(2,0),\ U=\begin{bmatrix}1&0\\0&1\end{bmatrix}.\\
+Q&=U V^\top=I_{2},\ QH=H=A.\\
+Q^\top Q&=I_2,\ H\succeq0\ \text{verified.}
+\end{align*}
+}
+
+\RESULT{
+$A=QH$ with $Q$ isometric and $H$ positive semidefinite; constructed from SVD.
+}
+
+\UNITCHECK{
+$Q$ is $m\times n$, $H$ is $n\times n$, so $QH$ is $m\times n$ as required.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Confusing $Q$ with $U$; $Q=U V^\top$ combines left and right singular bases.
+\item Taking $H=A^\top A$ instead of its square root.
+\end{bullets}
+}
+
+\INTUITION{
+First rotate domain to align with singular directions, then rotate codomain; the
+middle factor $H$ is the pure stretch without rotation.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $A=QH$ with $Q$ isometry and $H=(A^\top A)^{1/2}\succeq0$.
+\item Derived directly from $A=U\Sigma V^\top$.
+\end{bullets}
+}
+
+\clearpage
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{Compute SVD of a Diagonal Rank-Deficient Matrix}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Compute the SVD of $A=\mathrm{diag}(3,0)\in\mathbb{R}^{2\times 2}$.
+
+\PROBLEM{
+Find $U,\Sigma,V$ such that $A=U\Sigma V^\top$ with nonnegative diagonal $\Sigma$ and
+orthogonal $U,V$. Confirm norm identities and projectors $AA^+$ and $A^+A$.
+}
+
+\MODEL{
+\[
+A=\begin{bmatrix}3&0\\0&0\end{bmatrix},\quad A=U\Sigma V^\top,\quad A^+=V\Sigma^+U^\top.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Euclidean inner product; SVD exists for all real matrices.
+\item Singular values sorted nonincreasingly.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Given matrix.}
+\var{U,V}{Orthogonal factors.}
+\var{\Sigma}{Singular values matrix.}
+\var{\Sigma^+}{Pseudoinverse diagonal.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 1 (Existence and Structure) and Formula 4 (Pseudoinverse).
+}
+
+\GOVERN{
+\[
+A^\top A=V\Sigma^2 V^\top,\quad u_i=\frac{1}{\sigma_i}A v_i,\quad A^+=V\Sigma^+U^\top.
+\]
+}
+
+\INPUTS{$A=\mathrm{diag}(3,0)$.}
+
+\DERIVATION{
+\begin{align*}
+A^\top A&=\mathrm{diag}(9,0)\Rightarrow \sigma=(3,0),\ V=I.\\
+u_1&=\frac{1}{3}A e_1=e_1,\ u_2\ \text{any unit vector orthogonal to }e_1,\ \Rightarrow U=I.\\
+\Sigma&=\mathrm{diag}(3,0),\ A=U\Sigma V^\top\ \text{holds}.\\
+\Sigma^+&=\mathrm{diag}(1/3,0),\ A^+=\mathrm{diag}(1/3,0).\\
+AA^+&=\mathrm{diag}(1,0),\ A^+A=\mathrm{diag}(1,0).\\
+\|A\|_2&=3,\ \|A\|_F=\sqrt{9}=3.
+\end{align*}
+}
+
+\RESULT{
+$U=I$, $V=I$, $\Sigma=\mathrm{diag}(3,0)$; $A^+=\mathrm{diag}(1/3,0)$; projectors select
+the first coordinate.
+}
+
+\UNITCHECK{
+All matrices are $2\times 2$; projectors are idempotent and symmetric.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If the zero were nonzero, e.g., $A=\mathrm{diag}(3,\epsilon)$, then $U=V=I$ and
+$\sigma=(3,\epsilon)$ with finite $A^{-1}$ if $\epsilon>0$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute eigenpairs of $AA^\top$ instead; obtain same $U$ and $\Sigma$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Verify $U^\top U=I$, $V^\top V=I$.
+\item Check $U\Sigma V^\top=A$ equality entrywise.
+\end{bullets}
+}
+
+\INTUITION{
+Diagonal matrices are already aligned with singular directions; $U=V=I$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item For diagonal $A$, SVD has $U=V=\mathrm{sign\text{-}adjusted}\ I$ and
+$\Sigma=|A|$.
+\end{bullets}
+}
+
+\ProblemPage{2}{SVD of a Shifted Permutation-Like Matrix}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Find the SVD of $A=\begin{bmatrix}0&2\\0&0\end{bmatrix}$ and deduce polar decomposition.
+
+\PROBLEM{
+Compute $U,\Sigma,V$ and then $Q,H$ with $A=QH$. Confirm $\|A\|_2$ and $\|A\|_F$.
+}
+
+\MODEL{
+\[
+A^\top A=\begin{bmatrix}0&0\\0&4\end{bmatrix},\quad A=U\Sigma V^\top,\quad A=QH.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Standard inner product; SVD exists; polar decomposition from SVD.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Given matrix.}
+\var{U,V}{Orthogonal factors.}
+\var{\Sigma}{Singular values.}
+\var{Q,H}{Polar factors.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formulas 1, 2, and 5 (SVD, norms, polar decomposition).
+}
+
+\GOVERN{
+\[
+A^\top A=V\Sigma^2 V^\top,\ \|A\|_2=\sigma_1,\ \|A\|_F^2=\sum\sigma_i^2,\ Q=UV^\top.
+\]
+}
+
+\INPUTS{$A=\begin{bmatrix}0&2\\0&0\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+A^\top A&=\mathrm{diag}(0,4)\Rightarrow \sigma=(2,0),\ V=I.\\
+u_1&=(1/\sigma_1) A e_2 = (1/2)\begin{bmatrix}2\\0\end{bmatrix}=e_1.\\
+U&=\begin{bmatrix}1&0\\0&1\end{bmatrix},\ \Sigma=\mathrm{diag}(2,0).\\
+\|A\|_2&=2,\ \|A\|_F=\sqrt{4}=2.\\
+Q&=UV^\top=I,\ H=V\Sigma V^\top=\mathrm{diag}(2,0),\ QH=A.
+\end{align*}
+}
+
+\RESULT{
+$U=V=I$, $\Sigma=\mathrm{diag}(2,0)$; polar decomposition $A=I\cdot \mathrm{diag}(2,0)$.
+}
+
+\UNITCHECK{
+Norms are scalars; $Q$ is $2\times 2$ orthogonal; $H$ is psd $2\times 2$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If the nonzero entry were at $(2,1)$, left and right singular vectors swap basis.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute SVD via $AA^\top$; yields the same $\sigma$ and $U$ first.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Confirm $A v_1=\sigma_1 u_1$ and $A^\top u_1=\sigma_1 v_1$.
+\end{bullets}
+}
+
+\INTUITION{
+A pure shift with scaling $2$ stretches one axis and annihilates the other.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Rank-$1$ nilpotent-like matrices have one positive singular value and one zero.
+\end{bullets}
+}
+
+\ProblemPage{3}{Best Rank-1 Approximation of a $3\times 2$ Matrix}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given $A=\begin{bmatrix}3&0\\0&1\\0&0\end{bmatrix}$, find the best rank-$1$ approximation
+$A_1$ and compute the approximation errors.
+
+\PROBLEM{
+Use Eckart--Young to compute $A_1$ and evaluate $\|A-A_1\|_2$ and $\|A-A_1\|_F$.
+}
+
+\MODEL{
+\[
+A=U\Sigma V^\top,\quad A_1=U\Sigma_1 V^\top,\quad
+\|A-A_1\|_2=\sigma_2,\ \|A-A_1\|_F=\sqrt{\sum_{i>1}\sigma_i^2}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Singular values ordered $\sigma_1\ge\sigma_2\ge\cdots$.
+\item Frobenius and spectral norms used.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Given matrix.}
+\var{\sigma_i}{Singular values.}
+\var{A_1}{Best rank-$1$ approximation.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 3 (Eckart--Young--Mirsky) and Formula 2 (norm identities).
+}
+
+\GOVERN{
+\[
+\min_{\mathrm{rank}(B)\le1}\|A-B\|=\|A-A_1\|,\quad A_1=U\Sigma_1 V^\top.
+\]
+}
+
+\INPUTS{$A=\begin{bmatrix}3&0\\0&1\\0&0\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+A^\top A&=\begin{bmatrix}9&0\\0&1\end{bmatrix}\Rightarrow \sigma=(3,1).\\
+A_1&=U\mathrm{diag}(3,0)V^\top\ \Rightarrow\ \|A-A_1\|_2=\sigma_2=1.\\
+\|A-A_1\|_F&=\sqrt{1^2}=1.
+\end{align*}
+}
+
+\RESULT{
+$A_1$ retains the $(3,0)$ singular component; spectral and Frobenius errors equal $1$.
+}
+
+\UNITCHECK{
+Errors have same units as $A$; dimensions of $A_1$ are $3\times 2$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $\sigma_1=\sigma_2$, rank-$1$ optimum not unique in the tied subspace.
+\end{bullets}
+}
+
+\ALTERNATE{
+Form $A_1= A v_1 v_1^\top$ using top right singular vector $v_1$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute $\|A\|_F^2=3^2+1^2=10$ and $\|A_1\|_F^2=9$; tail energy $1$.
+\end{bullets}
+}
+
+\INTUITION{
+Keep the biggest stretch direction; discard weaker ones to save rank.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Truncated SVD optimally approximates in unitarily invariant norms.
+\end{bullets}
+}
+
+\ProblemPage{4}{Pseudoinverse and Least Squares Solution}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Solve $\min_{x\in\mathbb{R}^2}\|Ax-b\|_2$ for $A=\begin{bmatrix}2&0\\0&0\\\end{bmatrix}$,
+$b=\begin{bmatrix}2\\3\end{bmatrix}$ using SVD.
+
+\PROBLEM{
+Compute $A^+$ and $x^\star=A^+b$; verify projector properties and residual orthogonality.
+}
+
+\MODEL{
+\[
+A=U\Sigma V^\top,\ A^+=V\Sigma^+U^\top,\ x^\star=A^+b,\ r=b-Ax^\star\perp\mathrm{range}(A).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Euclidean norm; SVD-based pseudoinverse.
+\end{bullets}
+}
+
+\varmapStart
+\var{A,b}{System matrix and data.}
+\var{x^\star}{Minimum-norm least squares solution.}
+\var{r}{Residual.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 4 (Moore--Penrose Pseudoinverse).
+}
+
+\GOVERN{
+\[
+x^\star=V\Sigma^+U^\top b,\quad AA^+=U\begin{bmatrix}1&0\\0&0\end{bmatrix}U^\top.
+\]
+}
+
+\INPUTS{$A=\mathrm{diag}(2,0)$, $b=(2,3)^\top$.}
+
+\DERIVATION{
+\begin{align*}
+\sigma&=(2,0),\ U=V=I,\ \Sigma^+=\mathrm{diag}(1/2,0).\\
+x^\star&=\begin{bmatrix}1/2&0\\0&0\end{bmatrix}\begin{bmatrix}2\\3\end{bmatrix}
+=\begin{bmatrix}1\\0\end{bmatrix}.\\
+Ax^\star&=\begin{bmatrix}2\\0\end{bmatrix},\ r=\begin{bmatrix}0\\3\end{bmatrix}.\\
+\mathrm{range}(A)&=\mathrm{span}\{e_1\},\ r\perp e_1\ \text{holds.}
+\end{align*}
+}
+
+\RESULT{
+$x^\star=(1,0)^\top$, $r=(0,3)^\top$ orthogonal to range$(A)$.
+}
+
+\UNITCHECK{
+Dimensions: $x^\star\in\mathbb{R}^2$; projector idempotence and symmetry hold.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $b=(2,0)$, residual $0$ and $x^\star=(1,0)$ is exact solution.
+\end{bullets}
+}
+
+\ALTERNATE{
+Solve normal equations $A^\top A x=A^\top b$: $4x_1=4$, $0=0$, choose $x_2=0$ for min-norm.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Check Penrose conditions numerically for $A$ and $A^+$.
+\end{bullets}
+}
+
+\INTUITION{
+Invert only along stretched axes; ignore nullspace to minimize the solution norm.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $x^\star=A^+b$ minimizes residual and solution norm simultaneously.
+\end{bullets}
+}
+
+\ProblemPage{5}{Proof: Spectral Norm Equals Largest Singular Value}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show that $\|A\|_2=\sigma_1$ for any $A\in\mathbb{R}^{m\times n}$.
+
+\PROBLEM{
+Provide a concise proof using SVD and unit-vector maximization definition of $\|\cdot\|_2$.
+Also check with a concrete numeric example.
+}
+
+\MODEL{
+\[
+\|A\|_2=\sup_{\|x\|=1}\|Ax\|,\quad A=U\Sigma V^\top.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Euclidean norm; SVD exists.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Matrix under study.}
+\var{\sigma_1}{Largest singular value.}
+\var{x}{Unit vector in $\mathbb{R}^n$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 (Norm Identities and Invariants).
+}
+
+\GOVERN{
+\[
+\|A\|_2=\|U\Sigma V^\top\|_2=\|\Sigma\|_2.
+\]
+}
+
+\INPUTS{$A=\begin{bmatrix}1&2\\0&0\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Proof: }& \|Ax\|=\|U\Sigma V^\top x\|=\|\Sigma y\|,\ y=V^\top x,\ \|y\|=1.\\
+& \|\Sigma y\|^2=\sum_i \sigma_i^2 y_i^2\le \sigma_1^2\sum_i y_i^2=\sigma_1^2.\\
+& \text{Equality at } y=e_1\Rightarrow \|A\|_2=\sigma_1.\\[4pt]
+\text{Numeric: }& A^\top A=\begin{bmatrix}1&2\\2&4\end{bmatrix}
+\Rightarrow \lambda=(5,0),\ \sigma=(\sqrt{5},0).\\
+& \|A\|_2=\sqrt{5}=\sigma_1.
+\end{align*}
+}
+
+\RESULT{
+$\|A\|_2$ equals the largest singular value; verified analytically and numerically.
+}
+
+\UNITCHECK{
+Norms are nonnegative scalars; units consistent with $A$ scaling.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $A=0$, then $\sigma_1=0$ and $\|A\|_2=0$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use $\|A\|_2^2=\lambda_{\max}(A^\top A)$ and note
+$\lambda_{\max}(A^\top A)=\sigma_1^2$ by definition.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compare $\|Ax\|$ for random unit vectors $x$ to $\sigma_1$ upper bound.
+\end{bullets}
+}
+
+\INTUITION{
+Orthogonal rotations do not change lengths; the largest stretch in $\Sigma$ dominates.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $\|A\|_2=\sigma_1$ is a fundamental unitarily invariant identity.
+\end{bullets}
+}
+
+\ProblemPage{6}{Proof: Singular Values Are Orthogonally Invariant}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For orthogonal $Q_1,Q_2$, singular values of $Q_1 A Q_2$ equal those of $A$.
+
+\PROBLEM{
+Prove orthogonal invariance of the singular spectrum and verify with a numeric case.
+}
+
+\MODEL{
+\[
+(Q_1 A Q_2)^\top (Q_1 A Q_2)=Q_2^\top (A^\top A) Q_2.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Spectral theorem; orthogonal similarity preserves eigenvalues.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Base matrix.}
+\var{Q_1,Q_2}{Orthogonal matrices.}
+\var{\sigma_i}{Singular values.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formulas 1 and 2 (SVD construction; norm invariance).
+}
+
+\GOVERN{
+\[
+\mathrm{spec}((Q_1 A Q_2)^\top (Q_1 A Q_2))=\mathrm{spec}(A^\top A).
+\]
+}
+
+\INPUTS{$A=\begin{bmatrix}1&0\\0&2\end{bmatrix}$, $Q_1=Q_2=\begin{bmatrix}0&1\\1&0\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Proof: }& (Q_1 A Q_2)^\top (Q_1 A Q_2)=Q_2^\top A^\top Q_1^\top Q_1 A Q_2\\
+&=Q_2^\top A^\top A Q_2\ \text{is orthogonally similar to }A^\top A.\\
+& \Rightarrow \text{same eigenvalues }\{\sigma_i^2\},\ \text{hence same }\{\sigma_i\}.\\
+\text{Numeric: }& A^\top A=\mathrm{diag}(1,4)\Rightarrow \sigma=(2,1).\\
+& Q_1 A Q_2=\begin{bmatrix}2&0\\0&1\end{bmatrix}\ \text{has the same }\sigma.
+\end{align*}
+}
+
+\RESULT{
+Singular values unchanged by orthogonal pre/post multiplication.
+}
+
+\UNITCHECK{
+Spectra are nonnegative; permutation matrices are orthogonal; dimensions match.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $Q_1,Q_2$ are not orthogonal, singular values can change.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use SVD: $Q_1 A Q_2=(Q_1 U)\Sigma (Q_2^\top V)^\top$ retains $\Sigma$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute $\|Q_1 A Q_2\|_F$ and compare to $\|A\|_F$; they match.
+\end{bullets}
+}
+
+\INTUITION{
+Rotating input or output spaces does not alter axis-aligned stretches.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Unitary invariance is core to SVD-based identities.
+\end{bullets}
+}
+
+\ProblemPage{7}{Narrative: Alice Compresses an Image with Rank-1 SVD}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Alice stores a $4\times 4$ grayscale image matrix
+$A=\mathrm{diag}(9,4,0,0)$. She wants a rank-$1$ compression.
+
+\PROBLEM{
+Find $A_1$, its storage cost using SVD factors, and reconstruction error norms.
+}
+
+\MODEL{
+\[
+A=U\Sigma V^\top,\ A_1=U\Sigma_1 V^\top,\ \mathrm{storage}=m r + r + n r.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Store $U_r$ and $V_r$ columns and $\sigma_i$; cost $mr + r + nr$ scalars.
+\item Diagonal image already aligned with singular directions.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Image matrix.}
+\var{r}{Target rank.}
+\var{m,n}{Matrix dimensions.}
+\var{\sigma_i}{Singular values $(9,4,0,0)$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 3 (Eckart--Young) and storage accounting for SVD representation.
+}
+
+\GOVERN{
+\[
+\|A-A_1\|_2=\sigma_2=4,\quad \|A-A_1\|_F=\sqrt{4^2}=4.
+\]
+}
+
+\INPUTS{$A=\mathrm{diag}(9,4,0,0)$, $m=n=4$, $r=1$.}
+
+\DERIVATION{
+\begin{align*}
+A_1&=\mathrm{diag}(9,0,0,0),\ \|A-A_1\|_2=4,\ \|A-A_1\|_F=4.\\
+\text{Naive storage}&: 16\ \text{scalars}.\\
+\text{SVD storage}&: m r + r + n r = 4\cdot1 + 1 + 4\cdot1 = 9.\\
+\text{Savings}&: 16-9=7\ \text{scalars}.
+\end{align*}
+}
+
+\RESULT{
+Rank-$1$ compression keeps intensity $9$ along first axis; spectral and Frobenius errors
+are $4$; storage reduces from $16$ to $9$ scalars.
+}
+
+\UNITCHECK{
+Counts are dimensionless; norms consistent with pixel intensity units.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If the second singular value were close to $9$, rank-$1$ error would be large.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use $A_1=u_1 \sigma_1 v_1^\top$ directly with $u_1=v_1=e_1$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute $\|A\|_F^2=9^2+4^2=97$ and $\|A_1\|_F^2=81$; tail energy $16$ matches.
+\end{bullets}
+}
+
+\INTUITION{
+Most energy sits in the first axis; rank-$1$ captures it efficiently.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Storage scales like $(m+n+1)r$ for SVD; truncation controls error by tail singulars.
+\end{bullets}
+}
+
+\ProblemPage{8}{Narrative: Bob Picks Two Features to Maximize Energy}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Bob selects two orthonormal directions $v_1,v_2$ to maximize $\|A V_2\|_F^2$ with
+$V_2=[v_1\ v_2]$ for $A=\begin{bmatrix}2&0&0\\0&1&0\end{bmatrix}$.
+
+\PROBLEM{
+Find the maximizing $V_2$ and the maximum value of $\|A V_2\|_F^2$.
+}
+
+\MODEL{
+\[
+\max_{V_2^\top V_2=I_2}\|A V_2\|_F^2=\sum_{i=1}^2 \sigma_i^2.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Orthonormal columns constraint; variational characterization of SVD.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Given $2\times 3$ matrix.}
+\var{V_2}{Two right singular directions.}
+\var{\sigma_i}{Singular values $(2,1)$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 3 (variational form of truncation optimality).
+}
+
+\GOVERN{
+\[
+\|A V_2\|_F^2=\mathrm{tr}(V_2^\top A^\top A V_2)\le \sum_{i=1}^2 \sigma_i^2.
+\]
+}
+
+\INPUTS{$A=\begin{bmatrix}2&0&0\\0&1&0\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+A^\top A&=\mathrm{diag}(4,1,0)\Rightarrow \sigma^2=(4,1,0).\\
+\max \|A V_2\|_F^2&=4+1=5\ \text{with }V_2=[e_1\ e_2].\\
+\text{Thus }& v_1=e_1,\ v_2=e_2\ \text{achieve the maximum.}
+\end{align*}
+}
+
+\RESULT{
+Maximal energy $5$ achieved by choosing top two right singular vectors $e_1,e_2$.
+}
+
+\UNITCHECK{
+Energy equals sum of two largest eigenvalues of $A^\top A$; dimensionless check passes.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $\sigma_2=0$, any second direction in the nullspace ties for optimum.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use Courant–Fischer: sum of top $k$ eigenvalues maximizes $\mathrm{tr}(V^\top M V)$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute $\|A[e_1\ e_2]\|_F^2=\|[2\ 0;0\ 1]\|_F^2=5$.
+\end{bullets}
+}
+
+\INTUITION{
+Pick the axes where $A$ stretches most; energy adds as squared stretches.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Principal subspace equals span of top right singular vectors.
+\end{bullets}
+}
+
+\ProblemPage{9}{Combo: PCA via SVD on Centered Data}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For centered data matrix $X\in\mathbb{R}^{n\times d}$, principal components are
+right singular vectors of $X$, with variances $\sigma_i^2/n$.
+
+\PROBLEM{
+For $X=\begin{bmatrix}1&0\\-1&0\\0&0\end{bmatrix}$, compute first principal component
+and explained variance ratio.
+}
+
+\MODEL{
+\[
+X=U\Sigma V^\top,\ \text{covariance } C=\tfrac{1}{n}X^\top X=V(\tfrac{1}{n}\Sigma^2)V^\top.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Rows centered; PCA via SVD equals eigen-decomposition of $C$.
+\end{bullets}
+}
+
+\varmapStart
+\var{X}{Centered data with $n=3$, $d=2$.}
+\var{V}{Principal directions.}
+\var{\sigma_i^2/n}{Component variances.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formulas 1 and 2 (SVD; norm/variance relations).
+}
+
+\GOVERN{
+\[
+X^\top X=V\Sigma^2 V^\top,\ \text{EVR}_1=\sigma_1^2/(\sigma_1^2+\sigma_2^2).
+\]
+}
+
+\INPUTS{$X=\begin{bmatrix}1&0\\-1&0\\0&0\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+X^\top X&=\begin{bmatrix}2&0\\0&0\end{bmatrix}\Rightarrow \sigma=(\sqrt{2},0).\\
+V&=[e_1\ e_2],\ \text{PC1}=e_1,\ \mathrm{Var}_1=\sigma_1^2/n=2/3.\\
+\text{EVR}_1&=\frac{2}{2+0}=1.
+\end{align*}
+}
+
+\RESULT{
+First principal component is $e_1$; it explains $100\%$ of the variance.
+}
+
+\UNITCHECK{
+Total variance $=\mathrm{tr}(C)=(1^2+(-1)^2)/3=2/3$ matches $\sigma_1^2/n$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If the second feature had noise, EVR drops accordingly by added $\sigma_2^2$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Compute eigenvectors of $C=X^\top X/3$ directly; same result.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Project data on $e_1$; sample variance equals $2/3$.
+\end{bullets}
+}
+
+\INTUITION{
+Data vary only along the first axis; PCA finds that axis.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item PCA directions are right singular vectors of centered data matrix.
+\end{bullets}
+}
+
+\ProblemPage{10}{Expectation Puzzle: Frobenius Energy of Random Signs}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Let $A\in\mathbb{R}^{2\times 2}$ have i.i.d. entries $\pm1$ with probability $1/2$.
+Show $\mathbb{E}\left[\sum_{i=1}^2 \sigma_i^2\right]=4$ and verify numerically on a sample.
+
+\PROBLEM{
+Relate expected Frobenius norm squared to sum of squared singular values and compute.
+}
+
+\MODEL{
+\[
+\|A\|_F^2=\sum_{i,j} a_{ij}^2=\sum_{i=1}^2 \sigma_i^2.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Entries have unit magnitude; independence not required for the identity.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Random $\pm1$ matrix.}
+\var{\sigma_i}{Singular values.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 (Frobenius norm identity).
+}
+
+\GOVERN{
+\[
+\mathbb{E}\left[\sum_{i} \sigma_i^2\right]=\mathbb{E}\|A\|_F^2.
+\]
+}
+
+\INPUTS{Single draw example $A=\begin{bmatrix}1&-1\\1&1\end{bmatrix}$.}
+
+\DERIVATION{
+\begin{align*}
+\mathbb{E}\|A\|_F^2&=\mathbb{E}\sum_{i,j} a_{ij}^2=\sum_{i,j}\mathbb{E}[1]=4.\\
+\text{Sample }& A^\top A=\begin{bmatrix}2&0\\0&2\end{bmatrix}
+\Rightarrow \sigma=(\sqrt{2},\sqrt{2}).\\
+\sum \sigma_i^2&=2+2=4\ \text{matches } \|A\|_F^2.
+\end{align*}
+}
+
+\RESULT{
+Expected Frobenius energy equals $4$, matching expected sum of squared singular values.
+}
+
+\UNITCHECK{
+Both sides are scalars; units are squared magnitude.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item For $m\times n$, expectation generalizes to $mn$ by the same argument.
+\end{bullets}
+}
+
+\ALTERNATE{
+Directly note $\sum \sigma_i^2=\mathrm{tr}(A^\top A)$ and take expectation entrywise.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Multiple deterministic seeds yield averages close to $4$ in code tests.
+\end{bullets}
+}
+
+\INTUITION{
+Frobenius energy adds entrywise squares; singular values redistribute the same energy.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $\|A\|_F^2=\sum \sigma_i^2$ always, hence expectations match trivially.
+\end{bullets}
+}
+
+\clearpage
+\section{Coding Demonstrations}
+
+\CodeDemoPage{SVD from Eigendecomposition and Norm Verification}
+\PROBLEM{
+Compute SVD via eigendecomposition of $A^\top A$, then verify
+$\|A\|_2=\sigma_1$ and $\|A\|_F^2=\sum \sigma_i^2$.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> np.ndarray} — parse matrix flat list.
+\item \inlinecode{def svd_from_eig(A) -> (U,S,Vt)} — construct SVD.
+\item \inlinecode{def norms(A,U,S,Vt) -> (s2,sF)} — compute norms and checks.
+\item \inlinecode{def validate() -> None} — run assertions.
+\item \inlinecode{def main() -> None} — orchestrate.
+\end{bullets}
+}
+
+\INPUTS{
+Matrix $A$ as whitespace-separated floats; shape specified inside example.
+}
+
+\OUTPUTS{
+$U,\ S$ (1d singulars), $V^\top$; spectral and Frobenius norms; assertion success.
+}
+
+\FORMULA{
+\[
+A^\top A=V\Lambda V^\top,\ \sigma_i=\sqrt{\lambda_i},\ U=[Av_i/\sigma_i],\
+\|A\|_2=\sigma_1,\ \|A\|_F^2=\sum \sigma_i^2.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    vals = [float(x) for x in s.split()]
+    A = np.array(vals, dtype=float).reshape(3, 2)
+    return A
+
+def svd_from_eig(A):
+    M = A.T @ A
+    w, V = np.linalg.eigh(M)
+    idx = np.argsort(w)[::-1]
+    w, V = w[idx], V[:, idx]
+    S = np.sqrt(np.maximum(w, 0.0))
+    U = np.zeros((A.shape[0], A.shape[0]))
+    r = (S > 1e-12)
+    Ur = (A @ V[:, r]) / S[r]
+    q, _ = np.linalg.qr(Ur)
+    U[:, :q.shape[1]] = q
+    # complete U if needed
+    if q.shape[1] < A.shape[0]:
+        Z = np.random.RandomState(0).randn(A.shape[0], A.shape[0]-q.shape[1])
+        Z = Z - U[:, :q.shape[1]] @ (U[:, :q.shape[1]].T @ Z)
+        q2, _ = np.linalg.qr(Z)
+        U[:, q.shape[1]:] = q2
+    Vt = V.T
+    return U, S, Vt
+
+def norms(A, U, S, Vt):
+    s2 = S[0] if len(S) else 0.0
+    sF = float((S**2).sum())
+    n2 = np.linalg.norm(A, 2)
+    nF = float(np.linalg.norm(A, 'fro')**2)
+    return s2, sF, n2, nF
+
+def validate():
+    A = np.array([[3., 0.], [0., 1.], [0., 0.]])
+    U, S, Vt = svd_from_eig(A)
+    s2, sF, n2, nF = norms(A, U, S, Vt)
+    assert abs(s2 - n2) < 1e-8
+    assert abs(sF - nF) < 1e-8
+
+def main():
+    validate()
+    A = np.array([[1., 2.], [0., 0.], [0., 0.]])
+    U, S, Vt = svd_from_eig(A)
+    s2, sF, n2, nF = norms(A, U, S, Vt)
+    print("sigma:", S)
+    print("spectral:", s2, "||A||2:", n2)
+    print("Frob2:", sF, "||A||F^2:", nF)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    vals = [float(x) for x in s.split()]
+    A = np.array(vals, dtype=float).reshape(3, 2)
+    return A
+
+def svd_np(A):
+    U, S, Vt = np.linalg.svd(A, full_matrices=True)
+    return U, S, Vt
+
+def validate():
+    A = np.array([[3., 0.], [0., 1.], [0., 0.]])
+    U, S, Vt = svd_np(A)
+    assert abs(S[0] - np.linalg.norm(A, 2)) < 1e-8
+    assert abs((S**2).sum() - np.linalg.norm(A, 'fro')**2) < 1e-8
+
+def main():
+    validate()
+    A = np.array([[1., 2.], [0., 0.], [0., 0.]])
+    U, S, Vt = svd_np(A)
+    print("sigma:", S)
+    print("check2:", np.linalg.norm(A, 2))
+    print("checkF2:", np.linalg.norm(A, 'fro')**2)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Time $\mathcal{O}(nd^2)$ for eigendecomposition on $A^\top A$ when $n\ge d$;
+space $\mathcal{O}(nd)$. Numpy \inlinecode{svd} is $\mathcal{O}(nd\min(n,d))$.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Degenerate singular values: subspace rotations; handle via QR.
+\item Negative eigenvalues from rounding: clip to $0$ before square root.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Forming $A^\top A$ squares condition number; prefer direct SVD.
+\item Use orthogonal transforms and QR to maintain numerical stability.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Assert $\|A\|_2=\sigma_1$ and $\|A\|_F^2=\sum \sigma_i^2$.
+\item Check $U^\top U=I$, $Vt @ Vt^\top=I$ within tolerance.
+\end{bullets}
+}
+
+\RESULT{
+Both implementations yield identical singular values and confirm norm identities.
+}
+
+\EXPLANATION{
+Eigen-decomposing $A^\top A$ reveals right singular vectors and squared singular values.
+Orthogonal invariance ensures norms depend only on $\Sigma$.
+}
+
+\CodeDemoPage{Eckart--Young Verification and Reconstruction Error}
+\PROBLEM{
+Compute best rank-$k$ approximation by truncating SVD and verify
+$\|A-A_k\|_2=\sigma_{k+1}$ and $\|A-A_k\|_F^2=\sum_{i>k}\sigma_i^2$.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def truncate_svd(U,S,Vt,k)->Ak} — build $A_k$.
+\item \inlinecode{def errors(A,U,S,Vt,k)->(e2,eF2)} — compute errors.
+\item \inlinecode{def validate()->None} — asserts for multiple $k$.
+\item \inlinecode{def main()->None} — run demo.
+\end{bullets}
+}
+
+\INPUTS{
+Matrix $A\in\mathbb{R}^{m\times n}$ and rank $k$ with $1\le k<\mathrm{rank}(A)$.
+}
+
+\OUTPUTS{
+Rank-$k$ approximation $A_k$ and error norms. Printed checks and assertions.
+}
+
+\FORMULA{
+\[
+A_k=U[:,\!:\!k]\ \mathrm{diag}(S[:k])\ Vt[:k,:],\
+\|A-A_k\|_2=\sigma_{k+1},\
+\|A-A_k\|_F^2=\sum_{i>k}\sigma_i^2.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def truncate_svd(U, S, Vt, k):
+    Uk = U[:, :k]
+    Sk = np.diag(S[:k])
+    Vk = Vt[:k, :]
+    return Uk @ Sk @ Vk
+
+def errors(A, U, S, Vt, k):
+    Ak = truncate_svd(U, S, Vt, k)
+    e2 = np.linalg.norm(A - Ak, 2)
+    eF2 = float(np.linalg.norm(A - Ak, 'fro')**2)
+    return Ak, e2, eF2
+
+def validate():
+    A = np.diag([5., 1., 0.])[:3, :2]
+    U, S, Vt = np.linalg.svd(A, full_matrices=True)
+    Ak, e2, eF2 = errors(A, U, S, Vt, 1)
+    assert abs(e2 - S[1]) < 1e-8
+    assert abs(eF2 - (S[1]**2)) < 1e-8
+
+def main():
+    validate()
+    A = np.array([[3., 0.], [0., 1.], [0., 0.]])
+    U, S, Vt = np.linalg.svd(A, full_matrices=True)
+    Ak, e2, eF2 = errors(A, U, S, Vt, 1)
+    print("sigma:", S, "e2:", e2, "eF2:", eF2)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def best_rank_k(A, k):
+    U, S, Vt = np.linalg.svd(A, full_matrices=False)
+    Ak = U[:, :k] @ np.diag(S[:k]) @ Vt[:k, :]
+    e2 = S[k] if k < len(S) else 0.0
+    eF2 = float((S[k:]**2).sum())
+    return Ak, e2, eF2, S
+
+def validate():
+    A = np.array([[3., 0.], [0., 1.], [0., 0.]])
+    Ak, e2, eF2, S = best_rank_k(A, 1)
+    assert abs(e2 - S[1]) < 1e-8
+    assert abs(eF2 - (S[1:]**2).sum()) < 1e-8
+
+def main():
+    validate()
+    A = np.array([[2., 0., 0.], [0., 1., 0.]])
+    Ak, e2, eF2, S = best_rank_k(A, 1)
+    print("sigma:", S, "e2:", e2, "eF2:", eF2)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+SVD computation dominates: time $\mathcal{O}(nd\min(n,d))$, space $\mathcal{O}(nd)$.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item If $k\ge \mathrm{rank}(A)$, error formulas degenerate to zero; guard index.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Truncation is stable; no inversion involved.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compare errors to $\sigma_{k+1}$ and tail energy from $S$.
+\end{bullets}
+}
+
+\RESULT{
+Truncated SVD achieves predicted optimal errors in both norms.
+}
+
+\EXPLANATION{
+Eckart--Young follows from diagonal form after orthogonal transforms; truncation is optimal.
+}
+
+\CodeDemoPage{Pseudoinverse via SVD vs. numpy.linalg.pinv}
+\PROBLEM{
+Compute Moore--Penrose pseudoinverse via SVD and compare with
+\inlinecode{numpy.linalg.pinv}; solve least squares and check residual orthogonality.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def pinv_svd(A)->Aplus} — SVD-based pseudoinverse.
+\item \inlinecode{def solve_ls(A,b)->(x,r)} — compute solution and residual.
+\item \inlinecode{def validate()->None} — assertions on equality and orthogonality.
+\item \inlinecode{def main()->None} — run demo.
+\end{bullets}
+}
+
+\INPUTS{
+Matrix $A$ and vector $b$; deterministic small examples.
+}
+
+\OUTPUTS{
+$A^+$, least squares solution $x$, residual orthogonality check.
+}
+
+\FORMULA{
+\[
+A^+=V\Sigma^+U^\top,\ x^\star=A^+b,\ r=b-Ax^\star\perp\mathrm{range}(A).
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def pinv_svd(A, tol=1e-12):
+    U, S, Vt = np.linalg.svd(A, full_matrices=False)
+    Sinv = np.zeros_like(S)
+    Sinv[S > tol] = 1.0 / S[S > tol]
+    Aplus = (Vt.T * Sinv) @ U.T
+    return Aplus
+
+def solve_ls(A, b):
+    Aplus = pinv_svd(A)
+    x = Aplus @ b
+    r = b - A @ x
+    return x, r, Aplus
+
+def validate():
+    A = np.array([[2., 0.], [0., 0.]])
+    b = np.array([2., 3.])
+    x, r, Aplus = solve_ls(A, b)
+    Aplus_np = np.linalg.pinv(A)
+    assert np.allclose(Aplus, Aplus_np, atol=1e-10)
+    U, _, _ = np.linalg.svd(A, full_matrices=True)
+    P = U[:, :1] @ U[:, :1].T
+    assert np.allclose(P @ r, 0.0, atol=1e-10)
+
+def main():
+    validate()
+    A = np.array([[1., 2.], [0., 0.], [0., 0.]])
+    b = np.array([3., 0., 0.])
+    x, r, Aplus = solve_ls(A, b)
+    print("A+:\n", Aplus)
+    print("x:", x, "residual norm:", np.linalg.norm(r))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def solve_ls_np(A, b):
+    Aplus = np.linalg.pinv(A)
+    x = Aplus @ b
+    r = b - A @ x
+    return x, r, Aplus
+
+def validate():
+    A = np.array([[2., 0.], [0., 0.]])
+    b = np.array([2., 3.])
+    x1, r1, Aplus1 = solve_ls_np(A, b)
+    U, S, Vt = np.linalg.svd(A, full_matrices=False)
+    Sinv = np.zeros_like(S)
+    Sinv[S > 1e-12] = 1.0 / S[S > 1e-12]
+    Aplus2 = (Vt.T * Sinv) @ U.T
+    assert np.allclose(Aplus1, Aplus2, atol=1e-10)
+    assert abs(r1 @ (A @ Aplus1 @ r1)) < 1e-10
+
+def main():
+    validate()
+    A = np.array([[1., 0.], [0., 0.], [0., 2.]])
+    b = np.array([1., 1., 1.])
+    x, r, Aplus = solve_ls_np(A, b)
+    print("x:", x, "||r||:", np.linalg.norm(r))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+SVD dominates: $\mathcal{O}(nd\min(n,d))$ time, $\mathcal{O}(nd)$ space.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Tiny singular values cause large entries in $A^+$; use tolerance.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item SVD-based pseudoinverse is numerically stable versus normal equations.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compare with \inlinecode{pinv}; check residual orthogonality to range$(A)$.
+\end{bullets}
+}
+
+\RESULT{
+Agreement with library pseudoinverse and orthogonality conditions confirmed.
+}
+
+\EXPLANATION{
+Diagonal inversion in singular basis yields minimum-norm least squares solutions.
+}
+
+\clearpage
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Solve linear regression with SVD for stability: estimate $\beta$ in $y=X\beta+\varepsilon$
+by $\beta^\star=X^+ y$ and compare with normal equations and library solver.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Data are centered or include bias column; finite variance.
+\item Use Euclidean loss; full column rank not required.
+\end{bullets}
+}
+\WHICHFORMULA{
+Pseudoinverse via SVD (Formula 4): $\beta^\star=V\Sigma^+U^\top y$.
+}
+\varmapStart
+\var{X\in\mathbb{R}^{n\times d}}{Design matrix (with bias).}
+\var{y\in\mathbb{R}^{n}}{Targets.}
+\var{\beta^\star}{SVD least-squares estimator.}
+\var{\hat y}{Predictions $X\beta^\star$.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic data with known $\beta$.
+\item Compute $\beta^\star$ via SVD and via library regression.
+\item Compare RMSE and parameter estimates.
+\end{bullets}
+}
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def gen_data(n=100, noise=0.1, seed=0):
+    rng = np.random.RandomState(seed)
+    X = np.column_stack([np.ones(n), np.linspace(0, 5, n)])
+    beta = np.array([1.0, 2.0])
+    y = X @ beta + rng.randn(n) * noise
+    return X, y, beta
+
+def beta_svd(X, y):
+    U, S, Vt = np.linalg.svd(X, full_matrices=False)
+    Sinv = np.zeros_like(S)
+    Sinv[S > 1e-12] = 1.0 / S[S > 1e-12]
+    beta = (Vt.T * Sinv) @ (U.T @ y)
+    return beta
+
+def rmse(y, yhat):
+    return float(np.sqrt(np.mean((y - yhat)**2)))
+
+def main():
+    X, y, btrue = gen_data()
+    bsvd = beta_svd(X, y)
+    yhat = X @ bsvd
+    print("beta_svd:", np.round(bsvd, 3), "rmse:", round(rmse(y, yhat), 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{Implementation (Library Version)}
+\begin{codepy}
+import numpy as np
+from sklearn.linear_model import LinearRegression
+
+def main():
+    np.random.seed(0)
+    X = np.linspace(0, 5, 100).reshape(-1, 1)
+    X = np.column_stack([np.ones(len(X)), X])
+    beta_true = np.array([1.0, 2.0])
+    y = X @ beta_true + np.random.randn(len(X)) * 0.1
+    m = LinearRegression(fit_intercept=False).fit(X, y)
+    print("coef:", np.round(m.coef_, 3), "R2:", round(m.score(X, y), 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{RMSE and $R^2$; coefficients close to ground truth.}
+\INTERPRET{SVD provides stable regression even with collinearity or rank deficiency.}
+\NEXTSTEPS{Add ridge by shrinking $S$ or adding $\lambda I$ in the normal space.}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Extract risk factors via PCA on returns using SVD; compute explained variance and
+project returns onto top components to obtain factor scores.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Returns are centered; covariance finite.
+\item Use SVD of centered returns to compute principal components.
+\end{bullets}
+}
+\WHICHFORMULA{
+$R=U\Sigma V^\top$ with component variances $\sigma_i^2/n$; factor scores $U\Sigma$.
+}
+\varmapStart
+\var{R\in\mathbb{R}^{n\times d}}{Matrix of centered returns.}
+\var{V}{Loadings (principal directions).}
+\var{U\Sigma}{Scores.}
+\var{\mathrm{EVR}}{Explained variance ratios.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Simulate correlated returns; center columns.
+\item Compute SVD; extract EVR and scores.
+\item Reconstruct using top $k$ components and evaluate error.
+\end{bullets}
+}
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def simulate(n=300, d=3, seed=0):
+    rng = np.random.RandomState(seed)
+    A = rng.randn(d, d)
+    cov = A @ A.T
+    R = rng.multivariate_normal(np.zeros(d), cov, size=n)
+    R -= R.mean(axis=0, keepdims=True)
+    return R
+
+def pca_svd(R, k=2):
+    U, S, Vt = np.linalg.svd(R, full_matrices=False)
+    EVR = (S**2) / (S**2).sum()
+    scores = U[:, :k] @ np.diag(S[:k])
+    loadings = Vt[:k, :].T
+    Rk = scores @ loadings.T
+    err = np.linalg.norm(R - Rk, 'fro')**2
+    tail = float((S[k:]**2).sum())
+    return EVR, scores, loadings, err, tail
+
+def main():
+    R = simulate()
+    EVR, scores, loadings, err, tail = pca_svd(R, k=2)
+    print("EVR:", np.round(EVR, 3))
+    print("err:", round(err, 3), "tail:", round(tail, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Explained variance ratios and reconstruction tail energy match.}
+\INTERPRET{Top components capture dominant co-movements; tail is idiosyncratic risk.}
+\NEXTSTEPS{Use components for risk parity or factor timing strategies.}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Compress a dense weight matrix by rank-$k$ SVD truncation; measure reconstruction error
+and effect on forward pass for a linear layer.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Linear layer $y=W x$; replace $W$ by $W_k=U_k\Sigma_k V_k^\top$.
+\item Inputs are bounded; error in outputs bounded by operator norm error.
+\end{bullets}
+}
+\WHICHFORMULA{
+Eckart--Young: $\|W-W_k\|_2=\sigma_{k+1}$ bounds worst-case output error.
+}
+\PIPELINE{
+\begin{bullets}
+\item Create random weight matrix with fixed seed.
+\item Truncate SVD to rank $k$.
+\item Compare outputs and compute norms.
+\end{bullets}
+}
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+
+def compress(W, k):
+    U, S, Vt = np.linalg.svd(W, full_matrices=False)
+    Wk = U[:, :k] @ np.diag(S[:k]) @ Vt[:k, :]
+    e2 = S[k] if k < len(S) else 0.0
+    return Wk, e2, S
+
+def main():
+    rng = np.random.RandomState(0)
+    W = rng.randn(50, 40)
+    Wk, e2, S = compress(W, 5)
+    x = rng.randn(40)
+    y = W @ x
+    yk = Wk @ x
+    out_err = np.linalg.norm(y - yk)
+    print("||W-Wk||2:", round(e2, 6), "out_err:", round(out_err, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Report $\|W-W_k\|_2$ and actual output error for a test input.}
+\INTERPRET{Output error is controlled by spectral error times $\|x\|$.}
+\NEXTSTEPS{Fine-tune around $W_k$ or use randomized SVD for large layers.}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Perform PCA via SVD on a toy dataset; report principal components, EVR, and transform
+data to 1D and reconstruct to compare errors.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Center columns; use SVD of centered matrix.
+\item Compare reconstruction tail energy to sum of discarded singular values squared.
+\end{bullets}
+}
+\WHICHFORMULA{
+$X=U\Sigma V^\top$; $X_1=U_1\Sigma_1 V_1^\top$; error equals $\sum_{i>1}\sigma_i^2$.
+}
+\PIPELINE{
+\begin{bullets}
+\item Generate correlated features.
+\item Compute SVD; keep first component.
+\item Reconstruct and compute Frobenius error and EVR.
+\end{bullets}
+}
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def gen_df(n=200, seed=0):
+    rng = np.random.RandomState(seed)
+    a = rng.randn(n)
+    b = 0.9 * a + rng.randn(n) * 0.3
+    c = rng.randn(n)
+    X = np.column_stack([a, b, c])
+    X -= X.mean(axis=0, keepdims=True)
+    return X
+
+def pca1(X):
+    U, S, Vt = np.linalg.svd(X, full_matrices=False)
+    X1 = (U[:, :1] * S[:1]) @ Vt[:1, :]
+    err = np.linalg.norm(X - X1, 'fro')**2
+    tail = float((S[1:]**2).sum())
+    EVR = (S**2) / (S**2).sum()
+    return X1, err, tail, Vt, EVR
+
+def main():
+    X = gen_df()
+    X1, err, tail, Vt, EVR = pca1(X)
+    print("err:", round(err, 3), "tail:", round(tail, 3))
+    print("EVR:", np.round(EVR, 3))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Frobenius reconstruction error equals tail singular energy; EVR reported.}
+\INTERPRET{Most variance lies along first principal axis in correlated features.}
+\NEXTSTEPS{Use more components or whiten scores for downstream modeling.}
+
+\end{document}

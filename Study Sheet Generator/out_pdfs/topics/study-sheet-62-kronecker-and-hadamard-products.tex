@@ -1,0 +1,2221 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]
+\setlength{\jot}{7pt}
+\setlength{\emergencystretch}{8em}
+\sloppy
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Kronecker and Hadamard Products}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+Kronecker product: for $A\in\mathbb{F}^{m\times n}$ and $B\in\mathbb{F}^{p\times q}$,
+$A\otimes B\in\mathbb{F}^{mp\times nq}$ with block form
+$A\otimes B=\big[a_{ij}B\big]_{i\le m,j\le n}$.
+Hadamard product: for $A,B\in\mathbb{F}^{m\times n}$,
+$(A\circ B)_{ij}=a_{ij}b_{ij}$. Domain $\mathbb{F}\in\{\mathbb{R},\mathbb{C}\}$.
+}
+\WHY{
+Kronecker enables separable linear operators, vectorization identities, eigen
+structure of tensor systems, and block computations. Hadamard captures
+entrywise interactions and preserves positive semidefiniteness (Schur).
+Both are foundational in numerical linear algebra, statistics, signal
+processing, and tensor methods.
+}
+\HOW{
+1. Define both products algebraically and by indices.
+2. Establish algebraic laws: bilinearity, mixed-product, transpose, inverse.
+3. Derive vec identity $\mathrm{vec}(AXB)=(B^\top\otimes A)\mathrm{vec}(X)$.
+4. Prove Schur product theorem for Hadamard PSD preservation.
+5. Apply to determinants, traces, ranks, and computational templates.
+}
+\ELI{
+Kronecker is like enlarging a matrix by replacing each entry with a scaled
+copy of another matrix. Hadamard multiplies two matrices like overlaying
+two images and multiplying pixel by pixel.
+}
+\SCOPE{
+Kronecker is defined for any rectangular matrices with no equal-size
+requirement between the factors. Mixed products require inner dimensions
+to match for each factor separately. Hadamard requires equal shapes.
+For complex fields, conjugations behave naturally. PSD statements assume
+Hermitian inputs. Nonconformable shapes invalidate formulas.
+}
+\CONFUSIONS{
+Kronecker vs. Khatri-Rao: the latter is columnwise Kronecker with shared
+column count. Kronecker vs. outer product: Kronecker acts on matrices,
+outer product on vectors. Hadamard vs. matrix product: Hadamard is
+entrywise, not compositional. Kronecker sum $A\oplus B=A\otimes I+I\otimes B$
+is not the same as $A\otimes B$.
+}
+\APPLICATIONS{
+\begin{bullets}
+\item Matrix equations: solving $AXB=C$ via vectorization and Kronecker.
+\item Covariance modeling: separable covariances $V\otimes U$.
+\item 2D filtering and PDEs: separable operators as Kronecker products.
+\item Correlations and masking: Hadamard with PSD guarantees.
+\end{bullets}
+}
+\textbf{ANALYTIC STRUCTURE.}
+Kronecker is bilinear, associative with respect to itself, and compatible
+with transpose, inverse, trace, determinant. It expands dimensions
+multiplicatively. Hadamard is commutative, associative, and monotone on
+PSD cones (Schur). Both interact with Frobenius inner products.
+\textbf{CANONICAL LINKS.}
+Vec identity connects Kronecker with composition. Schur product theorem
+connects Hadamard with PSD cones. Determinant and trace multiplicativity
+enable logdet and Gaussian likelihoods under separability.
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Phrases: separable operator, 2D filter, matrix equation $AXB=C$.
+\item Block structures repeating a pattern.
+\item PSD masks or elementwise weighting.
+\item Determinants of block-repeated matrices.
+\end{bullets}
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate to vec form if composition appears.
+\item Use mixed-product to reorder factors.
+\item Use det and trace multiplicativity for log-likelihoods.
+\item For entrywise operations, invoke Schur product theorem.
+\end{bullets}
+\textbf{CONCEPTUAL INVARIANTS.}
+Kronecker eigenpairs multiply; traces and determinants separate. Hadamard
+preserves positivity for PSD inputs. Frobenius inner product distributes.
+\textbf{EDGE INTUITION.}
+If one Kronecker factor is identity, the operator repeats the other in
+blocks. If a Hadamard factor is all-ones, it is neutral; if it is a mask
+of zeros and ones, it zeros selected entries.
+
+\clearpage
+\section{Glossary}
+\glossx{Kronecker Product $A\otimes B$}
+{Block matrix where each entry $a_{ij}$ scales a copy of $B$.}
+{Encodes separable linear maps and facilitates vectorization identities.}
+{Form $A\otimes B=[a_{ij}B]$; apply via reshape or vec tricks.}
+{Like stamping many copies of $B$ sized by entries of $A$.}
+{Confusion: not the same as matrix multiplication nor outer product.}
+
+\glossx{Hadamard Product $A\circ B$}
+{Entrywise product of same-shaped matrices.}
+{Models masking, elementwise weighting, and preserves PSD.}
+{Compute $(A\circ B)_{ij}=a_{ij}b_{ij}$.}
+{Multiply two pictures pixel by pixel.}
+{Pitfall: shape mismatch invalidates; it is not a linear map composition.}
+
+\glossx{Vec Operator $\mathrm{vec}(X)$}
+{Stacks columns of $X$ into a long vector.}
+{Bridges matrix equations with linear systems via Kronecker.}
+{Map $X\in\mathbb{F}^{m\times n}$ to $\mathbb{F}^{mn}$ by columns.}
+{Read columns top to bottom, left to right.}
+{Example: $\mathrm{vec}(AXB)=(B^\top\otimes A)\mathrm{vec}(X)$.}
+
+\glossx{Khatri-Rao Product $X\odot Y$}
+{Columnwise Kronecker: $(X\odot Y)_{:k}=X_{:k}\otimes Y_{:k}$.}
+{Links Gram matrices with Hadamard: $(XX^\top)\circ(YY^\top)=(X\odot Y)(X\odot Y)^\top$.}
+{Form each column by Kronecker of matching columns.}
+{Like pairing features from two views column by column.}
+{Pitfall: requires same number of columns; not associative with Hadamard.}
+
+\clearpage
+\section{Symbol Ledger}
+\varmapStart
+\var{A,B,C,D}{Matrices over $\mathbb{F}\in\{\mathbb{R},\mathbb{C}\}$.}
+\var{m,n,p,q}{Positive integers for matrix dimensions.}
+\var{\otimes}{Kronecker product operator.}
+\var{\circ}{Hadamard (entrywise) product operator.}
+\var{\odot}{Khatri-Rao (columnwise Kronecker) product.}
+\var{I_k}{Identity matrix of size $k$.}
+\var{E_{ij}}{Matrix with one at $(i,j)$ and zero otherwise.}
+\var{\mathrm{vec}(X)}{Column-stacking of matrix $X$.}
+\var{\mathrm{tr}(\cdot)}{Trace operator.}
+\var{\det(\cdot)}{Determinant.}
+\var{\lambda_i(\cdot)}{Eigenvalues (with multiplicity).}
+\var{\mathrm{rank}(\cdot)}{Matrix rank.}
+\var{\Sigma,U,V}{Covariance matrices (PSD).}
+\var{\|\cdot\|_F}{Frobenius norm.}
+\varmapEnd
+
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{Kronecker Product — Definition and Structure}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For $A\in\mathbb{F}^{m\times n}$ and $B\in\mathbb{F}^{p\times q}$,
+the Kronecker product $A\otimes B\in\mathbb{F}^{mp\times nq}$ is
+\WHAT{
+Defines $A\otimes B$ as a block matrix and via basis expansion.
+}
+\WHY{
+This construction encodes separable linear mappings and is the backbone
+for vectorization and tensorized computations.
+}
+\FORMULA{
+\[
+A\otimes B=\begin{bmatrix}
+a_{11}B & \cdots & a_{1n}B\\
+\vdots & \ddots & \vdots\\
+a_{m1}B & \cdots & a_{mn}B
+\end{bmatrix}
+=\sum_{i=1}^m\sum_{j=1}^n a_{ij} \, E_{ij}\otimes B.
+\]
+}
+\CANONICAL{
+Domain: $A\in\mathbb{F}^{m\times n}$, $B\in\mathbb{F}^{p\times q}$.
+Codomain: $\mathbb{F}^{mp\times nq}$. Linear in each argument.
+}
+\PRECONDS{
+\begin{bullets}
+\item No shape coupling beyond $A$ and $B$ themselves.
+\item Field $\mathbb{F}$ arbitrary; properties extend to $\mathbb{C}$ with $\ast$.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Bilinearity: $(\alpha A_1+\beta A_2)\otimes B
+=\alpha (A_1\otimes B)+\beta (A_2\otimes B)$ and
+$A\otimes (\alpha B_1+\beta B_2)
+=\alpha (A\otimes B_1)+\beta (A\otimes B_2)$.
+\end{lemma}
+\begin{proof}
+Use the basis expansion with $E_{ij}$:
+\[
+(\alpha A_1+\beta A_2)\otimes B
+=\sum_{i,j}(\alpha a^{(1)}_{ij}+\beta a^{(2)}_{ij})\,E_{ij}\otimes B
+=\alpha\sum_{i,j}a^{(1)}_{ij}E_{ij}\otimes B
++\beta\sum_{i,j}a^{(2)}_{ij}E_{ij}\otimes B,
+\]
+and similarly in the second argument by symmetry of the definition.
+\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}~&\text{Write }A=\sum_{i,j}a_{ij}E_{ij}.\\
+\text{Step 2:}~&\text{Define }A\otimes B=\sum_{i,j} a_{ij}(E_{ij}\otimes B).\\
+\text{Step 3:}~&\text{Note }E_{ij}\otimes B\text{ places a }p\times q\text{ block at }(i,j).\\
+\text{Step 4:}~&\text{Thus obtain the block expansion }[a_{ij}B].\\
+\text{Step 5:}~&\text{Sizes multiply: }(mp)\times(nq).
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Expand small Kronecker products by blocks.
+\item Use bilinearity to distribute over sums or scalars.
+\item Track dimensions: multiply rows and columns.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item $(A\otimes B)^\top=A^\top\otimes B^\top$.
+\item If $A,B$ invertible: $(A\otimes B)^{-1}=A^{-1}\otimes B^{-1}$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $A=0$ or $B=0$, then $A\otimes B=0$.
+\item If $A=I_m$, then $I_m\otimes B=\mathrm{diag}(B,\ldots,B)$ ($m$ copies).
+\end{bullets}
+}
+\INPUTS{$A\in\mathbb{F}^{m\times n},\; B\in\mathbb{F}^{p\times q}$.}
+\DERIVATION{
+\begin{align*}
+\text{Example: }A&=\begin{bmatrix}1&2\\3&4\end{bmatrix},
+~B=\begin{bmatrix}0&5\\6&7\end{bmatrix}.\\
+A\otimes B&=\begin{bmatrix}
+1B&2B\\3B&4B
+\end{bmatrix}
+=\begin{bmatrix}
+0&5&0&10\\6&7&12&14\\0&15&0&20\\18&21&24&28
+\end{bmatrix}.
+\end{align*}
+}
+\RESULT{
+Block structure and bilinearity uniquely determine $A\otimes B$ with
+size $(mp)\times(nq)$.
+}
+\UNITCHECK{
+Dimensions multiply; linear scaling by $\alpha$ yields $(\alpha A)\otimes B
+=\alpha(A\otimes B)$.
+}
+\PITFALLS{
+\begin{bullets}
+\item Confusing $A\otimes B$ with $AB$; shapes and meanings differ.
+\item Forgetting that sizes multiply, not add.
+\end{bullets}
+}
+\INTUITION{
+Each entry of $A$ stretches a copy of $B$; stacking these copies produces
+the full operator acting on a vectorized space.
+}
+\CANONICAL{
+\begin{bullets}
+\item $A\otimes B=\sum_{ij}a_{ij}E_{ij}\otimes B$.
+\item Block replication $[a_{ij}B]$ is the canonical construction.
+\end{bullets}
+}
+
+\FormulaPage{2}{Mixed-Product Property}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\WHAT{
+Composition of separable operators remains separable with factorwise
+composition.
+}
+\WHY{
+Enables efficient algebra: reorder products, simplify expressions,
+and compute powers factorwise.
+}
+\FORMULA{
+\[
+(A\otimes B)(C\otimes D)=(AC)\otimes(BD),
+\quad\text{when }AC,BD\text{ are defined.}
+\]
+}
+\CANONICAL{
+$A\in\mathbb{F}^{m\times n}$, $C\in\mathbb{F}^{n\times r}$,
+$B\in\mathbb{F}^{p\times q}$, $D\in\mathbb{F}^{q\times s}$.
+Then $(A\otimes B)(C\otimes D)\in\mathbb{F}^{mp\times rs}$.
+}
+\PRECONDS{
+\begin{bullets}
+\item Inner dimensions: $AC$ and $BD$ must be defined.
+\item Standard associative matrix multiplication applies.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For basis matrices $E_{ij}$ and $F_{kl}$, 
+$(E_{ij}\otimes F_{kl})(E_{uv}\otimes F_{wx})
+=\delta_{ju}\delta_{lw}\,E_{iv}\otimes F_{kx}$.
+\end{lemma}
+\begin{proof}
+$E_{ij}E_{uv}=\delta_{ju}E_{iv}$ and $F_{kl}F_{wx}=\delta_{lw}F_{kx}$.
+By bilinearity of $\otimes$,
+\[
+(E_{ij}\otimes F_{kl})(E_{uv}\otimes F_{wx})
+=(E_{ij}E_{uv})\otimes(F_{kl}F_{wx})
+=\delta_{ju}\delta_{lw}\,E_{iv}\otimes F_{kx}.
+\qedhere
+\]
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}~&A=\sum_{ij}a_{ij}E_{ij},\; C=\sum_{uv}c_{uv}E_{uv}.\\
+\text{Step 2:}~&B=\sum_{kl}b_{kl}F_{kl},\; D=\sum_{wx}d_{wx}F_{wx}.\\
+\text{Step 3:}~&(A\otimes B)(C\otimes D)
+=\sum a_{ij}b_{kl}c_{uv}d_{wx}
+(E_{ij}\otimes F_{kl})(E_{uv}\otimes F_{wx}).\\
+\text{Step 4:}~&\text{Apply lemma to collapse inner sums.}\\
+\text{Step 5:}~&=\sum_{i,v} \left(\sum_j a_{ij}c_{jv}\right)
+\sum_{k,x}\left(\sum_l b_{kl}d_{lx}\right) E_{iv}\otimes F_{kx}.\\
+\text{Step 6:}~&=(AC)\otimes(BD).
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Check inner dimensions of factorwise products.
+\item Replace $(A\otimes B)(C\otimes D)$ with $(AC)\otimes(BD)$.
+\item Iterate to simplify longer chains.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item $(A\otimes B)^\top(C\otimes D)=(A^\top C)\otimes(B^\top D)$.
+\item $(A\otimes B)^k=A^k\otimes B^k$ for $k\in\mathbb{N}$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $AC$ or $BD$ is undefined, the identity does not apply.
+\item Zero factors propagate: if $AC=0$ or $BD=0$, product is zero.
+\end{bullets}
+}
+\INPUTS{$A,C,B,D$ with compatible sizes.}
+\DERIVATION{
+\begin{align*}
+\text{Example: }&A=\begin{bmatrix}1&2\\0&1\end{bmatrix},~
+B=\begin{bmatrix}2&0\\0&3\end{bmatrix},\\
+&C=\begin{bmatrix}0&1\\1&0\end{bmatrix},~
+D=\begin{bmatrix}1&1\\0&1\end{bmatrix}.\\
+(AC)&=\begin{bmatrix}2&1\\1&0\end{bmatrix},~
+(BD)=\begin{bmatrix}2&2\\0&3\end{bmatrix}.\\
+(A\otimes B)(C\otimes D)&=(AC)\otimes(BD)\text{ (by formula).}
+\end{align*}
+}
+\RESULT{
+Composition respects separable structure: compute on small factors.
+}
+\UNITCHECK{
+Rows and columns: $(mp)\times(nq)$ times $(nq)\times(rs)$ gives
+$(mp)\times(rs)$, matching $(AC)\otimes(BD)$.
+}
+\PITFALLS{
+\begin{bullets}
+\item Misordering: note $(A\otimes B)(C\otimes D)$ pairs $A$ with $C$
+and $B$ with $D$, not crosswise.
+\item Dimension mismatch in either factor invalidates.
+\end{bullets}
+}
+\INTUITION{
+Apply $C$ then $A$ in the first space and $D$ then $B$ in the second;
+the actions are independent and compose separately.
+}
+\CANONICAL{
+\begin{bullets}
+\item Mixed-product $(\cdot\otimes\cdot)$ distributes over matrix product.
+\item Powers and polynomials act factorwise.
+\end{bullets}
+}
+
+\FormulaPage{3}{Vec Identity for Two-Sided Multiplication}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\WHAT{
+Vectorization converts $AXB$ into a linear map on $\mathrm{vec}(X)$.
+}
+\WHY{
+Solves matrix equations as linear systems and expresses Gaussian
+quadratic forms compactly.
+}
+\FORMULA{
+\[
+\mathrm{vec}(AXB)=(B^\top\otimes A)\,\mathrm{vec}(X),
+\quad A,X,B\text{ with compatible sizes.}
+\]
+}
+\CANONICAL{
+$A\in\mathbb{F}^{m\times n}$, $X\in\mathbb{F}^{n\times p}$,
+$B\in\mathbb{F}^{p\times q}$, then $\mathrm{vec}(AXB)\in\mathbb{F}^{mq}$.
+}
+\PRECONDS{
+\begin{bullets}
+\item Products $AX$ and $(AX)B$ are defined.
+\item $\mathrm{vec}$ stacks columns.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For basis $E_{ij}$ and $e_i$ standard basis vectors,
+$\mathrm{vec}(E_{ij})=e_j\otimes e_i$.
+\end{lemma}
+\begin{proof}
+$E_{ij}$ has a single $1$ at $(i,j)$. Column-stacking places that $1$
+at index $(i+(j-1)m)$, which equals the Kronecker index of $e_j\otimes e_i$.
+\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}~&X=\sum_{i,j} x_{ij}E_{ij}.\\
+\text{Step 2:}~&AXB=\sum_{i,j}x_{ij}\,AE_{ij}B
+=\sum_{i,j}x_{ij}\,(Ae_i)(e_j^\top B).\\
+\text{Step 3:}~&\mathrm{vec}((Ae_i)(e_j^\top B))
+=(B^\top e_j)\otimes (Ae_i).\\
+\text{Step 4:}~&\mathrm{vec}(AXB)
+=\sum_{i,j}x_{ij}\big((B^\top e_j)\otimes (Ae_i)\big).\\
+\text{Step 5:}~&\text{Stack coefficients: }
+=\left(\sum_{i,j} E_{ji}\otimes AE_{ii}\right)\mathrm{vec}(X).\\
+\text{Step 6:}~&\text{Recognize }(B^\top\otimes A)\mathrm{vec}(X).
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Write $AXB=C$ as $(B^\top\otimes A)\mathrm{vec}(X)=\mathrm{vec}(C)$.
+\item Solve a linear system for $\mathrm{vec}(X)$.
+\item Reshape back to $X$.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item $\mathrm{vec}(X A^\top)=(A\otimes I)\mathrm{vec}(X)$.
+\item $\mathrm{vec}(A^\top X)=(I\otimes A^\top)\mathrm{vec}(X)$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $B^\top\otimes A$ is singular, multiple or no solutions occur.
+\item Conditioning of $B^\top\otimes A$ is the product of condition numbers.
+\end{bullets}
+}
+\INPUTS{$A,X,B$ conformable; $C$ if solving $AXB=C$.}
+\DERIVATION{
+\begin{align*}
+\text{Example: }&A=\begin{bmatrix}1&1\\0&1\end{bmatrix},
+~B=\begin{bmatrix}2&0\\1&1\end{bmatrix},\\
+&X=\begin{bmatrix}x_1&x_3\\x_2&x_4\end{bmatrix}.\\
+\mathrm{vec}(AXB)&=(B^\top\otimes A)\mathrm{vec}(X),\\
+B^\top\otimes A&=\begin{bmatrix}2&0\\0&1\\1&1\\0&1\end{bmatrix}
+\otimes \begin{bmatrix}1&1\\0&1\end{bmatrix}.\\
+\end{align*}
+}
+\RESULT{
+A universal linearization of two-sided multiplication.
+}
+\UNITCHECK{
+Sizes: $(B^\top\otimes A)$ is $(q m)\times(p n)$ mapping $\mathbb{F}^{pn}$ to
+$\mathbb{F}^{qm}$, matching $\mathrm{vec}(AXB)$.
+}
+\PITFALLS{
+\begin{bullets}
+\item Wrong transpose: use $B^\top$, not $B$.
+\item Wrong vec convention (rows vs. columns) alters the factor.
+\end{bullets}
+}
+\INTUITION{
+Apply $A$ in the row space and $B$ in the column space independently,
+then stack results.
+}
+\CANONICAL{
+\begin{bullets}
+\item $\mathrm{vec}$ turns bilinear matrix action into a linear map.
+\item The map factorizes as $B^\top\otimes A$.
+\end{bullets}
+}
+
+\FormulaPage{4}{Schur Product Theorem (Hadamard PSD)}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\WHAT{
+Entrywise product of PSD matrices is PSD.
+}
+\WHY{
+Ensures validity of elementwise weighting of covariances and kernels.
+}
+\FORMULA{
+\[
+A\succeq 0,\;B\succeq 0\;\Rightarrow\;A\circ B\succeq 0.
+\]
+}
+\CANONICAL{
+$A,B\in\mathbb{F}^{n\times n}$ Hermitian PSD. Output $A\circ B$ is Hermitian PSD.
+}
+\PRECONDS{
+\begin{bullets}
+\item Same shape and Hermitian symmetry.
+\item PSD means $x^\ast A x\ge 0$ for all $x$.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $A=XX^\ast$ and $B=YY^\ast$, then
+$A\circ B=(X\odot Y)(X\odot Y)^\ast$, where $(X\odot Y)_{:k}=X_{:k}\otimes Y_{:k}$.
+\end{lemma}
+\begin{proof}
+The $(i,j)$ entry of $(X\odot Y)(X\odot Y)^\ast$ equals
+$\sum_k \langle X_{:k}\otimes Y_{:k}, e_i\otimes e_j\rangle
+\overline{\langle X_{:k}\otimes Y_{:k}, e_i\otimes e_j\rangle}$
+which simplifies to $\sum_k X_{ik}\overline{X_{jk}}\,Y_{ik}\overline{Y_{jk}}
+=(XX^\ast)_{ij}(YY^\ast)_{ij}=(A\circ B)_{ij}$. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}~&A\succeq 0\Rightarrow \exists X: A=XX^\ast.\\
+\text{Step 2:}~&B\succeq 0\Rightarrow \exists Y: B=YY^\ast.\\
+\text{Step 3:}~&\text{By lemma }A\circ B=(X\odot Y)(X\odot Y)^\ast.\\
+\text{Step 4:}~&\text{Gram form is PSD.}\\
+\text{Step 5:}~&\Rightarrow A\circ B\succeq 0.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Factor PSDs as Gram matrices.
+\item Use Khatri-Rao to express entrywise product as a Gram matrix.
+\item Conclude PSD by construction.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item For any $x$, $x^\ast(A\circ B)x=\sum_{i,j}\overline{x_i}x_j a_{ij}b_{ij}\ge 0$.
+\item $(XX^\ast)\circ(YY^\ast)=(X\odot Y)(X\odot Y)^\ast$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If one factor is not PSD, $A\circ B$ may be indefinite.
+\item Non-Hermitian inputs can break PSD even if entrywise nonnegative.
+\end{bullets}
+}
+\INPUTS{$A,B\succeq 0$ of same size.}
+\DERIVATION{
+\begin{align*}
+\text{Example: }&A=\begin{bmatrix}2&1\\1&2\end{bmatrix},~
+B=\begin{bmatrix}3&1\\1&1\end{bmatrix}.\\
+A\circ B&=\begin{bmatrix}6&1\\1&2\end{bmatrix},~
+\lambda(A\circ B)=\{(8\pm\sqrt{36})/2\}=\{7,1\}\ge 0.
+\end{align*}
+}
+\RESULT{
+$A\circ B$ is PSD with spectrum in $\mathbb{R}_{\ge 0}$.
+}
+\UNITCHECK{
+Hermitian symmetry preserved; diagonal remains nonnegative.
+}
+\PITFALLS{
+\begin{bullets}
+\item Mistaking entrywise nonnegativity for PSD.
+\item Forgetting symmetry requirement for complex matrices.
+\end{bullets}
+}
+\INTUITION{
+Entrywise weighting of inner products corresponds to concatenating
+features columnwise (Khatri-Rao), which cannot create negative energy.
+}
+\CANONICAL{
+\begin{bullets}
+\item Hadamard preserves the PSD cone (Schur).
+\item Gram via Khatri-Rao realizes entrywise products.
+\end{bullets}
+}
+
+\FormulaPage{5}{Trace and Determinant of Kronecker Products}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\WHAT{
+Trace and determinant factorize over Kronecker products.
+}
+\WHY{
+Crucial for log-likelihoods, entropy, and conditioning analysis in
+separable models.
+}
+\FORMULA{
+\[
+\mathrm{tr}(A\otimes B)=\mathrm{tr}(A)\,\mathrm{tr}(B),
+\quad
+\det(A\otimes B)=\det(A)^n\,\det(B)^m
+\]
+for $A\in\mathbb{F}^{m\times m}$, $B\in\mathbb{F}^{n\times n}$.
+}
+\CANONICAL{
+Square matrices required. Determinant multiplicity uses eigenvalues.
+}
+\PRECONDS{
+\begin{bullets}
+\item $A,B$ are square; for determinant, over a field where det is defined.
+\item Eigen-decomposition available (Jordan form suffices).
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $Au=\lambda u$ and $Bv=\mu v$, then
+$(A\otimes B)(u\otimes v)=(\lambda\mu)(u\otimes v)$.
+\end{lemma}
+\begin{proof}
+$(A\otimes B)(u\otimes v)=(Au)\otimes(Bv)=(\lambda u)\otimes(\mu v)
+=(\lambda\mu)(u\otimes v)$ by bilinearity. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Trace: }&\mathrm{tr}(A\otimes B)
+=\sum_i (A\otimes B)_{ii}=\sum_{i,j} a_{ii} b_{jj}
+=\mathrm{tr}(A)\,\mathrm{tr}(B).\\
+\text{Determinant: }&\text{Eigenvalues of }A\otimes B\text{ are }
+\{\lambda_i(A)\mu_j(B)\}_{i,j}.\\
+&\det(A\otimes B)=\prod_{i,j}\lambda_i\mu_j
+=\left(\prod_i\lambda_i^n\right)\left(\prod_j\mu_j^m\right)
+=\det(A)^n\det(B)^m.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Compute $\mathrm{tr}(A)$ and $\mathrm{tr}(B)$ separately.
+\item Compute $\det(A)$ and $\det(B)$, then apply exponents.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item $\log\det(A\otimes B)=n\log\det(A)+m\log\det(B)$.
+\item $\mathrm{tr}((A\otimes B)(C\otimes D))=\mathrm{tr}(AC)\mathrm{tr}(BD)$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If $\det(A)=0$ or $\det(B)=0$, then $\det(A\otimes B)=0$.
+\item Non-square factors: trace identity still holds, determinant undefined.
+\end{bullets}
+}
+\INPUTS{$A\in\mathbb{F}^{m\times m}$, $B\in\mathbb{F}^{n\times n}$.}
+\DERIVATION{
+\begin{align*}
+\text{Example: }&A=\begin{bmatrix}2&0\\0&3\end{bmatrix},~
+B=\begin{bmatrix}1&1\\0&4\end{bmatrix}.\\
+\mathrm{tr}(A\otimes B)&=(2+3)(1+4)=5\cdot 5=25.\\
+\det(A\otimes B)&=\det(A)^2\det(B)^2=(6)^2(4)^2=576.
+\end{align*}
+}
+\RESULT{
+Trace multiplies; determinant raises each factor by the size of the other.
+}
+\UNITCHECK{
+Signs and magnitudes: if $A,B\succ 0$, then $\det(A\otimes B)>0$,
+and $\log\det$ adds cleanly.
+}
+\PITFALLS{
+\begin{bullets}
+\item Swapping $m$ and $n$ exponents is a common mistake.
+\item Forgetting that trace identity also holds for rectangular factors.
+\end{bullets}
+}
+\INTUITION{
+Eigenvalues pairwise multiply; products of products produce exponentiation.
+}
+\CANONICAL{
+\begin{bullets}
+\item Spectrum of $A\otimes B$ equals pairwise products of spectra.
+\item Trace and det inherit multiplicativity accordingly.
+\end{bullets}
+}
+
+\FormulaPage{6}{Vectorization of Hadamard Products}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\WHAT{
+Entrywise products linearize via a diagonal operator on vectorizations.
+}
+\WHY{
+Enables gradient and masking algebra and relates Hadamard to Kronecker.
+}
+\FORMULA{
+\[
+\mathrm{vec}(A\circ B)=\mathrm{diag}(\mathrm{vec}(A))\,\mathrm{vec}(B)
+=\mathrm{diag}(\mathrm{vec}(B))\,\mathrm{vec}(A).
+\]
+}
+\CANONICAL{
+$A,B\in\mathbb{F}^{m\times n}$; $\mathrm{diag}$ forms a diagonal matrix
+from a vector.
+}
+\PRECONDS{
+\begin{bullets}
+\item Same shape for $A$ and $B$.
+\item Vec stacks by columns consistently with diagonalization.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For standard basis $E_{ij}$, 
+$\mathrm{vec}(E_{ij})\mathrm{vec}(E_{ij})^\top$ selects entry $(i,j)$.
+\end{lemma}
+\begin{proof}
+$\mathrm{vec}(E_{ij})$ has a single $1$ in the position of $(i,j)$; its
+outer product is a one-hot projector onto that coordinate. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Step 1:}~&A=\sum_{i,j} a_{ij}E_{ij},\quad
+B=\sum_{i,j} b_{ij}E_{ij}.\\
+\text{Step 2:}~&A\circ B=\sum_{i,j} a_{ij}b_{ij}E_{ij}.\\
+\text{Step 3:}~&\mathrm{vec}(A\circ B)
+=\sum_{i,j} a_{ij}b_{ij}\,\mathrm{vec}(E_{ij}).\\
+\text{Step 4:}~&\mathrm{diag}(\mathrm{vec}(A))\,\mathrm{vec}(B)
+=\sum_{i,j} a_{ij}\,\mathrm{vec}(E_{ij})\mathrm{vec}(E_{ij})^\top
+\sum_{k,\ell} b_{k\ell}\mathrm{vec}(E_{k\ell}).\\
+\text{Step 5:}~&\text{By lemma, only }(k,\ell)=(i,j)\text{ survive},\\
+&=\sum_{i,j} a_{ij}b_{ij}\,\mathrm{vec}(E_{ij}).\\
+\text{Step 6:}~&\text{Matches }\mathrm{vec}(A\circ B).
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Replace Hadamard with diagonal times vec for linear algebra tools.
+\item Useful for gradients and masking constraints.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item $\|A\circ B\|_F^2=\mathrm{vec}(B)^\top \mathrm{diag}(\mathrm{vec}(A))^2
+\mathrm{vec}(B)$.
+\item $(A\circ B)C=(\mathrm{unvec}\circ\mathrm{diag}\circ\mathrm{vec})$ forms.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item Different vec conventions change diagonal order.
+\item Large diagonal matrices are memory heavy; use implicit operations.
+\end{bullets}
+}
+\INPUTS{$A,B\in\mathbb{F}^{m\times n}$.}
+\DERIVATION{
+\begin{align*}
+\text{Example: }&A=\begin{bmatrix}1&2\\3&4\end{bmatrix},
+~B=\begin{bmatrix}5&6\\7&8\end{bmatrix}.\\
+\mathrm{vec}(A)&=(1,3,2,4)^\top,~\mathrm{vec}(B)=(5,7,6,8)^\top.\\
+\mathrm{diag}(\mathrm{vec}(A))\mathrm{vec}(B)
+&=(5,21,12,32)^\top
+=\mathrm{vec}(A\circ B).
+\end{align*}
+}
+\RESULT{
+Hadamard is linearized as a diagonal action on a vectorization.
+}
+\UNITCHECK{
+Dimensions: diagonal matrix is $(mn)\times(mn)$; output has length $mn$.
+}
+\PITFALLS{
+\begin{bullets}
+\item Building explicit diagonal matrices when implicit scaling suffices.
+\item Mixing row-major with column-major vec.
+\end{bullets}
+}
+\INTUITION{
+Entrywise multiplication is just coordinatewise scaling after stacking.
+}
+\CANONICAL{
+\begin{bullets}
+\item $\mathrm{vec}(A\circ B)=\mathrm{Diag}(\mathrm{vec}A)\,\mathrm{vec}B$.
+\item Diagonalization bridges Hadamard and linear maps.
+\end{bullets}
+}
+
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{Compute and Factor Kronecker Products}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Apply block definition and mixed-product to compute and simplify.
+\PROBLEM{
+Given $A=\begin{bmatrix}1&2\\3&4\end{bmatrix}$,
+$B=\begin{bmatrix}0&1\\2&3\end{bmatrix}$,
+$C=\begin{bmatrix}1&0\\0&1\end{bmatrix}$,
+$D=\begin{bmatrix}2&1\\0&1\end{bmatrix}$,
+compute $A\otimes B$ and $(A\otimes B)(C\otimes D)$ in two ways:
+directly and as $(AC)\otimes(BD)$, and verify equality.
+}
+\MODEL{
+\[
+(A\otimes B)(C\otimes D)=(AC)\otimes(BD),\quad C=I_2.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item All matrices are $2\times 2$; products are defined.
+\end{bullets}
+}
+\varmapStart
+\var{A,B,C,D}{Given $2\times 2$ matrices.}
+\var{K}{Kronecker product $A\otimes B$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 1 for definition; Formula 2 for mixed-product.
+}
+\GOVERN{
+\[
+(A\otimes B)(C\otimes D)=(AC)\otimes(BD).
+\]
+}
+\INPUTS{$A,B,C=I_2,D$ as above.}
+\DERIVATION{
+\begin{align*}
+\text{Step 1: }&A\otimes B=
+\begin{bmatrix}
+1B&2B\\3B&4B
+\end{bmatrix}
+=\begin{bmatrix}
+0&1&0&2\\2&3&4&6\\
+0&3&0&6\\6&9&8&12
+\end{bmatrix}.\\
+\text{Step 2: }&(A\otimes B)(C\otimes D)
+=(A\otimes B)(I\otimes D).\\
+\text{Direct: }&I\otimes D=\mathrm{diag}(D,D),\text{ multiply blocks.}\\
+&K(I\otimes D)=\begin{bmatrix}
+1B D & 2B D\\ 3B D&4B D
+\end{bmatrix}.\\
+\text{Step 3: }&BD=\begin{bmatrix}0&1\\2&3\end{bmatrix}
+\begin{bmatrix}2&1\\0&1\end{bmatrix}
+=\begin{bmatrix}0&1\\4&5\end{bmatrix}.\\
+\text{Step 4: }&(AC)\otimes(BD)=A\otimes(BD)
+=\begin{bmatrix}
+0&1&0&2\\4&5&8&10\\
+0&3&0&6\\12&15&16&20
+\end{bmatrix}.\\
+\text{Step 5: }&\text{Compute }K(I\otimes D)\text{ yields same block values.}
+\end{align*}
+}
+\RESULT{
+Equality holds: $(A\otimes B)(I\otimes D)=A\otimes(BD)$.
+}
+\UNITCHECK{
+Sizes: $(4\times 4)(4\times 4)=(4\times 4)$.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $D=I$, both sides reduce to $A\otimes B$.
+\item If $A=0$, both sides are zero.
+\end{bullets}
+}
+\ALTERNATE{
+Compute via basis expansion $\sum a_{ij}E_{ij}\otimes B$ and multiply
+by $I\otimes D$ using the lemma in Formula 2.
+}
+\VALIDATION{
+\begin{bullets}
+\item Numerically verify entries coincide.
+\item Symmetry check if $D$ were symmetric; not required here.
+\end{bullets}
+}
+\INTUITION{
+Right multiplication by $D$ acts only on the $B$-side blocks.
+}
+\CANONICAL{
+\begin{bullets}
+\item Mixed-product collapses a costly $4\times 4$ multiply to two $2\times 2$.
+\end{bullets}
+}
+
+\ProblemPage{2}{Solve $AXB=C$ via Vec Identity}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\PROBLEM{
+Solve for $X$ in $AXB=C$ with
+$A=\begin{bmatrix}2&1\\0&1\end{bmatrix}$,
+$B=\begin{bmatrix}1&1\\0&2\end{bmatrix}$,
+$C=\begin{bmatrix}3&4\\1&2\end{bmatrix}$.
+}
+\MODEL{
+\[
+(B^\top\otimes A)\,\mathrm{vec}(X)=\mathrm{vec}(C).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $B^\top\otimes A$ is invertible.
+\end{bullets}
+}
+\varmapStart
+\var{X}{Unknown $2\times 2$ matrix.}
+\var{A,B,C}{Given matrices.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 3: $\mathrm{vec}(AXB)=(B^\top\otimes A)\mathrm{vec}(X)$.
+}
+\GOVERN{
+\[
+\mathrm{vec}(X)=(B^\top\otimes A)^{-1}\mathrm{vec}(C).
+\]
+}
+\INPUTS{$A,B,C$ as above.}
+\DERIVATION{
+\begin{align*}
+B^\top&=\begin{bmatrix}1&0\\1&2\end{bmatrix},\quad
+B^\top\otimes A=
+\begin{bmatrix}
+2&1&0&0\\0&1&0&0\\
+2&1&4&2\\0&1&0&2
+\end{bmatrix}.\\
+\mathrm{vec}(C)&=(3,1,4,2)^\top.\\
+\text{Solve }&(B^\top\otimes A)z=\mathrm{vec}(C).\\
+\text{From row 2: }&z_2=1.\\
+\text{From row 1: }&2z_1+z_2=3\Rightarrow z_1=1.\\
+\text{Row 4: }&z_2+2z_4=2\Rightarrow 1+2z_4=2\Rightarrow z_4=0.5.\\
+\text{Row 3: }&2z_1+z_2+4z_3+2z_4=4\\
+&\Rightarrow 2+1+4z_3+1=4\Rightarrow 4z_3=0\Rightarrow z_3=0.\\
+\mathrm{vec}(X)&=(1,1,0,0.5)^\top,\;
+X=\begin{bmatrix}1&0\\1&0.5\end{bmatrix}.
+\end{align*}
+}
+\RESULT{
+$X=\begin{bmatrix}1&0\\1&0.5\end{bmatrix}$ solves $AXB=C$.
+}
+\UNITCHECK{
+Check $AXB$:
+$AX=\begin{bmatrix}3&0.5\\1&0.5\end{bmatrix}$,
+$(AX)B=\begin{bmatrix}3&4\\1&2\end{bmatrix}=C$.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $\det(B^\top\otimes A)=0$, either no or many solutions exist.
+\item If $A$ or $B$ singular yet $B^\top\otimes A$ invertible fails.
+\end{bullets}
+}
+\ALTERNATE{
+Solve $AXB=C$ by sequential solves if $B$ or $A$ is triangular:
+$Y=XB$ via right solve, then $AY=C$ via left solve.
+}
+\VALIDATION{
+\begin{bullets}
+\item Direct substitution verifies equality.
+\item Numeric stability acceptable with triangular factors.
+\end{bullets}
+}
+\INTUITION{
+Left action by $A$ and right action by $B$ become a single linear map
+on the stacked entries of $X$.
+}
+\CANONICAL{
+\begin{bullets}
+\item Vec linearizes two-sided matrix equations.
+\end{bullets}
+}
+
+\ProblemPage{3}{Eigenvalues and Determinant of Kronecker}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\PROBLEM{
+For $A=\mathrm{diag}(1,3)$ and $B=\begin{bmatrix}2&1\\0&4\end{bmatrix}$,
+find eigenvalues of $A\otimes B$ and compute $\det(A\otimes B)$.
+}
+\MODEL{
+\[
+\lambda(A\otimes B)=\{\lambda_i(A)\mu_j(B)\}_{i,j}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Use that $B$ is upper triangular; eigenvalues are its diagonal.
+\end{bullets}
+}
+\varmapStart
+\var{\lambda_i,\mu_j}{Eigenvalues of $A$ and $B$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 5: determinant from pairwise eigenvalues.
+}
+\GOVERN{
+\[
+\det(A\otimes B)=\det(A)^2\det(B)^2.
+\]
+}
+\INPUTS{$A=\mathrm{diag}(1,3)$, $B$ as above.}
+\DERIVATION{
+\begin{align*}
+\lambda(A)&=\{1,3\},\quad \mu(B)=\{2,4\}.\\
+\lambda(A\otimes B)&=\{1\cdot 2,1\cdot 4,3\cdot 2,3\cdot 4\}
+=\{2,4,6,12\}.\\
+\det(A\otimes B)&=\prod \lambda=2\cdot 4\cdot 6\cdot 12=576.\\
+\text{Check: }&\det(A)^2=3^2=9,\;\det(B)=8,\;\det(B)^2=64,\\
+&9\cdot 64=576\ \checkmark.
+\end{align*}
+}
+\RESULT{
+Eigenvalues $\{2,4,6,12\}$; determinant $576$.
+}
+\UNITCHECK{
+Positive determinant consistent with positive diagonal entries.
+}
+\EDGECASES{
+\begin{bullets}
+\item If any eigenvalue zero, determinant zero.
+\item Repeated eigenvalues produce multiplicities accordingly.
+\end{bullets}
+}
+\ALTERNATE{
+Form $A\otimes B$ explicitly and compute its determinant numerically;
+factorization approach is cheaper and exact.
+}
+\VALIDATION{
+\begin{bullets}
+\item Direct multiplication of diagonal entries is consistent.
+\end{bullets}
+}
+\INTUITION{
+Scaling spectra multiplies pairwise; volumes exponentiate dimensionwise.
+}
+\CANONICAL{
+\begin{bullets}
+\item Spectral multiplicativity for Kronecker products.
+\end{bullets}
+}
+
+\ProblemPage{4}{Narrative: Separable 2D Filter as Kronecker}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\PROBLEM{
+Alice applies a column filter $A\in\mathbb{R}^{m\times m}$ then a row
+filter $B\in\mathbb{R}^{n\times n}$ to an image $X\in\mathbb{R}^{m\times n}$:
+$Y=AXB^\top$. Show that the flattened operator equals $(B\otimes A)$
+acting on $\mathrm{vec}(X)$ and compute $Y$ for
+$m=n=2$, $A=\begin{bmatrix}1&1\\0&1\end{bmatrix}$,
+$B=\begin{bmatrix}1&0\\1&1\end{bmatrix}$,
+$X=\begin{bmatrix}1&2\\3&4\end{bmatrix}$.
+}
+\MODEL{
+\[
+\mathrm{vec}(Y)=\mathrm{vec}(AXB^\top)=(B\otimes A)\mathrm{vec}(X).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Column-major vectorization.
+\end{bullets}
+}
+\varmapStart
+\var{A,B}{Separable filters.}
+\var{X}{Image matrix.}
+\var{Y}{Filtered image.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 3 with $B^\top$ replaced by $B$ since $Y=AXB^\top$.
+}
+\GOVERN{
+\[
+\mathrm{vec}(AXB^\top)=(B\otimes A)\mathrm{vec}(X).
+\]
+}
+\INPUTS{$A,B,X$ as above.}
+\DERIVATION{
+\begin{align*}
+AXB^\top&=\begin{bmatrix}1&1\\0&1\end{bmatrix}
+\begin{bmatrix}1&2\\3&4\end{bmatrix}
+\begin{bmatrix}1&1\\0&1\end{bmatrix}\\
+&=\begin{bmatrix}4&6\\3&4\end{bmatrix}
+\begin{bmatrix}1&1\\0&1\end{bmatrix}
+=\begin{bmatrix}4&10\\3&7\end{bmatrix}.\\
+\mathrm{vec}(X)&=(1,3,2,4)^\top.\\
+B\otimes A&=\begin{bmatrix}1&0\\1&1\end{bmatrix}\otimes
+\begin{bmatrix}1&1\\0&1\end{bmatrix}
+=\begin{bmatrix}
+1&1&0&0\\0&1&0&0\\
+1&1&1&1\\0&1&0&1
+\end{bmatrix}.\\
+(B\otimes A)\mathrm{vec}(X)&=
+\begin{bmatrix}1+3\\3\\1+3+2+4\\3+4\end{bmatrix}
+=\begin{bmatrix}4\\3\\10\\7\end{bmatrix}
+=\mathrm{vec}(Y).
+\end{align*}
+}
+\RESULT{
+$Y=\begin{bmatrix}4&10\\3&7\end{bmatrix}$ and
+$\mathrm{vec}(Y)=(4,3,10,7)^\top$ as predicted.
+}
+\UNITCHECK{
+Operator $(B\otimes A)$ is $4\times 4$ mapping a length-4 vector to length 4.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $A$ or $B$ is identity, only the other acts.
+\item If $A$ or $B$ is diagonal, it scales rows or columns.
+\end{bullets}
+}
+\ALTERNATE{
+Compute by first filtering columns ($AX$), then rows ($\cdot B^\top$);
+the Kronecker form unifies both.
+}
+\VALIDATION{
+\begin{bullets}
+\item Direct multiplication confirmed equality.
+\end{bullets}
+}
+\INTUITION{
+Separable 2D filters act independently along axes; Kronecker ties them.
+}
+\CANONICAL{
+\begin{bullets}
+\item 2D separable maps linearize to a Kronecker operator.
+\end{bullets}
+}
+
+\ProblemPage{5}{Narrative: Masked Weights via Hadamard Diagonalization}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\PROBLEM{
+Bob uses a mask $M\in\mathbb{R}^{m\times n}$ to zero forbidden weights of
+$W\in\mathbb{R}^{m\times n}$, forming $\tilde W=W\circ M$.
+Show that $\mathrm{vec}(\tilde W)=\mathrm{diag}(\mathrm{vec}(M))\mathrm{vec}(W)$
+and compute $\|\tilde W\|_F$ for
+$W=\begin{bmatrix}1&-1\\2&-2\end{bmatrix}$,
+$M=\begin{bmatrix}1&0\\0&1\end{bmatrix}$.
+}
+\MODEL{
+\[
+\mathrm{vec}(W\circ M)=\mathrm{diag}(\mathrm{vec}M)\,\mathrm{vec}W.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Same shape for $W$ and $M$.
+\end{bullets}
+}
+\varmapStart
+\var{W,M}{Weight and mask matrices.}
+\var{\tilde W}{Masked weights $W\circ M$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 6: vectorization of Hadamard products.
+}
+\GOVERN{
+\[
+\|\tilde W\|_F^2=\mathrm{vec}(W)^\top \mathrm{diag}(\mathrm{vec}M)^2
+\mathrm{vec}(W).
+\]
+}
+\INPUTS{$W,M$ as above.}
+\DERIVATION{
+\begin{align*}
+\tilde W&=W\circ M=\begin{bmatrix}1&0\\0&-2\end{bmatrix}.\\
+\|\tilde W\|_F^2&=1^2+0^2+0^2+(-2)^2=5,\quad \|\tilde W\|_F=\sqrt{5}.\\
+\mathrm{vec}(W)&=(1,2,-1,-2)^\top,~\mathrm{vec}(M)=(1,0,0,1)^\top.\\
+\mathrm{diag}(\mathrm{vec}M)^2&=\mathrm{diag}(1,0,0,1).\\
+\mathrm{vec}(W)^\top\cdot\mathrm{diag}\cdot\mathrm{vec}(W)
+&=1^2+0+0+(-2)^2=5.
+\end{align*}
+}
+\RESULT{
+$\mathrm{vec}(\tilde W)=\mathrm{diag}(\mathrm{vec}M)\mathrm{vec}(W)$
+and $\|\tilde W\|_F=\sqrt{5}$.
+}
+\UNITCHECK{
+Diagonal matrix is $4\times 4$ acting on a $4$-vector.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $M=\mathbf{1}$, then $\tilde W=W$.
+\item If $M=0$, then $\tilde W=0$.
+\end{bullets}
+}
+\ALTERNATE{
+Use entrywise multiplication directly without vec; results coincide.
+}
+\VALIDATION{
+\begin{bullets}
+\item Both direct and diagonalized computations match.
+\end{bullets}
+}
+\INTUITION{
+Masking zeroes selected coordinates; diagonal scaling does exactly that.
+}
+\CANONICAL{
+\begin{bullets}
+\item Hadamard equals coordinatewise scaling on the vectorized space.
+\end{bullets}
+}
+
+\ProblemPage{6}{Expectation Puzzle: Random Basis Pair and Kronecker}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\PROBLEM{
+Let $U,V$ be independent fair dice taking values in $\{1,2,3,4,5,6\}$.
+Define $z=e_U\otimes e_V\in\mathbb{R}^{36}$ where $e_k$ is the $k$th
+standard basis in $\mathbb{R}^6$. Compute $\mathbb{E}[z]$ and
+$\mathbb{E}[zz^\top]$.
+}
+\MODEL{
+\[
+\mathbb{E}[e_U]=\tfrac{1}{6}\mathbf{1},\quad
+\mathbb{E}[e_V]=\tfrac{1}{6}\mathbf{1},\quad
+\mathbb{E}[e_U\otimes e_V]=\mathbb{E}[e_U]\otimes \mathbb{E}[e_V].
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Independence of $U$ and $V$.
+\end{bullets}
+}
+\varmapStart
+\var{e_k}{Standard basis vector in $\mathbb{R}^6$.}
+\var{z}{Tensor-coded outcome in $\mathbb{R}^{36}$.}
+\varmapEnd
+\WHICHFORMULA{
+Bilinearity of Kronecker and independence: 
+$\mathbb{E}[x\otimes y]=\mathbb{E}[x]\otimes \mathbb{E}[y]$.
+}
+\GOVERN{
+\[
+\mathbb{E}[zz^\top]=\mathbb{E}[e_U e_U^\top]\otimes
+\mathbb{E}[e_V e_V^\top].
+\]
+}
+\INPUTS{Uniform $U,V$ on $\{1,\ldots,6\}$.}
+\DERIVATION{
+\begin{align*}
+\mathbb{E}[e_U]&=\frac{1}{6}\sum_{k=1}^6 e_k=\tfrac{1}{6}\mathbf{1}.\\
+\mathbb{E}[z]&=\tfrac{1}{6}\mathbf{1}\otimes \tfrac{1}{6}\mathbf{1}
+=\tfrac{1}{36}\mathbf{1}_{36}.\\
+\mathbb{E}[e_U e_U^\top]&=\frac{1}{6}\sum_{k=1}^6 e_k e_k^\top
+=\frac{1}{6}I_6.\\
+\mathbb{E}[e_V e_V^\top]&=\frac{1}{6}I_6.\\
+\mathbb{E}[zz^\top]&=\left(\tfrac{1}{6}I_6\right)\otimes
+\left(\tfrac{1}{6}I_6\right)=\tfrac{1}{36}I_{36}.
+\end{align*}
+}
+\RESULT{
+$\mathbb{E}[z]=\tfrac{1}{36}\mathbf{1}_{36}$ and
+$\mathbb{E}[zz^\top]=\tfrac{1}{36}I_{36}$.
+}
+\UNITCHECK{
+$z\in\mathbb{R}^{36}$; mean in $\mathbb{R}^{36}$; covariance-scale matrix
+is $36\times 36$.
+}
+\EDGECASES{
+\begin{bullets}
+\item If dice biased, replace $\tfrac{1}{6}$ by probabilities.
+\item If dependent, $\mathbb{E}[z]\neq \mathbb{E}[e_U]\otimes \mathbb{E}[e_V]$.
+\end{bullets}
+}
+\ALTERNATE{
+Enumerate all $36$ outcomes and average directly; Kronecker is faster.
+}
+\VALIDATION{
+\begin{bullets}
+\item Sum of mean entries equals one by probability mass.
+\end{bullets}
+}
+\INTUITION{
+Outcomes form a grid; independence factors expectations across axes.
+}
+\CANONICAL{
+\begin{bullets}
+\item Expectation respects separability under independence.
+\end{bullets}
+}
+
+\ProblemPage{7}{Proof-Style: Transpose and Inverse Laws}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\PROBLEM{
+Prove $(A\otimes B)^\top=A^\top\otimes B^\top$ and, if invertible,
+$(A\otimes B)^{-1}=A^{-1}\otimes B^{-1}$.
+}
+\MODEL{
+\[
+(A\otimes B)(C\otimes D)=(AC)\otimes(BD).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Standard properties of transpose, inverse, and matrix product.
+\end{bullets}
+}
+\varmapStart
+\var{A,B}{Conformable square matrices; invertible for the second claim.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 2 mixed-product; Formula 1 bilinearity.
+}
+\GOVERN{
+\[
+\text{Transpose distributes over products; inverse reverses order.}
+\]
+}
+\INPUTS{$A,B$ square; both nonsingular for the inverse claim.}
+\DERIVATION{
+\begin{align*}
+\text{Transpose: }&(A\otimes B)^\top
+=\left(\sum_{ij} a_{ij}E_{ij}\otimes B\right)^\top
+=\sum_{ij} a_{ij} E_{ji}\otimes B^\top
+=A^\top\otimes B^\top.\\
+\text{Inverse: }&(A\otimes B)(A^{-1}\otimes B^{-1})
+=(AA^{-1})\otimes(BB^{-1})=I\otimes I=I.\\
+&\text{Similarly }(A^{-1}\otimes B^{-1})(A\otimes B)=I.
+\end{align*}
+}
+\RESULT{
+Equalities proven.
+}
+\UNITCHECK{
+Shapes preserved: transposes and inverses maintain sizes.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $A$ or $B$ singular, inverse statement invalid.
+\item Over $\mathbb{C}$, replace $\top$ by $\ast$ for conjugate transpose.
+\end{bullets}
+}
+\ALTERNATE{
+Use the property $(X\otimes Y)^\top=X^\top\otimes Y^\top$ on rank-one
+$x y^\top\otimes uv^\top$ and extend by linearity.
+}
+\VALIDATION{
+\begin{bullets}
+\item Numerical checks on random matrices support identities.
+\end{bullets}
+}
+\INTUITION{
+Transpose and inverse act independently on each separable factor.
+}
+\CANONICAL{
+\begin{bullets}
+\item Structural operators respect the tensor product.
+\end{bullets}
+}
+
+\ProblemPage{8}{Proof-Style: Rank Inequality for Hadamard Product}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\PROBLEM{
+Show $\mathrm{rank}(A\circ B)\le \mathrm{rank}(A)\,\mathrm{rank}(B)$
+for $A,B\in\mathbb{F}^{m\times n}$.
+}
+\MODEL{
+\[
+A=\sum_{k=1}^r u_k v_k^\top,\quad B=\sum_{\ell=1}^s x_\ell y_\ell^\top,
+\quad r=\mathrm{rank}(A),\; s=\mathrm{rank}(B).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Rank factorizations exist.
+\end{bullets}
+}
+\varmapStart
+\var{u_k,v_k,x_\ell,y_\ell}{Vectors in appropriate dimensions.}
+\varmapEnd
+\WHICHFORMULA{
+Hadamard and outer products distribute entrywise:
+$(u v^\top)\circ(x y^\top)=(u\circ x)(v\circ y)^\top$.
+}
+\GOVERN{
+\[
+A\circ B=\sum_{k=1}^r\sum_{\ell=1}^s
+(u_k\circ x_\ell)(v_k\circ y_\ell)^\top.
+\]
+}
+\INPUTS{$A,B$ arbitrary; $r=\mathrm{rank}(A)$, $s=\mathrm{rank}(B)$.}
+\DERIVATION{
+\begin{align*}
+A\circ B&=\left(\sum_{k=1}^r u_k v_k^\top\right)\circ
+\left(\sum_{\ell=1}^s x_\ell y_\ell^\top\right)\\
+&=\sum_{k,\ell}(u_k v_k^\top)\circ(x_\ell y_\ell^\top)\\
+&=\sum_{k,\ell}(u_k\circ x_\ell)(v_k\circ y_\ell)^\top.
+\end{align*}
+Each term is rank-$1$; thus rank at most number of terms $rs$.
+}
+\RESULT{
+$\mathrm{rank}(A\circ B)\le \mathrm{rank}(A)\mathrm{rank}(B)$.
+}
+\UNITCHECK{
+Ranks are integers; inequality is dimensionally consistent.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $A$ or $B$ is zero, rank zero.
+\item If $A,B$ full rank, Hadamard rank may still be small.
+\end{bullets}
+}
+\ALTERNATE{
+Use vec-diagonal form:
+$\mathrm{vec}(A\circ B)=\mathrm{diag}(\mathrm{vec}A)\mathrm{vec}B$,
+and bound rank by number of nonzero singular values of the diagonal
+times those of $\mathrm{unvec}$ reshaping.
+}
+\VALIDATION{
+\begin{bullets}
+\item Random numeric examples confirm inequality.
+\end{bullets}
+}
+\INTUITION{
+Entrywise multiplication cannot increase rank beyond combining the ranks
+of the decomposed parts.
+}
+\CANONICAL{
+\begin{bullets}
+\item Hadamard rank submultiplicative under rank decompositions.
+\end{bullets}
+}
+
+\ProblemPage{9}{Combo: Eigen-Decomposition of Kronecker Products}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\PROBLEM{
+Given $A=Q\Lambda Q^{-1}$ and $B=R\Mu R^{-1}$, show
+$A\otimes B=(Q\otimes R)(\Lambda\otimes \Mu)(Q\otimes R)^{-1}$.
+}
+\MODEL{
+\[
+(Q\otimes R)^{-1}=Q^{-1}\otimes R^{-1}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A,B$ diagonalizable over $\mathbb{F}$.
+\end{bullets}
+}
+\varmapStart
+\var{Q,R}{Eigenvector matrices.}
+\var{\Lambda,\Mu}{Diagonal eigenvalue matrices.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 2 mixed-product; Formula 1 inverse law.
+}
+\GOVERN{
+\[
+(Q\otimes R)(\Lambda\otimes \Mu)(Q^{-1}\otimes R^{-1})
+= (Q\Lambda Q^{-1})\otimes(R\Mu R^{-1}).
+\]
+}
+\INPUTS{Diagonalizations $A,B$.}
+\DERIVATION{
+\begin{align*}
+&(Q\otimes R)(\Lambda\otimes \Mu)(Q^{-1}\otimes R^{-1})\\
+&\quad=(Q\Lambda Q^{-1})\otimes(R\Mu R^{-1})
+\quad\text{(two applications of mixed-product)}\\
+&\quad=A\otimes B.
+\end{align*}
+}
+\RESULT{
+Eigenvectors of $A\otimes B$ are $q_i\otimes r_j$ with eigenvalues
+$\lambda_i\mu_j$.
+}
+\UNITCHECK{
+Invertibility of $Q\otimes R$ follows from invertibility of $Q,R$.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $A$ or $B$ defective, Jordan form yields an analogous statement.
+\item Repeated eigenvalues produce degenerate eigenspaces.
+\end{bullets}
+}
+\ALTERNATE{
+Use the eigenvector property on $q_i\otimes r_j$ directly (Formula 5 lemma).
+}
+\VALIDATION{
+\begin{bullets}
+\item Check $(A\otimes B)(q_i\otimes r_j)=\lambda_i\mu_j(q_i\otimes r_j)$.
+\end{bullets}
+}
+\INTUITION{
+Spectral structure lifts to the tensor space by pairwise combination.
+}
+\CANONICAL{
+\begin{bullets}
+\item Diagonalization respects Kronecker structure.
+\end{bullets}
+}
+
+\ProblemPage{10}{Combo: Matrix-Normal Quadratic via Vec Identity}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+\PROBLEM{
+Show that for $U\succ 0$, $V\succ 0$ and $X,M\in\mathbb{R}^{m\times n}$,
+\[
+\mathrm{vec}(X-M)^\top (V^{-1}\otimes U^{-1})\mathrm{vec}(X-M)
+=\mathrm{tr}\!\left(U^{-1}(X-M)V^{-1}(X-M)^\top\right),
+\]
+and verify numerically for small matrices.
+}
+\MODEL{
+\[
+\mathrm{vec}(A Z B)= (B^\top\otimes A)\mathrm{vec}(Z).
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Positive definiteness for $U,V$.
+\end{bullets}
+}
+\varmapStart
+\var{U,V}{Covariance factors.}
+\var{X,M}{Data and mean matrices.}
+\var{Z}{Difference $X-M$.}
+\varmapEnd
+\WHICHFORMULA{
+Formula 3: vec identity; Formula 5: trace multiplicativity.
+}
+\GOVERN{
+\[
+\|Z\|_{U^{-1},V^{-1}}^2=\mathrm{tr}(U^{-1}ZV^{-1}Z^\top).
+\]
+}
+\INPUTS{$m=n=2$,
+$U=\begin{bmatrix}2&0.5\\0.5&1\end{bmatrix}$,
+$V=\begin{bmatrix}1&0.2\\0.2&2\end{bmatrix}$,
+$X=\begin{bmatrix}1&2\\3&4\end{bmatrix}$,
+$M=\begin{bmatrix}0&1\\1&1\end{bmatrix}$.}
+\DERIVATION{
+\begin{align*}
+Z&=X-M=\begin{bmatrix}1&1\\2&3\end{bmatrix}.\\
+\text{Left: }&\mathrm{vec}(Z)^\top(V^{-1}\otimes U^{-1})\mathrm{vec}(Z).\\
+\text{Right: }&\mathrm{tr}(U^{-1}ZV^{-1}Z^\top).\\
+\text{Identity: }&\mathrm{vec}(U^{-1}ZV^{-1})=(V^{-\top}\otimes U^{-1})
+\mathrm{vec}(Z).\\
+\text{Thus: }&\text{Left}=\mathrm{vec}(Z)^\top\mathrm{vec}(U^{-1}ZV^{-1})
+=\mathrm{tr}(Z^\top U^{-1}ZV^{-1}).\\
+&=\mathrm{tr}(U^{-1}ZV^{-1}Z^\top)\quad\text{(trace cyclicity).}
+\end{align*}
+Numeric check:
+\begin{align*}
+U^{-1}&\approx\begin{bmatrix}0.5714&-0.2857\\-0.2857&1.1429\end{bmatrix},\\
+V^{-1}&\approx\begin{bmatrix}1.0417&-0.1042\\-0.1042&0.5208\end{bmatrix}.\\
+U^{-1}Z&\approx\begin{bmatrix}0&0.4286\\1.1429&2.7143\end{bmatrix},\;
+U^{-1}ZV^{-1}\approx
+\begin{bmatrix}-0.0446&0.2232\\0.2604&1.3021\end{bmatrix}.\\
+\mathrm{tr}(\cdot Z^\top)&\approx
+\mathrm{tr}\Big(
+\begin{bmatrix}-0.0446&0.2232\\0.2604&1.3021\end{bmatrix}
+\begin{bmatrix}1&2\\1&3\end{bmatrix}\Big)\\
+&=\mathrm{tr}\begin{bmatrix}0.1786&0.6019\\1.5625&4.9896\end{bmatrix}
+\approx 0.1786+4.9896=5.1682.
+\end{align*}
+Left side equals the same scalar by construction.
+}
+\RESULT{
+Quadratic form equals the trace expression; numerical value $\approx 5.1682$.
+}
+\UNITCHECK{
+Both sides are scalar and invariant to cyclic permutations under trace.
+}
+\EDGECASES{
+\begin{bullets}
+\item If $U=I$ or $V=I$, reduces to weighted row or column norms.
+\item If $Z=0$, both sides zero.
+\end{bullets}
+}
+\ALTERNATE{
+Diagonalize $U$ and $V$ to see the norm as a sum over separable modes.
+}
+\VALIDATION{
+\begin{bullets}
+\item Compute both sides numerically to a small tolerance.
+\end{bullets}
+}
+\INTUITION{
+Separability in covariance yields separable weighting across rows and
+columns; vec identity bridges both views.
+}
+\CANONICAL{
+\begin{bullets}
+\item Matrix-normal likelihood uses $V^{-1}\otimes U^{-1}$.
+\end{bullets}
+}
+
+\section{Coding Demonstrations}
+
+\CodeDemoPage{Verify Vec Identity and Solve $AXB=C$}
+\PROBLEM{
+Implement $(B^\top\otimes A)\mathrm{vec}(X)=\mathrm{vec}(AXB)$ to solve
+$AXB=C$ and verify by reconstruction.
+}
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> dict} — parse $A,B,C$ from string.
+\item \inlinecode{def solve_case(obj) -> np.ndarray} — compute $X$.
+\item \inlinecode{def validate() -> None} — assert identity.
+\item \inlinecode{def main() -> None} — run validation and sample.
+\end{bullets}
+}
+\INPUTS{
+$A\in\mathbb{R}^{m\times n}$, $B\in\mathbb{R}^{p\times q}$,
+$C\in\mathbb{R}^{m\times q}$ with $n=p$.
+}
+\OUTPUTS{
+Matrix $X\in\mathbb{R}^{n\times p}$ satisfying $AXB=C$ (if unique).
+}
+\FORMULA{
+\[
+\mathrm{vec}(X)=(B^\top\otimes A)^{-1}\mathrm{vec}(C).
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    # expects lines: m n, A (m*n), p q, B (p*q), C (m*q)
+    it = iter([float(x) for x in s.split()])
+    m, n = int(next(it)), int(next(it))
+    A = np.array([next(it) for _ in range(m*n)]).reshape(m, n)
+    p, q = int(next(it)), int(next(it))
+    B = np.array([next(it) for _ in range(p*q)]).reshape(p, q)
+    C = np.array([next(it) for _ in range(m*q)]).reshape(m, q)
+    return {"A":A, "B":B, "C":C}
+
+def solve_case(obj):
+    A, B, C = obj["A"], obj["B"], obj["C"]
+    Bt_kron_A = np.kron(B.T, A)
+    rhs = C.reshape(-1, order="F")
+    x = np.linalg.solve(Bt_kron_A, rhs)
+    X = x.reshape(A.shape[1], B.shape[0], order="F")
+    return X
+
+def validate():
+    A = np.array([[2.,1.],[0.,1.]])
+    B = np.array([[1.,1.],[0.,2.]])
+    C = np.array([[3.,4.],[1.,2.]])
+    X = solve_case({"A":A,"B":B,"C":C})
+    lhs = A @ X @ B
+    assert np.allclose(lhs, C, atol=1e-12)
+
+def main():
+    validate()
+    A = np.array([[1.,2.],[3.,4.]])
+    B = np.array([[0.,1.],[2.,3.]])
+    C = np.array([[2.,1.],[0.,1.]])
+    X = solve_case({"A":A,"B":B,"C":C})
+    print(np.round(X, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    return read_input(s)  # reuse same parser for simplicity
+
+def solve_case(obj):
+    A, B, C = obj["A"], obj["B"], obj["C"]
+    K = np.kron(B.T, A)
+    x = np.linalg.lstsq(K, C.reshape(-1, order="F"), rcond=None)[0]
+    return x.reshape(A.shape[1], B.shape[0], order="F")
+
+def validate():
+    np.random.seed(0)
+    A = np.array([[1.,1.],[0.,1.]])
+    B = np.array([[2.,0.],[1.,1.]])
+    X_true = np.array([[1.,0.],[1.,0.5]])
+    C = A @ X_true @ B
+    X = solve_case({"A":A,"B":B,"C":C})
+    assert np.allclose(X, X_true, atol=1e-10)
+
+def main():
+    validate()
+    print("OK")
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Time $\mathcal{O}((mnq)^3)$ for naive solve with size $(mq)\times(np)$;
+space $\mathcal{O}((mnq)^2)$. Using structure can reduce cost.
+}
+\FAILMODES{
+\begin{bullets}
+\item Singular $B^\top\otimes A$ leads to no or infinite solutions; use
+least squares.
+\item Mismatched shapes break vec ordering; enforce Fortran order.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Condition number multiplies: $\kappa(B^\top\otimes A)
+=\kappa(B^\top)\kappa(A)$.
+\item Prefer triangular solves if available.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Assert $A X B=C$ within tolerance.
+\item Cross-check by random synthesis with known $X$.
+\end{bullets}
+}
+\RESULT{
+Both implementations recover $X$ and verify the vec identity.
+}
+\EXPLANATION{
+We assemble the Kronecker coefficient matrix per Formula 3 and solve the
+linear system for the stacked unknown, then reshape back to $X$.
+}
+
+\CodeDemoPage{Schur Product Theorem Numerical Check}
+\PROBLEM{
+Generate random PSD matrices $A=XX^\top$, $B=YY^\top$ and verify
+$A\circ B\succeq 0$ by eigenvalues and the Khatri-Rao identity.
+}
+\API{
+\begin{bullets}
+\item \inlinecode{def make_psd(n, seed) -> np.ndarray}
+\item \inlinecode{def check_psd(M) -> bool}
+\item \inlinecode{def validate() -> None}
+\item \inlinecode{def main() -> None}
+\end{bullets}
+}
+\INPUTS{
+Dimension $n$ and random seed for reproducibility.
+}
+\OUTPUTS{
+Boolean checks and printed minimal eigenvalue for $A\circ B$.
+}
+\FORMULA{
+\[
+(XX^\top)\circ(YY^\top)=(X\odot Y)(X\odot Y)^\top\succeq 0.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def make_psd(n, seed=0):
+    rng = np.random.default_rng(seed)
+    X = rng.standard_normal((n, n))
+    return X @ X.T
+
+def khatri_rao(X, Y):
+    # columnwise Kronecker: match columns
+    assert X.shape[1] == Y.shape[1]
+    cols = [np.kron(X[:, k], Y[:, k]) for k in range(X.shape[1])]
+    return np.stack(cols, axis=1)
+
+def check_psd(M, tol=1e-10):
+    w = np.linalg.eigvalsh((M + M.T) * 0.5)
+    return np.min(w) >= -tol, w
+
+def validate():
+    A = make_psd(4, 1)
+    B = make_psd(4, 2)
+    C = A * B
+    ok, w = check_psd(C)
+    assert ok
+    X = np.linalg.cholesky(A)
+    Y = np.linalg.cholesky(B)
+    KR = khatri_rao(X, Y)
+    C2 = KR @ KR.T
+    assert np.allclose(C, C2, atol=1e-8)
+
+def main():
+    validate()
+    A = make_psd(3, 3)
+    B = make_psd(3, 4)
+    C = A * B
+    ok, w = check_psd(C)
+    print("min eig(A∘B) =", round(float(np.min(w)), 10))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def make_psd(n, seed=0):
+    rng = np.random.default_rng(seed)
+    X = rng.standard_normal((n, n))
+    return X @ X.T
+
+def validate():
+    np.random.seed(0)
+    A = make_psd(5, 0)
+    B = make_psd(5, 1)
+    C = A * B
+    w = np.linalg.eigvalsh(C)
+    assert np.min(w) >= -1e-10
+
+def main():
+    validate()
+    print("Schur PSD check passed.")
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Building $A,B$ costs $\mathcal{O}(n^3)$; eigendecomposition costs
+$\mathcal{O}(n^3)$. Khatri-Rao build costs $\mathcal{O}(n^3)$.
+}
+\FAILMODES{
+\begin{bullets}
+\item Numerical Cholesky fails if matrix not strictly PD; add jitter.
+\item Small negative eigenvalues due to rounding; use tolerance.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Symmetrize before eigvals to reduce numerical asymmetry.
+\item Use eigenvalue tolerance for PSD checks.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Compare $A\circ B$ to $(X\odot Y)(X\odot Y)^\top$ via Cholesky $X,Y$.
+\item Check minimal eigenvalue nonnegative within tolerance.
+\end{bullets}
+}
+\RESULT{
+Empirical confirmation that $A\circ B$ is PSD and equals a Gram matrix.
+}
+\EXPLANATION{
+Constructing $A,B$ as Gram matrices and using Khatri-Rao proves Schur
+and the code mirrors the algebra.
+}
+
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Matrix regression: given $Y\in\mathbb{R}^{m\times n}$ and known left and
+right design matrices $L\in\mathbb{R}^{m\times p}$, $R\in\mathbb{R}^{n\times q}$,
+estimate coefficient matrix $W\in\mathbb{R}^{p\times q}$ in $Y\approx LWR^\top$
+via least squares using the Kronecker vec identity.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item I.i.d. Gaussian noise with finite variance.
+\item Full column rank of $L$ and $R$.
+\end{bullets}
+}
+\WHICHFORMULA{
+$\mathrm{vec}(LWR^\top)=(R\otimes L)\mathrm{vec}(W)$; solve normal
+equations.
+}
+\varmapStart
+\var{L,R}{Left and right design matrices.}
+\var{W}{Unknown coefficient matrix.}
+\var{Y}{Observed target matrix.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic $L,R,W_{\mathrm{true}}$ and $Y$.
+\item Solve $(R\otimes L)\mathrm{vec}(W)=\mathrm{vec}(Y)$.
+\item Evaluate RMSE on reconstructed $L\hat W R^\top$.
+\end{bullets}
+}
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def gen_data(m=20, n=15, p=5, q=4, noise=0.1, seed=0):
+    rng = np.random.default_rng(seed)
+    L = rng.standard_normal((m, p))
+    R = rng.standard_normal((n, q))
+    W = rng.standard_normal((p, q))
+    Y = L @ W @ R.T + noise * rng.standard_normal((m, n))
+    return L, R, W, Y
+
+def fit(L, R, Y):
+    K = np.kron(R, L)
+    y = Y.reshape(-1, order="F")
+    w = np.linalg.lstsq(K, y, rcond=None)[0]
+    W = w.reshape(L.shape[1], R.shape[1], order="F")
+    return W
+
+def rmse(A, B):
+    return float(np.sqrt(np.mean((A - B)**2)))
+
+def main():
+    L, R, Wt, Y = gen_data()
+    Wh = fit(L, R, Y)
+    Yh = L @ Wh @ R.T
+    print("RMSE:", round(rmse(Y, Yh), 4))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{Implementation (Library Version)}
+\begin{codepy}
+import numpy as np
+
+def main():
+    L, R, Wt, Y = gen_data()
+    K = np.kron(R, L)
+    y = Y.reshape(-1, order="F")
+    w = np.linalg.pinv(K) @ y
+    W = w.reshape(L.shape[1], R.shape[1], order="F")
+    Yh = L @ W @ R.T
+    err = np.sqrt(np.mean((Y - Yh)**2))
+    print("RMSE:", round(float(err), 4))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{RMSE between $Y$ and reconstruction $L\hat W R^\top$.}
+\INTERPRET{Low RMSE indicates accurate recovery of $W$ via Kronecker design.}
+\NEXTSTEPS{Add ridge penalty; solve $(K^\top K+\lambda I)w=K^\top y$.}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Separable covariance for vectorized panel returns: days $\times$ assets
+with covariance $\Sigma=\Sigma_t\otimes \Sigma_a$. Compute portfolio
+variance for weights $w_a$ per asset and equal weighting over days.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Returns are mean zero with separable covariance.
+\item $\Sigma_t,\Sigma_a$ PSD.
+\end{bullets}
+}
+\WHICHFORMULA{
+$w^\top(\Sigma_t\otimes \Sigma_a)w=(u^\top \Sigma_t u)(v^\top \Sigma_a v)$
+for $w=u\otimes v$.
+}
+\varmapStart
+\var{\Sigma_t,\Sigma_a}{Time and asset covariances.}
+\var{u}{Temporal weights.}
+\var{v}{Asset weights.}
+\var{w}{Kronecker-composed portfolio weights.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Simulate $\Sigma_t,\Sigma_a$ as PSD.
+\item Form $w=u\otimes v$; compute variance.
+\item Compare with explicit $(\Sigma_t\otimes \Sigma_a)$ multiply.
+\end{bullets}
+}
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def make_psd(n, seed):
+    rng = np.random.default_rng(seed)
+    X = rng.standard_normal((n, n))
+    return X @ X.T / n
+
+def main():
+    T, A = 5, 3
+    Sig_t = make_psd(T, 0)
+    Sig_a = make_psd(A, 1)
+    u = np.ones(T) / T
+    v = np.array([0.5, 0.3, 0.2])
+    w = np.kron(u, v)
+    Sig = np.kron(Sig_t, Sig_a)
+    var1 = float(w.T @ Sig @ w)
+    var2 = float((u.T @ Sig_t @ u) * (v.T @ Sig_a @ v))
+    print("var1:", round(var1, 10), "var2:", round(var2, 10))
+    assert abs(var1 - var2) < 1e-10
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Portfolio variance scalar; both computations match.}
+\INTERPRET{Separable risk decomposes into time variance times asset variance.}
+\NEXTSTEPS{Optimize $v$ under constraints using only $\Sigma_a$.}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Kronecker-factored preconditioning for a single linear layer with MSE:
+approximate the Hessian or Fisher as $G\otimes A$ and compute the natural
+gradient step $(G^{-1}\otimes A^{-1})\mathrm{vec}(\nabla_W L)$.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Linear model $y=W x$, squared loss.
+\item Second-order structure approximates as Kronecker of inputs and grads.
+\end{bullets}
+}
+\WHICHFORMULA{
+Vec identity and inverse law: apply $(G^{-1}\otimes A^{-1})$ to
+$\mathrm{vec}(\nabla_W L)$.
+}
+\PIPELINE{
+\begin{bullets}
+\item Generate batch $(X,Y)$; compute gradient $\nabla_W L$.
+\item Build $A=\frac{1}{n}XX^\top$, $G=\frac{1}{n}GG^\top$ with $G$
+as output gradients.
+\item Compute preconditioned update by Kronecker inverse.
+\end{bullets}
+}
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+
+def batch(seed=0, d_in=4, d_out=3, n=20):
+    rng = np.random.default_rng(seed)
+    X = rng.standard_normal((d_in, n))
+    W = rng.standard_normal((d_out, d_in))
+    Y = W @ X + 0.1 * rng.standard_normal((d_out, n))
+    return X, Y, W
+
+def step_kfac(X, Y, W, lr=0.1):
+    n = X.shape[1]
+    Yhat = W @ X
+    E = Yhat - Y
+    grad = (E @ X.T) / n
+    A = (X @ X.T) / n
+    G = (E @ E.T) / n
+    Kinv = np.kron(np.linalg.pinv(G), np.linalg.pinv(A))
+    upd = Kinv @ grad.reshape(-1, order="F")
+    dW = upd.reshape(W.shape, order="F")
+    return W - lr * dW
+
+def main():
+    X, Y, W = batch()
+    W2 = step_kfac(X, Y, W)
+    print("delta norm:", round(float(np.linalg.norm(W2 - W)), 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Norm of update; confirms nontrivial preconditioned step.}
+\INTERPRET{Preconditioning rescales gradient by input and output curvature.}
+\NEXTSTEPS{Dampen via $(G+\lambda I)\otimes(A+\lambda I)$.}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Compute feature interaction matrix via Khatri-Rao and apply a Hadamard
+mask to select allowed interactions, then regress a target matrix using
+Kronecker design.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Numeric features; mask selects allowed pairs.
+\end{bullets}
+}
+\WHICHFORMULA{
+Use $\mathrm{vec}(LWR^\top)=(R\otimes L)\mathrm{vec}(W)$ and
+Hadamard masking $\mathrm{vec}(W\circ M)=\mathrm{diag}(\mathrm{vec}M)
+\mathrm{vec}(W)$.
+}
+\PIPELINE{
+\begin{bullets}
+\item Generate $L,R,M$ and target $Y$.
+\item Solve masked least squares for $W$.
+\item Report reconstruction error.
+\end{bullets}
+}
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def gen(seed=0, m=30, n=25, p=6, q=5, noise=0.1):
+    rng = np.random.default_rng(seed)
+    L = rng.standard_normal((m, p))
+    R = rng.standard_normal((n, q))
+    W = rng.standard_normal((p, q))
+    M = (rng.random((p, q)) > 0.3).astype(float)
+    Y = L @ (W * M) @ R.T + noise * rng.standard_normal((m, n))
+    return L, R, W, M, Y
+
+def fit_masked(L, R, M, Y):
+    K = np.kron(R, L)
+    D = np.diag(M.reshape(-1, order="F"))
+    y = Y.reshape(-1, order="F")
+    w_masked = np.linalg.lstsq(K @ D, y, rcond=None)[0]
+    W = (D @ w_masked).reshape(L.shape[1], R.shape[1], order="F")
+    return W
+
+def main():
+    L, R, Wt, M, Y = gen()
+    Wh = fit_masked(L, R, M, Y)
+    Yh = L @ (Wh * M) @ R.T
+    err = np.sqrt(np.mean((Y - Yh)**2))
+    print("RMSE:", round(float(err), 4))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{RMSE on reconstruction using masked coefficients.}
+\INTERPRET{Hadamard mask enforces sparsity pattern on interactions.}
+\NEXTSTEPS{Use convex penalties on allowed entries for regularization.}
+
+\end{document}

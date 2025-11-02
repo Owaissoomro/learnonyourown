@@ -1,0 +1,793 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Find the String with LCP}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{LC}
+\LINE{URL}{\url{https://leetcode.com/problems/find-the-string-with-lcp/}}
+\LINE{DIFFICULTY / RATING}{hard}
+\STATEMENT{We define the \texttt{lcp} matrix of any 0-indexed string \texttt{word} of $n$ lowercase English letters as an $n \times n$ grid such that:
+\begin{bullets}
+\item \texttt{lcp[i][j]} is equal to the length of the longest common prefix between the substrings \texttt{word[i, n-1]} and \texttt{word[j, n-1]}.
+\end{bullets}
+Given an $n \times n$ matrix \texttt{lcp}, return the alphabetically smallest string \texttt{word} that corresponds to \texttt{lcp}. If there is no such string, return an empty string.
+
+A string \texttt{a} is lexicographically smaller than a string \texttt{b} (of the same length) if in the first position where \texttt{a} and \texttt{b} differ, string \texttt{a} has a letter that appears earlier in the alphabet than the corresponding letter in \texttt{b}. For example, \texttt{"aabd"} is lexicographically smaller than \texttt{"aaca"} because the first position they differ is at the third letter, and \texttt{'b'} comes before \texttt{'c'}.
+
+Examples:
+\begin{bullets}
+\item Input: \texttt{lcp = [[4,0,2,0],[0,3,0,1],[2,0,2,0],[0,1,0,1]]}. Output: \texttt{"abab"}. Explanation: \texttt{lcp} corresponds to any 4-letter string with two alternating letters. The lexicographically smallest of them is \texttt{"abab"}.
+\item Input: \texttt{lcp = [[4,3,2,1],[3,3,2,1],[2,2,2,1],[1,1,1,1]]}. Output: \texttt{"aaaa"}. Explanation: \texttt{lcp} corresponds to any 4-letter string with a single distinct letter. The lexicographically smallest of them is \texttt{"aaaa"}.
+\item Input: \texttt{lcp = [[4,3,2,1],[3,3,2,1],[2,2,2,1],[1,1,1,3]]}. Output: \texttt{""}. Explanation: \texttt{lcp[3][3]} cannot be equal to 3 since \texttt{word[3,\ldots,3]} consists of only a single letter; thus, no answer exists.
+\end{bullets}
+Constraints:
+\begin{bullets}
+\item $1 \le n == \texttt{lcp.length} == \texttt{lcp[i].length} \le 1000$
+\item $0 \le \texttt{lcp[i][j]} \le n$
+\end{bullets}}
+\BREAKDOWN{Model the equality constraints implied by $\texttt{lcp}$ across suffix starts. Use union-find to group indices that must share the same character, check consistency, then assign the smallest possible letters to groups in left-to-right order, and finally verify the matrix.}
+\ELI{If two suffixes share a common prefix of length $L$, then the first $L$ positions of those suffixes must be equal; group equal positions, ensure no contradictions, then label groups with letters starting from \texttt{'a'}.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{A square integer matrix \texttt{lcp} of size $n \times n$ with $0 \le \texttt{lcp[i][j]} \le n$.}
+\OUTPUTS{The lexicographically smallest lowercase string \texttt{word} of length $n$ such that its suffix LCP matrix equals \texttt{lcp}, or an empty string \texttt{""} if no such \texttt{word} exists.}
+\SAMPLES{
+\begin{bullets}
+\item Input: \texttt{[[4,0,2,0],[0,3,0,1],[2,0,2,0],[0,1,0,1]]} $\rightarrow$ Output: \texttt{"abab"}.
+\item Input: \texttt{[[4,3,2,1],[3,3,2,1],[2,2,2,1],[1,1,1,1]]} $\rightarrow$ Output: \texttt{"aaaa"}.
+\end{bullets}
+}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let $w \in \{\texttt{a},\ldots,\texttt{z}\}^n$ and define $L(i,j)$ as the LCP length between suffixes $w[i..n-1]$ and $w[j..n-1]$. We are given matrix $A \in \mathbb{Z}_{\ge 0}^{n \times n}$ and require $L(i,j) = A[i][j]$ for all $0 \le i,j < n$, minimizing $w$ lexicographically.}
+\varmapStart
+\var{n}{length of the string}
+\var{w_i}{character at position $i$}
+\var{A[i][j]}{given LCP between suffixes starting at $i$ and $j$}
+\var{L(i,j)}{true LCP induced by $w$}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+&\forall i:\quad A[i][i] = n - i, \\
+&\forall i,j:\quad A[i][j] = A[j][i], \\
+&\forall i<n-1,\, j<n-1:\quad A[i][j] > 0 \implies A[i+1][j+1] = A[i][j] - 1, \\
+&\forall i,j:\quad A[i][j] > 0 \implies w_i = w_j, \\
+&\forall i,j:\quad A[i][j] = 0 \implies w_i \ne w_j, \\
+&\text{and } L(i,j) \text{ computed from } w \text{ equals } A[i][j] \text{ for all } i,j.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{0-indexing; $w$ uses only 26 lowercase letters; feasibility requires at most 26 disjoint equality classes among indices forced equal by $A$.}
+\INVARIANTS{
+\begin{bullets}
+\item If $A[i][j] > 0$ then indices $i$ and $j$ belong to the same equality class.
+\item If two indices are in different classes, then for any $i$ in one and $j$ in the other, $A[i][j] = 0$.
+\item Diagonal constraint $A[i][i] = n-i$ ensures suffix-vs-same-suffix lengths.
+\end{bullets}
+}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Use the literal definition of LCP to propagate equalities: for every pair $(i,j)$, if $A[i][j]=L>0$, then for each $k \in [0,L-1]$, enforce $w_{i+k}=w_{j+k}$.}
+\ASSUMPTIONS{We can afford $O(n^3)$ unions in worst case for clarity, then assign letters per equality classes.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Validate basic structure: symmetry and diagonal $A[i][i]=n-i$.
+\item Build a DSU on indices $\{0,\ldots,n-1\}$; for every $(i,j)$ with $A[i][j]=L>0$, union all aligned positions $(i+k,j+k)$ for $k=0..L-1$.
+\item If any $(i,j)$ has $A[i][j]=0$ but DSU finds them equal, return empty.
+\item Assign letters to DSU classes in order of first occurrence left-to-right: \texttt{a}, \texttt{b}, \ldots; if more than 26 classes, return empty.
+\item Verify that the LCP matrix computed from the constructed string equals $A$; otherwise return empty.
+\end{algosteps}
+\COMPLEXITY{Triple nested unions can take $O(n^3 \alpha(n))$ time; assignment and verification take $O(n^2)$. Space is $O(n^2)$ for verification plus $O(n)$ for DSU.}
+\[
+\begin{aligned}
+T(n) &= O\!\biggl(\sum_{i,j} A[i][j]\biggr) + O(n^2) \\
+     &\le O(n^3) \\
+S(n) &= O(n^2).
+\end{aligned}
+\]
+\CORRECTNESS{By construction, for each positive $A[i][j]=L$, we union all $L$ aligned pairs, ensuring the first $L$ characters of those suffixes are equal. Zero entries forbid equality of starts. Final verification ensures exact matching of the entire matrix.}
+\EDGECASES{Violations: $A[i][i]\ne n-i$, asymmetry, step inconsistency where $A[i][j]>0$ but $A[i+1][j+1]\ne A[i][j]-1$, or more than 26 classes.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+from typing import List
+
+class Solution:
+    def findTheString(self, lcp: List[List[int]]) -> str:
+        n = len(lcp)
+        if n == 0:
+            return ""
+        # Basic checks: diagonal and symmetry
+        for i in range(n):
+            if lcp[i][i] != n - i:
+                return ""
+        for i in range(n):
+            for j in range(n):
+                if lcp[i][j] != lcp[j][i]:
+                    return ""
+        # Step consistency: if lcp[i][j] > 0, then next must drop by one
+        for i in range(n - 1):
+            for j in range(n - 1):
+                if lcp[i][j] > 0 and lcp[i + 1][j + 1] != lcp[i][j] - 1:
+                    return ""
+
+        # DSU with explicit O(sum L) unions
+        parent = list(range(n))
+        rank = [0] * n
+
+        def find(x: int) -> int:
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        def union(a: int, b: int) -> None:
+            ra, rb = find(a), find(b)
+            if ra == rb:
+                return
+            if rank[ra] < rank[rb]:
+                ra, rb = rb, ra
+            parent[rb] = ra
+            if rank[ra] == rank[rb]:
+                rank[ra] += 1
+
+        for i in range(n):
+            for j in range(n):
+                L = lcp[i][j]
+                if L > 0:
+                    # union aligned pairs (i+k, j+k) for k in [0, L-1]
+                    ii, jj = i, j
+                    steps = L
+                    while steps > 0:
+                        union(ii, jj)
+                        ii += 1
+                        jj += 1
+                        steps -= 1
+
+        # Zero entries cannot be equal
+        for i in range(n):
+            for j in range(n):
+                if lcp[i][j] == 0 and find(i) == find(j):
+                    return ""
+
+        # Assign letters to components in first-appearance order
+        rep_to_char = {}
+        next_code = ord('a')
+        res = ['?'] * n
+        for i in range(n):
+            r = find(i)
+            if r not in rep_to_char:
+                if next_code > ord('z'):
+                    return ""
+                rep_to_char[r] = chr(next_code)
+                next_code += 1
+            res[i] = rep_to_char[r]
+        word = "".join(res)
+
+        # Verify computed LCP equals lcp
+        dp = [[0] * n for _ in range(n)]
+        for i in range(n - 1, -1, -1):
+            for j in range(n - 1, -1, -1):
+                if word[i] == word[j]:
+                    if i + 1 < n and j + 1 < n:
+                        dp[i][j] = dp[i + 1][j + 1] + 1
+                    else:
+                        dp[i][j] = 1
+                else:
+                    dp[i][j] = 0
+        for i in range(n):
+            for j in range(n):
+                if dp[i][j] != lcp[i][j]:
+                    return ""
+        return word
+
+# Basic asserts (Examples)
+if __name__ == "__main__":
+    sol = Solution()
+    assert sol.findTheString([[4,0,2,0],[0,3,0,1],[2,0,2,0],[0,1,0,1]]) == "abab"
+    assert sol.findTheString([[4,3,2,1],[3,3,2,1],[2,2,2,1],[1,1,1,1]]) == "aaaa"
+    assert sol.findTheString([[4,3,2,1],[3,3,2,1],[2,2,2,1],[1,1,1,3]]) == ""
+\end{minted}
+\VALIDATION{Checks: diagonal mismatch returns empty; symmetry mismatch returns empty; over-26 classes return empty; final DP verification ensures no false positives.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Exploit the recurrence $A[i+1][j+1] = A[i][j]-1$ when $A[i][j]>0$ to avoid $O(\sum A[i][j])$ unions: union only $(i,j)$ whenever $A[i][j]>0$; the recurrence guarantees all aligned pairs will also be unioned through other $(i',j')$ entries.}
+\ASSUMPTIONS{All necessary equalities for longer prefixes appear as positive entries at $(i+1,j+1)$, so $O(n^2)$ unions suffice.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Validate diagonal, symmetry, and the one-step recurrence.
+\item DSU over $n$ indices; for all $(i,j)$ with $A[i][j]>0$ union $(i,j)$.
+\item Ensure no zero entry pairs are in the same set; otherwise infeasible.
+\item Assign distinct letters to each DSU representative in first-appearance order; if more than 26 sets, infeasible.
+\item Verify the matrix via a bottom-right DP on the constructed string.
+\end{algosteps}
+\COMPLEXITY{All loops are $O(n^2)$; DSU operations are near-constant amortized. This improves the baseline in cases where $\sum A[i][j]$ approaches $n^3$.}
+\[
+\begin{aligned}
+T(n) &= O(n^2 \alpha(n)) + O(n^2) \\
+S(n) &= O(n^2).
+\end{aligned}
+\]
+\CORRECTNESS{If $A[i][j]>0$ then $w_i=w_j$; unioning all such pairs enforces first-character equalities. The recurrence and symmetry ensure consistency for deeper positions; zero entries enforce inequality. Final DP equality check proves exactness.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+from typing import List
+
+class Solution:
+    def findTheString(self, lcp: List[List[int]]) -> str:
+        n = len(lcp)
+        if n == 0:
+            return ""
+        # Diagonal and symmetry checks
+        for i in range(n):
+            if lcp[i][i] != n - i:
+                return ""
+        for i in range(n):
+            for j in range(n):
+                if lcp[i][j] != lcp[j][i]:
+                    return ""
+        # One-step recurrence check
+        for i in range(n - 1):
+            for j in range(n - 1):
+                if lcp[i][j] > 0 and lcp[i + 1][j + 1] != lcp[i][j] - 1:
+                    return ""
+
+        parent = list(range(n))
+        rank = [0] * n
+
+        def find(x: int) -> int:
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        def union(a: int, b: int) -> None:
+            ra, rb = find(a), find(b)
+            if ra == rb:
+                return
+            if rank[ra] < rank[rb]:
+                ra, rb = rb, ra
+            parent[rb] = ra
+            if rank[ra] == rank[rb]:
+                rank[ra] += 1
+
+        # Only union starts with positive lcp
+        for i in range(n):
+            for j in range(n):
+                if lcp[i][j] > 0:
+                    union(i, j)
+
+        # Zero entries imply inequality
+        for i in range(n):
+            for j in range(n):
+                if lcp[i][j] == 0 and find(i) == find(j):
+                    return ""
+
+        # Assign letters per component in left-to-right first appearance
+        rep_to_char = {}
+        next_code = ord('a')
+        res = ['?'] * n
+        for i in range(n):
+            r = find(i)
+            if r not in rep_to_char:
+                if next_code > ord('z'):
+                    return ""
+                rep_to_char[r] = chr(next_code)
+                next_code += 1
+            res[i] = rep_to_char[r]
+        word = "".join(res)
+
+        # Verify by DP
+        dp = [[0] * n for _ in range(n)]
+        for i in range(n - 1, -1, -1):
+            for j in range(n - 1, -1, -1):
+                if word[i] == word[j]:
+                    dp[i][j] = 1 if i + 1 == n or j + 1 == n else dp[i + 1][j + 1] + 1
+                else:
+                    dp[i][j] = 0
+        for i in range(n):
+            for j in range(n):
+                if dp[i][j] != lcp[i][j]:
+                    return ""
+        return word
+
+# Asserts (Examples)
+if __name__ == "__main__":
+    sol = Solution()
+    assert sol.findTheString([[4,0,2,0],[0,3,0,1],[2,0,2,0],[0,1,0,1]]) == "abab"
+    assert sol.findTheString([[4,3,2,1],[3,3,2,1],[2,2,2,1],[1,1,1,1]]) == "aaaa"
+    assert sol.findTheString([[4,3,2,1],[3,3,2,1],[2,2,2,1],[1,1,1,3]]) == ""
+\end{minted}
+\VALIDATION{Edge inputs: $n=1$ with \texttt{lcp=[[1]]} returns \texttt{"a"}. All-zero off-diagonal with correct diagonal forms a valid single-letter solution. Contradictory zero on diagonal is rejected.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Union-find on positive entries, structural checks (diagonal, symmetry, one-step drop), mapping DSU classes to letters in first occurrence, and DP verification.}
+\ASSUMPTIONS{Input is at most $1000 \times 1000$; DSU with path compression and union by rank suffices; the number of classes must be $\le 26$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Check $A[i][i]=n-i$ and $A$ is symmetric; enforce $A[i+1][j+1]=A[i][j]-1$ when $A[i][j]>0$.
+\item DSU: for all $(i,j)$ with $A[i][j]>0$, union $(i,j)$.
+\item Reject if any $A[i][j]=0$ but $\mathrm{find}(i)=\mathrm{find}(j)$.
+\item Assign letters to DSU classes in left-to-right discovery order; reject if classes $>26$.
+\item Verify computed LCP matches $A$ using a bottom-right DP; return the string if equal, else empty.
+\end{algosteps}
+\OPTIMALITY{Any two distinct classes must have different first characters for all their indices, hence distinct letters for all classes. Assigning letters by first appearance yields the lexicographically smallest string among all feasible assignments. The algorithm runs in $O(n^2)$, which is information-theoretically optimal up to constants since the input has $\Theta(n^2)$ size.}
+\COMPLEXITY{Time $O(n^2)$, space $O(n^2)$ for DP verification and $O(n)$ for DSU.}
+\[
+\begin{aligned}
+T(n) &= O(n^2 \alpha(n)) + O(n^2) = O(n^2), \\
+S(n) &= O(n^2).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+from typing import List
+
+class Solution:
+    def findTheString(self, lcp: List[List[int]]) -> str:
+        n = len(lcp)
+        if n == 0:
+            return ""
+        # 1) Structural checks
+        for i in range(n):
+            if lcp[i][i] != n - i:
+                return ""
+        for i in range(n):
+            for j in range(n):
+                if lcp[i][j] != lcp[j][i]:
+                    return ""
+        for i in range(n - 1):
+            for j in range(n - 1):
+                if lcp[i][j] > 0 and lcp[i + 1][j + 1] != lcp[i][j] - 1:
+                    return ""
+        # 2) DSU on starts with positive lcp
+        parent = list(range(n))
+        rank = [0] * n
+
+        def find(x: int) -> int:
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        def union(a: int, b: int) -> None:
+            ra, rb = find(a), find(b)
+            if ra == rb:
+                return
+            if rank[ra] < rank[rb]:
+                ra, rb = rb, ra
+            parent[rb] = ra
+            if rank[ra] == rank[rb]:
+                rank[ra] += 1
+
+        for i in range(n):
+            for j in range(n):
+                if lcp[i][j] > 0:
+                    union(i, j)
+
+        # 3) Zero entries forbid equality
+        for i in range(n):
+            for j in range(n):
+                if lcp[i][j] == 0 and find(i) == find(j):
+                    return ""
+
+        # 4) Assign characters to components in first-appearance order
+        rep_to_char = {}
+        next_code = ord('a')
+        res = ['?'] * n
+        for i in range(n):
+            r = find(i)
+            if r not in rep_to_char:
+                if next_code > ord('z'):
+                    return ""
+                rep_to_char[r] = chr(next_code)
+                next_code += 1
+            res[i] = rep_to_char[r]
+        word = "".join(res)
+
+        # 5) Verify: compute lcp of constructed word
+        dp = [[0] * n for _ in range(n)]
+        for i in range(n - 1, -1, -1):
+            for j in range(n - 1, -1, -1):
+                if word[i] == word[j]:
+                    dp[i][j] = 1 if (i + 1 == n or j + 1 == n) else dp[i + 1][j + 1] + 1
+                else:
+                    dp[i][j] = 0
+        for i in range(n):
+            for j in range(n):
+                if dp[i][j] != lcp[i][j]:
+                    return ""
+        return word
+
+# Exactly 3 asserts (Examples)
+if __name__ == "__main__":
+    sol = Solution()
+    assert sol.findTheString([[4,0,2,0],[0,3,0,1],[2,0,2,0],[0,1,0,1]]) == "abab"
+    assert sol.findTheString([[4,3,2,1],[3,3,2,1],[2,2,2,1],[1,1,1,1]]) == "aaaa"
+    assert sol.findTheString([[4,3,2,1],[3,3,2,1],[2,2,2,1],[1,1,1,3]]) == ""
+\end{minted}
+\VALIDATION{Three example asserts pass. Additionally, single-length input \texttt{[[1]]} yields \texttt{"a"}, and mismatched diagonal like \texttt{[[0]]} yields empty.}
+\RESULT{Returns the lexicographically smallest lowercase string consistent with the given LCP matrix, or empty if no such string exists; ties are broken by earliest possible use of smaller letters in left-to-right order.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests for structural violations, minimal and maximal sizes, random feasible instances generated from random words and verified round-trip, and adversarial matrices violating the recurrence or zero-equality constraints.}
+\LINE{CROSS-CHECKS}{Compare outputs of Baseline (A) vs Improved (B) vs Final (C) on small $n$ where both should either agree on a string or return empty.}
+\LINE{EDGE-CASE GENERATOR}{Create matrices from random strings and also perturb entries to violate symmetry, diagonal, or the step rule to ensure proper rejection.}
+\begin{minted}{python}
+from typing import List
+import random
+import string
+
+def lcp_from_word(word: str) -> List[List[int]]:
+    n = len(word)
+    dp = [[0]*n for _ in range(n)]
+    for i in range(n-1, -1, -1):
+        for j in range(n-1, -1, -1):
+            if word[i] == word[j]:
+                dp[i][j] = 1 if i+1 == n or j+1 == n else dp[i+1][j+1] + 1
+            else:
+                dp[i][j] = 0
+    return dp
+
+class SolutionRef:
+    # Reference: same as Approach C
+    def findTheString(self, lcp: List[List[int]]) -> str:
+        n = len(lcp)
+        if n == 0:
+            return ""
+        for i in range(n):
+            if lcp[i][i] != n - i:
+                return ""
+        for i in range(n):
+            for j in range(n):
+                if lcp[i][j] != lcp[j][i]:
+                    return ""
+        for i in range(n - 1):
+            for j in range(n - 1):
+                if lcp[i][j] > 0 and lcp[i + 1][j + 1] != lcp[i][j] - 1:
+                    return ""
+        parent = list(range(n))
+        rank = [0] * n
+        def find(x: int) -> int:
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+        def union(a: int, b: int) -> None:
+            ra, rb = find(a), find(b)
+            if ra == rb: return
+            if rank[ra] < rank[rb]:
+                ra, rb = rb, ra
+            parent[rb] = ra
+            if rank[ra] == rank[rb]:
+                rank[ra] += 1
+        for i in range(n):
+            for j in range(n):
+                if lcp[i][j] > 0:
+                    union(i, j)
+        for i in range(n):
+            for j in range(n):
+                if lcp[i][j] == 0 and find(i) == find(j):
+                    return ""
+        rep_to_char = {}
+        nxt = ord('a')
+        res = ['?'] * n
+        for i in range(n):
+            r = find(i)
+            if r not in rep_to_char:
+                if nxt > ord('z'):
+                    return ""
+                rep_to_char[r] = chr(nxt)
+                nxt += 1
+            res[i] = rep_to_char[r]
+        word = "".join(res)
+        dp = lcp_from_word(word)
+        for i in range(n):
+            for j in range(n):
+                if dp[i][j] != lcp[i][j]:
+                    return ""
+        return word
+
+# Deterministic smoke tests
+if __name__ == "__main__":
+    ref = SolutionRef()
+    # Examples
+    assert ref.findTheString([[4,0,2,0],[0,3,0,1],[2,0,2,0],[0,1,0,1]]) == "abab"
+    assert ref.findTheString([[4,3,2,1],[3,3,2,1],[2,2,2,1],[1,1,1,1]]) == "aaaa"
+    assert ref.findTheString([[4,3,2,1],[3,3,2,1],[2,2,2,1],[1,1,1,3]]) == ""
+
+    # Round-trip random small words
+    for w in ["a", "ab", "aba", "zz", "abcabc", "abab", "aaaa"]:
+        mat = lcp_from_word(w)
+        out = ref.findTheString(mat)
+        assert out == w, (w, out)
+
+    # Reject: broken diagonal
+    assert ref.findTheString([[0]]) == ""
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+from typing import List
+
+class Solution:
+    def findTheString(self, lcp: List[List[int]]) -> str:
+        n = len(lcp)
+        if n == 0:
+            return ""
+        # Diagonal and symmetry checks
+        for i in range(n):
+            if lcp[i][i] != n - i:
+                return ""
+        for i in range(n):
+            for j in range(n):
+                if lcp[i][j] != lcp[j][i]:
+                    return ""
+        # One-step recurrence
+        for i in range(n - 1):
+            for j in range(n - 1):
+                if lcp[i][j] > 0 and lcp[i + 1][j + 1] != lcp[i][j] - 1:
+                    return ""
+        # DSU
+        parent = list(range(n))
+        rank = [0] * n
+        def find(x: int) -> int:
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+        def union(a: int, b: int) -> None:
+            ra, rb = find(a), find(b)
+            if ra == rb:
+                return
+            if rank[ra] < rank[rb]:
+                ra, rb = rb, ra
+            parent[rb] = ra
+            if rank[ra] == rank[rb]:
+                rank[ra] += 1
+        for i in range(n):
+            for j in range(n):
+                if lcp[i][j] > 0:
+                    union(i, j)
+        # Zero entries must be unequal
+        for i in range(n):
+            for j in range(n):
+                if lcp[i][j] == 0 and find(i) == find(j):
+                    return ""
+        # Assign letters to components by first appearance
+        rep_to_char = {}
+        nxt = ord('a')
+        res = ['?'] * n
+        for i in range(n):
+            r = find(i)
+            if r not in rep_to_char:
+                if nxt > ord('z'):
+                    return ""
+                rep_to_char[r] = chr(nxt)
+                nxt += 1
+            res[i] = rep_to_char[r]
+        word = "".join(res)
+        # Verify lcp matches
+        dp = [[0] * n for _ in range(n)]
+        for i in range(n - 1, -1, -1):
+            for j in range(n - 1, -1, -1):
+                if word[i] == word[j]:
+                    dp[i][j] = 1 if (i + 1 == n or j + 1 == n) else dp[i + 1][j + 1] + 1
+                else:
+                    dp[i][j] = 0
+        for i in range(n):
+            for j in range(n):
+                if dp[i][j] != lcp[i][j]:
+                    return ""
+        return word
+
+# Self-check
+if __name__ == "__main__":
+    sol = Solution()
+    assert sol.findTheString([[1]]) == "a"
+    assert sol.findTheString([[4,0,2,0],[0,3,0,1],[2,0,2,0],[0,1,0,1]]) == "abab"
+    assert sol.findTheString([[4,3,2,1],[3,3,2,1],[2,2,2,1],[1,1,1,1]]) == "aaaa"
+    assert sol.findTheString([[4,3,2,1],[3,3,2,1],[2,2,2,1],[1,1,1,3]]) == ""
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Build equality classes from positive LCP entries, ensure zero entries force inequality, then assign distinct letters per class in first appearance order and verify.}
+\WHY{This distills a tricky matrix-to-string reconstruction into DSU constraints plus a linear assignment for lexicographic optimality, a common interview pattern.}
+\CHECKLIST{
+\begin{bullets}
+\item Check diagonal $A[i][i]=n-i$ and symmetry.
+\item Check step rule: if $A[i][j]>0$ then $A[i+1][j+1]=A[i][j]-1$.
+\item DSU union for all $(i,j)$ with $A[i][j]>0$.
+\item Ensure zero entries are not in the same DSU set.
+\item Map DSU reps to \texttt{a..z} in first-appearance order; ensure $\le 26$ classes.
+\item Verify via DP and return result or empty.
+\end{bullets}
+}
+\EDGECASES{
+\begin{bullets}
+\item $n=1$: must be \texttt{"a"} since $A[0][0]=1$.
+\item Any $A[i][i] \ne n-i$: impossible.
+\item Asymmetry $A[i][j] \ne A[j][i]$: impossible.
+\item Step violation where $A[i][j]>0$ but next does not drop by one: impossible.
+\item Zero entries inside same DSU class: impossible.
+\item More than 26 DSU classes: impossible.
+\item Rows or columns with large values exceeding suffix lengths.
+\item Contradictions only detectable after assignment: caught by final DP check.
+\end{bullets}
+}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to check symmetry.
+\item Not enforcing the one-step drop, leading to false positives.
+\item Assigning the same letter to distinct DSU classes; cross-class pairs must differ at the first character.
+\item Running out of letters if classes $>26$.
+\item Skipping final verification; subtle matrices may pass earlier checks but still fail.
+\item Off-by-one at the boundary when computing DP for verification.
+\item Path compression omission leading to worst-case time.
+\item Using global greedy letters not tied to first occurrence, breaking lex minimality.
+\end{bullets}
+}
+\FAILMODES{Matrices with $A[i][i]\ne n-i$, with asymmetry, or with $A[i][j]>0$ but $A[i+1][j+1]\ne A[i][j]-1$ break weaker approaches that only union starts. Final DP verification shields against any residual inconsistencies.}
+\ELI{Group positions that must share a letter, ensure different groups always differ at the first character, then name the groups \texttt{a}, \texttt{b}, \texttt{c}, \ldots as they first appear. If anything contradicts the LCP matrix, say it is impossible.}
+\NotePages{3}
+
+\end{document}

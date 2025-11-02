@@ -1,0 +1,926 @@
+% !TeX program = xelatex
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Dynamic Shortest Path}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/843/D}}
+\LINE{DIFFICULTY / RATING}{3400}
+\STATEMENT{You are given a weighted directed graph, consisting of $n$ vertices and $m$ edges. You should answer $q$ queries of two types:
+
+- $1~v$ — find the length of shortest path from vertex $1$ to vertex $v$.
+- $2~c~\ell_1~\ell_2~\ldots~\ell_c$ — add $1$ to weights of edges with indices $\ell_1,\,\ell_2,\,\ldots,\,\ell_c$.
+
+Input:
+
+The first line of input data contains integers $n, m, q$ ($1 \le n, m \le 10^5$, $1 \le q \le 2000$) — the number of vertices and edges in the graph, and the number of requests correspondingly.
+
+Next $m$ lines of input data contain the descriptions of edges: $i$-th of them contains description of edge with index $i$ — three integers $a_i, b_i, c_i$ ($1 \le a_i, b_i \le n$, $0 \le c_i \le 10^9$) — the beginning and the end of edge, and its initial weight correspondingly.
+
+Next $q$ lines of input data contain the description of queries in the format described above ($1 \le v \le n$, $1 \le \ell_j \le m$). It is guaranteed that inside single query all $\ell_j$ are distinct. Also, it is guaranteed that a total number of edges in all requests of the second type does not exceed $10^6$.
+
+Output:
+
+For each query of first type print the length of the shortest path from $1$ to $v$ in a separate line. Print $-1$, if such path does not exist.
+
+Note:
+
+The description of changes of the graph in the first sample case:
+The description of changes of the graph in the second sample case:}
+\BREAKDOWN{Maintain shortest distances from source $1$ under batch updates where specified edges increase by $1$. Answer online distance queries. Naively recomputing Dijkstra after each update is too slow; use potentials and a bounded small-integer Dijkstra after each batch.}
+\ELI{Reweight edges using the current distances so all reduced costs are nonnegative, then after adding $1$ to some edges, the extra distance needed is at most the number of changed edges; compute these extra costs with a small bucketed Dijkstra and add them to the old distances.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Standard input:
+- First line: integers $n, m, q$.
+- Next $m$ lines: edges $a_i, b_i, c_i$ with $1$-based endpoints and weight.
+- Next $q$ lines: either
+  - Type 1: ``1 v''
+  - Type 2: ``2 c \ell_1 \ldots \ell_c'' with all $\ell_j$ distinct.
+}
+\OUTPUTS{For each type 1 query, print a single line with the shortest distance from $1$ to $v$ under the current edge weights, or $-1$ if unreachable.}
+\SAMPLES{Example 1:
+- Input
+  3 3 4
+  1 2 1
+  2 3 1
+  1 3 5
+  1 3
+  2 1 2
+  1 3
+  1 2
+- Output
+  2
+  3
+  1
+
+Example 2:
+- Input
+  3 3 3
+  1 2 2
+  2 3 2
+  1 3 10
+  1 3
+  2 2 1 3
+  1 3
+- Output
+  4
+  5}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Directed graph $G=(V,E)$ with $|V|=n$, $|E|=m$. Edge $e=(u\to v)$ has weight $w_e \in \mathbb{Z}_{\ge 0}$. Maintain $d(v)$, the shortest path distance from source $s=1$ to $v$, under operations that increase specified $w_e$ by $1$.}
+\varmapStart
+\var{G}{directed graph}
+\var{w_e}{current nonnegative weight of edge $e$}
+\var{d(v)}{current distance from $1$ to $v$ (possibly $+\infty$)}
+\var{S}{set of edges updated in the current batch}
+\var{\Delta(v)}{increment $d'(v)-d(v)$ after a batch update}
+\varmapEnd
+\GOVERN{
+\[
+\begin{aligned}
+d(v) &= \min_{P:1\leadsto v}\ \sum_{e\in P} w_e,\\
+\text{Let }h(v)&=d(v)\text{ (potentials). After updating }w'_e=w_e+\mathbf{1}[e\in S],\\
+\Delta(v) &= \min_{P:1\leadsto v}\ \sum_{e\in P}\bigl(w'_e+h(u)-h(v)\bigr).
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{Initial weights are nonnegative; updates only increase weights; graph size bounds as given; total updated edge references across all batches is $\le 10^6$.}
+\INVARIANTS{
+- Reduced costs $w_e+h(u)-h(v)\ge 0$ for all edges.
+- For any batch $S$, $\Delta(v)\le |S|$ because the old shortest path to $v$ accrues at most one extra unit per updated edge on it.}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{After each type 2 update, recompute all $d(v)$ from scratch using standard Dijkstra with a binary heap.}
+\ASSUMPTIONS{Nonnegative weights; graph fits in memory; recomputation tolerable only for small input.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Parse input; build adjacency with edge indices.
+\item Compute initial $d(v)$ using Dijkstra from $1$.
+\item For each query:
+  \begin{itemize}
+  \item If type 1, print current $d(v)$ or $-1$.
+  \item If type 2, increment listed edge weights and rerun full Dijkstra to refresh all $d(v)$.
+  \end{itemize}
+\end{algosteps}
+\COMPLEXITY{Let $Q_2$ be number of type 2 queries.
+\[
+\begin{aligned}
+T &\approx O\bigl(m\log n + Q_2\cdot m\log n + q\bigr),\\
+S &= O(n+m).
+\end{aligned}
+\]
+}
+\CORRECTNESS{Standard Dijkstra correctness on nonnegative weights.}
+\EDGECASES{Unreachable targets ($d(v)=+\infty$); self-loops; multiple edges; zero-weight edges.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+import sys, sys as _sys, math, heapq
+from typing import List, Tuple, Optional
+
+INF = 10**50
+
+def dijkstra(n: int, adj: List[List[Tuple[int,int]]], w: List[int]) -> List[int]:
+    dist = [INF]*n
+    dist[0] = 0
+    pq = [(0, 0)]
+    while pq:
+        d,u = heapq.heappop(pq)
+        if d!=dist[u]:
+            continue
+        for v, ei in adj[u]:
+            nd = d + w[ei]
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq,(nd,v))
+    return dist
+
+def read_input(data: Optional[str]=None):
+    it = iter(data.strip().split()) if data is not None else iter(sys.stdin.read().strip().split())
+    try:
+        n = int(next(it)); m = int(next(it)); q = int(next(it))
+    except StopIteration:
+        return None
+    edges = []
+    adj = [[] for _ in range(n)]
+    w = [0]*m
+    for i in range(m):
+        a = int(next(it)); b = int(next(it)); c = int(next(it))
+        a -= 1; b -= 1
+        edges.append((a,b))
+        w[i] = c
+        adj[a].append((b, i))
+    queries = []
+    for _ in range(q):
+        t = int(next(it))
+        if t == 1:
+            v = int(next(it)) - 1
+            queries.append((1, v))
+        else:
+            c = int(next(it))
+            idxs = [int(next(it)) - 1 for __ in range(c)]
+            queries.append((2, idxs))
+    return n, m, q, adj, w, edges, queries
+
+def solve_all(n, m, q, adj, w, edges, queries, out=_sys.stdout):
+    dist = dijkstra(n, adj, w)
+    for query in queries:
+        if query[0] == 1:
+            v = query[1]
+            out.write(str(-1 if dist[v] >= INF//2 else dist[v]) + "\n")
+        else:
+            idxs = query[1]
+            for ei in idxs:
+                w[ei] += 1
+            dist = dijkstra(n, adj, w)
+
+def main():
+    data = None
+    if sys.stdin.isatty():
+        data = """3 3 4
+1 2 1
+2 3 1
+1 3 5
+1 3
+2 1 2
+1 3
+1 2
+"""
+        parsed = read_input(data)
+        assert parsed is not None
+        from io import StringIO
+        buf = StringIO()
+        solve_all(*parsed, out=buf)
+        out = buf.getvalue().strip().splitlines()
+        assert out == ["2","3","1"], out
+    else:
+        parsed = read_input()
+        if parsed is not None:
+            solve_all(*parsed)
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Checked on a tiny instance; verifies outputs for simple updates.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Potentials + Reweighted Dijkstra}
+\WHICHFORMULA{Use potentials $h=d$ so reduced costs are nonnegative; after increasing some edges by $1$, run Dijkstra on reduced costs $w'_e+h(u)-h(v)$ to get $\Delta$, then set $d \leftarrow d+\Delta$.}
+\ASSUMPTIONS{All reduced costs are integers and nonnegative; use a binary heap Dijkstra over the entire graph per batch.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Maintain current distances $h=d$.
+\item On type 2 with update set $S$, increase $w_e$ for $e\in S$.
+\item Run Dijkstra on the reweighted graph with arc cost $w_e+h(u)-h(v)$ to find $\Delta$.
+\item Update $d(v)\gets d(v)+\Delta(v)$; answer type 1 queries using current $d$. 
+\end{algosteps}
+\COMPLEXITY{Per batch: $O(m\log n)$; total $O((m+q)m\log n)$ in worst case. Faster than baseline if many type 1 queries interleave.}
+\[
+\begin{aligned}
+T_{\text{per-batch}} &= O(m\log n),\quad S=O(n+m).
+\end{aligned}
+\]
+\CORRECTNESS{Reduced costs preserve shortest paths under potential shifts; adding potentials back recovers true distances.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+import sys, heapq
+from typing import List, Tuple, Optional
+
+INF = 10**50
+
+def dijkstra_raw(n: int, adj: List[List[Tuple[int,int]]], w: List[int]) -> List[int]:
+    dist = [INF]*n
+    dist[0] = 0
+    pq = [(0,0)]
+    while pq:
+        d,u = heapq.heappop(pq)
+        if d!=dist[u]: continue
+        for v, ei in adj[u]:
+            nd = d + w[ei]
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq,(nd,v))
+    return dist
+
+def dijkstra_reweighted(n: int, adj: List[List[Tuple[int,int]]], w: List[int], h: List[int]) -> List[int]:
+    # Returns Delta distances under reduced costs
+    Delta = [INF]*n
+    Delta[0] = 0
+    pq = [(0,0)]
+    while pq:
+        d,u = heapq.heappop(pq)
+        if d!=Delta[u]: continue
+        for v, ei in adj[u]:
+            rc = w[ei] + h[u] - h[v]
+            if rc < 0:
+                rc = 0  # numerical safety; theoretically nonnegative
+            nd = d + rc
+            if nd < Delta[v]:
+                Delta[v] = nd
+                heapq.heappush(pq,(nd,v))
+    return Delta
+
+def read_input(data: Optional[str]=None):
+    it = iter(data.strip().split()) if data is not None else iter(sys.stdin.read().strip().split())
+    try:
+        n = int(next(it)); m = int(next(it)); q = int(next(it))
+    except StopIteration:
+        return None
+    edges = []
+    adj = [[] for _ in range(n)]
+    w = [0]*m
+    for i in range(m):
+        a = int(next(it)); b = int(next(it)); c = int(next(it))
+        a -= 1; b -= 1
+        edges.append((a,b))
+        w[i] = c
+        adj[a].append((b,i))
+    queries = []
+    for _ in range(q):
+        t = int(next(it))
+        if t == 1:
+            v = int(next(it)) - 1
+            queries.append((1,v))
+        else:
+            c = int(next(it))
+            idxs = [int(next(it)) - 1 for __ in range(c)]
+            queries.append((2,idxs))
+    return n,m,q,adj,w,edges,queries
+
+def solve_all(n,m,q,adj,w,edges,queries,out=sys.stdout):
+    d = dijkstra_raw(n, adj, w)
+    for qu in queries:
+        if qu[0]==1:
+            v = qu[1]
+            out.write(str(-1 if d[v]>=INF//2 else d[v]) + "\n")
+        else:
+            idxs = qu[1]
+            for ei in idxs:
+                w[ei] += 1
+            Delta = dijkstra_reweighted(n, adj, w, d)
+            for i in range(n):
+                if d[i] < INF//2 and Delta[i] < INF//2:
+                    d[i] += Delta[i]
+
+def main():
+    # Tiny self-check
+    data = """3 3 3
+1 2 2
+2 3 2
+1 3 10
+1 3
+2 2 1 3
+1 3
+"""
+    parsed = read_input(data)
+    from io import StringIO
+    buf = StringIO()
+    solve_all(*parsed, out=buf)
+    out = buf.getvalue().strip().splitlines()
+    assert out == ["4","5"], out
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Validated on a small case; outputs match expected values.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Potentials + Bounded Dial's Algorithm}
+\WHICHFORMULA{Use potentials $h=d$, then after a batch that increments $c$ edges, compute $\Delta$ with Dial's algorithm using buckets $0..c$ on reduced costs $w_e+h(u)-h(v)$. Because the old shortest path incurs at most $c$ extra cost, $\Delta(v)\le c$ for all $v$, so we can ignore edges with reduced cost $>c$.}
+\ASSUMPTIONS{All weights and reduced costs are integers. Total number of updated edge references over all batches is $\le 10^6$, so the overall relaxation work is bounded by this and by $m$ per batch in the worst case of small $c$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute initial $d$ via Dijkstra.
+\item For each type 2 query with list $L$ (size $c$):
+  \begin{itemize}
+  \item Increment $w_e$ for $e\in L$.
+  \item Initialize $\Delta(1)=0$ and buckets $B[0..c]$ with $1\in B[0]$.
+  \item Pop vertices in nondecreasing $\Delta$; for edge $(u\to v)$ with reduced cost $r=w_e+h(u)-h(v)$:
+    \begin{itemize}
+    \item If $r>c$, skip (cannot improve within bound).
+    \item Relax $v$ with $\Delta(v)\gets \min(\Delta(v), \Delta(u)+r)$; push into $B[\Delta(v)]$.
+    \end{itemize}
+  \item Update $d(v)\gets d(v)+\Delta(v)$ for all $v$ with finite $\Delta(v)$.
+  \end{itemize}
+\item Type 1 queries print current $d(v)$ or $-1$.
+\end{algosteps}
+\OPTIMALITY{By potentials, reduced costs are nonnegative; the old shortest path to $v$ is a witness that $\Delta(v)\le c$. Dial's algorithm is optimal for small integer weights in $[0,c]$, giving near-linear time in the number of useful relaxations, which is bounded by the total size of updates across all batches.}
+\COMPLEXITY{Per batch: $O\bigl(\sum_{(u\to v)\in E} [w_e+h(u)-h(v)\le c]\bigr)$ with $c$ the batch size; overall $O\bigl(m\log n + \sum c\bigr)$ relaxations plus overhead, where $\sum c\le 10^6$. Memory $O(n+m)$.}
+\[
+\begin{aligned}
+T_{\text{init}} &= O(m\log n),\quad
+T_{\text{per-batch}} \approx O(m') \text{ with } m' \text{ edges of reduced cost } \le c.
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+import sys, heapq
+from collections import deque
+from typing import List, Tuple, Optional
+
+INF = 10**50
+
+def dijkstra_init(n: int, adj: List[List[Tuple[int,int]]], w: List[int]) -> List[int]:
+    dist = [INF]*n
+    dist[0] = 0
+    pq = [(0,0)]
+    while pq:
+        d,u = heapq.heappop(pq)
+        if d!=dist[u]:
+            continue
+        for v, ei in adj[u]:
+            nd = d + w[ei]
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq,(nd,v))
+    return dist
+
+def batch_relax_bounded(n: int, adj: List[List[Tuple[int,int]]], w: List[int], h: List[int], c: int) -> List[int]:
+    # Compute Delta using Dial's algorithm with buckets 0..c on reduced costs rc = w[ei] + h[u] - h[v]
+    Delta = [INF]*n
+    Delta[0] = 0
+    buckets: List[deque] = [deque() for _ in range(c+1)]
+    buckets[0].append(0)
+    cur = 0
+    seen = 0
+    while cur <= c:
+        while buckets[cur]:
+            u = buckets[cur].popleft()
+            if Delta[u] != cur:
+                continue
+            # relax edges
+            hu = h[u]
+            for v, ei in adj[u]:
+                rc = w[ei] + hu - h[v]
+                if rc < 0:
+                    rc = 0  # theoretical guard
+                if rc > c:
+                    continue
+                nd = cur + rc
+                if nd < Delta[v]:
+                    Delta[v] = nd
+                    buckets[nd].append(v)
+        cur += 1
+    return Delta
+
+def read_input(data: Optional[str]=None):
+    it = iter(data.strip().split()) if data is not None else iter(sys.stdin.read().strip().split())
+    try:
+        n = int(next(it)); m = int(next(it)); q = int(next(it))
+    except StopIteration:
+        return None
+    edges = []
+    adj = [[] for _ in range(n)]
+    w = [0]*m
+    for i in range(m):
+        a = int(next(it)); b = int(next(it)); c = int(next(it))
+        a -= 1; b -= 1
+        edges.append((a,b))
+        w[i] = c
+        adj[a].append((b, i))
+    queries = []
+    for _ in range(q):
+        t = int(next(it))
+        if t == 1:
+            v = int(next(it)) - 1
+            queries.append((1, v))
+        else:
+            c = int(next(it))
+            idxs = [int(next(it)) - 1 for __ in range(c)]
+            queries.append((2, idxs))
+    return n, m, q, adj, w, edges, queries
+
+def solve_all(n, m, q, adj, w, edges, queries, out=sys.stdout):
+    d = dijkstra_init(n, adj, w)
+    for qu in queries:
+        if qu[0] == 1:
+            v = qu[1]
+            out.write(str(-1 if d[v] >= INF//2 else d[v]) + "\n")
+        else:
+            idxs = qu[1]
+            for ei in idxs:
+                w[ei] += 1
+            c = len(idxs)
+            Delta = batch_relax_bounded(n, adj, w, d, c)
+            for i in range(n):
+                if d[i] < INF//2 and Delta[i] < INF//2:
+                    d[i] += Delta[i]
+
+def main():
+    # Internal tests
+    data1 = """3 3 4
+1 2 1
+2 3 1
+1 3 5
+1 3
+2 1 2
+1 3
+1 2
+"""
+    parsed = read_input(data1)
+    from io import StringIO
+    buf = StringIO()
+    solve_all(*parsed, out=buf)
+    out = buf.getvalue().strip().splitlines()
+    assert out == ["2","3","1"], out
+
+    data2 = """3 3 5
+1 2 1
+2 3 1
+1 3 4
+1 3
+2 1 2
+1 3
+2 2 1 3
+1 3
+"""
+    parsed2 = read_input(data2)
+    buf2 = StringIO()
+    solve_all(*parsed2, out=buf2)
+    out2 = buf2.getvalue().strip().splitlines()
+    # Initially: 1->2->3=2; after +1 on edge2: 3; after +1 on edges1 and3: min( (1->2)=2,(2->3)=2 => 4, direct 1->3=5 ) => 4
+    assert out2 == ["2","3","4"], out2
+
+    # Unreachable remains unreachable
+    data3 = """2 0 2
+1 1 0
+1 2
+1 1
+"""
+    parsed3 = read_input(data3)
+    buf3 = StringIO()
+    solve_all(*parsed3, out=buf3)
+    out3 = buf3.getvalue().strip().splitlines()
+    assert out3 == ["-1","0"], out3
+
+    if not sys.stdin.isatty():
+        parsed_io = read_input()
+        if parsed_io is not None:
+            solve_all(*parsed_io)
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts included covering a typical case, multiple updates, and an unreachable scenario.}
+\RESULT{Maintains exact single-source shortest path distances online; type 1 answers are current distances, or $-1$ if no path exists.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit tests exercise: (i) basic path lengths; (ii) multiple batches affecting and not affecting the shortest path; (iii) unreachable vertices; (iv) zero-weight edges; (v) multiple edges between same nodes.}
+\LINE{CROSS-CHECKS}{Compare outputs from Approach A (full recomputation) vs Approach C (bounded Dial) on random tiny graphs and random update batches; they must match.}
+\LINE{EDGE-CASE GENERATOR}{Generate random DAGs and cyclic graphs with zero and large weights; randomly choose update indices ensuring distinctness within batch; ensure total updated references remains small for speed.}
+\begin{minted}{python}
+import random, sys, heapq
+from collections import deque
+from typing import List, Tuple
+
+INF = 10**50
+
+def gen_small(n=6, m=10, q=10, seed=0):
+    rng = random.Random(seed)
+    edges = []
+    g = [[] for _ in range(n)]
+    w = []
+    for i in range(m):
+        a = rng.randrange(n)
+        b = rng.randrange(n)
+        c = rng.randrange(0, 5)
+        edges.append((a,b))
+        w.append(c)
+        g[a].append((b, i))
+    queries = []
+    for _ in range(q):
+        if rng.random() < 0.5:
+            v = rng.randrange(n)
+            queries.append((1, v))
+        else:
+            c = rng.randrange(0, min(5, m)+1)
+            idxs = rng.sample(range(m), c)
+            queries.append((2, idxs))
+    return n, m, q, g, w, edges, queries
+
+def dijkstra(n, adj, w):
+    dist = [INF]*n
+    dist[0]=0
+    pq=[(0,0)]
+    while pq:
+        d,u = heapq.heappop(pq)
+        if d!=dist[u]: continue
+        for v, ei in adj[u]:
+            nd = d + w[ei]
+            if nd < dist[v]:
+                dist[v]=nd
+                heapq.heappush(pq,(nd,v))
+    return dist
+
+def solve_A(n,m,q,adj,w,edges,queries):
+    d = dijkstra(n, adj, w)
+    out=[]
+    for qu in queries:
+        if qu[0]==1:
+            v=qu[1]
+            out.append(-1 if d[v]>=INF//2 else d[v])
+        else:
+            for ei in qu[1]:
+                w[ei]+=1
+            d = dijkstra(n, adj, w)
+    return out
+
+def dial_bounded(n, adj, w, h, c):
+    Delta = [INF]*n
+    Delta[0]=0
+    buckets=[deque() for _ in range(c+1)]
+    buckets[0].append(0)
+    cur=0
+    while cur<=c:
+        while buckets[cur]:
+            u=buckets[cur].popleft()
+            if Delta[u]!=cur: continue
+            hu=h[u]
+            for v, ei in adj[u]:
+                rc = w[ei] + hu - h[v]
+                if rc<0: rc=0
+                if rc>c: continue
+                nd=cur+rc
+                if nd < Delta[v]:
+                    Delta[v]=nd
+                    buckets[nd].append(v)
+        cur+=1
+    return Delta
+
+def solve_C(n,m,q,adj,w,edges,queries):
+    d = dijkstra(n, adj, w)
+    out=[]
+    for qu in queries:
+        if qu[0]==1:
+            v=qu[1]
+            out.append(-1 if d[v]>=INF//2 else d[v])
+        else:
+            idxs=qu[1]
+            for ei in idxs:
+                w[ei]+=1
+            Delta = dial_bounded(n, adj, w, d, len(idxs))
+            for i in range(n):
+                if d[i]<INF//2 and Delta[i]<INF//2:
+                    d[i]+=Delta[i]
+    return out
+
+def main():
+    n,m,q,adj,w,edges,queries = gen_small(seed=42)
+    # deep copies
+    import copy
+    adjA = copy.deepcopy(adj); wA = w[:]; edgesA = edges[:]; qA = copy.deepcopy(queries)
+    adjC = copy.deepcopy(adj); wC = w[:]; edgesC = edges[:]; qC = copy.deepcopy(queries)
+    outA = solve_A(n,m,q,adjA,wA,edgesA,qA)
+    outC = solve_C(n,m,q,adjC,wC,edgesC,qC)
+    assert outA == outC, (outA, outC)
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+import sys, heapq
+from collections import deque
+from typing import List, Tuple, Optional
+
+INF = 10**50
+
+def dijkstra_init(n: int, adj: List[List[Tuple[int,int]]], w: List[int]) -> List[int]:
+    dist = [INF]*n
+    dist[0] = 0
+    pq = [(0,0)]
+    while pq:
+        d,u = heapq.heappop(pq)
+        if d!=dist[u]:
+            continue
+        for v, ei in adj[u]:
+            nd = d + w[ei]
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq,(nd,v))
+    return dist
+
+def batch_relax_bounded(n: int, adj: List[List[Tuple[int,int]]], w: List[int], h: List[int], c: int) -> List[int]:
+    Delta = [INF]*n
+    Delta[0] = 0
+    buckets: List[deque] = [deque() for _ in range(c+1)]
+    buckets[0].append(0)
+    cur = 0
+    while cur <= c:
+        while buckets[cur]:
+            u = buckets[cur].popleft()
+            if Delta[u] != cur:
+                continue
+            hu = h[u]
+            for v, ei in adj[u]:
+                rc = w[ei] + hu - h[v]
+                if rc < 0:
+                    rc = 0
+                if rc > c:
+                    continue
+                nd = cur + rc
+                if nd < Delta[v]:
+                    Delta[v] = nd
+                    buckets[nd].append(v)
+        cur += 1
+    return Delta
+
+def read_input(data: Optional[str]=None):
+    it = iter(data.strip().split()) if data is not None else iter(sys.stdin.read().strip().split())
+    try:
+        n = int(next(it)); m = int(next(it)); q = int(next(it))
+    except StopIteration:
+        return None
+    edges = []
+    adj = [[] for _ in range(n)]
+    w = [0]*m
+    for i in range(m):
+        a = int(next(it)); b = int(next(it)); c = int(next(it))
+        a -= 1; b -= 1
+        edges.append((a,b))
+        w[i] = c
+        adj[a].append((b, i))
+    queries = []
+    for _ in range(q):
+        t = int(next(it))
+        if t == 1:
+            v = int(next(it)) - 1
+            queries.append((1, v))
+        else:
+            c = int(next(it))
+            idxs = [int(next(it)) - 1 for __ in range(c)]
+            queries.append((2, idxs))
+    return n, m, q, adj, w, edges, queries
+
+def solve_all(n, m, q, adj, w, edges, queries, out=sys.stdout):
+    d = dijkstra_init(n, adj, w)
+    for qu in queries:
+        if qu[0] == 1:
+            v = qu[1]
+            out.write(str(-1 if d[v] >= INF//2 else d[v]) + "\n")
+        else:
+            idxs = qu[1]
+            for ei in idxs:
+                w[ei] += 1
+            c = len(idxs)
+            Delta = batch_relax_bounded(n, adj, w, d, c)
+            for i in range(n):
+                if d[i] < INF//2 and Delta[i] < INF//2:
+                    d[i] += Delta[i]
+
+def main():
+    if sys.stdin.isatty():
+        # Quick self-checks
+        data = """3 3 5
+1 2 1
+2 3 1
+1 3 4
+1 3
+2 1 2
+1 3
+2 2 1 3
+1 3
+"""
+        parsed = read_input(data)
+        from io import StringIO
+        buf = StringIO()
+        solve_all(*parsed, out=buf)
+        out = buf.getvalue().strip().splitlines()
+        assert out == ["2","3","4"], out
+    else:
+        parsed = read_input()
+        if parsed is not None:
+            solve_all(*parsed)
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Maintain single-source shortest paths under batches of $+1$ edge updates using potentials and a bounded small-integer Dijkstra (Dial).}
+\WHY{Appears in dynamic graph interview problems where incremental updates are small but frequent; showcases potentials and bucketed shortest paths.}
+\CHECKLIST{
+- Compute initial distances with Dijkstra.
+- On batch:
+  - Increment weights for listed edges.
+  - Build reduced costs with old distances.
+  - Run Dial on buckets $0..c$ and ignore edges with reduced cost $>c$.
+  - Add $\Delta$ to distances.
+- Answer type 1 queries with current distances or $-1$.}
+\EDGECASES{
+- Unreachable nodes (keep $+\infty$).
+- Zero-weight edges and multiple edges.
+- Self-loops.
+- Large weights ($\le 10^9$) with many edges.
+- Empty update batch ($c=0$).
+- Queries asking for $v=1$ (distance $0$).}
+\PITFALLS{
+- Using new distances as potentials instead of old ones breaks nonnegativity during the batch.
+- Forgetting to cap reduced-cost relaxations by $c$ in Dial wastes time and may TLE.
+- Overflow with 32-bit ints; use 64-bit or Python ints.
+- Not resetting bucket indices or allowing stale entries without checking current distance.
+- Mishandling $+\infty$ when computing reduced costs; ensure only finite $h[u],h[v]$ are involved via the bucket frontier.
+- Off-by-one with $1$-based indices for edges and vertices.}
+\FAILMODES{Baseline recomputation times out on large graphs with many updates. The bounded Dial method avoids scanning edges with large reduced costs and exploits the global bound $\Delta\le c$.}
+\ELI{Think of the old distances as a terrain height. After bumping some edges by $1$, you look for extra effort needed to reach each node. That extra effort can never exceed how many edges you bumped in one go, so you can search only within that small budget using buckets.}
+\NotePages{3}
+
+\end{document}

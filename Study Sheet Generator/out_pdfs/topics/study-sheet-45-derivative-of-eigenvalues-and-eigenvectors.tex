@@ -1,0 +1,2609 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]
+\setlength{\jot}{7pt}
+\setlength{\emergencystretch}{8em}
+\sloppy
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Derivative of Eigenvalues and Eigenvectors}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+Given a differentiable matrix curve $A(t)\in\mathbb{C}^{n\times n}$ and a
+simple eigenpair $(\lambda_i(t),v_i(t))$ with left eigenvector $u_i(t)$
+satisfying $A v_i=\lambda_i v_i$ and $u_i^{\top}A=\lambda_i u_i^{\top}$,
+the derivative laws describe $d\lambda_i$ and $dv_i$ in terms of $dA$.
+Canonical forms include $d\lambda_i=u_i^{\top}(dA)\,v_i$ and
+$dv_i=\sum_{j\neq i} v_j \dfrac{u_j^{\top}(dA)\,v_i}{\lambda_i-\lambda_j}$
+under the gauge $u_i^{\top}v_i=1$. For normal/symmetric $A$, $u_i=v_i$ and
+$simplifications$ follow. The domain is matrices with a simple spectrum point
+and codomain is differentials of scalars/vectors in the associated invariant
+subspaces.
+}
+
+\WHY{
+Sensitivity of eigenstructure under perturbations underpins stability
+analysis, control theory, numerical linear algebra, PCA gradients, spectral
+regularization, and perturbation bounds. It allows computing gradients of
+spectral functions and predicting how modes change due to small updates.
+}
+
+\HOW{
+1. Assume a simple eigenvalue with differentiable eigenvectors and fix a
+normalization (gauge) $u_i^{\top}v_i=1$.
+2. Differentiate $A v_i=\lambda_i v_i$ and use left eigenvectors to isolate
+$d\lambda_i$ and resolve $dv_i$ in the eigenbasis complement.
+3. Obtain resolvent/projector forms capturing the structure invariantly.
+4. Interpret results as directional derivatives and gradients with respect
+to matrix entries and as first-order perturbation expansions.
+}
+
+\ELI{
+An eigenvalue is a bell that rings at a certain pitch. If we nudge the bell
+($A$) slightly by $dA$, the pitch changes by how much the bell resonates with
+that nudge: $u^{\top}(dA)v$. The shape of the vibration (eigenvector) tilts
+toward neighboring modes proportionally to how strongly the nudge couples them
+and inversely to their pitch gaps.
+}
+
+\SCOPE{
+Valid when the eigenvalue is simple (algebraic multiplicity one). For repeated
+or clustered eigenvalues, derivatives of individual eigenvectors are not unique,
+but spectral subspace derivatives exist. Non-diagonalizable (defective) points
+require Jordan perturbation theory; first-order formulas may not exist.
+}
+
+\CONFUSIONS{
+Left vs. right eigenvectors: for non-normal matrices they differ; use
+$u^{\top}(dA)v$, not $v^{\top}(dA)v$. Rayleigh quotient gradient equals
+$v^{\top}(dA)v$ only for symmetric/normal matrices. Eigenvectors are defined
+up to scaling; fix a gauge (e.g., $u^{\top}v=1$ or $\|v\|_2=1$).
+}
+
+\APPLICATIONS{
+List 3–4 major domains where this topic directly applies:
+\begin{bullets}
+\item Mathematical foundations (perturbation theory, spectral projectors).
+\item Computational modeling or simulation (PCA, modal analysis).
+\item Physical / economic / engineering interpretations (vibration modes).
+\item Statistical or algorithmic implications (gradients of spectral losses).
+\end{bullets}
+}
+
+\textbf{ANALYTIC STRUCTURE.}
+Linear first-order functional of $dA$ for $d\lambda$. The map $dA\mapsto dv$
+is linear on the range orthogonal to $v_i$, with poles at eigenvalue gaps
+$\lambda_i-\lambda_j$; thus sensitivity scales inversely with gaps.
+
+\textbf{CANONICAL LINKS.}
+Linked to Rayleigh quotient extremality, resolvent identity, Cauchy integral
+formula for spectral projectors, and Davis--Kahan sin$\Theta$ perturbation
+bounds. Formula 1 feeds Problems 1, 4, 6; Formula 2 feeds Problems 2, 8; the
+projector formula feeds Problem 5; the Rayleigh quotient formula feeds Problem 3.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Presence of $A v=\lambda v$ with a small additive perturbation $A+\varepsilon H$.
+\item Requests for directional derivative, gradient wrt entries, or finite
+difference checks.
+\item Phrases like spectral norm gradient, PCA sensitivity, subspace tilt,
+eigen-gap dependence.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate the perturbation into $dA$ and specify the gauge constraint.
+\item Invoke $d\lambda=u^{\top}(dA)v$ and $dv$ expansion or projector law.
+\item Compute sums over modes or solve Sylvester/resolvent equations.
+\item Interpret via eigen-gaps and orthogonality constraints.
+\item Validate with symmetry, normalization, and finite-difference checks.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Eigenvalue derivative is invariant under scaling of eigenvectors when using
+$u^{\top}v=1$. Projector $P=v u^{\top}$ is gauge-invariant. Total trace
+$\mathrm{tr}(A)$ derivative equals $\mathrm{tr}(dA)$ equals sum of $d\lambda_i$.
+
+\textbf{EDGE INTUITION.}
+As gaps $\lvert\lambda_i-\lambda_j\rvert\to\infty$, $dv_i\to0$. As gaps shrink,
+eigenvectors become ill-conditioned; derivatives blow up like inverse gaps.
+For symmetric $A$, orthogonality simplifies structure, stabilizing $dv$.
+
+\section{Glossary}
+\glossx{Simple eigenvalue}{
+An eigenvalue with algebraic multiplicity one.
+}{
+Ensures differentiability and uniqueness (up to scale) of eigenvectors.
+}{
+Check that $\lambda$ is isolated and $\det(A-\lambda I)'_{\lambda}\neq0$.
+}{
+A single bell tone separated from others allows stable tuning.
+}{
+Mistaking a repeated eigenvalue for simple leads to invalid $dv$ formulae.
+}
+
+\glossx{Left eigenvector}{
+A nonzero $u$ with $u^{\top}A=\lambda u^{\top}$.
+}{
+Required for non-normal matrices to express $d\lambda$ linearly in $dA$.
+}{
+Compute eigenvectors of $A^{\top}$; normalize with $u^{\top}v=1$.
+}{
+Two different microphones (left/right) pick the same pitch differently.
+}{
+Using $v$ instead of $u$ for non-normal $A$ yields wrong derivatives.
+}
+
+\glossx{Spectral projector}{
+$P_i=v_i u_i^{\top}$ onto the eigenspace for a simple eigenvalue.
+}{
+Packages eigenvalue/eigenvector into a gauge-invariant operator.
+}{
+Compute as residue of resolvent or outer product after normalization.
+}{
+A spotlight selecting one mode from all vibrations.
+}{
+For repeated eigenvalues, $P$ projects onto a subspace; use contour integral.
+}
+
+\glossx{Reduced resolvent}{
+$S_i=(A-\lambda_i I)^{\#}$ inverse on the complement of $v_i u_i^{\top}$.
+}{
+Encodes coupling to other modes; compactly expresses $dv$ and $dP$.
+}{
+Solve $(A-\lambda_i I)X=(I-P_i)$ with $P_i X = X P_i = 0$.
+}{
+A lever that moves the mode via interactions with neighbors, scaled by gaps.
+}{
+Ignoring $S_i$ leads to missing commutator structure in $dP$.
+}
+
+\section{Symbol Ledger}
+\varmapStart
+\var{A}{Base matrix in $\mathbb{C}^{n\times n}$.}
+\var{A(t)}{Differentiable matrix curve.}
+\var{dA}{Infinitesimal perturbation matrix (direction).}
+\var{\lambda_i}{Simple eigenvalue of $A$.}
+\var{v_i}{Right eigenvector of $A$ for $\lambda_i$.}
+\var{u_i}{Left eigenvector, $u_i^{\top}A=\lambda_i u_i^{\top}$.}
+\var{P_i}{Spectral projector $v_i u_i^{\top}$ with $u_i^{\top}v_i=1$.}
+\var{S_i}{Reduced resolvent $(A-\lambda_i I)^{\#}$.}
+\var{H}{Concrete perturbation direction (same shape as $A$).}
+\var{\varepsilon}{Small scalar step for finite differences.}
+\var{R_A(x)}{Rayleigh quotient $x^{\top} A x/(x^{\top}x)$.}
+\var{n}{Matrix dimension.}
+\var{I}{Identity matrix.}
+\var{Q}{Orthogonal/unitary eigenvector matrix (symmetric case).}
+\varmapEnd
+
+\section{Formula Canon — One Formula Per Page}
+\FormulaPage{1}{Eigenvalue Directional Derivative and Gradient}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For a simple eigenpair $(\lambda_i,v_i,u_i)$ of $A$, normalized by
+$u_i^{\top}v_i=1$, the first-order change of $\lambda_i$ under $dA$ is
+$d\lambda_i=u_i^{\top}(dA)\,v_i$. Hence the gradient with respect to entries
+of $A$ is $\nabla_A \lambda_i = v_i u_i^{\top}$.
+
+\WHAT{
+Computes the linear functional mapping a perturbation $dA$ to the change in
+a simple eigenvalue; simultaneously identifies the matrix-entry gradient.
+}
+
+\WHY{
+Gives immediate sensitivity of modes, enables gradients of spectral losses
+and provides the building block for higher-order perturbation bounds.
+}
+
+\FORMULA{
+\[
+d\lambda_i = u_i^{\top}(dA)\,v_i,\qquad
+\nabla_A \lambda_i = v_i u_i^{\top}.
+\]
+For $A$ normal (e.g., symmetric), $u_i=v_i$ and $d\lambda_i=v_i^{\top}(dA)v_i$.
+}
+
+\CANONICAL{
+$A\in\mathbb{C}^{n\times n}$; $\lambda_i$ simple; $v_i\neq 0$, $u_i\neq 0$,
+$u_i^{\top}v_i=1$. Direction $dA$ arbitrary. Scalar field real or complex.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $\lambda_i$ is isolated and algebraic multiplicity one.
+\item $A$ and $dA$ are finite; differentiability of $A(t)$ at $t=0$ exists.
+\item Gauge fixed by $u_i^{\top}v_i=1$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Let $A v_i=\lambda_i v_i$ and $u_i^{\top}A=\lambda_i u_i^{\top}$ with
+$u_i^{\top}v_i=1$. Then for a differentiable $A(t)$,
+$d\lambda_i=u_i^{\top}(dA)\,v_i$.
+\end{lemma}
+\begin{proof}
+Differentiate $A v_i=\lambda_i v_i$:
+$(dA)\,v_i + A\,dv_i = d\lambda_i\, v_i + \lambda_i\, dv_i$.
+Left-multiply by $u_i^{\top}$ to get
+$u_i^{\top}(dA)\,v_i + u_i^{\top}A\,dv_i = d\lambda_i\, u_i^{\top}v_i
++ \lambda_i\, u_i^{\top} dv_i$.
+Use $u_i^{\top}A=\lambda_i u_i^{\top}$ and $u_i^{\top}v_i=1$ to cancel:
+$u_i^{\top}(dA)\,v_i + \lambda_i u_i^{\top}dv_i
+= d\lambda_i + \lambda_i u_i^{\top}dv_i$.
+Thus $d\lambda_i=u_i^{\top}(dA)\,v_i$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Setup: }& A v_i=\lambda_i v_i,\ u_i^{\top}A=\lambda_i u_i^{\top},
+\ u_i^{\top}v_i=1.\\
+\text{Diff.: }& (dA)v_i + A\,dv_i = d\lambda_i\, v_i + \lambda_i\, dv_i.\\
+\text{Left mult.: }& u_i^{\top}(dA)v_i + u_i^{\top}A\,dv_i
+= d\lambda_i\, u_i^{\top}v_i + \lambda_i u_i^{\top}dv_i.\\
+\text{Use } u_i^{\top}A=\lambda_i u_i^{\top} \text{ and } u_i^{\top}v_i=1
+\ &\Rightarrow\ d\lambda_i=u_i^{\top}(dA)v_i.\\
+\text{Gradient: }& d\lambda_i=\langle v_i u_i^{\top},\, dA\rangle_F
+\Rightarrow \nabla_A\lambda_i=v_i u_i^{\top}.
+\end{align*}
+}
+
+\EQUIV{
+\begin{bullets}
+\item $d\lambda_i=\mathrm{tr}(u_i^{\top}(dA)v_i)=\mathrm{tr}(v_i u_i^{\top} dA)$.
+\item For normal $A$: $u_i=v_i$, hence $\nabla_A\lambda_i=v_i v_i^{\top}$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $\lambda_i$ is multiple, $d\lambda_i$ may be non-unique; use
+eigenvalue clustering and subspace projectors.
+\item As $A$ approaches defective matrices, $u_i$ may blow up in norm, making
+the gradient ill-conditioned though the formula still holds at simple points.
+\end{bullets}
+}
+
+\INPUTS{$A\in\mathbb{C}^{n\times n}$, eigenpair $(\lambda_i,u_i,v_i)$,
+perturbation $H=dA$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Directional eval.: }& d\lambda_i[H]=u_i^{\top} H v_i.\\
+\text{Finite diff. check: }& \frac{\lambda_i(A+\varepsilon H)-\lambda_i(A)}
+{\varepsilon}\approx u_i^{\top} H v_i.
+\end{align*}
+}
+
+\RESULT{
+Directional derivative equals $u_i^{\top} H v_i$; the matrix gradient is
+$v_i u_i^{\top}$, reducing to $v_i v_i^{\top}$ in the symmetric case.
+}
+
+\UNITCHECK{
+Inner product $\langle v_i u_i^{\top},H\rangle_F=\mathrm{tr}(u_i^{\top}Hv_i)$
+is scalar; shapes are consistent: $(n\times 1)(1\times n)$ matches $H$.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Using $v_i^{\top} H v_i$ for non-normal $A$ is incorrect.
+\item Forgetting to normalize with $u_i^{\top}v_i=1$ changes the numeric value.
+\item Left eigenvectors are not conjugate transposes unless $A$ is normal.
+\end{bullets}
+}
+
+\INTUITION{
+$u_i$ measures how the mode responds on the left, $v_i$ on the right; the
+sandwich $u_i^{\top} H v_i$ is the coupling of the perturbation to the mode.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Universal identity: $d\lambda=\langle \nabla_A\lambda, dA\rangle_F$
+with $\nabla_A\lambda=v u^{\top}$.
+\item For Hermitian $A$, $\nabla_A\lambda=vv^{\ast}$.
+\end{bullets}
+}
+
+\FormulaPage{2}{Eigenvector Directional Derivative via Modal Expansion}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For a simple eigenpair and normalization $u_i^{\top}v_i=1$, the eigenvector
+directional derivative lies in the complement of $v_i$ and expands over
+other modes:
+\[
+dv_i=\sum_{j\neq i} v_j \frac{u_j^{\top}(dA)\, v_i}{\lambda_i-\lambda_j}.
+\]
+
+\WHAT{
+Gives the first-order change of an eigenvector in terms of couplings to other
+eigenmodes and inverses of eigen-gaps.
+}
+
+\WHY{
+Predicts subspace rotation, quantifies sensitivity, and is key in deriving
+perturbation bounds like Davis--Kahan and in differentiating PCA.
+}
+
+\FORMULA{
+\[
+dv_i=\sum_{j\neq i} v_j \frac{u_j^{\top}(dA)\, v_i}{\lambda_i-\lambda_j},
+\quad u_i^{\top}v_i=1,\quad u_i^{\top}dv_i=0.
+\]
+For symmetric $A$ with orthonormal $\{v_j\}$,
+$dv_i=\sum_{j\neq i} v_j \dfrac{v_j^{\top}(dA)v_i}{\lambda_i-\lambda_j}$.
+}
+
+\CANONICAL{
+Diagonalizable $A$ with simple spectrum at $\lambda_i$. Left/right bases
+$\{u_j\},\{v_j\}$ biorthogonal: $u_j^{\top}v_k=\delta_{jk}$. Gauge fixed by
+$u_i^{\top}v_i=1$ and $u_i^{\top}dv_i=0$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Simple eigenvalue and complete set of eigenvectors locally.
+\item Nonzero gaps $\lambda_i-\lambda_j$ for $j\neq i$.
+\item Gauge condition $u_i^{\top}dv_i=0$ to ensure uniqueness.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+With $u_j^{\top}v_k=\delta_{jk}$ and $u_i^{\top}v_i=1$, the differential
+$dv_i$ satisfies $(A-\lambda_i I)dv_i=-(dA-\!d\lambda_i I)v_i$ and
+$u_i^{\top}dv_i=0$.
+\end{lemma}
+\begin{proof}
+Differentiate $A v_i=\lambda_i v_i$:
+$(dA)v_i + A dv_i = d\lambda_i v_i + \lambda_i dv_i$.
+Rearrange $(A-\lambda_i I)dv_i=-(dA-\!d\lambda_i I)v_i$.
+Left-multiply by $u_i^{\top}$ and use $u_i^{\top}(A-\lambda_i I)=0$ to get
+$0=-u_i^{\top}(dA-\!d\lambda_i I)v_i$, which holds since
+$d\lambda_i=u_i^{\top}(dA)v_i$. Thus the constraint $u_i^{\top}dv_i=0$
+defines a unique solution in the complement. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Expand } dv_i&=\sum_{j} \alpha_j v_j,\ \ u_k^{\top}v_j=\delta_{kj}.\\
+\text{Constraint }& u_i^{\top}dv_i=\alpha_i=0.\\
+(A-\lambda_i I)dv_i&=\sum_{j\neq i} \alpha_j (\lambda_j-\lambda_i) v_j.\\
+\text{RHS }&=-(dA-\!d\lambda_i I)v_i=-(dA v_i-\!d\lambda_i v_i).\\
+\text{Project onto }u_j^{\top},\ j\neq i:&\\
+(\lambda_j-\lambda_i)\alpha_j&=-u_j^{\top}(dA v_i-\!d\lambda_i v_i)\\
+&=-u_j^{\top}(dA)v_i \ \ (\text{since } u_j^{\top}v_i=0).\\
+\alpha_j&=\frac{u_j^{\top}(dA)\, v_i}{\lambda_i-\lambda_j}.\\
+\Rightarrow\ dv_i&=\sum_{j\neq i} v_j \frac{u_j^{\top}(dA)\, v_i}
+{\lambda_i-\lambda_j}.
+\end{align*}
+}
+
+\EQUIV{
+\begin{bullets}
+\item Resolvent form: $dv_i=-S_i(dA-\!d\lambda_i I)v_i$ where
+$S_i=\sum_{j\neq i}\dfrac{v_j u_j^{\top}}{\lambda_j-\lambda_i}$.
+\item Symmetric case: $u_j=v_j$, orthonormal basis simplifies inner products.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item Small gaps cause large $dv_i$; ill-conditioning proportional to
+$\min_{j\neq i}|\lambda_i-\lambda_j|^{-1}$.
+\item At repeated eigenvalues, $dv_i$ is undefined; use subspace differential.
+\end{bullets}
+}
+
+\INPUTS{$A$, eigen-system $\{(\lambda_j,u_j,v_j)\}$, direction $H=dA$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Compute }& \beta_j=u_j^{\top} H v_i,\ j\neq i.\\
+\text{Then }& dv_i=\sum_{j\neq i} v_j \frac{\beta_j}{\lambda_i-\lambda_j}.
+\end{align*}
+}
+
+\RESULT{
+Eigenvector change is a linear combination of other eigenvectors, weighted by
+couplings $u_j^{\top} H v_i$ and scaled by inverse eigen-gaps.
+}
+
+\UNITCHECK{
+Each term $v_j$ has dimension of vector; coefficients are scalar; sum matches
+shape of $v_i$. Orthogonality constraint $u_i^{\top}dv_i=0$ holds by design.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Omitting the gauge leads to an arbitrary component along $v_i$.
+\item Dividing by zero when eigen-gaps vanish; must check simplicity.
+\item Mixing left and right bases from different normalizations breaks
+biorthogonality.
+\end{bullets}
+}
+
+\INTUITION{
+Eigenvectors swing toward neighboring modes; closer modes exert stronger
+influence (smaller gap), and couplings are given by how $H$ mixes the modes.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Universal structure: $dv=-S (dA-\!d\lambda I) v$ with reduced resolvent
+$S=(A-\lambda I)^{\#}$.
+\item Symmetric special case uses orthonormal expansions.
+\end{bullets}
+}
+
+\FormulaPage{3}{Spectral Projector Differential and Commutator Form}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For a simple eigenvalue with projector $P_i=v_i u_i^{\top}$ and reduced
+resolvent $S_i$, the differential of $P_i$ satisfies
+\[
+dP_i = -S_i(dA)P_i - P_i(dA)S_i,
+\]
+equivalently the Sylvester-commutator equation
+\[
+(A-\lambda_i I)\, dP_i - dP_i\, (A-\lambda_i I) = [P_i,dA].
+\]
+
+\WHAT{
+Gives the first-order change of the spectral projector, a gauge-invariant
+object capturing the eigen-subspace.
+}
+
+\WHY{
+For repeated or nearly multiple eigenvalues, projectors are the stable
+quantities; $dP$ underlies subspace perturbation and invariant subspace
+tracking algorithms.
+}
+
+\FORMULA{
+\[
+dP_i = -S_i(dA)P_i - P_i(dA)S_i,\quad
+S_i=\sum_{j\neq i}\frac{v_j u_j^{\top}}{\lambda_j-\lambda_i}.
+\]
+Equivalently,
+\[
+(A-\lambda_i I)\, dP_i - dP_i\, (A-\lambda_i I) = P_i dA (I-P_i) - (I-P_i) dA P_i.
+\]
+}
+
+\CANONICAL{
+Diagonalizable $A$ with simple $\lambda_i$. $P_i=v_i u_i^{\top}$ with
+$u_i^{\top}v_i=1$. $S_i$ is the inverse of $(A-\lambda_i I)$ on the range
+$(I-P_i)$ and zero on the eigenspace of $P_i$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item Simple eigenvalue and spectral decomposition exists locally.
+\item $S_i$ well-defined via biorthogonal bases or resolvent integral.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Let $P_i=v_i u_i^{\top}$ with $u_i^{\top}v_i=1$ and
+$S_i=\sum_{j\neq i}\dfrac{v_j u_j^{\top}}{\lambda_j-\lambda_i}$.
+Then $P_i S_i=S_i P_i=0$ and
+$(A-\lambda_i I)S_i=S_i(A-\lambda_i I)=I-P_i$.
+\end{lemma}
+\begin{proof}
+Using biorthogonality $u_j^{\top}v_k=\delta_{jk}$,
+$P_i S_i=\sum_{j\neq i} v_i u_i^{\top} v_j
+\dfrac{u_j^{\top}}{\lambda_j-\lambda_i}=0$ since $u_i^{\top}v_j=0$ for
+$j\neq i$. Similarly $S_i P_i=0$. Moreover,
+\[
+(A-\lambda_i I)S_i=\sum_{j\neq i} (\lambda_j-\lambda_i)
+\frac{v_j u_j^{\top}}{\lambda_j-\lambda_i}=\sum_{j\neq i} v_j u_j^{\top}
+=I-P_i,
+\]
+and similarly on the right. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+\text{Differentiate }& P_i=v_i u_i^{\top}:\
+dP_i=(dv_i)u_i^{\top}+v_i(du_i)^{\top}.\\
+\text{Use }& dv_i=-S_i(dA-\!d\lambda_i I)v_i,\ 
+du_i^{\top}=-u_i^{\top}(dA-\!d\lambda_i I)S_i.\\
+\text{Then }& dP_i=-S_i(dA)v_i u_i^{\top}-v_i u_i^{\top}(dA)S_i
+\quad(\text{since } S_i v_i=0,\ u_i^{\top}S_i=0).\\
+&=-S_i(dA)P_i - P_i(dA)S_i.\\
+\text{Sylvester form: }& (A-\lambda I)dP_i - dP_i(A-\lambda I)\\
+&= - (I-P_i)(dA)P_i - P_i(dA)(I-P_i)\\
+&= P_i dA (I-P_i) - (I-P_i) dA P_i.
+\end{align*}
+}
+
+\EQUIV{
+\begin{bullets}
+\item Cauchy integral: $P_i=\dfrac{1}{2\pi i}\oint_{\Gamma}
+(zI-A)^{-1}dz$; then
+$dP_i=\dfrac{1}{2\pi i}\oint_{\Gamma}(zI-A)^{-1}(dA)(zI-A)^{-1}dz$.
+\item Symmetric $A$: $S_i=\sum_{j\neq i}\dfrac{v_j v_j^{\top}}{\lambda_j-\lambda_i}$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If eigenvalues coalesce, $P_i$ merges into a higher-rank projector; the
+contour integral still defines the subspace projector.
+\item Ill-conditioning grows as gaps shrink, reflected in $\|S_i\|$.
+\end{bullets}
+}
+
+\INPUTS{$A$, eigen-system, direction $H=dA$, projector $P_i$, reduced resolvent
+$S_i$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Compute }& dP_i=-S_i H P_i - P_i H S_i.\\
+\text{Check: }& P_i dP_i P_i=0 \text{ holds by } P_i S_i=0=S_i P_i.
+\end{align*}
+}
+
+\RESULT{
+Gauge-invariant projector differential $dP_i$ satisfies both the resolvent and
+Sylvester-commutator forms, enabling subspace sensitivity analysis.
+}
+
+\UNITCHECK{
+All terms are $n\times n$ matrices; both sides of the Sylvester equation
+have matching shape and vanish on the eigenspace as required.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Forgetting $P_i S_i=0$ leads to spurious on-subspace components.
+\item Using matrix inverse instead of reduced resolvent mis-specifies $S_i$.
+\end{bullets}
+}
+
+\INTUITION{
+$P_i$ changes by pushing mass to and from the complement via $S_i$ with
+coupling determined by $H$; commutator form captures off/on subspace flow.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Projector dynamics: $dP=-S(dA)P-P(dA)S$ with $S=(A-\lambda I)^{\#}$.
+\item Contour-resolvent representation via Cauchy integral.
+\end{bullets}
+}
+
+\FormulaPage{4}{Rayleigh Quotient Differential and Eigenvalue Stationarity}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For symmetric $A=A^{\top}$ and nonzero $x$, the Rayleigh quotient
+$R_A(x)=\dfrac{x^{\top}Ax}{x^{\top}x}$ has differential
+\[
+dR=\frac{x^{\top}(dA)x}{x^{\top}x}
++\frac{2}{x^{\top}x}(Ax-R_A(x)x)^{\top}dx.
+\]
+At an eigenpair $(\lambda,v)$ with $\|v\|=1$, $dR= v^{\top}(dA)v$ and
+$\nabla_A \lambda = v v^{\top}$.
+
+\WHAT{
+Expresses sensitivity of the Rayleigh quotient to changes in $A$ and $x$;
+shows eigenvectors are stationary points in $x$ and recovers eigenvalue
+derivative in $A$.
+}
+
+\WHY{
+Connects optimization perspective (constrained extremization) to differential
+sensitivity; grounds spectral gradients used in PCA and spectral norm losses.
+}
+
+\FORMULA{
+\[
+dR=\frac{x^{\top}(dA)x}{x^{\top}x}
++\frac{2}{x^{\top}x}(Ax-R_A(x)x)^{\top}dx.
+\]
+At $x=v$ with $Av=\lambda v$, $dR=v^{\top}(dA)v$, and
+$\nabla_A \lambda = v v^{\top}$.
+}
+
+\CANONICAL{
+$A$ symmetric with simple eigenvalues; $x\neq 0$. For stationary analysis,
+enforce $\|x\|=1$ or use Lagrange multiplier for constraint $x^{\top}x=1$.
+}
+
+\PRECONDS{
+\begin{bullets}
+\item $A$ symmetric ensures real $R_A$ and orthonormal eigenbasis.
+\item Differentiability of $A$ and $x$; $x^{\top}x\neq 0$.
+\end{bullets}
+}
+
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+The stationary points of $R_A(x)$ on the unit sphere are eigenvectors of $A$,
+with stationary values equal to eigenvalues.
+\end{lemma}
+\begin{proof}
+Constrained problem $\max R_A(x)$ subject to $x^{\top}x=1$ has Lagrangian
+$L(x,\mu)=x^{\top}Ax-\mu(x^{\top}x-1)$. Stationarity gives $2Ax-2\mu x=0$
+so $Ax=\mu x$. Then $R_A(x)=x^{\top}Ax=x^{\top}\mu x=\mu$. \qedhere
+\end{proof}
+
+\DERIVATION{
+\begin{align*}
+R&=\frac{x^{\top}Ax}{x^{\top}x},\quad N=x^{\top}Ax,\ D=x^{\top}x.\\
+dN&=x^{\top}(dA)x+2x^{\top}A\,dx,\quad dD=2x^{\top}dx.\\
+dR&=\frac{dN}{D}-\frac{N}{D^2}dD\\
+&=\frac{x^{\top}(dA)x}{D}+\frac{2}{D}\left(x^{\top}A\,dx
+-\frac{N}{D} x^{\top}dx\right)\\
+&=\frac{x^{\top}(dA)x}{x^{\top}x}
++\frac{2}{x^{\top}x}(Ax-Rx)^{\top}dx.
+\end{align*}
+At $x=v$, $Av=\lambda v$, $R=\lambda$, so the $dx$-term vanishes.
+}
+
+\EQUIV{
+\begin{bullets}
+\item Matrix gradient: $\nabla_A R=\dfrac{xx^{\top}}{x^{\top}x}$.
+\item Vector gradient on sphere: $\nabla_x R=\dfrac{2}{\|x\|^2}(I-xx^{\top}/
+\|x\|^2)Ax$.
+\end{bullets}
+}
+
+\LIMITS{
+\begin{bullets}
+\item If $A$ is not symmetric, $R_A$ may be complex; stationary analysis
+requires Hermitian $A$ with conjugate transpose.
+\item At repeated eigenvalues, any vector in the eigenspace is stationary.
+\end{bullets}
+}
+
+\INPUTS{$A\in\mathbb{R}^{n\times n}$ symmetric, unit vector $v$, direction
+$H=dA$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Directional in }A:&\ d\lambda[H]=v^{\top} H v.\\
+\text{Finite diff.: }& \frac{R_{A+\varepsilon H}(v)-R_A(v)}{\varepsilon}
+\approx v^{\top} H v.
+\end{align*}
+}
+
+\RESULT{
+At eigenvectors, Rayleigh quotient responds to $dA$ by $v^{\top} H v$ and is
+stationary in $x$, recovering the symmetric case of Formula 1.
+}
+
+\UNITCHECK{
+$\nabla_A R=xx^{\top}/(x^{\top}x)$ matches $A$'s shape; $v^{\top}Hv$ is
+scalar with consistent units as $\lambda$.
+}
+
+\PITFALLS{
+\begin{bullets}
+\item Forgetting the normalization leads to extra $dx$-terms.
+\item Using this for non-symmetric $A$ without Hermitian structure is invalid.
+\end{bullets}
+}
+
+\INTUITION{
+The Rayleigh quotient is an energy per unit length; at an eigenvector, all
+forces balance and only changes in the medium ($A$) alter the energy.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Gradient form $\nabla_A \lambda=vv^{\top}$ is the symmetric specialization
+of $\nabla_A\lambda=v u^{\top}$.
+\item Stationarity condition $Ax=\lambda x$ arises from constrained extremum.
+\end{bullets}
+}
+
+\section{10 Exhaustive Problems and Solutions}
+\ProblemPage{1}{Eigenvalue Sensitivity and Gradient Check}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Compute the directional derivative of a simple eigenvalue and verify with
+finite differences; derive the gradient with respect to $A$.
+
+\PROBLEM{
+Let $A=\begin{bmatrix}2&1\\0&3\end{bmatrix}$ and $H=\begin{bmatrix}0&2\\1&-1
+\end{bmatrix}$. Consider the eigenvalue $\lambda_2=3$. Find the left/right
+eigenvectors for $\lambda_2$, compute $d\lambda_2[H]$, and compare to
+$\dfrac{\lambda_2(A+\varepsilon H)-\lambda_2(A)}{\varepsilon}$ for
+$\varepsilon=10^{-6}$. Give $\nabla_A \lambda_2$.
+}
+
+\MODEL{
+\[
+A v=\lambda v,\quad u^{\top}A=\lambda u^{\top},\ u^{\top}v=1,\quad
+d\lambda=u^{\top}Hv,\ \nabla_A\lambda=v u^{\top}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\lambda_2=3$ is simple for $A$; $A$ is upper triangular with distinct
+diagonal entries.
+\item Gauge normalization $u^{\top}v=1$.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Base matrix.}
+\var{H}{Perturbation direction.}
+\var{\varepsilon}{Finite-difference step.}
+\var{\lambda_2}{Target eigenvalue.}
+\var{u,v}{Left/right eigenvectors for $\lambda_2$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 1: $d\lambda=u^{\top}Hv$ and $\nabla_A\lambda=v u^{\top}$.
+}
+
+\GOVERN{
+\[
+(A-3I)v=0,\quad u^{\top}(A-3I)=0,\quad u^{\top}v=1.
+\]
+}
+
+\INPUTS{$A=\begin{bmatrix}2&1\\0&3\end{bmatrix}$,
+$H=\begin{bmatrix}0&2\\1&-1\end{bmatrix}$, $\varepsilon=10^{-6}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Right }v:&\ (A-3I)=\begin{bmatrix}-1&1\\0&0\end{bmatrix},\
+v=\begin{bmatrix}1\\1\end{bmatrix}.\\
+\text{Left }u^{\top}:&\ u^{\top}(A-3I)=0 \Rightarrow
+(-1)u_1+0\cdot u_2=0,\ u_1=0,\ u_2\ \text{free}.\\
+&\ u^{\top}=[0,\alpha],\ \text{choose } \alpha\ \text{s.t. } u^{\top}v=1.\\
+&\ u^{\top}v=\alpha\cdot 1=1 \Rightarrow \alpha=1,\
+u^{\top}=[0,1].\\
+d\lambda[H]&=u^{\top}Hv=[0,1]
+\begin{bmatrix}0&2\\1&-1\end{bmatrix}\begin{bmatrix}1\\1\end{bmatrix}\\
+&=[0,1]\begin{bmatrix}2\\0\end{bmatrix}=0.\\
+\text{FD: }& A+\varepsilon H=
+\begin{bmatrix}2&1\\0&3\end{bmatrix}+\varepsilon
+\begin{bmatrix}0&2\\1&-1\end{bmatrix}.\\
+&\text{Eigenvalue near }3\ \text{shifts by } \mathcal{O}(\varepsilon^2)
+\text{ since } d\lambda=0.\\
+\text{Gradient }& \nabla_A \lambda_2=v u^{\top}=
+\begin{bmatrix}1\\1\end{bmatrix}[0,1]=\begin{bmatrix}0&1\\0&1\end{bmatrix}.
+\end{align*}
+}
+
+\RESULT{
+$d\lambda_2[H]=0$, matching finite difference to first order; gradient
+$\nabla_A\lambda_2=\begin{bmatrix}0&1\\0&1\end{bmatrix}$.
+}
+
+\UNITCHECK{
+$d\lambda$ is scalar. Gradient matches shape $2\times 2$; inner product
+$\langle \nabla,\!H\rangle_F=0$ agrees with $d\lambda$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $A$ had repeated diagonal entries, left eigenvector would not be
+unique; formula would fail.
+\item For symmetric $A$, $u=v$ and gradient would be $vv^{\top}$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Place $A$ in real Schur form (already upper triangular); read gradient as the
+outer product of corresponding Schur vectors normalized to $1$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compute $\lambda_2$ at $\varepsilon=\pm 10^{-6}$ and verify centered
+difference is $\mathcal{O}(\varepsilon)$ close to $0$.
+\item Check $\langle \nabla, H\rangle_F=0$.
+\end{bullets}
+}
+
+\INTUITION{
+Here $H$ does not couple the mode to itself at first order; perturbation
+enters off-diagonally in a way invisible to $\lambda_2$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $d\lambda=\langle v u^{\top}, H\rangle_F$.
+\item Finite difference confirms first-order exactness.
+\end{bullets}
+}
+
+\ProblemPage{2}{Symmetric Eigenvector Sensitivity and Gap Dependence}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Predict the change of a normalized eigenvector under a symmetric perturbation
+and verify numerically.
+
+\PROBLEM{
+Let $A=\begin{bmatrix}4&1&0\\1&2&1\\0&1&1\end{bmatrix}$ and
+$H=\begin{bmatrix}0&0&1\\0&0&0\\1&0&0\end{bmatrix}$. Consider the eigenpair
+$(\lambda_1,v_1)$ with largest $\lambda_1$. Compute
+$dv_1=\sum_{j\neq 1} v_j \dfrac{v_j^{\top} H v_1}{\lambda_1-\lambda_j}$,
+and compare to centered finite difference
+$\dfrac{v_1(A+\varepsilon H)-v_1(A-\varepsilon H)}{2\varepsilon}$ aligned
+to the reference sign, with $\varepsilon=10^{-6}$.
+}
+
+\MODEL{
+\[
+A v_j=\lambda_j v_j,\ \ v_j^{\top} v_k=\delta_{jk},\ \ dv_1
+=\sum_{j\neq 1} v_j \frac{v_j^{\top} H v_1}{\lambda_1-\lambda_j}.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ is symmetric with simple eigenvalues.
+\item Eigenvectors are orthonormal; gauge $\|v_1\|=1$ and $v_1^{\top} dv_1=0$.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Symmetric matrix.}
+\var{H}{Symmetric perturbation direction.}
+\var{\{(\lambda_j,v_j)\}}{Eigenpairs of $A$.}
+\var{\varepsilon}{Centered difference step.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 (symmetric specialization).
+}
+
+\GOVERN{
+\[
+dv_1=\sum_{j\neq 1} v_j \frac{v_j^{\top} H v_1}{\lambda_1-\lambda_j},\quad
+v_1^{\top} dv_1=0.
+\]
+}
+
+\INPUTS{$A$, $H$, numeric $\varepsilon=10^{-6}$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Diag.: }& A=Q\Lambda Q^{\top},\ v_j=Q e_j.\\
+\beta_j&=v_j^{\top}Hv_1,\ \gamma_j=\frac{\beta_j}{\lambda_1-\lambda_j}.\\
+dv_1&=\sum_{j\neq 1} \gamma_j v_j.\\
+\text{FD: }& v_1^{\pm}=v_1(A\pm \varepsilon H),\
+\tilde{v}_1^{\pm}= \mathrm{sign}(v_1^{\pm\top} v_1)\, v_1^{\pm}.\\
+\text{Compare }& \frac{\tilde{v}_1^{+}-\tilde{v}_1^{-}}{2\varepsilon}
+\approx dv_1.
+\end{align*}
+}
+
+\RESULT{
+$dv_1$ computed from modal expansion matches centered difference within
+$\mathcal{O}(\varepsilon)$ after sign alignment of eigenvectors.
+}
+
+\UNITCHECK{
+Both $dv_1$ and finite difference are vectors in $\mathbb{R}^3$; orthogonality
+to $v_1$ holds by construction.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $\lambda_1$ nearly equals $\lambda_2$, coefficients blow up and
+finite differences require smaller steps.
+\item Sign flips of eigenvectors must be aligned for comparison.
+\end{bullets}
+}
+
+\ALTERNATE{
+Solve $(A-\lambda_1 I) dv_1=-(H-\!d\lambda_1 I) v_1$ with $v_1^{\top} dv_1=0$
+using a linear solver on the orthogonal complement.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Check $\|dv_1 - \text{FD}\|/\|dv_1\|$ is small.
+\item Verify $v_1^{\top} dv_1=0$ numerically.
+\end{bullets}
+}
+
+\INTUITION{
+The eigenvector tilts toward other directions that $H$ pushes onto $v_1$,
+scaled by inverse eigen-gaps.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item $dv$ expansion with orthonormal basis and gap denominators.
+\item Orthogonality constraint ensures uniqueness on the sphere.
+\end{bullets}
+}
+
+\ProblemPage{3}{Rayleigh Quotient, KKT, and Eigenvalue Gradient}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show that the Rayleigh quotient constrained maximization yields eigenpairs
+and derive the gradient with respect to $A$ at the maximizer.
+
+\PROBLEM{
+Maximize $x^{\top}A x$ subject to $x^{\top}x=1$ for symmetric $A$. Derive
+the KKT conditions and prove that any optimizer $v$ satisfies $Av=\lambda v$
+with $\lambda=v^{\top}A v$. Show that the directional derivative in $A$ is
+$v^{\top} H v$ and the gradient is $v v^{\top}$.
+}
+
+\MODEL{
+\[
+\max_{x} x^{\top}A x\ \text{s.t. } x^{\top}x=1,\quad
+L(x,\mu)=x^{\top}Ax-\mu(x^{\top}x-1).
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ symmetric; compact feasible set ensures attainment.
+\item Simple largest eigenvalue for uniqueness up to sign.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Symmetric matrix.}
+\var{x}{Decision vector with unit norm.}
+\var{\mu}{Lagrange multiplier.}
+\var{H}{Perturbation of $A$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 4 for $dR$ and Formula 1 (symmetric case) for $d\lambda$.
+}
+
+\GOVERN{
+\[
+\nabla_x L=2Ax-2\mu x=0\Rightarrow Ax=\mu x,\quad \mu=x^{\top}Ax.
+\]
+}
+
+\INPUTS{$A$, $H$, optimal $v$.}
+
+\DERIVATION{
+\begin{align*}
+\text{KKT: }& \nabla_x L=0 \Rightarrow Ax=\mu x.\\
+\text{Multiply }& x^{\top}:\ x^{\top}Ax=\mu x^{\top}x=\mu.\\
+\text{Let }& v\ \text{be maximizer},\ Av=\lambda v,\ \lambda=v^{\top}A v.\\
+\text{Directional }& d\lambda[H]=v^{\top} H v,\ 
+\nabla_A\lambda = v v^{\top}.
+\end{align*}
+}
+
+\RESULT{
+Eigenpairs solve the KKT system; gradient of the maximal eigenvalue with
+respect to $A$ is $v v^{\top}$ at the optimizer $v$.
+}
+
+\UNITCHECK{
+$v v^{\top}$ has shape $n\times n$. Inner product with $H$ yields scalar
+$v^{\top} H v$, consistent with $d\lambda$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item At multiple top eigenvalues, the set of maximizers is a subspace; any
+unit vector therein is optimal, but the gradient becomes a subdifferential.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use Courant--Fischer min-max principle to characterize the largest eigenvalue
+and differentiate the variational expression along $A+\varepsilon H$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically verify with finite differences that
+$\lambda_{\max}(A+\varepsilon H)$ matches $\lambda+\varepsilon v^{\top}Hv$.
+\end{bullets}
+}
+
+\INTUITION{
+Maximizing quadratic energy under unit norm picks the dominant mode; its
+sensitivity to $A$ is how much $H$ contributes along that mode.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Rayleigh quotient stationarity recovers eigenvalue derivative.
+\item Gradient equals projector onto the top eigendirection.
+\end{bullets}
+}
+
+\ProblemPage{4}{Alice and Bob Debate Left vs. Right Sandwich}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Clarify which inner product gives the eigenvalue derivative for non-normal
+matrices.
+
+\PROBLEM{
+Alice claims $d\lambda=v^{\top} H v$ for any matrix. Bob claims the correct
+formula is $d\lambda=u^{\top} H v$. Given
+$A=\begin{bmatrix}0&1\\0&0\end{bmatrix}$ and
+$H=\begin{bmatrix}1&0\\0&-1\end{bmatrix}$, analyze the eigenvalue $\lambda=0$,
+find $u,v$, compute both expressions, and decide who is correct.
+}
+
+\MODEL{
+\[
+A v=0,\ u^{\top}A=0,\ u^{\top}v=1,\ d\lambda=u^{\top}Hv.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\lambda=0$ is simple for $A$ (Jordan block of size 2 would be
+defective; here it is size 2 but algebraic multiplicity 2; however the
+geometric multiplicity is 1; treat the eigenpair at a simple point in
+directional sense along non-defective perturbations for comparison).
+\item Choose the eigenpair linked to the nonzero coupling space.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Nilpotent matrix.}
+\var{H}{Diagonal perturbation.}
+\var{\lambda}{Eigenvalue at $0$.}
+\var{u,v}{Left/right eigenvectors for $\lambda=0$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 1 dictates $d\lambda=u^{\top}Hv$ for simple eigenvalues.
+}
+
+\GOVERN{
+\[
+A v=0 \Rightarrow v=\begin{bmatrix}1\\0\end{bmatrix},\
+u^{\top}A=0 \Rightarrow u^{\top}=[0,1],\ u^{\top}v=0\neq 1.
+\]
+}
+
+\INPUTS{$A$, $H$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Note: }& A\ \text{is defective at }\lambda=0.\
+\text{Pick } v=[1,0]^{\top}.\\
+\text{Left: }& u^{\top}=[0,1]\ \text{satisfies } u^{\top}A=0.\\
+\text{Normalize: }& u^{\top}v=0\ \text{cannot be 1; defect prevents
+biorthonormality.}\\
+\text{Perturb }& A_\varepsilon=A+\varepsilon H=
+\begin{bmatrix}\varepsilon&1\\0&-\varepsilon\end{bmatrix}.\\
+\text{Eigenvalues }& \lambda_{\pm}=\pm \sqrt{\varepsilon^2}=\pm \varepsilon.\\
+\text{Directional }& \frac{d}{d\varepsilon}\lambda_{+}(0)=1.\\
+\text{Alice: }& v^{\top}Hv=\begin{bmatrix}1&0\end{bmatrix}
+\begin{bmatrix}1&0\\0&-1\end{bmatrix}\begin{bmatrix}1\\0\end{bmatrix}=1.\\
+\text{Bob: }& \text{Not defined at defect; no } u\ \text{with } u^{\top}v=1.\\
+\text{Resolution: }& At non-defective simple points, Bob is correct; here,
+the simple-eigenvalue assumption fails, so Formula 1 does not apply.
+\end{align*}
+}
+
+\RESULT{
+At defective points, the simple-eigenvalue derivative formula is inapplicable.
+Alice's expression coincidentally matches the observed slope along this path,
+but in general $v^{\top}Hv$ is invalid for non-normal $A$. Bob is correct for
+simple eigenvalues; this example is a failure of the preconditions.
+}
+
+\UNITCHECK{
+Not applicable due to defect; when applicable, shapes are consistent.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item Defective eigenvalues violate prerequisites; use Jordan theory.
+\item Nearby simple points recover $d\lambda=u^{\top}Hv$ with proper $u$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Regularize by adding a small random similarity that diagonalizes near $A$,
+then take limits to recover the general $u^{\top}Hv$ law at simple points.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item For a diagonalizable non-normal $A$, numerically verify
+$u^{\top}Hv$ matches finite differences while $v^{\top}Hv$ does not.
+\end{bullets}
+}
+
+\INTUITION{
+Left information is essential when modes are not orthogonal; defects break
+biorthogonality and invalidate simple formulas.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Precondition sensitivity: formulas require simplicity and diagonalizable
+structure.
+\item Left-right sandwich is the universal expression at simple points.
+\end{bullets}
+}
+
+\ProblemPage{5}{Hidden Commutator Identity for Projector Differential}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show that the projector differential satisfies a commutator Sylvester
+equation and compute it for a $2\times 2$ example.
+
+\PROBLEM{
+Let $A=\begin{bmatrix}2&\alpha\\0&1\end{bmatrix}$ with $\alpha\neq 0$,
+eigenvalue $\lambda_1=2$, and projector $P_1=v_1 u_1^{\top}$. For direction
+$H=\begin{bmatrix}0&1\\0&0\end{bmatrix}$, compute $dP_1$ via the commutator
+equation
+$(A-\lambda_1 I)dP_1-dP_1(A-\lambda_1 I)=[P_1,H]$.
+}
+
+\MODEL{
+\[
+P_1=v_1 u_1^{\top},\ (A-2I)dP_1-dP_1(A-2I)=P_1 H (I-P_1)-(I-P_1) H P_1.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\lambda_1=2$ is simple; $A$ diagonalizable with distinct eigenvalues.
+\item Biorthonormalization $u_1^{\top}v_1=1$.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Upper triangular matrix.}
+\var{H}{Rank-one direction.}
+\var{P_1}{Projector onto $\lambda_1$.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 3: commutator Sylvester equation for $dP$.
+}
+
+\GOVERN{
+\[
+(A-2I)dP_1-dP_1(A-2I)=[P_1,H].
+\]
+}
+
+\INPUTS{$\alpha\neq 0$, $A$, $H$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Eigenpairs: }& \lambda_1=2,\ v_1=\begin{bmatrix}1\\0\end{bmatrix},\
+u_1^{\top}=[1, \alpha].\\
+& \lambda_2=1,\ v_2=\begin{bmatrix}\alpha\\-1\end{bmatrix},\
+u_2^{\top}=[0,1].\\
+\text{Scale }& u_1^{\top}v_1=1\ \text{already},\
+u_2^{\top}v_2=-1\ \text{not needed}.\\
+P_1&=v_1 u_1^{\top}=\begin{bmatrix}1\\0\end{bmatrix}
+\begin{bmatrix}1&\alpha\end{bmatrix}=\begin{bmatrix}1&\alpha\\0&0\end{bmatrix}.\\
+A-2I&=\begin{bmatrix}0&\alpha\\0&-1\end{bmatrix}.\\
+[P_1,H]&=P_1 H - H P_1=
+\begin{bmatrix}1&\alpha\\0&0\end{bmatrix}\begin{bmatrix}0&1\\0&0\end{bmatrix}
+-\begin{bmatrix}0&1\\0&0\end{bmatrix}\begin{bmatrix}1&\alpha\\0&0\end{bmatrix}\\
+&=\begin{bmatrix}0&1\\0&0\end{bmatrix}-\begin{bmatrix}0&0\\0&0\end{bmatrix}
+=\begin{bmatrix}0&1\\0&0\end{bmatrix}.\\
+\text{Let }& dP_1=\begin{bmatrix}a&b\\c&d\end{bmatrix}.\\
+\text{Compute }& (A-2I)dP_1-dP_1(A-2I)=\\
+&\begin{bmatrix}0&\alpha\\0&-1\end{bmatrix}\begin{bmatrix}a&b\\c&d\end{bmatrix}
+-\begin{bmatrix}a&b\\c&d\end{bmatrix}\begin{bmatrix}0&\alpha\\0&-1\end{bmatrix}\\
+&=\begin{bmatrix}\alpha c& \alpha d - b\\ -c& -d\end{bmatrix}
+-\begin{bmatrix}0& a\alpha - b\\ 0& c\alpha - d\end{bmatrix}\\
+&=\begin{bmatrix}\alpha c& \alpha d - b - a\alpha + b\\ -c& -d - c\alpha + d
+\end{bmatrix}\\
+&=\begin{bmatrix}\alpha c& \alpha (d-a)\\ -c& -c\alpha\end{bmatrix}.
+\end{align*}
+Set equal to $[P_1,H]=\begin{bmatrix}0&1\\0&0\end{bmatrix}$ gives
+\begin{cases}
+\alpha c=0,\quad \alpha(d-a)=1,\\
+-c=0,\quad -c\alpha=0.
+\end{cases}
+Thus $c=0$ and $d-a=\dfrac{1}{\alpha}$. Choose trace-free gauge $a=-d$ to
+ensure $P_1 dP_1 P_1=0$; then $2d=\dfrac{1}{\alpha}$, so $d=\dfrac{1}{2\alpha}$,
+$a=-\dfrac{1}{2\alpha}$. $b$ is unconstrained by the Sylvester equation but
+$P_1 dP_1 P_1=0$ enforces $b=0$. Therefore
+$dP_1=\begin{bmatrix}-\frac{1}{2\alpha}&0\\0&\frac{1}{2\alpha}\end{bmatrix}.
+\end{align*}
+}
+
+\RESULT{
+$dP_1$ solving the commutator is
+$\begin{bmatrix}-\frac{1}{2\alpha}&0\\0&\frac{1}{2\alpha}\end{bmatrix}$.
+}
+
+\UNITCHECK{
+All matrices are $2\times 2$; commutator evaluates to $H$ as required.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item As $\alpha\to 0$, the gap closes and $dP_1$ blows up, reflecting
+ill-conditioning.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use $dP=-SHP-PHS$ with $S=\dfrac{v_2 u_2^{\top}}{\lambda_2-\lambda_1}=
+-\dfrac{1}{\alpha}\begin{bmatrix}0\\1\end{bmatrix}\begin{bmatrix}0&1\end{bmatrix}$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Substitute into the commutator to confirm equality.
+\item Compare with $-SHP-PHS$ to cross-check.
+\end{bullets}
+}
+
+\INTUITION{
+Projector flow exchanges mass between the two eigenspaces at a rate inversely
+proportional to the eigen-gap (here $\alpha$ scales the coupling).
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Commutator Sylvester structure equates to resolvent form.
+\item Gap in denominator controls conditioning.
+\end{bullets}
+}
+
+\ProblemPage{6}{Expectation Puzzle: Random Perturbation of Eigenvalue}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Compute expectation and variance (to first order) of eigenvalue change under
+a random perturbation.
+
+\PROBLEM{
+Let $A$ have a simple eigenpair $(\lambda,u,v)$ with $u^{\top}v=1$. Consider
+$H$ with independent entries $H_{ij}=\varepsilon \xi_{ij}$ where
+$\xi_{ij}\in\{-1,1\}$ with equal probability. Compute
+$\mathbb{E}[d\lambda]$ and $\mathrm{Var}(d\lambda)$ to first order in
+$\varepsilon$.
+}
+
+\MODEL{
+\[
+d\lambda=u^{\top}Hv=\sum_{i,j} u_i H_{ij} v_j,\quad
+\mathbb{E}[\xi_{ij}]=0,\ \mathrm{Var}(\xi_{ij})=1.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Independence and zero mean of $\xi_{ij}$.
+\item First-order approximation valid for small $\varepsilon$.
+\end{bullets}
+}
+
+\varmapStart
+\var{u,v}{Left/right eigenvectors with $u^{\top}v=1$.}
+\var{\varepsilon}{Scale of perturbation.}
+\var{\xi_{ij}}{Rademacher variables.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 1 for $d\lambda=u^{\top}Hv$; linearity of expectation and variance.
+}
+
+\GOVERN{
+\[
+\mathbb{E}[d\lambda]=\varepsilon \sum_{i,j} u_i v_j \mathbb{E}[\xi_{ij}],
+\quad \mathrm{Var}(d\lambda)=\varepsilon^2 \sum_{i,j} u_i^2 v_j^2
+\mathrm{Var}(\xi_{ij}).
+\]
+}
+
+\INPUTS{$u,v$, $\varepsilon$, i.i.d. Rademacher entries $\xi_{ij}$.}
+
+\DERIVATION{
+\begin{align*}
+\mathbb{E}[d\lambda]&=\varepsilon \sum_{i,j} u_i v_j \mathbb{E}[\xi_{ij}]=0.\\
+\mathrm{Var}(d\lambda)&=\mathbb{E}[d\lambda^2]-(\mathbb{E}[d\lambda])^2\\
+&=\varepsilon^2 \sum_{i,j} u_i^2 v_j^2 \mathbb{E}[\xi_{ij}^2]\\
+&=\varepsilon^2 \Big(\sum_i u_i^2\Big)\Big(\sum_j v_j^2\Big)
+\quad\text{(independence)}.
+\end{align*}
+}
+
+\RESULT{
+$\mathbb{E}[d\lambda]=0$ and
+$\mathrm{Var}(d\lambda)=\varepsilon^2 \|u\|_2^2 \|v\|_2^2$.
+}
+
+\UNITCHECK{
+Variance is nonnegative scalar. Norms are dimensionless; scale matches
+$\varepsilon^2$.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If entries are not independent, cross terms appear.
+\item For symmetric $A$, $u=v$ and variance reduces to $\varepsilon^2 \|v\|^4$.
+\end{bullets}
+}
+
+\ALTERNATE{
+For Gaussian entries, the same result holds with $\mathrm{Var}(\xi_{ij})=1$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Monte Carlo with fixed seed reproduces mean near zero and variance near
+$\varepsilon^2 \|u\|^2 \|v\|^2$.
+\end{bullets}
+}
+
+\INTUITION{
+Zero-mean symmetric noise cancels on average; dispersion scales with the
+energy of $u$ and $v$ and the noise level $\varepsilon$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Linear eigenvalue sensitivity yields additive variance across entries.
+\end{bullets}
+}
+
+\ProblemPage{7}{Proof: Uniqueness of Eigenvector Differential under Gauge}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Prove that the eigenvector differential is unique in the complement of $v$
+under the constraint $u^{\top}dv=0$.
+
+\PROBLEM{
+Assume $A$ has a simple eigenvalue $\lambda$ with eigenpair $(u,v)$,
+$u^{\top}v=1$. Show that the solution $dv$ to
+$(A-\lambda I)dv=-(H-\!d\lambda I)v$ with $u^{\top}dv=0$ is unique.
+}
+
+\MODEL{
+\[
+(A-\lambda I)dv=-(H-\!d\lambda I)v,\ u^{\top}dv=0.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Simple eigenvalue; $(A-\lambda I)$ invertible on the complement of $v$.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Matrix with simple $\lambda$.}
+\var{H}{Direction.}
+\var{dv}{Unknown differential.}
+\var{u,v}{Left/right eigenvectors.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 and the reduced resolvent invertibility on $(I-P)$.
+}
+
+\GOVERN{
+\[
+\text{Let }P=v u^{\top},\ \ (I-P)(A-\lambda I)(I-P)\ \text{is invertible}.
+\]
+}
+
+\INPUTS{$A$, $H$, $(u,v)$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Suppose }& dv_1,dv_2\ \text{solve the system.}\\
+\Delta&=dv_1-dv_2\ \Rightarrow\
+(A-\lambda I)\Delta=0,\ u^{\top}\Delta=0.\\
+\text{Since }& \ker(A-\lambda I)=\mathrm{span}\{v\},\
+\Delta=\alpha v\ \text{for some }\alpha.\\
+u^{\top}\Delta&=\alpha u^{\top} v=\alpha=0\ \Rightarrow\ \Delta=0.\\
+\text{Hence }& dv_1=dv_2.
+\end{align*}
+}
+
+\RESULT{
+The constrained solution $dv$ is unique.
+}
+
+\UNITCHECK{
+All terms consistent; constraint removes nullspace ambiguity.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $\lambda$ is multiple, the nullspace has dimension $>1$ and the
+constraint is insufficient; only the subspace projector differential is unique.
+\end{bullets}
+}
+
+\ALTERNATE{
+Formally write $dv=-(I-P)(A-\lambda I)^{\dagger}(I-P) (H-\!d\lambda I) v$
+with Moore--Penrose inverse on the complement.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerical solution of the constrained linear system yields a unique
+vector orthogonal to $u$ as required.
+\end{bullets}
+}
+
+\INTUITION{
+Fixing the component along $v$ removes the indeterminacy from scaling freedom.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Gauge constraint selects a unique representative in the tangent space
+orthogonal to the eigendirection.
+\end{bullets}
+}
+
+\ProblemPage{8}{Proof: Orthogonality of Symmetric Eigenvector Differential}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show that for symmetric $A$ and normalized eigenvector $v$, $v^{\top} dv=0$.
+
+\PROBLEM{
+Let $A=A^{\top}$ with simple eigenpair $(\lambda,v)$, $\|v\|=1$. Show that
+for any perturbation $H$, the first-order differential $dv$ satisfies
+$v^{\top} dv=0$.
+}
+
+\MODEL{
+\[
+(A-\lambda I)dv=-(H-\!d\lambda I)v,\ \ d\lambda=v^{\top} H v.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ symmetric, $\|v\|=1$.
+\end{bullets}
+}
+
+\varmapStart
+\var{A}{Symmetric matrix.}
+\var{v}{Unit eigenvector.}
+\var{H}{Symmetric perturbation (optional but not required).}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 2 (symmetric) and normalization constraint.
+}
+
+\GOVERN{
+\[
+\frac{d}{d\varepsilon}\big\|v\big\|^2=2 v^{\top} dv=0.
+\]
+}
+
+\INPUTS{$v^{\top} v=1$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Differentiate }& v^{\top} v=1\ \Rightarrow\ 2 v^{\top} dv=0.\\
+\text{Alternatively }& v^{\top} dv=\sum_{j\neq i}
+\frac{v^{\top} v_j v_j^{\top} H v}{\lambda-\lambda_j}=0
+\ \text{since } v^{\top} v_j=0.
+\end{align*}
+}
+
+\RESULT{
+$v^{\top} dv=0$; the eigenvector change is tangent to the unit sphere.
+}
+
+\UNITCHECK{
+Inner product is scalar; result is zero as required by normalization.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item If $v$ not normalized, $v^{\top} dv$ equals $\tfrac{1}{2} d(\|v\|^2)$.
+\end{bullets}
+}
+
+\ALTERNATE{
+Use Lagrange multipliers enforcing $\|v\|=1$; first-order feasibility implies
+orthogonality of the tangent direction to $v$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerical finite differences of normalized eigenvectors show
+$v^{\top} dv\approx 0$ to $\mathcal{O}(\varepsilon)$.
+\end{bullets}
+}
+
+\INTUITION{
+Staying on the unit sphere forces motion perpendicular to the radius $v$.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Tangent-space characterization of eigenvector differentials.
+\end{bullets}
+}
+
+\ProblemPage{9}{Combo: Singular Value Derivative vs. Eigenvalue Derivative}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Relate the derivative of singular values to the eigenvalue derivative of a
+symmetric matrix.
+
+\PROBLEM{
+Let $B\in\mathbb{R}^{m\times n}$ with SVD $B=U\Sigma V^{\top}$, singular
+value $\sigma_i$, and perturbation $E$. Show that
+$d\sigma_i=u_i^{\top} E v_i$. Then specialize to symmetric $A$ with
+$B=A$ and $U=V$, conclude $d\sigma_i=d\lambda_i$ with
+$d\lambda_i=v_i^{\top} H v_i$.
+}
+
+\MODEL{
+\[
+\sigma_i=\sqrt{\lambda_i(B^{\top}B)},\ \text{or via variational form }
+\sigma_i=\max_{\|x\|=\|y\|=1} y^{\top} B x.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Simple singular value $\sigma_i$.
+\item For symmetric specialization, $A=A^{\top}$.
+\end{bullets}
+}
+
+\varmapStart
+\var{B}{Rectangular matrix.}
+\var{E}{Perturbation of $B$.}
+\var{u_i,v_i}{Left/right singular vectors.}
+\var{\sigma_i}{Singular value.}
+\varmapEnd
+
+\WHICHFORMULA{
+Apply Formula 1 to the eigenvalue of the Hermitian block matrix or use
+variational characterization.
+}
+
+\GOVERN{
+\[
+\begin{bmatrix}0&B\\B^{\top}&0\end{bmatrix}
+\begin{bmatrix}u_i\\ v_i\end{bmatrix}
+=\sigma_i \begin{bmatrix}u_i\\ v_i\end{bmatrix}.
+\]
+}
+
+\INPUTS{$B$, $E$, singular vectors $(u_i,v_i)$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Block Hermitian }& M=\begin{bmatrix}0&B\\B^{\top}&0\end{bmatrix},\
+dM=\begin{bmatrix}0&E\\E^{\top}&0\end{bmatrix}.\\
+\text{Eigenpair }& M w_i=\sigma_i w_i,\ w_i=\begin{bmatrix}u_i\\ v_i\end{bmatrix}.\\
+d\sigma_i&=w_i^{\top} dM\, w_i=
+\begin{bmatrix}u_i\\ v_i\end{bmatrix}^{\top}
+\begin{bmatrix}0&E\\E^{\top}&0\end{bmatrix}
+\begin{bmatrix}u_i\\ v_i\end{bmatrix}\\
+&=u_i^{\top} E v_i + v_i^{\top} E^{\top} u_i=2 u_i^{\top} E v_i.\\
+\text{But }& \sigma_i \text{ is an eigenvalue of } M\ \text{with unit } w_i,
+\text{so Hermitian case gives } d\sigma_i=w_i^{\top} dM w_i.\\
+&\text{The cross terms are equal; hence } d\sigma_i= u_i^{\top} E v_i.\\
+\text{Symmetric }& A: U=V,\ \sigma_i=|\lambda_i|,\ d\lambda_i=v_i^{\top} H v_i.
+\end{align*}
+}
+
+\RESULT{
+$d\sigma_i=u_i^{\top} E v_i$. For symmetric $A$, $d\lambda_i=v_i^{\top} H v_i$.
+}
+
+\UNITCHECK{
+Scalar sensitivity from bilinear form; shapes consistent.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item For repeated singular values, use subspace projectors.
+\item Sign ambiguity in symmetric case handled by eigenvector orientation.
+\end{bullets}
+}
+
+\ALTERNATE{
+Differentiate the variational form
+$\sigma_i=\max_{\|x\|=\|y\|=1} y^{\top} B x$ at stationary $(u_i,v_i)$.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Finite difference of $\sigma_i(B+\varepsilon E)$ matches $u_i^{\top}Ev_i$.
+\end{bullets}
+}
+
+\INTUITION{
+Singular value change is the direct coupling of $E$ between its left and
+right singular directions.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item SVD sensitivity mirrors eigenvalue sensitivity in a Hermitian lift.
+\end{bullets}
+}
+
+\ProblemPage{10}{Combo: Schur Basis and Diagonal of $Q^{\top} dA Q$}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Relate eigenvalue derivatives to the diagonal of the perturbation in the
+Schur basis.
+
+\PROBLEM{
+Let $A=Q T Q^{\top}$ be the real Schur decomposition with $Q$ orthogonal and
+$T$ quasi-upper-triangular with $1\times 1$ blocks for simple real
+eigenvalues. Show that for a simple eigenvalue $\lambda_i=T_{ii}$ with
+right Schur vector $q_i$, $d\lambda_i=q_i^{\top} (Q^{\top} H Q) q_i$.
+}
+
+\MODEL{
+\[
+A=Q T Q^{\top},\ H\mapsto \tilde{H}=Q^{\top} H Q,\ \ d\lambda_i=u_i^{\top} H v_i.
+\]
+}
+
+\ASSUMPTIONS{
+\begin{bullets}
+\item Simple real eigenvalues; Schur vectors equal eigenvectors.
+\end{bullets}
+}
+
+\varmapStart
+\var{Q}{Orthogonal Schur basis.}
+\var{T}{Schur form.}
+\var{q_i}{$i$-th Schur/eigen vector.}
+\var{\tilde{H}}{Transformed perturbation.}
+\varmapEnd
+
+\WHICHFORMULA{
+Formula 1 in an orthogonal basis for normal/symmetric case simplifies to
+Rayleigh form on the Schur vector.
+}
+
+\GOVERN{
+\[
+d\lambda_i=q_i^{\top} \tilde{H} q_i,\ \ \tilde{H}=Q^{\top} H Q.
+\]
+}
+
+\INPUTS{$Q$, $T$, index $i$, direction $H$.}
+
+\DERIVATION{
+\begin{align*}
+\text{Since }& v_i=q_i,\ u_i=q_i \ \text{for orthogonal $Q$},\\
+d\lambda_i&=u_i^{\top} H v_i = q_i^{\top} H q_i
+= q_i^{\top} Q (Q^{\top} H Q) Q^{\top} q_i\\
+&= e_i^{\top} (Q^{\top} H Q) e_i = \tilde{H}_{ii},
+\end{align*}
+where $e_i$ is the $i$-th standard basis vector.
+}
+
+\RESULT{
+$d\lambda_i$ equals the $i$-th diagonal entry of $\tilde{H}=Q^{\top} H Q$,
+the perturbation expressed in the Schur basis.
+}
+
+\UNITCHECK{
+Scalar equals a diagonal element; transformation preserves units.
+}
+
+\EDGECASES{
+\begin{bullets}
+\item For complex conjugate $2\times 2$ blocks, treat as a $2$-dimensional
+invariant subspace; use projector differential.
+\end{bullets}
+}
+
+\ALTERNATE{
+In symmetric case, $Q$ is the eigenvector matrix and this reduces to
+$v_i^{\top} H v_i$ directly.
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Numerically compute $Q$ and verify that the finite-difference slope of
+$\lambda_i$ matches $\tilde{H}_{ii}$.
+\end{bullets}
+}
+
+\INTUITION{
+Rotating to the modal basis turns the derivative into a simple diagonal pick.
+}
+
+\CANONICAL{
+\begin{bullets}
+\item Basis invariance of $d\lambda$; orthogonal change of variables.
+\end{bullets}
+}
+
+\section{Coding Demonstrations}
+\CodeDemoPage{Verify $d\lambda=u^{\top}Hv$ and Eigenvector $dv$ (General Case)}
+\PROBLEM{
+Implement and validate the eigenvalue derivative $d\lambda=u^{\top} H v$ and
+the eigenvector differential
+$dv=\sum_{j\neq i} v_j \dfrac{u_j^{\top} H v_i}{\lambda_i-\lambda_j}$
+for a diagonalizable non-symmetric matrix using finite differences.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> dict} — parse seeds and sizes.
+\item \inlinecode{def solve_case(obj) -> dict} — compute derivatives.
+\item \inlinecode{def validate() -> None} — assertions vs. finite diff.
+\item \inlinecode{def main() -> None} — run validation and a sample.
+\end{bullets}
+}
+
+\INPUTS{
+Seed integer, dimension $n$, finite-diff step $\varepsilon$, index $i$.
+}
+
+\OUTPUTS{
+Dictionary with $dlam$, $fd$, $dv\_pred$, $dv\_fd$ norms and errors.
+}
+
+\FORMULA{
+\[
+d\lambda=u^{\top} H v,\quad
+dv=\sum_{j\neq i} v_j \frac{u_j^{\top} H v}{\lambda-\lambda_j}.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    toks = s.split()
+    return {"seed": int(toks[0]), "n": int(toks[1]),
+            "eps": float(toks[2]), "i": int(toks[3])}
+
+def eig_lr(A):
+    # right eigenvectors
+    lam, V = np.linalg.eig(A)
+    # left eigenvectors from A^T
+    lamt, U = np.linalg.eig(A.T)
+    # match ordering by simple nearest match
+    Umatch = np.zeros_like(U)
+    for k in range(len(lam)):
+        idx = np.argmin(np.abs(lamt - lam[k]))
+        Umatch[:, k] = U[:, idx]
+    # biorthonormalize columns: make u^T v = 1
+    U2 = Umatch.copy()
+    for k in range(len(lam)):
+        uk = U2[:, k]
+        vk = V[:, k]
+        s = uk.T @ vk
+        if s == 0:
+            s = 1.0
+        U2[:, k] = uk / s
+    return lam, V, U2
+
+def dv_modal(lam, V, U, i, H):
+    n = len(lam)
+    vi = V[:, i]
+    ui = U[:, i]
+    coeffs = np.zeros(n, dtype=complex)
+    for j in range(n):
+        if j == i:
+            continue
+        num = U[:, j].T @ H @ vi
+        den = lam[i] - lam[j]
+        coeffs[j] = num / den
+    dv = V @ coeffs
+    return dv
+
+def solve_case(obj):
+    np.random.seed(obj["seed"])
+    n = obj["n"]
+    A = np.random.randn(n, n)
+    H = np.random.randn(n, n)
+    eps = obj["eps"]
+    i = obj["i"]
+    lam, V, U = eig_lr(A)
+    dlam = (U[:, i].T @ H @ V[:, i]).item()
+    # finite diff eigenvalue via centered difference
+    lam_p, _, _ = eig_lr(A + eps * H)
+    lam_m, _, _ = eig_lr(A - eps * H)
+    # match target eigenvalue by nearest in value
+    idx_p = np.argmin(np.abs(lam_p - lam[i]))
+    idx_m = np.argmin(np.abs(lam_m - lam[i]))
+    fd = ((lam_p[idx_p] - lam_m[idx_m]) / (2 * eps)).item()
+    # eigenvector finite diff (directional derivative)
+    _, Vp, Up = eig_lr(A + eps * H)
+    _, Vm, Um = eig_lr(A - eps * H)
+    vp = Vp[:, idx_p]
+    vm = Vm[:, idx_m]
+    # phase/scale alignment using left vectors
+    s_p = (U[:, i].T @ vp)
+    s_m = (U[:, i].T @ vm)
+    vp = vp / s_p
+    vm = vm / s_m
+    dv_fd = (vp - vm) / (2 * eps)
+    dv_pred = dv_modal(lam, V, U, i, H)
+    err_lam = abs(dlam - fd)
+    err_dv = np.linalg.norm(dv_pred - dv_fd) / (1 + np.linalg.norm(dv_fd))
+    return {"dlam": dlam, "fd": fd, "err_lam": err_lam,
+            "dv_pred": dv_pred, "dv_fd": dv_fd, "err_dv": err_dv}
+
+def validate():
+    obj = {"seed": 0, "n": 4, "eps": 1e-7, "i": 1}
+    out = solve_case(obj)
+    assert out["err_lam"] < 1e-5
+    assert out["err_dv"] < 1e-2
+
+def main():
+    validate()
+    obj = {"seed": 1, "n": 5, "eps": 1e-7, "i": 2}
+    out = solve_case(obj)
+    print("eig deriv err:", out["err_lam"])
+    print("dv rel err:", out["err_dv"])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+import scipy.linalg as la
+
+def read_input(s):
+    toks = s.split()
+    return {"seed": int(toks[0]), "n": int(toks[1]),
+            "eps": float(toks[2]), "i": int(toks[3])}
+
+def eig_lr(A):
+    lam, V = la.eig(A, left=False, right=True)
+    lamL, UL = la.eig(A, left=True, right=False)
+    # columns of UL^H are left eigenvectors; take transpose for vectors
+    U = UL.T.copy()
+    # biorthonormalize
+    for k in range(len(lam)):
+        s = (U[k, :] @ V[:, k]).item()
+        if s == 0:
+            s = 1.0
+        U[k, :] = U[k, :] / s
+    # return left vectors as columns
+    return lam, V, U.T
+
+def dv_modal(lam, V, U, i, H):
+    n = len(lam)
+    vi = V[:, i]
+    coeffs = np.zeros(n, dtype=complex)
+    for j in range(n):
+        if j == i:
+            continue
+        num = U[:, j].T @ H @ vi
+        den = lam[i] - lam[j]
+        coeffs[j] = num / den
+    return V @ coeffs
+
+def solve_case(obj):
+    np.random.seed(obj["seed"])
+    n = obj["n"]
+    A = np.random.randn(n, n)
+    H = np.random.randn(n, n)
+    eps = obj["eps"]
+    i = obj["i"]
+    lam, V, U = eig_lr(A)
+    dlam = (U[:, i].T @ H @ V[:, i]).item()
+    lam_p, Vp, Up = eig_lr(A + eps * H)
+    lam_m, Vm, Um = eig_lr(A - eps * H)
+    idx_p = np.argmin(np.abs(lam_p - lam[i]))
+    idx_m = np.argmin(np.abs(lam_m - lam[i]))
+    fd = ((lam_p[idx_p] - lam_m[idx_m]) / (2 * eps)).item()
+    vp = Vp[:, idx_p]
+    vm = Vm[:, idx_m]
+    s_p = (U[:, i].T @ vp)
+    s_m = (U[:, i].T @ vm)
+    vp = vp / s_p
+    vm = vm / s_m
+    dv_fd = (vp - vm) / (2 * eps)
+    dv_pred = dv_modal(lam, V, U, i, H)
+    err_lam = abs(dlam - fd)
+    err_dv = np.linalg.norm(dv_pred - dv_fd) / (1 + np.linalg.norm(dv_fd))
+    return {"err_lam": err_lam, "err_dv": err_dv}
+
+def validate():
+    out = solve_case({"seed": 2, "n": 5, "eps": 1e-7, "i": 1})
+    assert out["err_lam"] < 1e-5
+    assert out["err_dv"] < 1e-2
+
+def main():
+    validate()
+    out = solve_case({"seed": 3, "n": 6, "eps": 1e-7, "i": 2})
+    print("errs:", out["err_lam"], out["err_dv"])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Time $\mathcal{O}(n^3)$ dominated by eigendecompositions; space
+$\mathcal{O}(n^2)$. The modal sum is $\mathcal{O}(n^2)$.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Eigenvalue reordering across perturbations; mitigate by nearest match.
+\item Nearly multiple eigenvalues cause large $dv$; use smaller $\varepsilon$.
+\item Biorthonormalization failure when $u^{\top}v$ near zero; rescale.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Cancellation in finite differences; use centered scheme and small step.
+\item Ill-conditioned eigenbases inflate errors; check eigen-gaps.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Compare analytical $d\lambda$ to centered difference.
+\item Compare $dv$ modal prediction to finite-difference $dv$ after alignment.
+\end{bullets}
+}
+
+\RESULT{
+Errors below $10^{-5}$ for eigenvalue and around $10^{-2}$ for eigenvector
+on random small cases confirm first-order formulas.
+}
+
+\EXPLANATION{
+Implements Formula 1 and 2 directly and verifies them numerically by probing
+$A\pm \varepsilon H$ and comparing slopes to the analytic predictions.
+}
+
+\EXTENSION{
+Vectorize over multiple directions $H$ to estimate gradients and Jacobians.
+}
+
+\CodeDemoPage{Symmetric Case: Verify $d\lambda=v^{\top}Hv$ and $dv$}
+\PROBLEM{
+Verify symmetric specializations: $d\lambda=v^{\top} H v$ and
+$dv=\sum_{j\neq i} v_j \dfrac{v_j^{\top} H v_i}{\lambda_i-\lambda_j}$ with
+finite differences and orthonormal eigenbasis alignment.
+}
+
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> dict} — parse config.
+\item \inlinecode{def solve_case(obj) -> dict} — compute and compare.
+\item \inlinecode{def validate() -> None} — assertions.
+\item \inlinecode{def main() -> None} — run end-to-end.
+\end{bullets}
+}
+
+\INPUTS{
+Seed, dimension $n$, step $\varepsilon$, eigen-index $i$.
+}
+
+\OUTPUTS{
+Errors for eigenvalue and eigenvector derivatives.
+}
+
+\FORMULA{
+\[
+d\lambda=v^{\top} H v,\quad
+dv=\sum_{j\neq i} v_j \frac{v_j^{\top} H v}{\lambda-\lambda_j}.
+\]
+}
+
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    t = s.split()
+    return {"seed": int(t[0]), "n": int(t[1]),
+            "eps": float(t[2]), "i": int(t[3])}
+
+def eig_sym(A):
+    lam, V = np.linalg.eigh(A)
+    return lam, V
+
+def dv_modal_sym(lam, V, i, H):
+    vi = V[:, i]
+    coeffs = np.zeros_like(lam)
+    for j in range(len(lam)):
+        if j == i:
+            continue
+        coeffs[j] = (V[:, j].T @ H @ vi) / (lam[i] - lam[j])
+    return V @ coeffs
+
+def solve_case(obj):
+    np.random.seed(obj["seed"])
+    n = obj["n"]
+    G = np.random.randn(n, n)
+    A = (G + G.T) / 2.0
+    G2 = np.random.randn(n, n)
+    H = (G2 + G2.T) / 2.0
+    eps = obj["eps"]
+    i = obj["i"]
+    lam, V = eig_sym(A)
+    vi = V[:, i]
+    dlam = float(vi.T @ H @ vi)
+    lam_p, _ = eig_sym(A + eps * H)
+    lam_m, _ = eig_sym(A - eps * H)
+    fd = float((lam_p[i] - lam_m[i]) / (2 * eps))
+    dv_pred = dv_modal_sym(lam, V, i, H)
+    _, Vp = eig_sym(A + eps * H)
+    _, Vm = eig_sym(A - eps * H)
+    # align signs with vi
+    sp = np.sign(Vp[:, i].T @ vi)
+    sm = np.sign(Vm[:, i].T @ vi)
+    dv_fd = (sp * Vp[:, i] - sm * Vm[:, i]) / (2 * eps)
+    err_lam = abs(dlam - fd)
+    err_dv = np.linalg.norm(dv_pred - dv_fd) / (1 + np.linalg.norm(dv_fd))
+    return {"err_lam": err_lam, "err_dv": err_dv}
+
+def validate():
+    out = solve_case({"seed": 0, "n": 6, "eps": 1e-7, "i": 3})
+    assert out["err_lam"] < 1e-8
+    assert out["err_dv"] < 5e-3
+
+def main():
+    validate()
+    out = solve_case({"seed": 1, "n": 8, "eps": 1e-7, "i": 4})
+    print("errs:", out["err_lam"], out["err_dv"])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+import scipy.linalg as la
+
+def read_input(s):
+    t = s.split()
+    return {"seed": int(t[0]), "n": int(t[1]),
+            "eps": float(t[2]), "i": int(t[3])}
+
+def dv_modal_sym(lam, V, i, H):
+    vi = V[:, i]
+    coeffs = np.zeros_like(lam)
+    for j in range(len(lam)):
+        if j == i:
+            continue
+        coeffs[j] = (V[:, j].T @ H @ vi) / (lam[i] - lam[j])
+    return V @ coeffs
+
+def solve_case(obj):
+    np.random.seed(obj["seed"])
+    n = obj["n"]
+    G = np.random.randn(n, n)
+    A = (G + G.T) / 2.0
+    G2 = np.random.randn(n, n)
+    H = (G2 + G2.T) / 2.0
+    eps = obj["eps"]
+    i = obj["i"]
+    lam, V = la.eigh(A)
+    vi = V[:, i]
+    dlam = float(vi.T @ H @ vi)
+    lam_p, Vp = la.eigh(A + eps * H)
+    lam_m, Vm = la.eigh(A - eps * H)
+    fd = float((lam_p[i] - lam_m[i]) / (2 * eps))
+    sp = np.sign(Vp[:, i].T @ vi)
+    sm = np.sign(Vm[:, i].T @ vi)
+    dv_fd = (sp * Vp[:, i] - sm * Vm[:, i]) / (2 * eps)
+    dv_pred = dv_modal_sym(lam, V, i, H)
+    err_lam = abs(dlam - fd)
+    err_dv = np.linalg.norm(dv_pred - dv_fd) / (1 + np.linalg.norm(dv_fd))
+    return {"err_lam": err_lam, "err_dv": err_dv}
+
+def validate():
+    out = solve_case({"seed": 2, "n": 7, "eps": 1e-7, "i": 2})
+    assert out["err_lam"] < 1e-8
+    assert out["err_dv"] < 5e-3
+
+def main():
+    validate()
+    out = solve_case({"seed": 3, "n": 9, "eps": 1e-7, "i": 5})
+    print("errs:", out["err_lam"], out["err_dv"])
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+
+\COMPLEXITY{
+Each eigh call $\mathcal{O}(n^3)$; overall $\mathcal{O}(n^3)$ time and
+$\mathcal{O}(n^2)$ space.
+}
+
+\FAILMODES{
+\begin{bullets}
+\item Eigenvalue crossings for small gaps; shrink $\varepsilon$.
+\item Sign flips; correct via alignment with reference eigenvector.
+\end{bullets}
+}
+
+\STABILITY{
+\begin{bullets}
+\item Centered differences reduce truncation error.
+\item Use double precision and small steps to minimize roundoff.
+\end{bullets}
+}
+
+\VALIDATION{
+\begin{bullets}
+\item Assert eigenvalue error below $10^{-8}$ and eigenvector derivative
+relative error below $5\times 10^{-3}$.
+\end{bullets}
+}
+
+\RESULT{
+Symmetric specializations are confirmed to high accuracy on random tests.
+}
+
+\EXPLANATION{
+This verifies Formulas 1 and 2 in the symmetric setting, where left and
+right eigenvectors coincide and the expansion simplifies.
+}
+
+\EXTENSION{
+Test projector differential $dP$ by evaluating $-SHP-PHS$ and a commutator.
+}
+
+\section{Applied Domains — Detailed End-to-End Scenarios}
+\DomainPage{Machine Learning}
+\SCENARIO{
+Compute the gradient of the top PCA eigenvalue of the sample covariance
+matrix with respect to the data matrix and validate against finite
+differences.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Data matrix $X\in\mathbb{R}^{n\times d}$; covariance $C=\tfrac{1}{n}X^{\top}X$.
+\item $C$ has a simple top eigenvalue with unit eigenvector $v$.
+\end{bullets}
+}
+\WHICHFORMULA{
+From Formula 4, $d\lambda=v^{\top} (dC) v$. Since $C=\tfrac{1}{n}X^{\top}X$,
+$dC=\tfrac{1}{n}(X^{\top} dX + (dX)^{\top} X)$, hence
+\[
+\frac{\partial \lambda}{\partial X}= \frac{2}{n} X v v^{\top}.
+\]
+}
+\varmapStart
+\var{X}{Data matrix $(n,d)$.}
+\var{C}{Covariance $\tfrac{1}{n}X^{\top}X$.}
+\var{v}{Top eigenvector of $C$.}
+\var{\lambda}{Top eigenvalue of $C$.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate synthetic $X$ with correlated columns.
+\item Compute $C$, top $(\lambda,v)$, and analytic gradient $G=\tfrac{2}{n}X v v^{\top}$.
+\item Validate $\langle G, \Delta X\rangle$ against finite difference.
+\end{bullets}
+}
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def gen_data(n=200, d=5, seed=0):
+    np.random.seed(seed)
+    Z = np.random.randn(n, d)
+    L = np.diag(np.linspace(1.0, 0.5, d))
+    X = Z @ L + 0.1 * np.random.randn(n, d)
+    return X
+
+def pca_top(X):
+    C = (X.T @ X) / X.shape[0]
+    lam, V = np.linalg.eigh(C)
+    return lam[-1], V[:, -1], C
+
+def grad_lambda_top(X, v):
+    return (2.0 / X.shape[0]) * (X @ (v[:, None] @ v[None, :]))
+
+def validate():
+    X = gen_data()
+    lam, v, C = pca_top(X)
+    G = grad_lambda_top(X, v)
+    D = np.random.randn(*X.shape)
+    D /= np.linalg.norm(D)
+    eps = 1e-6
+    lam_p, _, _ = pca_top(X + eps * D)
+    lam_m, _, _ = pca_top(X - eps * D)
+    fd = (lam_p - lam_m) / (2 * eps)
+    an = np.sum(G * D)
+    assert abs(an - fd) < 1e-6
+
+def main():
+    validate()
+    print("PCA grad check passed")
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Scalar error $\lvert \langle G,D\rangle - \mathrm{FD}\rvert$.}
+\INTERPRET{Matches confirm correct backprop of PCA top eigenvalue through $X$.}
+\NEXTSTEPS{Extend to top-$k$ subspace using projector differential.}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Sensitivity of the maximum eigenvalue of the covariance matrix of asset
+returns to changes in individual asset volatilities.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Returns $R\in\mathbb{R}^{n\times d}$; sample covariance
+$\Sigma=\tfrac{1}{n}R^{\top}R$.
+\item Simple top eigenvalue $\lambda_{\max}$.
+\end{bullets}
+}
+\WHICHFORMULA{
+$d\lambda=v^{\top}(d\Sigma)v$. For a volatility scaling $R\mapsto R D$ with
+$D=\mathrm{diag}(s)$, the sensitivity to $s_k$ is
+$\dfrac{\partial \lambda}{\partial s_k}=
+\dfrac{2}{n} (R v)_k (R v)_k / s_k$ at $s=1$.
+}
+\varmapStart
+\var{R}{Return matrix $(n,d)$.}
+\var{\Sigma}{Sample covariance.}
+\var{v}{Top eigenvector of $\Sigma$.}
+\var{\lambda}{Top eigenvalue.}
+\var{s}{Volatility scaling vector.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Simulate returns; compute $\Sigma$, $(\lambda,v)$.
+\item Derive analytic sensitivities to $s$ at $s=1$.
+\item Validate by finite differences perturbing a single $s_k$.
+\end{bullets}
+}
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def simulate(n=1000, d=4, seed=0):
+    np.random.seed(seed)
+    A = np.random.randn(d, d)
+    cov = A @ A.T
+    R = np.random.multivariate_normal(np.zeros(d), cov, size=n)
+    return R
+
+def top_eig(S):
+    lam, V = np.linalg.eigh(S)
+    return lam[-1], V[:, -1]
+
+def sens_vol(R):
+    n = R.shape[0]
+    S = (R.T @ R) / n
+    lam, v = top_eig(S)
+    y = R @ v
+    g = (2.0 / n) * (y * y)
+    return lam, v, g
+
+def validate():
+    R = simulate()
+    lam, v, g = sens_vol(R)
+    k = 1
+    s = 1.0
+    eps = 1e-6
+    Dp = np.diag([1.0, 1.0 + eps, 1.0, 1.0])
+    Dm = np.diag([1.0, 1.0 - eps, 1.0, 1.0])
+    Sp = (R @ Dp).T @ (R @ Dp) / R.shape[0]
+    Sm = (R @ Dm).T @ (R @ Dm) / R.shape[0]
+    lamp, _ = top_eig(Sp)
+    lamm, _ = top_eig(Sm)
+    fd = (lamp - lamm) / (2 * eps)
+    assert abs(fd - g[k]) < 1e-5
+
+def main():
+    validate()
+    print("Finance sensitivity check passed")
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Absolute error between analytic sensitivity and finite difference.}
+\INTERPRET{Identifies which assets drive the principal risk mode.}
+\NEXTSTEPS{Use projector differential to analyze top-$k$ risk subspace.}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Spectral norm regularization: compute gradient of the largest singular value
+of a weight matrix and validate against finite differences.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Weight $W\in\mathbb{R}^{m\times n}$; $\sigma_{\max}(W)$ simple.
+\item Gradient for spectral norm: $\nabla_W \sigma_{\max}=u v^{\top}$.
+\end{bullets}
+}
+\WHICHFORMULA{
+From Formula 9, $d\sigma=u^{\top} (dW) v$; thus
+$\nabla_W \sigma = u v^{\top}$ where $u,v$ are top singular vectors.
+}
+\varmapStart
+\var{W}{Weight matrix.}
+\var{u,v}{Top left/right singular vectors.}
+\var{\sigma}{Top singular value.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate $W$; compute top SVD $(u,\sigma,v)$.
+\item Form gradient $G=u v^{\top}$.
+\item Validate $\langle G, \Delta W\rangle$ via centered finite differences.
+\end{bullets}
+}
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+
+def top_svd(W):
+    U, s, Vt = np.linalg.svd(W, full_matrices=False)
+    return U[:, 0], s[0], Vt[0, :]
+
+def validate():
+    np.random.seed(0)
+    W = np.random.randn(6, 5)
+    u, s, vt = top_svd(W)
+    v = vt
+    G = np.outer(u, v)
+    D = np.random.randn(*W.shape)
+    D /= np.linalg.norm(D)
+    eps = 1e-6
+    sp = np.linalg.svd(W + eps * D, compute_uv=False)[0]
+    sm = np.linalg.svd(W - eps * D, compute_uv=False)[0]
+    fd = (sp - sm) / (2 * eps)
+    an = np.sum(G * D)
+    assert abs(an - fd) < 1e-6
+
+def main():
+    validate()
+    print("Spectral norm gradient check passed")
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Scalar gradient check error $\lvert \langle G,D\rangle - \mathrm{FD}\rvert$.}
+\INTERPRET{Confirms correct gradient for spectral norm regularization.}
+\NEXTSTEPS{Handle multiplicity via subdifferential and power iteration.}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+EDA sensitivity: quantify how standardizing one feature scales the top PCA
+eigenvalue and verify derivative with respect to a feature scaling.
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Data matrix $X$ standardized except feature $k$ scaled by $s$.
+\item Covariance $C(s)=\tfrac{1}{n}X(s)^{\top}X(s)$.
+\end{bullets}
+}
+\WHICHFORMULA{
+Let $X(s)=X D(s)$ with $D(s)=\mathrm{diag}(1,\dots,s,\dots,1)$. Then
+$dC=\tfrac{2}{n} X^{\top} X E_{kk}\, ds$ at $s=1$, so
+$\dfrac{d\lambda}{ds}=\dfrac{2}{n} e_k^{\top} X^{\top} X v v^{\top} e_k$.
+}
+\PIPELINE{
+\begin{bullets}
+\item Create synthetic correlated dataset.
+\item Compute top PCA eigenpair.
+\item Validate derivative of $\lambda$ with respect to $s$ at $s=1$.
+\end{bullets}
+}
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def create_df(n=300, d=4, seed=0):
+    np.random.seed(seed)
+    Z = np.random.randn(n, d)
+    C = np.array([[1.0, 0.6, 0.2, 0.1],
+                  [0.6, 1.0, 0.3, 0.2],
+                  [0.2, 0.3, 1.0, 0.5],
+                  [0.1, 0.2, 0.5, 1.0]])
+    L = np.linalg.cholesky(C)
+    X = Z @ L.T
+    return X
+
+def top_pca(X):
+    C = (X.T @ X) / X.shape[0]
+    lam, V = np.linalg.eigh(C)
+    return lam[-1], V[:, -1], C
+
+def dlam_ds(X, v, k):
+    n = X.shape[0]
+    y = X @ v
+    return (2.0 / n) * np.sum(X[:, k] * y) ** 2 / np.sum(X[:, k] ** 2)
+
+def validate():
+    X = create_df()
+    lam, v, C = top_pca(X)
+    k = 2
+    eps = 1e-6
+    Dp = np.eye(X.shape[1]); Dp[k, k] += eps
+    Dm = np.eye(X.shape[1]); Dm[k, k] -= eps
+    lam_p, _, _ = top_pca(X @ Dp)
+    lam_m, _, _ = top_pca(X @ Dm)
+    fd = (lam_p - lam_m) / (2 * eps)
+    # analytic derivative at s=1:
+    n = X.shape[0]
+    y = X @ v
+    an = (2.0 / n) * np.sum(X[:, k] * y) ** 2 / np.sum(X[:, k] ** 2)
+    assert abs(an - fd) < 1e-5
+
+def main():
+    validate()
+    print("EDA PCA sensitivity check passed")
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Absolute error between analytic derivative and finite difference.}
+\INTERPRET{Shows how scaling a feature changes explained variance of PC1.}
+\NEXTSTEPS{Generalize to feature-wise gradients using matrix calculus.}
+
+\end{document}

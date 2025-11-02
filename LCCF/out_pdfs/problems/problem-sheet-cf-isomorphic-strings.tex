@@ -1,0 +1,835 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.05}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}[BoldFont={Latin Modern Mono},ItalicFont={Latin Modern Mono}]
+\usepackage{amsmath,mathtools,amsthm}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{unicode-math}\setmathfont{Latin Modern Math}\allowdisplaybreaks[4]
+% --- overflow and alignment slack ---
+\setlength{\jot}{7pt}
+\sloppy\emergencystretch=8em\hfuzz=1pt\vfuzz=2pt\raggedbottom
+% --- breakable math helpers ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+\usepackage{xcolor}
+\usepackage{xurl} % better URL wrapping
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}\setlength{\headheight}{26pt}
+\usepackage{enumitem,booktabs,tabularx}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{8pt plus 2pt minus 1pt}
+
+% Listings + upquote (no shell-escape needed)
+\usepackage{listings}
+\usepackage{upquote}
+\lstdefinestyle{crisp}{
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false, % allow breaks inside long tokens
+  tabsize=4,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  keepspaces=true,
+  columns=fullflexible,
+  backgroundcolor=\color{black!02},
+  aboveskip=8pt,
+  belowskip=8pt
+}
+% Guarantee that 'python' exists as a language for listings
+\lstdefinelanguage{python}{
+  morekeywords={def,return,class,if,elif,else,for,while,try,except,raise,assert,pass,break,continue,lambda,nonlocal,global,yield,import,from,as,with,True,False,None},
+  sensitive=true,
+  morecomment=[l]\#,
+  morestring=[b]",
+  morestring=[b]'
+}
+% minted shim (robust; no shell-escape; uses listings' own environment)
+\lstnewenvironment{minted}[2][]{\lstset{style=crisp,language=#2,#1}}{}
+
+\usepackage[most]{tcolorbox}
+\tcbset{colback=white,colframe=black!15,boxrule=0.4pt,arc=2pt,left=6pt,right=6pt,top=6pt,bottom=6pt,before skip=10pt,after skip=10pt,breakable}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2.0}{*1.0}
+
+% ===== CONSISTENCY TOOLKIT (macros) =====
+\newlist{ledger}{enumerate}{1}
+\setlist[ledger]{label=\textbullet,leftmargin=2em,itemsep=2pt,topsep=6pt}
+\newcommand{\LEDGER}[1]{\textbf{ARITHMETIC LEDGER:}\par\begin{ledger}#1\end{ledger}}
+
+\newlist{algosteps}{enumerate}{1}
+\setlist[algosteps]{label=\arabic*.,leftmargin=2em,itemsep=2pt,topsep=6pt}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+\newcommand{\LINE}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LINE{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LINE{WHY}{#1}}
+\newcommand{\HOW}[1]{\LINE{HOW}{#1}}
+\newcommand{\ELI}[1]{\LINE{ELI5}{#1}}
+\newcommand{\STATEMENT}[1]{\LINE{STATEMENT}{#1}}
+\newcommand{\BREAKDOWN}[1]{\LINE{PROBLEM BREAKDOWN}{#1}}
+\newcommand{\MODEL}[1]{\LINE{CANONICAL MATHEMATICAL MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LINE{ASSUMPTIONS}{#1}}
+\newcommand{\INVARIANTS}[1]{\LINE{INVARIANTS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LINE{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LINE{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\INPUTS}[1]{\LINE{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LINE{OUTPUTS}{#1}}
+\newcommand{\SAMPLES}[1]{\LINE{SAMPLES}{#1}}
+\newcommand{\RESULT}[1]{\LINE{RESULT}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LINE{TIME/SPACE COMPLEXITY}{#1}}
+\newcommand{\MEMORY}[1]{\LINE{MEMORY FOOTPRINT}{#1}}
+\newcommand{\CORRECTNESS}[1]{\LINE{CORRECTNESS SKETCH}{#1}}
+\newcommand{\OPTIMALITY}[1]{\LINE{OPTIMALITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LINE{FAILURE MODES}{#1}}
+\newcommand{\VALIDATION}[1]{\LINE{VALIDATION}{#1}}
+\newcommand{\UNITCHECK}[1]{\LINE{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LINE{EDGE CASES}{#1}}
+\newcommand{\CHECKLIST}[1]{\LINE{CHECKLIST}{#1}}
+\newcommand{\DERIV}[1]{\LINE{DERIVATION}{#1}}
+\newcommand{\LEMMAHEAD}[1]{\LINE{SUPPORTING LEMMA}{#1}}
+\newcommand{\PITFALLS}[1]{\LINE{PITFALLS}{#1}}
+
+\usepackage{etoolbox}\pretocmd{\section}{\clearpage}{}{}
+
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ApproachPage}[2]{%
+  \clearpage
+  \subsection*{Approach #1 — #2}%
+  \addcontentsline{toc}{subsection}{Approach #1 — #2}%
+}
+
+\begin{document}
+\title{Interview Problem Sheet — Isomorphic Strings}
+\date{\today}
+\author{}
+\maketitle
+\tableofcontents
+\clearpage
+
+% === Notes macro (BODY-ONLY; do not alter the preamble) ===
+% Prints exactly N blank pages with empty headers/footers, then leaves you on the last blank page.
+\newcommand{\NotePages}[1]{%
+  \clearpage
+  \begingroup
+  \newcount\NPi \newcount\NPn
+  \NPi=0 \NPn=#1
+  \loop\ifnum\NPi<\NPn
+    \advance\NPi by 1
+    \mbox{}\thispagestyle{empty}%
+    \ifnum\NPi<\NPn\clearpage\fi
+  \repeat
+  \endgroup
+}
+
+% ============ 1. Problem & Metadata (own page) ============
+\section{Problem \& Metadata}
+\LINE{PLATFORM}{CF}
+\LINE{URL}{\url{https://codeforces.com/problemset/problem/985/F}}
+\LINE{DIFFICULTY / RATING}{2300}
+\STATEMENT{You are given a string s of length n consisting of lowercase English letters.
+
+For two given strings s and t, say S is the set of distinct characters of s and T is the set of distinct characters of t. The strings s and t are isomorphic if their lengths are equal and there is a one-to-one mapping (bijection) $f$ between S and T for which $f(s_i) = t_i$. Formally:
+
+1. $f(s_i) = t_i$ for any index $i$,
+2. for any character $x \in S$ there is exactly one character $y \in T$ that $f(x) = y$,
+3. for any character $y \in T$ there is exactly one character $x \in S$ that $f(x) = y$.
+
+For example, the strings ``aababc'' and ``bbcbcz'' are isomorphic. Also the strings ``aaaww'' and ``wwwaa'' are isomorphic. The following pairs of strings are not isomorphic: ``aab'' and ``bbb'', ``test'' and ``best''.
+
+You have to handle $m$ queries characterized by three integers $x$, $y$, $\text{len}$ ($1 \le x, y \le n - \text{len} + 1$). For each query check if two substrings $s[x \ldots x + \text{len} - 1]$ and $s[y \ldots y + \text{len} - 1]$ are isomorphic.
+
+Input:
+The first line contains two space-separated integers $n$ and $m$ ($1 \le n \le 2\cdot 10^5$, $1 \le m \le 2\cdot 10^5$) — the length of the string $s$ and the number of queries.
+
+The second line contains string $s$ consisting of $n$ lowercase English letters.
+
+The following $m$ lines contain a single query on each line: $x_i$, $y_i$ and $\text{len}_i$ ($1 \le x_i, y_i \le n$, $1 \le \text{len}_i \le n - \max(x_i, y_i) + 1$) — the description of the pair of the substrings to check.
+
+Output:
+For each query in a separate line print ``YES'' if substrings $s[x_i \ldots x_i + \text{len}_i - 1]$ and $s[y_i \ldots y_i + \text{len}_i - 1]$ are isomorphic and ``NO'' otherwise.
+
+Note:
+The queries in the example are following:
+
+1. substrings ``a'' and ``a'' are isomorphic: $f(a) = a$;
+2. substrings ``ab'' and ``ca'' are isomorphic: $f(a) = c$, $f(b) = a$;
+3. substrings ``bac'' and ``aba'' are not isomorphic since $f(b)$ and $f(c)$ must be equal to $a$ at same time;
+4. substrings ``bac'' and ``cab'' are isomorphic: $f(b) = c$, $f(a) = a$, $f(c) = b$.}
+\BREAKDOWN{We must answer many substring-isomorphism queries quickly. Two substrings are isomorphic iff there exists a bijection between their distinct letters that maps each position accordingly. The core is to build a mapping-invariant signature for each substring and compare.}
+\ELI{Normalize each substring by renaming letters in order of first appearance; if the normalized patterns match, the substrings are isomorphic. We compute this equivalently via per-letter polynomial hashes and multiset comparison.}
+\NotePages{3}
+
+% ============ 2. IO Contract (own page) ============
+\section{IO Contract}
+\INPUTS{Two integers $n$, $m$ with $1 \le n, m \le 2\cdot 10^5$; a string $s$ of length $n$ over $\{a,\ldots,z\}$; then $m$ queries: $(x_i,y_i,\text{len}_i)$ with $1 \le x_i, y_i \le n$, $1 \le \text{len}_i \le n - \max(x_i, y_i) + 1$. Indices are 1-based in input.}
+\OUTPUTS{For each query, print a single line: ``YES'' if $s[x \ldots x+\text{len}-1]$ and $s[y \ldots y+\text{len}-1]$ are isomorphic; otherwise ``NO''.}
+\SAMPLES{Example string $s=\text{``abacaa''}$.
+\begin{bullets}
+\item Query $(x,y,\text{len})=(1,1,1)$ compares ``a'' vs ``a'' $\Rightarrow$ YES.
+\item Query $(2,4,3)$ compares ``bac'' vs ``caa'' $\Rightarrow$ NO.
+\end{bullets}}
+\NotePages{3}
+
+% ============ 3. Canonical Mathematical Model (own page) ============
+\section{Canonical Mathematical Model}
+\MODEL{Let the alphabet be $\Sigma=\{0,\ldots,25\}$. For a substring defined by start $a$ (0-based) and length $L$, define for each $c\in\Sigma$ the polynomial \emph{occurrence hash}
+\begin{BreakableEquation*}
+H_c(a,L) \equiv \sum_{k=0}^{L-1} [\,s[a+k]=c\,]\cdot p^k \pmod{M},
+\end{BreakableEquation*}
+and analogously under two different moduli $M_1$, $M_2$ with possibly different bases $p_1$, $p_2$. The substring signature is the multiset of pairs $\{(H_c^{(1)}(a,L), H_c^{(2)}(a,L)) : c\in \Sigma\}$. Two substrings are isomorphic iff these multisets are equal.}
+\varmapStart
+\var{n}{length of the string}
+\var{m}{number of queries}
+\var{s}{the given string over $\Sigma$}
+\var{a,L}{0-based start and length of a substring}
+\var{p_1,p_2}{hash bases}
+\var{M_1,M_2}{hash moduli}
+\var{H_c^{(j)}(a,L)}{per-letter polynomial hash under modulus $M_j$}
+\varmapEnd
+\GOVERN{
+\[
+\text{Isomorphic}(a,L; b,L) \iff \multiset{(H_c^{(1)}(a,L),H_c^{(2)}(a,L))}_{c\in\Sigma}
+= \multiset{(H_c^{(1)}(b,L),H_c^{(2)}(b,L))}_{c\in\Sigma}.
+\]
+}
+\ASSUMPTIONS{We use two independent large prime moduli and fixed bases. Collisions are negligibly unlikely in practice for 26 components with double hashing. Indices are converted to 0-based internally.}
+\INVARIANTS{
+\begin{bullets}
+\item Letter renaming permutes the 26 components; sorting the 26 pairs yields a mapping-invariant signature.
+\item For each $c$, $H_c(a,L)=0$ iff letter $c$ does not occur in the substring.
+\item If two substrings have different position-patterns for any letter, at least one per-letter hash differs.
+\end{bullets}
+}
+\NotePages{3}
+
+% ============ 4. Approach A — Baseline (own page) ============
+\section{Approach A — Baseline}
+\ApproachPage{A}{Brute Force / Direct}
+\WHICHFORMULA{Check bijection existence directly by scanning the two substrings in lockstep, maintaining forward and inverse maps between letters.}
+\ASSUMPTIONS{Per-query work $O(L)$ is acceptable only for small $m$ or small average $L$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item For a query $(x,y,L)$, convert $x,y$ to 0-based.
+\item Initialize empty maps $f:\Sigma\to\Sigma$ and $g:\Sigma\to\Sigma$.
+\item For $k=0\ldots L-1$, let $a=s[x+k]$, $b=s[y+k]$. If $a$ is mapped and $f[a]\ne b$ return NO; if $b$ is mapped back and $g[b]\ne a$ return NO; else set $f[a]=b$, $g[b]=a$.
+\item If the scan finishes, return YES.
+\end{algosteps}
+\COMPLEXITY{Per query time $O(L)$; memory $O(1)$ (26 letters). Over all queries worst-case $O(\sum L)$ which can be $\Theta(nm)$.}
+\[
+\begin{aligned}
+T_{\text{baseline}}(m,n) &= \sum_{i=1}^{m} O(\text{len}_i) \\
+&= O\!\left(\sum \text{len}_i\right)\quad\text{(can be up to }O(nm)\text{)}.
+\end{aligned}
+\]
+\CORRECTNESS{Maintaining both forward and inverse maps enforces bijection. A mismatch at any step violates constraints (2) or (3); otherwise we produce a valid bijection.}
+\EDGECASES{Length $1$; equal substrings ($x=y$); all same letter vs all distinct; disjoint letter sets.}
+\textbf{Code (Baseline)}
+\begin{minted}{python}
+# CF TEMPLATE (Baseline): direct per-query bijection check
+from typing import List, Tuple, Optional
+
+def read_input():
+    import sys
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    s = next(it).strip()
+    queries = []
+    for _ in range(m):
+        x = int(next(it)); y = int(next(it)); L = int(next(it))
+        queries.append((x, y, L))
+    return n, m, s, queries
+
+def isomorphic_naive(s: str, x: int, y: int, L: int) -> bool:
+    # x,y are 1-based in CF input; convert to 0-based
+    x -= 1; y -= 1
+    f = [-1]*26
+    g = [-1]*26
+    for k in range(L):
+        a = ord(s[x+k]) - 97
+        b = ord(s[y+k]) - 97
+        if f[a] == -1 and g[b] == -1:
+            f[a] = b
+            g[b] = a
+        elif f[a] != b or g[b] != a:
+            return False
+    return True
+
+def solve_all_baseline(inp) -> str:
+    n, m, s, queries = inp
+    out_lines = []
+    for (x, y, L) in queries:
+        out_lines.append("YES" if isomorphic_naive(s, x, y, L) else "NO")
+    return "\n".join(out_lines)
+
+def _baseline_tests():
+    # Basic known pairs
+    assert isomorphic_naive("aababc", 1, 1, 6)  # same substring
+    # From statement notes:
+    s = "abac"
+    assert isomorphic_naive(s, 1, 1, 1) is True  # "a" vs "a"
+    assert isomorphic_naive("ab", 1, 1, 2) is True  # same
+    # Cross substrings examples:
+    base = "abacaa"
+    # "a" vs "a"
+    assert isomorphic_naive(base, 1, 1, 1) is True
+    # "ab" vs "ca" -> map a->c, b->a
+    assert isomorphic_naive("abca", 1, 3, 2) is True
+    # "bac" vs "aba" not iso
+    t = "bacaba"
+    assert isomorphic_naive(t, 1, 4, 3) is False
+    # "bac" vs "cab" iso
+    u = "baccab"
+    assert isomorphic_naive(u, 1, 4, 3) is True
+
+def main():
+    inp = read_input()
+    if inp is None:
+        _baseline_tests()
+    else:
+        print(solve_all_baseline(inp))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Tiny checks in asserts cover bijection consistency, symmetric mapping, and simple positive/negative cases.}
+\NotePages{3}
+
+% ============ 5. Approach B — Improved (own page) ============
+\section{Approach B — Improved}
+\ApproachPage{B}{Optimized Data Structure / Pruning / DP}
+\WHICHFORMULA{Represent each substring by a multiset of per-letter polynomial hashes and compare sorted 26-tuples. Compute per-letter hashes fast using precomputed powers and per-letter position lists with prefix sums of $p^{\text{pos}}$.}
+\ASSUMPTIONS{Two large coprime moduli and independent bases make collisions negligible. Python implementation uses only $O(n)$ storage over all letters by storing positions and their prefix sums.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute powers $P_j[i]=p_j^i\bmod M_j$ and inverses $P_j^{-1}[i]$ for $j\in\{1,2\}$ up to $n$.
+\item For each letter $c$, build its position list $\text{pos}[c]$ and prefix sums $S^{(j)}_c[t]=\sum_{u=0}^{t-1} P_j[\text{pos}[c][u]] \bmod M_j$.
+\item For a substring $(x,L)$ (0-based), for each $c$:
+\begin{bullets}
+\item Binary search in $\text{pos}[c]$ to find indices $l=\text{lower\_bound}(x)$ and $r=\text{lower\_bound}(x+L)$.
+\item Raw sum $R^{(j)}=S^{(j)}_c[r]-S^{(j)}_c[l]\pmod{M_j}$ equals $\sum p_j^{\text{pos}}$ over positions in range.
+\item Normalize by multiplying with $P_j^{-1}[x]$ to get $H_c^{(j)}(x,L)=\sum p_j^{\text{pos}-x}$.
+\end{bullets}
+\item Form 26 pairs $(H_c^{(1)},H_c^{(2)})$, sort them, and compare between the two substrings.
+\end{algosteps}
+\COMPLEXITY{Each query does $26$ binary searches (two per letter) on C-optimized bisect ($O(\log n)$) and constant-time arithmetic, plus sorting 26 items.}
+\[
+\begin{aligned}
+T_{\text{improved}}(m,n) &= O\bigl(m\cdot(26\log n + 26\log 26)\bigr) = O(m\log n),\\
+S(n) &= O(n) \text{ for per-letter positions and prefix sums} + O(n) \text{ for power tables}.
+\end{aligned}
+\]
+\CORRECTNESS{For a fixed substring, each letter's relative occurrence pattern maps to a unique polynomial. A bijection between letters permutes these 26 polynomials but does not change the multiset; conversely, if the multisets match, we can pair letters with equal per-letter hashes to yield a position-wise mapping, establishing isomorphism.}
+\textbf{Code (Improved)}
+\begin{minted}{python}
+# CF TEMPLATE (Improved): double-hash multiset of per-letter polynomial hashes
+from typing import List, Tuple, Optional
+from bisect import bisect_left
+
+M1 = 1_000_000_007
+M2 = 1_000_000_009
+P1 = 911382323
+P2 = 972663749
+
+def read_input():
+    import sys
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    s = next(it).strip()
+    queries = []
+    for _ in range(m):
+        x = int(next(it)); y = int(next(it)); L = int(next(it))
+        queries.append((x, y, L))
+    return n, m, s, queries
+
+def _modinv(a: int, mod: int) -> int:
+    return pow(a, mod - 2, mod)
+
+def _build_structures(s: str):
+    n = len(s)
+    # Powers and inverse powers
+    pow1 = [1] * (n + 1); pow2 = [1] * (n + 1)
+    for i in range(1, n + 1):
+        pow1[i] = (pow1[i - 1] * P1) % M1
+        pow2[i] = (pow2[i - 1] * P2) % M2
+    invP1 = _modinv(P1, M1); invP2 = _modinv(P2, M2)
+    ipow1 = [1] * (n + 1); ipow2 = [1] * (n + 1)
+    for i in range(1, n + 1):
+        ipow1[i] = (ipow1[i - 1] * invP1) % M1
+        ipow2[i] = (ipow2[i - 1] * invP2) % M2
+    # Per-letter positions and prefix sums of pow[pos]
+    pos = [[] for _ in range(26)]
+    for i, ch in enumerate(s):
+        pos[ord(ch) - 97].append(i)
+    pref1 = [[] for _ in range(26)]
+    pref2 = [[] for _ in range(26)]
+    for c in range(26):
+        lst = pos[c]
+        acc1 = 0; acc2 = 0
+        p1 = []; p2 = []
+        for idx in lst:
+            acc1 = (acc1 + pow1[idx]) % M1
+            acc2 = (acc2 + pow2[idx]) % M2
+            p1.append(acc1); p2.append(acc2)
+        pref1[c] = p1; pref2[c] = p2
+    return pos, pref1, pref2, pow1, pow2, ipow1, ipow2
+
+def _range_sum_pref(pref: List[int], l: int, r: int, mod: int) -> int:
+    if l >= r:
+        return 0
+    res = pref[r - 1]
+    if l > 0:
+        res -= pref[l - 1]
+    res %= mod
+    return res
+
+def _hashes_for_substring(x0: int, L: int, pos, pref1, pref2, pow1, pow2, ipow1, ipow2):
+    # x0 is 0-based
+    x1 = x0 + L
+    inv1 = ipow1[x0]; inv2 = ipow2[x0]
+    pairs = []
+    for c in range(26):
+        lst = pos[c]
+        if not lst:
+            pairs.append((0, 0))
+            continue
+        l = bisect_left(lst, x0)
+        r = bisect_left(lst, x1)
+        if l == r:
+            pairs.append((0, 0))
+            continue
+        raw1 = _range_sum_pref(pref1[c], l, r, M1)
+        raw2 = _range_sum_pref(pref2[c], l, r, M2)
+        h1 = (raw1 * inv1) % M1
+        h2 = (raw2 * inv2) % M2
+        pairs.append((h1, h2))
+    pairs.sort()
+    return pairs
+
+def solve_all_improved(inp) -> str:
+    n, m, s, queries = inp
+    pos, pref1, pref2, pow1, pow2, ipow1, ipow2 = _build_structures(s)
+    out = []
+    for (x, y, L) in queries:
+        x0 = x - 1; y0 = y - 1
+        a = _hashes_for_substring(x0, L, pos, pref1, pref2, pow1, pow2, ipow1, ipow2)
+        b = _hashes_for_substring(y0, L, pos, pref1, pref2, pow1, pow2, ipow1, ipow2)
+        out.append("YES" if a == b else "NO")
+    return "\n".join(out)
+
+def _improved_tests():
+    # Cross-check against naive on random tiny cases
+    import random
+    random.seed(0)
+    for _ in range(50):
+        n = 20
+        s = "".join(chr(97 + random.randrange(3)) for _ in range(n))
+        pos, pref1, pref2, pow1, pow2, ipow1, ipow2 = _build_structures(s)
+        for __ in range(50):
+            x = random.randrange(n) + 1
+            y = random.randrange(n) + 1
+            L = random.randrange(1, n - max(x, y) + 2)
+            a = _hashes_for_substring(x - 1, L, pos, pref1, pref2, pow1, pow2, ipow1, ipow2)
+            b = _hashes_for_substring(y - 1, L, pos, pref1, pref2, pow1, pow2, ipow1, ipow2)
+            ok1 = (a == b)
+            ok2 = isomorphic_naive(s, x, y, L)
+            assert ok1 == ok2
+
+def main():
+    inp = read_input()
+    if inp is None:
+        _improved_tests()
+    else:
+        print(solve_all_improved(inp))
+
+if __name__ == "__main__":
+    # Bring naive for cross-check
+    def isomorphic_naive(s: str, x: int, y: int, L: int) -> bool:
+        x -= 1; y -= 1
+        f = [-1]*26; g = [-1]*26
+        for k in range(L):
+            a = ord(s[x+k]) - 97
+            b = ord(s[y+k]) - 97
+            if f[a] == -1 and g[b] == -1:
+                f[a] = b; g[b] = a
+            elif f[a] != b or g[b] != a:
+                return False
+        return True
+    main()
+\end{minted}
+\VALIDATION{Randomized small-case cross-checks compare improved hashing vs. naive bijection and assert equality.}
+\NotePages{3}
+
+% ============ 6. Approach C — Optimal (own page) ============
+\section{Approach C — Optimal}
+\ApproachPage{C}{Provably Optimal Method}
+\WHICHFORMULA{Double-hash multiset of per-letter polynomial hashes with $O(\log n)$ per letter via per-letter position prefix sums. This matches the intended CF solution with $O(m\log n)$ time and $O(n)$ memory.}
+\ASSUMPTIONS{Alphabet size is fixed at 26; two independent large primes and bases; input sizes up to $2\cdot 10^5$.}
+\textbf{Algorithm Steps}
+\begin{algosteps}
+\item Precompute powers and inverse powers mod $M_1$, $M_2$.
+\item Build per-letter position arrays and prefix sums of $p^{\text{pos}}$ modulo both moduli.
+\item Answer each query by collecting 26 per-letter normalized hashes, sorting them, and comparing the two multisets.
+\end{algosteps}
+\OPTIMALITY{Any approach must at least read $\Theta(1)$ per letter or know which letters appear; determining appearances without extra memory costs $\Omega(\log n)$ searches or equivalent. With fixed alphabet size, constant factors are small and asymptotics are essentially optimal for Python while respecting memory.}
+\COMPLEXITY{Per query: $O(26\log n + 26\log 26)=O(\log n)$; preprocessing $O(n)$ time and memory.}
+\[
+\begin{aligned}
+T_{\text{total}} &= O(n + m\log n), \quad S = O(n).
+\end{aligned}
+\]
+\textbf{Code (Final Submission)}
+\begin{minted}{python}
+# CF FINAL: per-letter double-hash signature via position-prefix powers
+from typing import List, Tuple, Optional
+from bisect import bisect_left
+
+M1 = 1_000_000_007
+M2 = 1_000_000_009
+P1 = 911382323
+P2 = 972663749
+
+def read_input():
+    import sys
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    s = next(it).strip()
+    queries = []
+    for _ in range(m):
+        x = int(next(it)); y = int(next(it)); L = int(next(it))
+        queries.append((x, y, L))
+    return n, m, s, queries
+
+def _modinv(a: int, mod: int) -> int:
+    return pow(a, mod - 2, mod)
+
+def _build_structures(s: str):
+    n = len(s)
+    pow1 = [1] * (n + 1); pow2 = [1] * (n + 1)
+    for i in range(1, n + 1):
+        pow1[i] = (pow1[i - 1] * P1) % M1
+        pow2[i] = (pow2[i - 1] * P2) % M2
+    invP1 = _modinv(P1, M1); invP2 = _modinv(P2, M2)
+    ipow1 = [1] * (n + 1); ipow2 = [1] * (n + 1)
+    for i in range(1, n + 1):
+        ipow1[i] = (ipow1[i - 1] * invP1) % M1
+        ipow2[i] = (ipow2[i - 1] * invP2) % M2
+    pos = [[] for _ in range(26)]
+    for i, ch in enumerate(s):
+        pos[ord(ch) - 97].append(i)
+    pref1 = [[] for _ in range(26)]; pref2 = [[] for _ in range(26)]
+    for c in range(26):
+        lst = pos[c]
+        acc1 = 0; acc2 = 0
+        p1 = []; p2 = []
+        for idx in lst:
+            acc1 = (acc1 + pow1[idx]) % M1
+            acc2 = (acc2 + pow2[idx]) % M2
+            p1.append(acc1); p2.append(acc2)
+        pref1[c] = p1; pref2[c] = p2
+    return pos, pref1, pref2, pow1, pow2, ipow1, ipow2
+
+def _range_sum_pref(pref: List[int], l: int, r: int, mod: int) -> int:
+    if l >= r:
+        return 0
+    res = pref[r - 1]
+    if l > 0:
+        res -= pref[l - 1]
+    res %= mod
+    return res
+
+def _hashes_for_substring(x0: int, L: int, pos, pref1, pref2, pow1, pow2, ipow1, ipow2):
+    x1 = x0 + L
+    inv1 = ipow1[x0]; inv2 = ipow2[x0]
+    pairs = []
+    for c in range(26):
+        lst = pos[c]
+        if not lst:
+            pairs.append((0, 0)); continue
+        l = bisect_left(lst, x0)
+        r = bisect_left(lst, x1)
+        if l == r:
+            pairs.append((0, 0)); continue
+        raw1 = _range_sum_pref(pref1[c], l, r, M1)
+        raw2 = _range_sum_pref(pref2[c], l, r, M2)
+        h1 = (raw1 * inv1) % M1
+        h2 = (raw2 * inv2) % M2
+        pairs.append((h1, h2))
+    pairs.sort()
+    return pairs
+
+def solve_all(inp) -> str:
+    n, m, s, queries = inp
+    pos, pref1, pref2, pow1, pow2, ipow1, ipow2 = _build_structures(s)
+    out = []
+    for (x, y, L) in queries:
+        x0 = x - 1; y0 = y - 1
+        a = _hashes_for_substring(x0, L, pos, pref1, pref2, pow1, pow2, ipow1, ipow2)
+        b = _hashes_for_substring(y0, L, pos, pref1, pref2, pow1, pow2, ipow1, ipow2)
+        out.append("YES" if a == b else "NO")
+    return "\n".join(out)
+
+def _final_tests():
+    # Deterministic micro tests vs naive
+    def isomorphic_naive(s: str, x: int, y: int, L: int) -> bool:
+        x -= 1; y -= 1
+        f = [-1]*26; g = [-1]*26
+        for k in range(L):
+            a = ord(s[x+k]) - 97
+            b = ord(s[y+k]) - 97
+            if f[a] == -1 and g[b] == -1:
+                f[a] = b; g[b] = a
+            elif f[a] != b or g[b] != a:
+                return False
+        return True
+    s = "aababcbbcbcz"
+    n = len(s)
+    inp = (n, 4, s, [(1,1,6),(1,7,6),(2,8,5),(1,3,3)])
+    out = solve_all(inp).splitlines()
+    # Self-consistency: first vs itself YES
+    assert out[0] == "YES"
+    # Cross-check selected entries with naive
+    assert (out[1] == "YES") == isomorphic_naive(s, 1, 7, 6)
+    assert (out[2] == "NO") == (not isomorphic_naive(s, 2, 8, 5))
+    assert (out[3] == "NO") == (not isomorphic_naive(s, 1, 3, 3))
+
+def main():
+    inp = read_input()
+    if inp is None:
+        _final_tests()
+    else:
+        print(solve_all(inp))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\VALIDATION{Exactly 3 asserts in the internal test confirm YES/NO against the naive bijection on crafted substrings and self-equality.}
+\RESULT{Each query outputs YES iff the two substrings have identical sorted 26-pair hash multisets, i.e., they are isomorphic under some bijection of letters.}
+\NotePages{3}
+
+% ============ 7. Testing & Final Reference Implementation (own page) ============
+\section{Testing \& Final Reference Implementation}
+\LINE{TEST PLAN}{Unit-test the bijection mapping on tiny cases; randomized cross-checks comparing hashing vs. naive for small $n$; edge cases with single-character substrings, all-same-letter substrings, and all-distinct-letter substrings.}
+\LINE{CROSS-CHECKS}{Approach B/C hashing vs. Approach A naive on random small strings and random queries to ensure equivalence.}
+\LINE{EDGE-CASE GENERATOR}{Generate strings over a small alphabet (size 2–3) to force many repeats; include degenerate substrings of length 1 and maximal length.}
+\begin{minted}{python}
+# Deterministic generators for boundaries, degenerates, adversarials
+import random
+
+def gen_string(n: int, alpha: int = 3, seed: int = 0) -> str:
+    random.seed(seed)
+    return "".join(chr(97 + random.randrange(alpha)) for _ in range(n))
+
+def gen_queries(n: int, m: int, seed: int = 1):
+    random.seed(seed)
+    qs = []
+    for _ in range(m):
+        x = random.randrange(1, n + 1)
+        y = random.randrange(1, n + 1)
+        L = random.randrange(1, n - max(x, y) + 2)
+        qs.append((x, y, L))
+    return qs
+
+def reference_naive(s: str, queries):
+    def iso(s, x, y, L):
+        x -= 1; y -= 1
+        f = [-1]*26; g = [-1]*26
+        for k in range(L):
+            a = ord(s[x+k]) - 97; b = ord(s[y+k]) - 97
+            if f[a] == -1 and g[b] == -1:
+                f[a] = b; g[b] = a
+            elif f[a] != b or g[b] != a:
+                return False
+        return True
+    return ["YES" if iso(s, x, y, L) else "NO" for (x, y, L) in queries]
+\end{minted}
+\textbf{Reference Code (Ready to Submit)}
+\begin{minted}{python}
+# Final reference solution (same API as Section 6) + quick asserts
+from typing import List, Tuple, Optional
+from bisect import bisect_left
+
+M1 = 1_000_000_007
+M2 = 1_000_000_009
+P1 = 911382323
+P2 = 972663749
+
+def read_input():
+    import sys
+    data = sys.stdin.read().strip().split()
+    if not data:
+        return None
+    it = iter(data)
+    n = int(next(it)); m = int(next(it))
+    s = next(it).strip()
+    queries = []
+    for _ in range(m):
+        x = int(next(it)); y = int(next(it)); L = int(next(it))
+        queries.append((x, y, L))
+    return n, m, s, queries
+
+def _modinv(a: int, mod: int) -> int:
+    return pow(a, mod - 2, mod)
+
+def _build_structures(s: str):
+    n = len(s)
+    pow1 = [1] * (n + 1); pow2 = [1] * (n + 1)
+    for i in range(1, n + 1):
+        pow1[i] = (pow1[i - 1] * P1) % M1
+        pow2[i] = (pow2[i - 1] * P2) % M2
+    invP1 = _modinv(P1, M1); invP2 = _modinv(P2, M2)
+    ipow1 = [1] * (n + 1); ipow2 = [1] * (n + 1)
+    for i in range(1, n + 1):
+        ipow1[i] = (ipow1[i - 1] * invP1) % M1
+        ipow2[i] = (ipow2[i - 1] * invP2) % M2
+    pos = [[] for _ in range(26)]
+    for i, ch in enumerate(s):
+        pos[ord(ch) - 97].append(i)
+    pref1 = [[] for _ in range(26)]; pref2 = [[] for _ in range(26)]
+    for c in range(26):
+        lst = pos[c]
+        acc1 = 0; acc2 = 0
+        p1 = []; p2 = []
+        for idx in lst:
+            acc1 = (acc1 + pow1[idx]) % M1
+            acc2 = (acc2 + pow2[idx]) % M2
+            p1.append(acc1); p2.append(acc2)
+        pref1[c] = p1; pref2[c] = p2
+    return pos, pref1, pref2, pow1, pow2, ipow1, ipow2
+
+def _range_sum_pref(pref: List[int], l: int, r: int, mod: int) -> int:
+    if l >= r:
+        return 0
+    res = pref[r - 1]
+    if l > 0:
+        res -= pref[l - 1]
+    res %= mod
+    return res
+
+def _hashes_for_substring(x0: int, L: int, pos, pref1, pref2, pow1, pow2, ipow1, ipow2):
+    x1 = x0 + L
+    inv1 = ipow1[x0]; inv2 = ipow2[x0]
+    pairs = []
+    for c in range(26):
+        lst = pos[c]
+        if not lst:
+            pairs.append((0, 0)); continue
+        l = bisect_left(lst, x0)
+        r = bisect_left(lst, x1)
+        if l == r:
+            pairs.append((0, 0)); continue
+        raw1 = _range_sum_pref(pref1[c], l, r, M1)
+        raw2 = _range_sum_pref(pref2[c], l, r, M2)
+        h1 = (raw1 * inv1) % M1
+        h2 = (raw2 * inv2) % M2
+        pairs.append((h1, h2))
+    pairs.sort()
+    return pairs
+
+def solve_all(inp) -> str:
+    n, m, s, queries = inp
+    pos, pref1, pref2, pow1, pow2, ipow1, ipow2 = _build_structures(s)
+    out = []
+    for (x, y, L) in queries:
+        x0 = x - 1; y0 = y - 1
+        a = _hashes_for_substring(x0, L, pos, pref1, pref2, pow1, pow2, ipow1, ipow2)
+        b = _hashes_for_substring(y0, L, pos, pref1, pref2, pow1, pow2, ipow1, ipow2)
+        out.append("YES" if a == b else "NO")
+    return "\n".join(out)
+
+def _reference_asserts():
+    # Three sanity asserts
+    s = "abacaa"
+    n = len(s)
+    assert solve_all((n, 2, s, [(1,1,1),(2,4,3)])).splitlines() == ["YES","NO"]
+    # Same substring always YES
+    assert solve_all((n, 1, s, [(1,1,6)])).strip() == "YES"
+    # Crafted isomorphic pair: "abab" ~ "cdcd"
+    s2 = "ababcdcd"
+    assert solve_all((len(s2), 1, s2, [(1,5,4)])).strip() == "YES"
+
+def main():
+    inp = read_input()
+    if inp is None:
+        _reference_asserts()
+    else:
+        print(solve_all(inp))
+
+if __name__ == "__main__":
+    main()
+\end{minted}
+\NotePages{3}
+
+% ============ 8. Review & Pitfalls (own page) ============
+\section{Review \& Pitfalls}
+\WHAT{Two substrings are isomorphic iff the multiset of their per-letter relative occurrence patterns match under some renaming; compare sorted per-letter polynomial hashes.}
+\WHY{Shows up in interviews as canonical mapping-invariance and hashing challenge with many queries; tests ability to design signatures and precompute efficiently.}
+\CHECKLIST{
+\begin{bullets}
+\item Convert input to 0-based indices.
+\item Precompute powers and inverse powers for both moduli.
+\item Build per-letter position lists and prefix sums of powers.
+\item For each query, binary search per letter and compute normalized per-letter hash.
+\item Sort 26 pairs and compare.
+\end{bullets}
+}
+\EDGECASES{
+\begin{bullets}
+\item $\text{len}=1$ (always YES if characters equal? Actually any single letter to any single letter is isomorphic — mapping one letter to one letter).
+\item $x=y$ (identical substrings).
+\item All same letter vs. not all same letter.
+\item Distinct-letter counts differ (multiset sizes of nonzero hashes differ).
+\item Substrings at string ends ($x+L=n$).
+\item Substrings with letters not appearing at all (hash 0 components).
+\item Highly repetitive strings (stress collisions — double hashing avoids issues).
+\item Very large $m$ and $n$ (ensure $O(n)$ memory).
+\end{bullets}
+}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting to normalize by $p^{-x}$, leading to position-dependent hashes incomparable across starts.
+\item Building $26\times n$ prefix arrays of integers in Python (memory blow-up); use per-letter positions with prefix sums instead.
+\item Using a single modulus/base (higher collision risk).
+\item Sorting tuples inconsistently or forgetting to include zero components for absent letters.
+\item Off-by-one in binary searches at $x+L$.
+\item Not converting input indices to 0-based properly.
+\item Using random base causing nondeterministic outcomes across runs.
+\item Recomputing powers per query instead of once.
+\end{bullets}
+}
+\FAILMODES{The baseline $O(L)$ approach times out on worst-case $m,n$. The improved approach survives by $O(\log n)$ per letter thanks to C-level bisect and $O(n)$ memory layout.}
+\ELI{Rename letters within a substring in a consistent way, and compare the resulting patterns. We do this implicitly with polynomial hashes per letter and sort the 26 values, so letter names can permute freely while patterns must match.}
+\NotePages{3}
+
+\end{document}

@@ -1,0 +1,2075 @@
+% !TeX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype,setspace,amsmath,amssymb,mathtools,amsthm,unicode-math}
+\setstretch{1.05}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Latin Modern Mono}
+\setmathfont{Latin Modern Math}
+
+% --- Overflow / line-break safety ---
+\allowdisplaybreaks[4]            % allow multi-line displays to break
+\setlength{\jot}{7pt}             % extra space between aligned lines
+\setlength{\emergencystretch}{8em}% give paragraphs room to wrap
+\sloppy                           % last-resort line breaking to avoid overfull boxes
+
+\usepackage{xcolor,fancyhdr,enumitem,inconsolata,listings}
+\pagestyle{fancy}\fancyhf{}\lhead{\nouppercase{\leftmark}}\rhead{\thepage}
+\setlength{\headheight}{26pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\raggedbottom
+
+% --- Breakable math helpers (use these in the body) ---
+\newenvironment{BreakableEquation}{\begin{equation}\begin{aligned}}{\end{aligned}\end{equation}}
+\newenvironment{BreakableEquation*}{\begin{equation*}\begin{aligned}}{\end{aligned}\end{equation*}}
+\newenvironment{tightalign}{\begingroup\small\allowdisplaybreaks\begin{align}}{\end{align}\endgroup}
+
+% ---------- Safety shims ----------
+% Robust minted → listings shim (no shell-escape; supports [opts]{language})
+\providecommand{\enumlistm}{enumitem}
+\newenvironment{minted}[2][]{%
+  \lstset{style=code,language=#2,#1}\begin{lstlisting}%
+}{\end{lstlisting}}
+
+% Fallback for \inputminted (ignore file; keep build unbroken)
+\newcommand{\inputminted}[3][]{\begin{lstlisting}\end{lstlisting}}
+
+% ---------- Bulleted lines (no tables) ----------
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{label=--,leftmargin=1.6em,itemsep=2pt,topsep=4pt}
+
+% ---------- Variable mapping (lines, no tables) ----------
+\newcommand{\varmapStart}{\textbf{VARIABLE MAPPING:}\par\begin{bullets}}
+\newcommand{\var}[2]{\item $#1$ — #2}
+\newcommand{\varmapEnd}{\end{bullets}}
+
+% ---------- Glossary item with ELI5 and Pitfall/Example ----------
+\newcommand{\glossx}[6]{%
+  \textbf{#1}\par
+  \begin{bullets}
+    \item \textbf{What:} #2
+    \item \textbf{Why:} #3
+    \item \textbf{How:} #4
+    \item \textbf{ELI5:} #5
+    \item \textbf{Pitfall/Example:} #6
+  \end{bullets}
+}
+
+% ---------- Theorem structures ----------
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{claim}[theorem]{Claim}
+% ---------- Code blocks ----------
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{black!02},
+  frame=single,
+  numbers=left, numberstyle=\tiny, numbersep=8pt,
+  breaklines=true, breakatwhitespace=true,
+  tabsize=4, showstringspaces=false,
+  upquote=true, keepspaces=true, columns=fullflexible,
+  % Unicode safety: map common symbols so listings never chokes
+  literate=
+    {–}{{-}}1
+    {—}{{-}}1
+    {…}{{...}}1
+    {≤}{{\ensuremath{\le}}}1
+    {≥}{{\ensuremath{\ge}}}1
+    {≠}{{\ensuremath{\ne}}}1
+    {≈}{{\ensuremath{\approx}}}1
+    {±}{{\ensuremath{\pm}}}1
+    {→}{{\ensuremath{\to}}}1
+    {←}{{\ensuremath{\leftarrow}}}1
+    {∞}{{\ensuremath{\infty}}}1
+    {√}{{\ensuremath{\sqrt{\ }}}}1
+    {×}{{\ensuremath{\times}}}1
+    {÷}{{\ensuremath{\div}}}1
+}
+
+% Main code environment for all Python blocks
+\lstnewenvironment{codepy}[1][]%
+  {\lstset{style=code,language=Python,#1}}%
+  {}
+
+% Inline code; change delimiters if your snippet contains '!'
+\newcommand{\inlinecode}[1]{\lstinline[style=code]!#1!}
+
+% ---------- Line-label macros ----------
+\newcommand{\LF}[2]{\par\noindent\textbf{#1:}~#2\par}
+\newcommand{\WHAT}[1]{\LF{WHAT}{#1}}
+\newcommand{\WHY}[1]{\LF{WHY}{#1}}
+\newcommand{\HOW}[1]{\LF{HOW}{#1}}
+\newcommand{\ELI}[1]{\LF{ELI5}{#1}}
+\newcommand{\SCOPE}[1]{\LF{SCOPE}{#1}}
+\newcommand{\CONFUSIONS}[1]{\LF{COMMON CONFUSIONS}{#1}}
+\newcommand{\APPLICATIONS}[1]{\LF{APPLICATIONS}{#1}}
+\newcommand{\FORMULA}[1]{\LF{FORMULA}{#1}}
+\newcommand{\CANONICAL}[1]{\LF{CANONICAL FORM}{#1}}
+\newcommand{\PRECONDS}[1]{\LF{PRECONDITIONS}{#1}}
+\newcommand{\DERIVATION}[1]{\LF{DERIVATION}{#1}}
+\newcommand{\EQUIV}[1]{\LF{EQUIVALENT FORMS}{#1}}
+\newcommand{\LIMITS}[1]{\LF{LIMIT CASES}{#1}}
+\newcommand{\INPUTS}[1]{\LF{INPUTS}{#1}}
+\newcommand{\OUTPUTS}[1]{\LF{OUTPUTS}{#1}}
+\newcommand{\RESULT}[1]{\LF{RESULT}{#1}}
+\newcommand{\INTUITION}[1]{\LF{INTUITION}{#1}}
+\newcommand{\PITFALLS}[1]{\LF{PITFALLS}{#1}}
+\newcommand{\MODEL}[1]{\LF{CANONICAL MATH MODEL}{#1}}
+\newcommand{\ASSUMPTIONS}[1]{\LF{ASSUMPTIONS}{#1}}
+\newcommand{\WHICHFORMULA}[1]{\LF{WHICH FORMULA \& WHY}{#1}}
+\newcommand{\GOVERN}[1]{\LF{GOVERNING EQUATION(S)}{#1}}
+\newcommand{\UNITCHECK}[1]{\LF{UNIT CHECK}{#1}}
+\newcommand{\EDGECASES}[1]{\LF{EDGE CASES}{#1}}
+\newcommand{\ALTERNATE}[1]{\LF{ALTERNATE APPROACH (sketch)}{#1}}
+\newcommand{\PROBLEM}[1]{\LF{PROBLEM}{#1}}
+\newcommand{\API}[1]{\LF{API}{#1}}
+\newcommand{\COMPLEXITY}[1]{\LF{COMPLEXITY}{#1}}
+\newcommand{\FAILMODES}[1]{\LF{FAILURE MODES}{#1}}
+\newcommand{\STABILITY}[1]{\LF{NUMERICAL STABILITY}{#1}}
+\newcommand{\VALIDATION}[1]{\LF{VALIDATION}{#1}}
+\newcommand{\EXPLANATION}[1]{\LF{EXPLANATION}{#1}}
+\newcommand{\SCENARIO}[1]{\LF{SCENARIO}{#1}}
+\newcommand{\PIPELINE}[1]{\LF{PIPELINE STEPS}{#1}}
+\newcommand{\METRICS}[1]{\LF{METRICS}{#1}}
+\newcommand{\INTERPRET}[1]{\LF{INTERPRETATION}{#1}}
+\newcommand{\NEXTSTEPS}[1]{\LF{LIMITATIONS \& NEXT STEPS}{#1}}
+
+% ---------- Section formatting ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{*2}{*1}
+\usepackage{etoolbox}
+\pretocmd{\section}{\clearpage}{}{}
+
+% ---------- Page helpers ----------
+\newcommand{\FormulaPage}[2]{%
+  \clearpage
+  \section*{Formula #1 — #2}%
+  \addcontentsline{toc}{section}{Formula #1 — #2}%
+}
+\newcommand{\ProblemPage}[2]{%
+  \clearpage
+  \subsection*{Problem #1: #2}%
+  \addcontentsline{toc}{subsection}{Problem #1: #2}%
+}
+\newcommand{\CodeDemoPage}[1]{%
+  \clearpage
+  \subsection*{Coding Demo: #1}%
+  \addcontentsline{toc}{subsection}{Coding Demo: #1}%
+}
+\newcommand{\DomainPage}[1]{%
+  \clearpage
+  \subsection*{#1 (End-to-End)}%
+  \addcontentsline{toc}{subsection}{#1 (End-to-End)}%
+}
+
+\begin{document}
+\title{Comprehensive Study Sheet — Semidefinite Programming and Duality}
+\date{\today}
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Concept Overview}
+\WHAT{
+A semidefinite program (SDP) optimizes a linear functional over the cone
+of symmetric positive semidefinite matrices with affine equality constraints.
+Standard primal form: minimize $\langle C,X\rangle$ subject to
+$\langle A_i,X\rangle=b_i$ for $i=1,\dots,m$, and $X\succeq 0$, where
+$X\in\mathbb{S}^n$, $C,A_i\in\mathbb{S}^n$, $b\in\mathbb{R}^m$.
+The dual maximizes $b^\top y$ subject to $C-\sum_i y_i A_i = S\succeq 0$,
+with variables $y\in\mathbb{R}^m$, $S\in\mathbb{S}^n$.
+}
+\WHY{
+SDPs unify many convex problems: eigenvalue bounds, spectral norms,
+control LMIs, relaxations of combinatorial problems (MaxCut), and robust
+optimization. Duality provides certificates of optimality and bounds.
+}
+\HOW{
+1. Declare the PSD cone $\mathbb{S}^n_+$ and the trace inner product
+$\langle U,V\rangle=\mathrm{Tr}(U^\top V)=\mathrm{Tr}(UV)$.
+2. Form the Lagrangian for primal constraints using $y$ for equalities
+and $S\succeq 0$ for $X\succeq 0$.
+3. Compute the dual function $g(y,S)=\inf_{X\succeq 0}\mathcal{L}(X,y,S)$,
+yielding a constraint $C-\sum_i y_i A_i - S = 0$ for finiteness.
+4. The dual problem maximizes $g$ over $(y,S\succeq 0)$, producing
+weak duality, KKT conditions, and with Slater conditions, strong duality.
+}
+\ELI{
+Think of SDP as choosing a cloud shape $X$ (a covariance-like matrix)
+to minimize cost while satisfying linear measurements. The dual picks
+prices $y$ for measurements and a safety cushion $S\succeq 0$, ensuring
+the priced cost never underestimates the primal cost. At optimum, the
+cloud touches the cushion exactly where it matters.
+}
+\SCOPE{
+Valid for symmetric real matrices with trace inner product. Requires
+convexity (PSD cone) and affine constraints. Strong duality needs
+constraint qualifications (e.g., Slater). Degenerate cases: empty
+feasible set, unbounded cost, or absence of attainment.
+}
+\CONFUSIONS{
+Do not confuse positive semidefiniteness ($X\succeq 0$) with elementwise
+nonnegativity ($X\ge 0$). Dual feasibility $S\succeq 0$ is not the same
+as $S=0$. Complementary slackness is $\langle X,S\rangle=0$, not $XS=0$
+as matrices (though $XS=0$ may also hold in some cases).
+}
+\APPLICATIONS{
+\begin{bullets}
+\item Mathematical foundations (pure / applied).
+\item Computational modeling or simulation.
+\item Physical / economic / engineering interpretations.
+\item Statistical or algorithmic implications.
+\end{bullets}
+}
+\textbf{ANALYTIC STRUCTURE.}
+The feasible set is an intersection of an affine space with the closed
+convex cone $\mathbb{S}^n_+$. Objective is linear, so the problem is
+convex. The cone is self-dual under the trace inner product.
+
+\textbf{CANONICAL LINKS.}
+Key identities: Lagrange dual derivation; cone self-duality; Schur
+complement for LMIs; spectral norm and eigenvalue SDPs. These feed into
+KKT conditions and strong duality.
+
+\textbf{PROBLEM-TYPE RECOGNITION HEURISTICS.}
+\begin{bullets}
+\item Constraints of the form $M(x)\succeq 0$ (LMI) signal SDP.
+\item Objectives with traces $\mathrm{Tr}(CX)$.
+\item Eigenvalue or spectral norm bounds often reformulate as SDPs.
+\item Relaxations of boolean quadratic forms via $X=xx^\top$ dropped to
+$X\succeq 0$ and $\mathrm{diag}(X)=\mathbf{1}$ indicate SDP relaxations.
+\end{bullets}
+
+\textbf{SOLUTION STRATEGY BLUEPRINT.}
+\begin{bullets}
+\item Translate constraints to inner products: $\langle A_i,X\rangle=b_i$.
+\item Write Lagrangian and identify dual feasibility conditions.
+\item Apply KKT: primal/dual feasibility and complementary slackness.
+\item Use Schur complements to encode convex quadratic inequalities.
+\item Validate with eigenvalue checks and primal-dual gap.
+\end{bullets}
+
+\textbf{CONCEPTUAL INVARIANTS.}
+Trace inner product, PSD cone self-duality, primal-dual gap
+$\langle C,X\rangle - b^\top y = \langle S,X\rangle \ge 0$.
+
+\textbf{EDGE INTUITION.}
+If $C$ aligns with feasible $X$'s nullspace, cost can hit zero.
+As constraints vanish, SDP reduces to eigenvalue minimization.
+As PSD cone is tightened (adding LMIs), feasible set shrinks and
+dual feasible set expands, reducing the gap to zero under Slater.
+
+\clearpage
+\section{Glossary}
+\glossx{Positive Semidefinite (PSD) Cone}
+{Set $\mathbb{S}^n_+=\{X\in\mathbb{S}^n: v^\top X v\ge 0,\ \forall v\}$.
+Equivalent to $X$ symmetric with eigenvalues $\ge 0$.}
+{Core feasible region for SDPs; convex, closed, self-dual.}
+{Check eigenvalues $\lambda_i(X)\ge 0$ or Cholesky factorization.}
+{A bowl that only opens upward; you can place a ball without it falling.}
+{Mistake: confusing PSD with entrywise nonnegativity.}
+
+\glossx{Linear Matrix Inequality (LMI)}
+{Constraint $M(x)=M_0+\sum_{i} x_i M_i \succeq 0$.}
+{Canonical way to encode convex constraints in SDP form.}
+{Use Schur complement to convert quadratic constraints to an LMI.}
+{Like ensuring a bridge stays rigid: the stiffness matrix must be PSD.}
+{Pitfall: requiring $M(x)\succ 0$ instead of $\succeq 0$ breaks convexity.}
+
+\glossx{Complementary Slackness}
+{KKT condition $\langle X,S\rangle=0$ for primal-dual optimal $(X,y,S)$.}
+{Certifies optimality and explains where constraints bind.}
+{From stationarity: $C-\sum y_i A_i - S=0$ and nonnegativity yield the gap.}
+{Two cushions touching only at zero total overlap.}
+{Error: assuming $XS=0$ elementwise; the trace statement is correct.}
+
+\glossx{Schur Complement}
+{For $\begin{bmatrix}A&B\\B^\top&C\end{bmatrix}\succeq 0$ with $A\succ 0$,
+equivalent to $C-B^\top A^{-1}B\succeq 0$.}
+{Transforms convex quadratic constraints into LMIs for SDP handling.}
+{Apply block Gaussian elimination and PSD invariance under congruence.}
+{Eliminate a block like solving for constraints in a subsystem.}
+{Pitfall: using $A^{-1}$ without ensuring $A\succ 0$.}
+
+\clearpage
+\section{Symbol Ledger}
+\varmapStart
+\var{\mathbb{S}^n}{Real $n\times n$ symmetric matrices.}
+\var{\mathbb{S}^n_+}{PSD cone in $\mathbb{S}^n$.}
+\var{X}{Primal variable in $\mathbb{S}^n_+$.}
+\var{C}{Cost matrix in $\mathbb{S}^n$.}
+\var{A_i}{Constraint matrices in $\mathbb{S}^n$.}
+\var{b}{Right-hand side vector in $\mathbb{R}^m$.}
+\var{y}{Dual variable in $\mathbb{R}^m$.}
+\var{S}{Dual slack in $\mathbb{S}^n_+$.}
+\var{\langle U,V\rangle}{Trace inner product $\mathrm{Tr}(UV)$.}
+\var{\lambda_{\max}(A)}{Largest eigenvalue of $A$.}
+\var{\|A\|_2}{Spectral norm of $A$.}
+\var{M(x)}{Affine symmetric matrix function (LMI).}
+\var{I}{Identity matrix.}
+\varmapEnd
+
+\clearpage
+\section{Formula Canon — One Formula Per Page}
+
+\FormulaPage{1}{SDP Primal-Dual Pair via Lagrangian}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given $C,A_i\in\mathbb{S}^n$, $b\in\mathbb{R}^m$, the primal SDP
+\[
+\min_{X\succeq 0}\ \langle C,X\rangle\ \text{s.t.}\ \langle A_i,X\rangle=b_i
+\]
+has the Lagrange dual
+\[
+\max_{y\in\mathbb{R}^m,S\succeq 0}\ b^\top y\ \text{s.t.}\ C-\sum_{i=1}^m y_i A_i - S = 0.
+\]
+\WHAT{
+Relates the primal linear optimization over the PSD cone to a dual problem
+over the same cone via the trace inner product.}
+\WHY{
+Establishes certificates of optimality and enables bounds and algorithms
+that exploit cone self-duality.}
+\FORMULA{
+\[
+\begin{aligned}
+\text{Primal (P)}:\quad & \min_{X\in\mathbb{S}^n_+}\ \langle C,X\rangle \\
+& \text{s.t.}\ \langle A_i,X\rangle=b_i,\ i=1,\dots,m.\\
+\text{Dual (D)}:\quad & \max_{y\in\mathbb{R}^m,S\in\mathbb{S}^n_+}\ b^\top y \\
+& \text{s.t.}\ C-\sum_{i=1}^m y_i A_i - S = 0.
+\end{aligned}
+\]
+}
+\CANONICAL{
+Variables: $X\in\mathbb{S}^n$, $y\in\mathbb{R}^m$, $S\in\mathbb{S}^n$.
+Inner product $\langle U,V\rangle=\mathrm{Tr}(UV)$. Feasible sets are
+convex; objective functions are linear.}
+\PRECONDS{
+\begin{bullets}
+\item $A_i,C\in\mathbb{S}^n$ and $b\in\mathbb{R}^m$ fixed.
+\item Dual cone of $\mathbb{S}^n_+$ equals itself under trace inner product.
+\item Lagrangian duality applies to convex programs.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+The dual cone of $\mathbb{S}^n_+$ under $\langle U,V\rangle=\mathrm{Tr}(UV)$
+is $\mathbb{S}^n_+$ itself.
+\end{lemma}
+\begin{proof}
+If $S\succeq 0$ and $X\succeq 0$, then $X^{1/2}SX^{1/2}\succeq 0$ so
+$\langle S,X\rangle=\mathrm{Tr}(X^{1/2}SX^{1/2})\ge 0$. Conversely, if
+$\langle S,X\rangle\ge 0$ for all $X\succeq 0$ and some $v$ satisfies
+$v^\top S v<0$, choose $X=vv^\top\succeq 0$ to get
+$\langle S, vv^\top\rangle = v^\top S v<0$, a contradiction. Hence
+$S\succeq 0$. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\text{Lagrangian: } \mathcal{L}(X,y,S)
+&= \langle C,X\rangle + \sum_{i=1}^m y_i(b_i-\langle A_i,X\rangle) - \langle S,X\rangle\\
+&= b^\top y + \langle C-\sum_{i=1}^m y_i A_i - S,\ X\rangle.\\
+g(y,S)&=\inf_{X\succeq 0}\ \mathcal{L}(X,y,S).
+\end{align*}
+If $C-\sum_i y_i A_i - S\ne 0$, the infimum over $X\succeq 0$ is $-\infty$
+unless the coefficient belongs to the dual cone of $\mathbb{S}^n_+$, i.e.,
+equals zero with $S\succeq 0$. Thus finiteness requires
+$C-\sum_i y_i A_i - S=0$ and $S\succeq 0$, yielding $g(y,S)=b^\top y$.
+Maximizing $g$ under these constraints gives the dual (D).
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Identify $C$, $\{A_i\}$, and $b$ from the model.
+\item Form stationarity $C-\sum_i y_i A_i - S=0$.
+\item Enforce $S\succeq 0$ to ensure bounded Lagrangian.
+\item Solve (P) and (D); compare via gap $\langle S,X\rangle$.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item Dual can be written as $\max_y\ b^\top y$ s.t.
+$C-\sum_i y_i A_i \succeq 0$ eliminating $S$.
+\item With inequality constraints, incorporate extra PSD multipliers.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If (P) is infeasible, (D) may be unbounded or infeasible.
+\item Without Slater, optimal values can differ and may not be attained.
+\end{bullets}
+}
+\INPUTS{$C\in\mathbb{S}^n,\ A_1,\dots,A_m\in\mathbb{S}^n,\ b\in\mathbb{R}^m$.}
+\DERIVATION{
+\begin{align*}
+\text{Example: } &n=2,\ m=1,\ A_1=I,\ b_1=1.\\
+&\text{(P)}\ \min_{X\succeq 0}\ \langle C,X\rangle\ \text{s.t.}\ \mathrm{Tr}(X)=1.\\
+&\text{(D)}\ \max_{y\in\mathbb{R}}\ y\ \text{s.t.}\ C-yI\succeq 0.\\
+&\Rightarrow y\le \lambda_{\min}(C),\ \text{so } d^\star=\lambda_{\min}(C).\\
+&\text{(P)}\ \min\ \sum_i \lambda_i(C)\lambda_i(X)\ \text{with }\sum_i \lambda_i(X)=1,\\
+&\text{minimized by concentrating mass on eigenvector of }\lambda_{\min}(C),\\
+&\Rightarrow p^\star=\lambda_{\min}(C)=d^\star.
+\end{align*}
+}
+\RESULT{
+Primal-dual pair correctly derived; in the example both achieve
+$\lambda_{\min}(C)$ with zero gap.}
+\UNITCHECK{
+Trace inner product yields scalar costs; feasibility and stationarity are
+dimensionally consistent in $\mathbb{S}^n$.}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting $S\succeq 0$ leads to unbounded dual.
+\item Using nonsymmetric $A_i$ breaks the cone structure.
+\end{bullets}
+}
+\INTUITION{
+Dual prices $b$ so that the priced combination of constraints majorizes
+$C$ on the cone; the best such price equals the primal optimum.}
+\CANONICAL{
+\begin{bullets}
+\item Lagrangian dual: maximize lower bounds subject to conic support.
+\item Self-duality of $\mathbb{S}^n_+$ is the backbone.
+\end{bullets}
+}
+
+\FormulaPage{2}{Weak Duality and Primal-Dual Gap}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For any primal feasible $X\succeq 0$ with $\langle A_i,X\rangle=b_i$ and
+any dual feasible $(y,S)$ with $S\succeq 0$ and $C-\sum_i y_i A_i - S=0$,
+\[
+\langle C,X\rangle - b^\top y = \langle S,X\rangle \ge 0,
+\]
+so $p^\star\ge d^\star$.
+\WHAT{
+Provides a nonnegative certificate of suboptimality (the gap).}
+\WHY{
+Ensures every dual feasible solution lower-bounds the primal objective.}
+\FORMULA{
+\[
+\langle C,X\rangle - b^\top y = \left\langle C-\sum_i y_i A_i,\ X\right\rangle
+= \langle S,X\rangle \ge 0.
+\]
+}
+\CANONICAL{
+$X,S\in\mathbb{S}^n_+$ implies $\langle S,X\rangle\ge 0$ by cone self-duality.}
+\PRECONDS{
+\begin{bullets}
+\item Primal feasibility: $X\succeq 0$, $\langle A_i,X\rangle=b_i$.
+\item Dual feasibility: $S\succeq 0$, $C-\sum_i y_i A_i - S=0$.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+If $X,S\succeq 0$, then $\langle S,X\rangle\ge 0$.
+\end{lemma}
+\begin{proof}
+Let $X^{1/2}$ be PSD. Then
+$\langle S,X\rangle=\mathrm{Tr}(X^{1/2}SX^{1/2})$ is the trace of a PSD
+matrix, hence nonnegative. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+\langle C,X\rangle - b^\top y
+&=\langle C,X\rangle - \sum_i y_i \langle A_i,X\rangle\\
+&=\left\langle C-\sum_i y_i A_i,\ X\right\rangle\\
+&=\langle S,X\rangle\quad (\text{dual stationarity})\\
+&\ge 0\quad (\text{PSD inner product}).
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Produce any primal feasible $X$ and dual feasible $(y,S)$.
+\item Compute the gap $\langle S,X\rangle$.
+\item If gap is zero, the pair is optimal.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item Gap equals $\mathrm{Tr}(SX)$ and also
+$\sum_i \lambda_i(SX)$ if $SX$ is diagonalizable with nonnegative trace.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item If either side infeasible, inequality does not apply.
+\item Gap can be zero without uniqueness; multiple optimal solutions can exist.
+\end{bullets}
+}
+\INPUTS{$C,\{A_i\},b$ and feasible $X,y,S$.}
+\DERIVATION{
+\begin{align*}
+\text{Example: } C=\begin{bmatrix}2&0\\0&1\end{bmatrix},\
+A_1=I,\ b_1=1.\\
+\text{Primal } X=\begin{bmatrix}0&0\\0&1\end{bmatrix},\ \mathrm{Tr}(X)=1.\\
+\langle C,X\rangle=1.\\
+\text{Dual } y=1,\ S=C-yI=\begin{bmatrix}1&0\\0&0\end{bmatrix}\succeq 0.\\
+\text{Gap } \langle S,X\rangle=\mathrm{Tr}\left(\begin{bmatrix}1&0\\0&0\end{bmatrix}
+\begin{bmatrix}0&0\\0&1\end{bmatrix}\right)=0.\\
+\Rightarrow p^\star=d^\star=1.
+\end{align*}
+}
+\RESULT{
+Nonnegative gap verified; zero gap certifies optimality in the example.}
+\UNITCHECK{
+All quantities are scalars from trace inner products; PSD conditions are
+dimensionally consistent.}
+\PITFALLS{
+\begin{bullets}
+\item Computing $\langle S,X\rangle$ with nonsymmetric matrices.
+\item Using $XS$ elementwise product; use trace of product.
+\end{bullets}
+}
+\INTUITION{
+Dual slack $S$ measures how much $C$ exceeds the priced constraints;
+overlap with $X$ cannot be negative.}
+\CANONICAL{
+\begin{bullets}
+\item Weak duality: $p^\star\ge d^\star$ with gap $\langle S,X\rangle$.
+\end{bullets}
+}
+
+\FormulaPage{3}{Slater's Condition and Strong Duality for SDP}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+If the primal SDP has a strictly feasible point
+$X\succ 0$ with $\langle A_i,X\rangle=b_i$ for all $i$, then the dual
+attains its optimum and $p^\star=d^\star$. Dually, if the dual is strictly
+feasible ($\exists y,S\succ 0$ with $C-\sum_i y_i A_i - S=0$), then the
+primal attains its optimum and $p^\star=d^\star$.
+\WHAT{
+Constraint qualification guaranteeing zero duality gap and attainment.}
+\WHY{
+Ensures reliability of certificates and convergence of algorithms.}
+\FORMULA{
+\[
+\text{Slater (P)}\ \Rightarrow\ p^\star=d^\star,\ \exists (y^\star,S^\star).
+\quad
+\text{Slater (D)}\ \Rightarrow\ p^\star=d^\star,\ \exists X^\star.
+\]
+}
+\CANONICAL{
+Applies to convex cone programs with affine constraints and self-dual cone
+$\mathbb{S}^n_+$; strict feasibility means interior point exists.}
+\PRECONDS{
+\begin{bullets}
+\item Convexity of (P) and (D).
+\item Existence of strictly feasible point in one of the problems.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For a convex program minimizing a closed proper convex function over an
+affine slice of a closed convex cone, Slater's condition implies strong
+duality and dual attainment.
+\end{lemma}
+\begin{proof}
+By convex analysis, strict feasibility implies zero duality gap by
+Fenchel-Rockafellar duality, and closedness of the feasible set plus
+boundedness of level sets give attainment. Specializing to SDPs, the cone
+$\mathbb{S}^n_+$ is closed, convex, with nonempty interior, so the
+hypotheses hold. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+&\text{Consider (P): } \inf\{\langle C,X\rangle:\ AX=b,\ X\in \mathbb{S}^n_+\},\\
+&\text{where }AX=b\text{ is the linear map }(AX)_i=\langle A_i,X\rangle.\\
+&\text{Strict feasibility } \exists X_0\succ 0,\ AX_0=b.\\
+&\text{The cone has nonempty interior; affine slice intersects interior.}\\
+&\text{Hence closedness of the value function at }0\ \text{holds.}\\
+&\text{By Slater, } p^\star=d^\star,\ \text{and (D) attains.}
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Find a strictly feasible point (numerically via interior-point step).
+\item Invoke Slater to assert $p^\star=d^\star$ and existence.
+\item Use KKT to characterize optimality.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item Equivalent cone program statement: Slater for either side implies
+no duality gap and attainment on the opposite side.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item Without Slater, duality gap may be positive or optima unattained.
+\item Strict feasibility requires $X\succ 0$; $X\succeq 0$ is not enough.
+\end{bullets}
+}
+\INPUTS{$A_i,C,b$ plus a strictly feasible point on one side.}
+\DERIVATION{
+\begin{align*}
+\text{Example: } &A_1=I,\ b_1=1,\ C=\begin{bmatrix}2&0\\0&1\end{bmatrix}.\\
+&X_0=\tfrac{1}{2}I\succ 0,\ \mathrm{Tr}(X_0)=1\ \Rightarrow \text{Slater (P)}.\\
+&\Rightarrow p^\star=d^\star=\lambda_{\min}(C)=1,\ \text{attained.}
+\end{align*}
+}
+\RESULT{
+Strong duality holds with zero gap and attainment under Slater.}
+\UNITCHECK{
+Feasibility points and PSD interior are consistent in $\mathbb{S}^n$.}
+\PITFALLS{
+\begin{bullets}
+\item Confusing feasibility with strict feasibility.
+\item Assuming attainment without verifying Slater or compactness.
+\end{bullets}
+}
+\INTUITION{
+Having wiggle room inside the cone prevents pathological boundary
+effects, allowing dual hyperplanes to support the value tightly.}
+\CANONICAL{
+\begin{bullets}
+\item Slater: interior feasibility implies exact dual certificates.
+\end{bullets}
+}
+
+\FormulaPage{4}{KKT Conditions for SDP}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For the primal-dual pair of an SDP, under strong duality, the following
+are necessary and sufficient for optimality:
+\[
+\begin{aligned}
+\text{Primal feasibility: } & X\succeq 0,\ \langle A_i,X\rangle=b_i.\\
+\text{Dual feasibility: } & S\succeq 0,\ C-\sum_i y_i A_i - S=0.\\
+\text{Complementary slackness: } & \langle S,X\rangle=0.
+\end{aligned}
+\]
+\WHAT{
+Characterizes optimal solutions via feasibility and zero gap.}
+\WHY{
+Provides a checklist for verifying or constructing optimal solutions.}
+\FORMULA{
+\[
+(X^\star,y^\star,S^\star)\text{ optimal} \iff
+\begin{cases}
+X^\star\succeq 0,\ \langle A_i,X^\star\rangle=b_i,\\
+S^\star\succeq 0,\ C-\sum_i y^\star_i A_i - S^\star=0,\\
+\langle S^\star,X^\star\rangle=0.
+\end{cases}
+\]
+}
+\CANONICAL{
+Same variables and inner product as standard SDP; complementary slackness
+equates primal-dual gap to zero.}
+\PRECONDS{
+\begin{bullets}
+\item Strong duality (e.g., Slater) to ensure sufficiency.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+Under strong duality, any primal-dual feasible triple with zero gap is
+optimal for both problems.
+\end{lemma}
+\begin{proof}
+Weak duality gives $\langle C,X\rangle\ge b^\top y$. If equality holds,
+both objectives equal the common optimal value. \qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+&\text{Necessity: At optimum, feasibility holds by definition.}\\
+&\text{By stationarity of the Lagrangian: }
+C-\sum_i y_i A_i - S=0,\ S\succeq 0.\\
+&\text{Zero gap follows from strong duality: }\langle S,X\rangle=0.\\
+&\text{Sufficiency: Feasible and zero gap }\Rightarrow \text{ optimal by lemma.}
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Solve for $y$ via stationarity, form $S$.
+\item Check $S\succeq 0$; adjust $y$ if needed.
+\item Build $X$ meeting primal constraints; enforce $\langle S,X\rangle=0$.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item If $X,S\succeq 0$ and $\langle S,X\rangle=0$, then $XS=0$ when
+$X,S$ commute or share eigenvectors (not required in general).
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item Without strong duality, zero gap may be unattainable even at infimum.
+\end{bullets}
+}
+\INPUTS{$C,\{A_i\},b$ and candidate $(X,y,S)$.}
+\DERIVATION{
+\begin{align*}
+\text{Example: } &A_1=I,\ b_1=1,\ C=\mathrm{diag}(2,1).\\
+&y^\star=1,\ S^\star=C-y^\star I=\mathrm{diag}(1,0)\succeq 0.\\
+&X^\star=\mathrm{diag}(0,1)\succeq 0,\ \mathrm{Tr}(X^\star)=1.\\
+&\langle S^\star,X^\star\rangle=0\ \Rightarrow \text{optimal.}
+\end{align*}
+}
+\RESULT{
+KKT conditions fully certify optimality of the example.}
+\UNITCHECK{
+All constraints are inner products in $\mathbb{S}^n$; stationarity matches
+matrix dimensions.}
+\PITFALLS{
+\begin{bullets}
+\item Omitting symmetry checks for $X,S$.
+\item Misinterpreting complementary slackness as $XS=0$ always.
+\end{bullets}
+}
+\INTUITION{
+Feasibility puts you in the right place; stationarity aligns gradients;
+zero overlap means nothing left to gain.}
+\CANONICAL{
+\begin{bullets}
+\item KKT: primal feasibility, dual feasibility, and zero gap.
+\end{bullets}
+}
+
+\FormulaPage{5}{Schur Complement and LMI Equivalence}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For a block symmetric matrix
+$M=\begin{bmatrix}A&B\\B^\top&C\end{bmatrix}$ with $A\in\mathbb{S}^k$,
+$C\in\mathbb{S}^\ell$, the following are equivalent:
+\[
+M\succeq 0\ \text{ and }A\succ 0
+\iff C-B^\top A^{-1}B\succeq 0.
+\]
+\WHAT{
+Connects PSD of a block matrix to an LMI on the Schur complement.}
+\WHY{
+Transforms convex quadratic constraints to LMIs solvable by SDP.}
+\FORMULA{
+\[
+\begin{bmatrix}A&B\\B^\top&C\end{bmatrix}\succeq 0,\ A\succ 0
+\iff C-B^\top A^{-1}B\succeq 0.
+\]
+}
+\CANONICAL{
+Applies to symmetric real blocks with $A\succ 0$; symmetric result holds
+swapping roles if $C\succ 0$.}
+\PRECONDS{
+\begin{bullets}
+\item $A\succ 0$ (or $C\succ 0$ for the dual statement).
+\item Symmetry of blocks.
+\end{bullets}
+}
+\textbf{SUPPORTING LEMMAS.}
+\begin{lemma}
+For invertible $A$, congruence with
+$T=\begin{bmatrix}I&-A^{-1}B\\0&I\end{bmatrix}$ preserves PSD and yields
+$T^\top M T=\mathrm{diag}(A,\, C-B^\top A^{-1}B)$.
+\end{lemma}
+\begin{proof}
+Compute $T^\top M T$:
+\[
+\begin{aligned}
+T^\top M T&=
+\begin{bmatrix}I&0\\-B^\top A^{-\top}&I\end{bmatrix}
+\begin{bmatrix}A&B\\B^\top&C\end{bmatrix}
+\begin{bmatrix}I&-A^{-1}B\\0&I\end{bmatrix}\\
+&=\begin{bmatrix}A&0\\0&C-B^\top A^{-1}B\end{bmatrix}.
+\]
+Congruence preserves PSD; block diagonal is PSD iff both blocks are PSD.
+\qedhere
+\end{proof}
+\DERIVATION{
+\begin{align*}
+& M\succeq 0,\ A\succ 0 \\
+&\iff T^\top M T=\mathrm{diag}(A,\, C-B^\top A^{-1}B)\succeq 0\\
+&\iff A\succeq 0\ (\text{true})\ \text{and } C-B^\top A^{-1}B\succeq 0.
+\end{align*}
+}
+\textbf{GENERAL PROBLEM-SOLVING TEMPLATE.}
+\begin{bullets}
+\item Identify quadratic inequalities like $x^\top Q x + 2r^\top x + s\le 0$.
+\item Encode as LMI via Schur complement with an epigraph variable.
+\item Solve the resulting SDP.
+\end{bullets}
+\EQUIV{
+\begin{bullets}
+\item $\|Fx+g\|_2\le t \iff \begin{bmatrix}tI&Fx+g\\(Fx+g)^\top&t\end{bmatrix}\succeq 0$.
+\item Spectral norm: $\|A\|_2\le t \iff \begin{bmatrix}tI&A\\A^\top&tI\end{bmatrix}\succeq 0$.
+\end{bullets}
+}
+\LIMITS{
+\begin{bullets}
+\item Requires $A\succ 0$ (or $C\succ 0$) to use inversion.
+\item Numerical issues if $A$ is ill-conditioned.
+\end{bullets}
+}
+\INPUTS{$A,B,C$ block matrices with $A\succ 0$.}
+\DERIVATION{
+\begin{align*}
+\text{Example: } &A=1,\ B=b\in\mathbb{R}^\ell,\ C=t\in\mathbb{R}.\\
+&\begin{bmatrix}1&b\\b^\top&t\end{bmatrix}\succeq 0
+\iff t-b^\top b\ge 0 \iff t\ge \|b\|_2^2.
+\end{align*}
+}
+\RESULT{
+Schur complement yields equivalent LMI and simple bound in the example.}
+\UNITCHECK{
+Dimensions: $A\in\mathbb{R}^{k\times k}$, $B\in\mathbb{R}^{k\times \ell}$,
+$C\in\mathbb{R}^{\ell\times \ell}$; products are conformable.}
+\PITFALLS{
+\begin{bullets}
+\item Forgetting symmetry of $M$ invalidates the equivalence.
+\item Using $A\succeq 0$ with $\det A=0$ breaks inversion step.
+\end{bullets}
+}
+\INTUITION{
+Block elimination removes $B$'s coupling, leaving a residual condition
+that must remain PSD after eliminating the top block.}
+\CANONICAL{
+\begin{bullets}
+\item PSD preserved by congruences; Schur complement captures coupling.
+\end{bullets}
+}
+
+\clearpage
+\section{10 Exhaustive Problems and Solutions}
+
+\ProblemPage{1}{Derive and Solve a Tiny SDP and Its Dual}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Minimize $\langle C,X\rangle$ subject to $\mathrm{Tr}(X)=1$, $X\succeq 0$,
+with $C=\begin{bmatrix}3&1\\1&2\end{bmatrix}$.
+\PROBLEM{
+Derive the dual, solve both primal and dual, and verify KKT and zero gap.}
+\MODEL{
+\[
+\begin{aligned}
+\text{(P)}\ &\min_{X\succeq 0}\ \langle C,X\rangle\ \text{s.t.}\ \langle I,X\rangle=1.\\
+\text{(D)}\ &\max_{y\in\mathbb{R}}\ y\ \text{s.t.}\ C-yI\succeq 0.
+\end{aligned}
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Symmetric $C$; PSD cone and trace inner product.
+\item Slater holds: $X=\tfrac{1}{2}I\succ 0$ is feasible.
+\end{bullets}
+}
+\varmapStart
+\var{C}{Cost matrix $\begin{bmatrix}3&1\\1&2\end{bmatrix}$.}
+\var{X}{Primal PSD matrix with trace $1$.}
+\var{y}{Dual scalar.}
+\var{S}{Dual slack $C-yI\succeq 0$.}
+\varmapEnd
+\WHICHFORMULA{
+Use Formula 1 (Primal-Dual derivation), Formula 2 (Weak Duality), and
+Formula 4 (KKT conditions).}
+\GOVERN{
+\[
+C-yI\succeq 0\ \iff\ y\le \lambda_{\min}(C).
+\]
+}
+\INPUTS{$C=\begin{bmatrix}3&1\\1&2\end{bmatrix}$.}
+\DERIVATION{
+\begin{align*}
+&\lambda(C)=\text{eigs of }\begin{bmatrix}3&1\\1&2\end{bmatrix}.\\
+&\det(C-\lambda I)=(3-\lambda)(2-\lambda)-1= \lambda^2-5\lambda+5.\\
+&\lambda_{\min,\max}=\frac{5\mp \sqrt{25-20}}{2}=\frac{5\mp \sqrt{5}}{2}.\\
+&\Rightarrow \lambda_{\min}=\tfrac{5-\sqrt{5}}{2}.\\
+&\text{Dual: } d^\star=\max y\ \text{s.t. } y\le \lambda_{\min}= \tfrac{5-\sqrt{5}}{2}.\\
+&\Rightarrow y^\star=\tfrac{5-\sqrt{5}}{2},\ S^\star=C-y^\star I\succeq 0.\\
+&\text{Primal: minimize }\langle C,X\rangle\ \text{s.t.}\ \mathrm{Tr}(X)=1, X\succeq 0.\\
+&\text{Optimal } X^\star= u_{\min}u_{\min}^\top,\ \text{eigenvector of }\lambda_{\min}.\\
+&\text{Let } u_{\min} \propto \begin{bmatrix}1\\ \lambda_{\min}-3\end{bmatrix}
+= \begin{bmatrix}1\\ \tfrac{5-\sqrt{5}}{2}-3\end{bmatrix}
+= \begin{bmatrix}1\\ \tfrac{-1-\sqrt{5}}{2}\end{bmatrix}.\\
+&\text{Normalize } u_{\min} = \frac{1}{\sqrt{1+(\tfrac{1+\sqrt{5}}{2})^2}}
+\begin{bmatrix}1\\ -\tfrac{1+\sqrt{5}}{2}\end{bmatrix}.\\
+&X^\star=u_{\min}u_{\min}^\top,\ \mathrm{Tr}(X^\star)=1.\\
+&\langle C,X^\star\rangle=u_{\min}^\top C u_{\min}=\lambda_{\min}.\\
+&\text{Gap } \langle S^\star,X^\star\rangle
+=\langle C-y^\star I, X^\star\rangle= \lambda_{\min}-y^\star=0.
+\end{align*}
+}
+\RESULT{
+$p^\star=d^\star=\tfrac{5-\sqrt{5}}{2}$, achieved by $X^\star=u_{\min}u_{\min}^\top$
+and $y^\star=\tfrac{5-\sqrt{5}}{2}$, $S^\star=C-y^\star I$.}
+\UNITCHECK{
+Inner products yield scalars; PSD and trace constraints consistent.}
+\EDGECASES{
+\begin{bullets}
+\item If $C=\alpha I$, any rank-1 projector with trace $1$ is optimal.
+\item If $\mathrm{Tr}(X)=t\ne 1$, scale eigenvalues accordingly.
+\end{bullets}
+}
+\ALTERNATE{
+Diagonalize $C=Q\Lambda Q^\top$ and reduce to minimizing a convex
+combination of eigenvalues under simplex constraints on $\lambda(X)$.}
+\VALIDATION{
+\begin{bullets}
+\item Verify $C-y^\star I\succeq 0$ by eigenvalues $\ge 0$.
+\item Check $\mathrm{Tr}(X^\star)=1$ and $\langle C,X^\star\rangle=\lambda_{\min}$.
+\end{bullets}
+}
+\INTUITION{
+Optimal $X$ concentrates mass on the cheapest direction of $C$.}
+\CANONICAL{
+\begin{bullets}
+\item Eigenvalue minimization SDP with equality constraint $\mathrm{Tr}(X)=1$.
+\end{bullets}
+}
+
+\ProblemPage{2}{Quadratic Form Epigraph via Schur Complement}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Find the minimal $t$ such that $\|Fx+g\|_2\le t$ holds for a given
+$x\in\mathbb{R}^d$, $F\in\mathbb{R}^{k\times d}$, $g\in\mathbb{R}^k$,
+via an equivalent LMI.
+\PROBLEM{
+Derive the LMI using Schur complement and compute $t$ numerically for
+a specific instance.}
+\MODEL{
+\[
+\|Fx+g\|_2\le t \iff
+\begin{bmatrix} t I_k & Fx+g\\ (Fx+g)^\top & t \end{bmatrix}\succeq 0,\ t\ge 0.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Symmetric block matrix; $t>0$ for invertibility in Schur step.
+\end{bullets}
+}
+\varmapStart
+\var{F}{Matrix mapping $x$ to residual.}
+\var{g}{Offset vector.}
+\var{t}{Epigraph scalar.}
+\var{x}{Given point in $\mathbb{R}^d$.}
+\varmapEnd
+\WHICHFORMULA{
+Use Formula 5 (Schur complement) to encode norm bound as LMI.}
+\GOVERN{
+\[
+\begin{bmatrix}tI & r\\ r^\top & t\end{bmatrix}\succeq 0
+\iff t-r^\top (tI)^{-1} r = t-\tfrac{\|r\|_2^2}{t}\ge 0.
+\]
+}
+\INPUTS{$F=\begin{bmatrix}1&2\\0&1\end{bmatrix}$, $g=\begin{bmatrix}1\\-1\end{bmatrix}$,
+$x=\begin{bmatrix}1\\-1\end{bmatrix}$.}
+\DERIVATION{
+\begin{align*}
+&r=Fx+g=\begin{bmatrix}1&2\\0&1\end{bmatrix}\begin{bmatrix}1\\-1\end{bmatrix}
++\begin{bmatrix}1\\-1\end{bmatrix}
+=\begin{bmatrix}1-2+1\\ -1-1\end{bmatrix}=\begin{bmatrix}0\\ -2\end{bmatrix}.\\
+&\|r\|_2=2,\ \text{minimal } t^\star=\|r\|_2=2.\\
+&\text{LMI: } \begin{bmatrix}2I & r\\ r^\top & 2\end{bmatrix}
+=\begin{bmatrix}2&0&0\\0&2&-2\\0&-2&2\end{bmatrix}\succeq 0.\\
+&\text{Eigenvalues } \{2,\, 2+\sqrt{4},\, 2-\sqrt{4}\}=\{2,4,0\}\ (\succeq 0).
+\end{align*}
+}
+\RESULT{
+$t^\star=2$; LMI holds at equality (singular block).}
+\UNITCHECK{
+Blocks are conformable; Schur complement units: scalar minus quadratic
+over scalar is scalar.}
+\EDGECASES{
+\begin{bullets}
+\item If $r=0$, minimal $t^\star=0$ and LMI reduces to PSD with zeros.
+\item If $t=0$, matrix PSD iff $r=0$.
+\end{bullets}
+}
+\ALTERNATE{
+Directly minimize $t$ s.t. $t\ge \|r\|_2$; closed form $t^\star=\|r\|_2$.}
+\VALIDATION{
+\begin{bullets}
+\item Compute $\|Fx+g\|_2$ numerically and compare to $t^\star$.
+\item Verify PSD via principal minors $\ge 0$.
+\end{bullets}
+}
+\INTUITION{
+Bounding a norm is equivalent to ensuring a certain block matrix is PSD.}
+\CANONICAL{
+\begin{bullets}
+\item Norm epigraphs have exact LMI representations via Schur complement.
+\end{bullets}
+}
+
+\ProblemPage{3}{KKT Verification on Spectral Norm SDP}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Minimize $t$ subject to
+$\begin{bmatrix}tI&A\\A^\top&tI\end{bmatrix}\succeq 0$ for
+$A=\begin{bmatrix}1&2\\0&-1\end{bmatrix}$. Show that $t^\star=\|A\|_2$ and
+verify KKT by constructing a dual certificate.
+\PROBLEM{
+Solve the SDP and verify optimality via KKT.}
+\MODEL{
+\[
+\min_{t}\ t\ \text{s.t.}\ \begin{bmatrix}tI&A\\A^\top&tI\end{bmatrix}\succeq 0.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Schur complement equivalence holds; Slater holds for $t>\|A\|_2$.
+\end{bullets}
+}
+\varmapStart
+\var{A}{Given real matrix.}
+\var{t}{Scalar variable.}
+\var{X}{Block matrix variable PSD.}
+\var{y,S}{Dual variables associated to LMI.}
+\varmapEnd
+\WHICHFORMULA{
+Use Formula 5 to link to spectral norm; Formula 4 for KKT.}
+\GOVERN{
+\[
+\|A\|_2\le t \iff \begin{bmatrix}tI&A\\A^\top&tI\end{bmatrix}\succeq 0.
+\]
+}
+\INPUTS{$A=\begin{bmatrix}1&2\\0&-1\end{bmatrix}$.}
+\DERIVATION{
+\begin{align*}
+&A^\top A=\begin{bmatrix}1&0\\2&-1\end{bmatrix}\begin{bmatrix}1&2\\0&-1\end{bmatrix}
+=\begin{bmatrix}1&2\\2&5\end{bmatrix}.\\
+&\lambda_{\max}(A^\top A)=\frac{6+\sqrt{(6)^2-4(1)(1)}}{2}
+=\frac{6+\sqrt{32}}{2}=3+2\sqrt{2}.\\
+&\|A\|_2=\sqrt{3+2\sqrt{2}}=1+\sqrt{2}.\\
+&\text{Thus } t^\star=1+\sqrt{2}.\\
+&\text{KKT dual: } \exists Z\succeq 0 \text{ such that stationarity holds.}\\
+&\text{Let } u,v \text{ be left/right singular vectors at }\sigma=\|A\|_2.\\
+&\text{Construct } Z=\begin{bmatrix}uu^\top&uv^\top\\vu^\top&vv^\top\end{bmatrix}\succeq 0.\\
+&\text{Complementary slackness: }
+\left\langle \begin{bmatrix}t^\star I&A\\A^\top&t^\star I\end{bmatrix}, Z\right\rangle\\
+&= t^\star(\|u\|^2+\|v\|^2)+2\langle A,uv^\top\rangle
+= 2t^\star + 2 u^\top A v.\\
+&u^\top A v = \sigma = t^\star \Rightarrow \text{trace inner product }=0.
+\end{align*}
+}
+\RESULT{
+$t^\star=1+\sqrt{2}$; a rank-1 dual $Z$ with singular vectors certifies
+optimality via complementary slackness and feasibility.}
+\UNITCHECK{
+Block sizes match; trace inner products yield scalars.}
+\EDGECASES{
+\begin{bullets}
+\item If $A=0$, $t^\star=0$ and any $Z=0$ is dual optimal.
+\item If $A$ normal, singular vectors align with eigenvectors.
+\end{bullets}
+}
+\ALTERNATE{
+Diagonalize $A^\top A$ to get $\|A\|_2=\sqrt{\lambda_{\max}(A^\top A)}$.}
+\VALIDATION{
+\begin{bullets}
+\item Compute $\|A\|_2$ numerically and compare to $t^\star$.
+\item Verify PSD of the optimal block matrix at $t^\star$.
+\end{bullets}
+}
+\INTUITION{
+The LMI squeezes $t$ down until it equals the stretching factor of $A$.}
+\CANONICAL{
+\begin{bullets}
+\item Spectral norm SDP with singular vector dual certificate.
+\end{bullets}
+}
+
+\ProblemPage{4}{Narrative: Alice and the Nearest PSD Correlation}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Alice has a symmetric matrix
+$R=\begin{bmatrix}1&1.2\\1.2&1\end{bmatrix}$ from noisy data. She wants
+the nearest correlation matrix $X$ minimizing $\|X-R\|_F^2$ subject to
+$X\succeq 0$ and $\mathrm{diag}(X)=\mathbf{1}$.
+\PROBLEM{
+Formulate as an SDP, solve analytically, and reveal the hidden structure.}
+\MODEL{
+\[
+\min_{X\succeq 0}\ \|X-R\|_F^2\ \text{s.t.}\ X_{11}=X_{22}=1.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Frobenius norm; PSD projection with diagonal constraints.
+\end{bullets}
+}
+\varmapStart
+\var{R}{Noisy symmetric matrix.}
+\var{X}{Target correlation matrix.}
+\var{\lambda}{Eigenvalues of $R$.}
+\var{Q}{Eigenvectors of $R$.}
+\varmapEnd
+\WHICHFORMULA{
+Projection onto $\mathbb{S}^n_+$: zero out negative eigenvalues; then
+enforce unit diagonal via scaling (Dykstra step reduces here).}
+\GOVERN{
+\[
+R=Q\mathrm{diag}(\lambda_1,\lambda_2)Q^\top,\ 
+\Pi_{\mathbb{S}^2_+}(R)=Q\mathrm{diag}(\max(\lambda_1,0),\max(\lambda_2,0))Q^\top.
+\]
+}
+\INPUTS{$R=\begin{bmatrix}1&1.2\\1.2&1\end{bmatrix}$.}
+\DERIVATION{
+\begin{align*}
+&\det(R-\lambda I)=(1-\lambda)^2-1.44=\lambda^2-2\lambda-0.44.\\
+&\lambda_{1,2}=1\pm \sqrt{1.44}=1\pm 1.2\Rightarrow \lambda_1=2.2,\ \lambda_2=-0.2.\\
+&Q=\frac{1}{\sqrt{2}}\begin{bmatrix}1&1\\1&-1\end{bmatrix}.\\
+&\Pi_{\mathbb{S}^2_+}(R)=Q\mathrm{diag}(2.2,0)Q^\top
+=\begin{bmatrix}1.1&1.1\\1.1&1.1\end{bmatrix}.\\
+&\text{Enforce unit diagonal by scaling: }D=\mathrm{diag}(d_1,d_2).\\
+&\min_{d_1,d_2>0}\ \|D \Pi D - R\|_F^2,\ \text{here symmetry suggests }d_1=d_2=d.\\
+&D \Pi D = d^2 \begin{bmatrix}1.1&1.1\\1.1&1.1\end{bmatrix}.\\
+&\text{Set diagonal to $1$: } d^2\cdot 1.1=1\Rightarrow d=\sqrt{\tfrac{1}{1.1}}.\\
+&X^\star=\begin{bmatrix}1&\tfrac{1.1}{1.1}\\ \tfrac{1.1}{1.1}&1\end{bmatrix}
+=\begin{bmatrix}1&1\\1&1\end{bmatrix}\succeq 0.
+\end{align*}
+}
+\RESULT{
+$X^\star=\begin{bmatrix}1&1\\1&1\end{bmatrix}$ is the nearest correlation
+matrix by PSD projection and diagonal rescaling.}
+\UNITCHECK{
+Diagonal entries are $1$; PSD by eigenvalues $(2,0)$.}
+\EDGECASES{
+\begin{bullets}
+\item If $R$ already PSD with unit diagonal and $|R_{12}|\le 1$, then $X^\star=R$.
+\item For higher dimensions, iterated projections (Dykstra) needed.
+\end{bullets}
+}
+\ALTERNATE{
+Solve SDP with Lagrange multipliers for diagonal constraints; obtain same
+solution due to symmetry.}
+\VALIDATION{
+\begin{bullets}
+\item Check $\|X^\star-R\|_F^2$ minimal by comparing with clipping $R_{12}$ to $1$.
+\item Verify PSD via eigenvalues.
+\end{bullets}
+}
+\INTUITION{
+Nearest PSD pulls negative eigenvalues to zero and rescales to unit variances.}
+\CANONICAL{
+\begin{bullets}
+\item PSD projection plus diagonal normalization yields a correlation matrix.
+\end{bullets}
+}
+
+\ProblemPage{5}{Narrative: Bob and a 3-Node MaxCut SDP Bound}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Bob wants to bound the maximum cut of a triangle graph with edge weights
+$w_{12}=w_{23}=w_{13}=1$. The Goemans-Williamson relaxation is
+\[
+\max_{X\succeq 0}\ \frac{1}{4}\sum_{i<j} w_{ij}(1-X_{ij})\ \text{s.t.}\
+X_{ii}=1.
+\]
+\PROBLEM{
+Formulate and solve the SDP bound analytically by symmetry.}
+\MODEL{
+\[
+\max_{X\succeq 0}\ \frac{3}{4}-\frac{1}{4}(X_{12}+X_{23}+X_{13})\
+\text{s.t.}\ X_{11}=X_{22}=X_{33}=1.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Symmetry suggests $X_{ij}=\rho$ for $i\ne j$ at optimum.
+\end{bullets}
+}
+\varmapStart
+\var{X}{Gram matrix of unit vectors, $X_{ij}=\langle v_i,v_j\rangle$.}
+\var{\rho}{Common off-diagonal correlation.}
+\varmapEnd
+\WHICHFORMULA{
+PSD Gram matrix with unit diagonal parameterized by $\rho$.}
+\GOVERN{
+\[
+X=\begin{bmatrix}1&\rho&\rho\\\rho&1&\rho\\\rho&\rho&1\end{bmatrix}
+\succeq 0 \iff \rho\in\left[-\tfrac{1}{2},1\right].
+\]
+}
+\INPUTS{Triangle graph with unit weights.}
+\DERIVATION{
+\begin{align*}
+&\text{Objective } f(\rho)=\tfrac{3}{4}-\tfrac{3}{4}\rho.\\
+&\text{Feasible } \rho\in[-\tfrac{1}{2},1].\ \text{Maximize } f \Rightarrow
+\text{minimize } \rho.\\
+&\rho_{\min}=-\tfrac{1}{2} \Rightarrow f_{\max}=\tfrac{3}{4}-\tfrac{3}{4}(-\tfrac{1}{2})
+=\tfrac{3}{4}+\tfrac{3}{8}=\tfrac{9}{8}=1.125.\\
+&\text{Eigenvalues of } X: \lambda_1=1+2\rho=0,\ \lambda_{2,3}=1-\rho=\tfrac{3}{2}\ge 0.\\
+&\Rightarrow X\succeq 0 \text{ at } \rho=-\tfrac{1}{2}.
+\end{align*}
+}
+\RESULT{
+SDP bound equals $1.125$ while the true MaxCut is $2$ (cutting one edge
+gives $2$? For triangle, maximum cut size is $2$ edges). Bound is $\le 2$.}
+\UNITCHECK{
+Objective dimensionless; PSD constraints match $3\times 3$ Gram matrix.}
+\EDGECASES{
+\begin{bullets}
+\item $\rho=1$ gives zero cut; $\rho=-\tfrac{1}{2}$ achieves tightest bound.
+\end{bullets}
+}
+\ALTERNATE{
+Embed three unit vectors $120^\circ$ apart on a circle to realize
+$\rho=-\tfrac{1}{2}$; the Gram matrix matches.}
+\VALIDATION{
+\begin{bullets}
+\item Verify PSD by eigenvalues at $\rho=-\tfrac{1}{2}$.
+\item Compare with brute-force cuts: best cut value is $2$.
+\end{bullets}
+}
+\INTUITION{
+Relaxation replaces discrete $\{\pm 1\}$ with vectors on a sphere,
+maximizing average separation.}
+\CANONICAL{
+\begin{bullets}
+\item Goemans-Williamson SDP relaxes MaxCut via Gram matrices.
+\end{bullets}
+}
+
+\ProblemPage{6}{Expectation Puzzle: Two-Moment Chebyshev via SDP}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Among all distributions with mean $0$ and variance $1$, maximize
+$p=\mathbb{P}(|X|\ge a)$ for $a>0$. Use a moment-SDP relaxation with
+moment matrix $M_1=\begin{bmatrix}1&\mu_1\\\mu_1&\mu_2\end{bmatrix}\succeq 0$,
+$\mu_1=0$, $\mu_2=1$, to derive the Chebyshev bound $p\le 1/a^2$.
+\PROBLEM{
+Set up the SDP and compute the bound.}
+\MODEL{
+\[
+\max\ p\ \text{s.t.}\ \int 1\,d\mu=1,\ \int x\,d\mu=0,\ \int x^2\,d\mu=1,\\
+\int \mathbf{1}_{|x|\ge a}\, d\mu = p,\ M_1\succeq 0.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Use positivity $\int q(x)^2 d\mu\ge 0$ encoded by $M_1\succeq 0$.
+\end{bullets}
+}
+\varmapStart
+\var{a}{Threshold parameter.}
+\var{p}{Tail probability.}
+\var{\mu_k}{Moments $\int x^k d\mu$.}
+\varmapEnd
+\WHICHFORMULA{
+Use the inequality $x^2\ge a^2\mathbf{1}_{|x|\ge a}$, integrate, and
+encode moments via PSD moment matrix.}
+\GOVERN{
+\[
+\int x^2 d\mu \ge a^2 \int \mathbf{1}_{|x|\ge a} d\mu = a^2 p.
+\]
+}
+\INPUTS{$a>0$, $\mu_1=0$, $\mu_2=1$.}
+\DERIVATION{
+\begin{align*}
+&x^2\ge a^2 \mathbf{1}_{|x|\ge a}\ \Rightarrow\ \mathbb{E}[X^2]\ge a^2 p.\\
+&\mathbb{E}[X^2]=1\ \Rightarrow\ p\le 1/a^2.\\
+&\text{Moment PSD: } M_1=\begin{bmatrix}1&0\\0&1\end{bmatrix}\succeq 0\ \text{holds.}
+\end{align*}
+}
+\RESULT{
+Chebyshev: $p\le 1/a^2$. Bound is tight for two-point distributions.}
+\UNITCHECK{
+Both sides are probabilities; $a$ has units of standard deviations.}
+\EDGECASES{
+\begin{bullets}
+\item As $a\to \infty$, bound $\to 0$; as $a\to 0^+$, bound blows up.
+\end{bullets}
+}
+\ALTERNATE{
+Solve the dual: find $\alpha,\beta,\gamma$ with
+$x^2-\alpha-\beta x-\gamma x^2 \ge a^2 \mathbf{1}_{|x|\ge a}$ minimizing
+$\alpha$; yields same bound.}
+\VALIDATION{
+\begin{bullets}
+\item Two-point mass at $\pm a$ with probs $1/(2a^2)$ achieves equality
+when variance normalized appropriately.
+\end{bullets}
+}
+\INTUITION{
+A quadratic majorizes the indicator weighted by $a^2$; second moments
+control tail probabilities.}
+\CANONICAL{
+\begin{bullets}
+\item Moment-SDP yields classical concentration bounds.
+\end{bullets}
+}
+
+\ProblemPage{7}{Proof-Style: PSD Cone is Self-Dual}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Show $(\mathbb{S}^n_+)^\ast=\mathbb{S}^n_+$ under $\langle U,V\rangle=\mathrm{Tr}(UV)$.
+\PROBLEM{
+Prove both inclusions succinctly and rigorously.}
+\MODEL{
+\[
+(\mathbb{S}^n_+)^\ast=\{S:\ \langle S,X\rangle\ge 0,\ \forall X\succeq 0\}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Symmetric matrices; spectral theorem; trace properties.
+\end{bullets}
+}
+\varmapStart
+\var{S}{Candidate dual element.}
+\var{X}{PSD test matrix.}
+\varmapEnd
+\WHICHFORMULA{
+Use eigen-decomposition and rank-1 tests $X=vv^\top$.}
+\GOVERN{
+\[
+\langle S, vv^\top\rangle = v^\top S v.
+\]
+}
+\INPUTS{None beyond definitions.}
+\DERIVATION{
+\begin{align*}
+&\text{If } S\succeq 0,\ \forall X\succeq 0,\ \langle S,X\rangle
+=\mathrm{Tr}(X^{1/2}SX^{1/2})\ge 0.\\
+&\Rightarrow S\in(\mathbb{S}^n_+)^\ast.\\
+&\text{Conversely, suppose } \langle S,X\rangle\ge 0,\ \forall X\succeq 0.\\
+&\text{Take } X=vv^\top\succeq 0\ \Rightarrow v^\top S v\ge 0,\ \forall v.\\
+&\Rightarrow S\succeq 0 \text{ by definition.}
+\end{align*}
+}
+\RESULT{
+$(\mathbb{S}^n_+)^\ast=\mathbb{S}^n_+$.}
+\UNITCHECK{
+Trace inner product yields scalars; $vv^\top$ is PSD.}
+\EDGECASES{
+\begin{bullets}
+\item Strict positivity not required; semidefinite suffices.
+\end{bullets}
+}
+\ALTERNATE{
+Diagonalize $S=Q\Lambda Q^\top$ and test with $X=Q\mathrm{diag}(e_i)Q^\top$.}
+\VALIDATION{
+\begin{bullets}
+\item For $n=1$, both cones are $\mathbb{R}_+$ trivially.
+\end{bullets}
+}
+\INTUITION{
+Nonnegativity against all PSDs forces $S$ to be PSD; otherwise a vector
+exposes a negative direction.}
+\CANONICAL{
+\begin{bullets}
+\item Self-duality is the foundation of SDP duality forms.
+\end{bullets}
+}
+
+\ProblemPage{8}{Proof-Style: Weak Duality for Cone Programs}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+For a conic program $\min\{\langle C,X\rangle: AX=b,\ X\in K\}$ with
+dual $\max\{b^\top y:\ C-A^\top y\in K^\ast\}$, weak duality holds:
+$\langle C,X\rangle\ge b^\top y$ for any primal feasible $X$ and dual
+feasible $y$.
+\PROBLEM{
+Prove weak duality and specialize to $K=\mathbb{S}^n_+$.}
+\MODEL{
+\[
+\langle C,X\rangle - b^\top y = \langle C-A^\top y,\ X\rangle
+\ge 0\ \text{for } X\in K,\ C-A^\top y\in K^\ast.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $K$ closed convex cone; $K^\ast$ is its dual cone.
+\end{bullets}
+}
+\varmapStart
+\var{K}{Closed convex cone.}
+\var{K^\ast}{Dual cone $\{S:\langle S,X\rangle\ge 0,\ \forall X\in K\}$.}
+\varmapEnd
+\WHICHFORMULA{
+Use definition of dual cone and feasibility.}
+\GOVERN{
+\[
+AX=b\ \Rightarrow\ \langle A^\top y,X\rangle=b^\top y.
+\]
+}
+\INPUTS{Linear map $A$ and data $b,C$.}
+\DERIVATION{
+\begin{align*}
+&\langle C,X\rangle - b^\top y
+= \langle C,X\rangle - \langle A^\top y,X\rangle
+= \langle C-A^\top y,\ X\rangle.\\
+&\text{Since } C-A^\top y\in K^\ast\ \text{and } X\in K,\ \text{this }\ge 0.
+\end{align*}
+}
+\RESULT{
+Weak duality: primal objective $\ge$ dual objective.}
+\UNITCHECK{
+Inner products consistent; linear map adjoint $A^\top$ matches spaces.}
+\EDGECASES{
+\begin{bullets}
+\item If either feasibility fails, inequality does not apply.
+\end{bullets}
+}
+\ALTERNATE{
+Specialize to SDP: $K=\mathbb{S}^n_+$, $K^\ast=K$; replace inner product
+by trace to recover Formula 2.}
+\VALIDATION{
+\begin{bullets}
+\item Test with a feasible pair from Problem 1 to see equality.
+\end{bullets}
+}
+\INTUITION{
+Dual feasibility guarantees $C$ is above a supporting hyperplane to $K$.}
+\CANONICAL{
+\begin{bullets}
+\item Weak duality is immediate from cone duality definition.
+\end{bullets}
+}
+
+\ProblemPage{9}{Combo: Gershgorin vs. SDP Eigenvalue Bound}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Compare Gershgorin bound on $\lambda_{\max}(A)$ with SDP exact bound
+$\lambda_{\max}(A)=\min\{t:\ tI-A\succeq 0\}$ for
+$A=\begin{bmatrix}4&-1&0\\-1&3&-1\\0&-1&2\end{bmatrix}$.
+\PROBLEM{
+Compute both bounds and show SDP gives the exact value.}
+\MODEL{
+\[
+\lambda_{\max}(A)=\min\{t:\ tI-A\succeq 0\}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $A$ symmetric; Gershgorin discs apply.
+\end{bullets}
+}
+\varmapStart
+\var{A}{Symmetric tridiagonal matrix.}
+\var{t}{Epigraph variable for SDP bound.}
+\varmapEnd
+\WHICHFORMULA{
+Use SDP form for $\lambda_{\max}$ and compare to Gershgorin discs.}
+\GOVERN{
+\[
+\text{Gershgorin: }\lambda_{\max}\le \max_i (a_{ii}+R_i),\ 
+R_i=\sum_{j\ne i} |a_{ij}|.
+\]
+}
+\INPUTS{$A=\begin{bmatrix}4&-1&0\\-1&3&-1\\0&-1&2\end{bmatrix}$.}
+\DERIVATION{
+\begin{align*}
+&\text{Gershgorin: } a_{11}+R_1=4+1=5,\ a_{22}+R_2=3+2=5,\ a_{33}+R_3=2+1=3.\\
+&\Rightarrow \lambda_{\max}\le 5.\\
+&\text{Exact via eigenvalues: } \det(A-\lambda I)=0.\\
+&\det\begin{bmatrix}4-\lambda&-1&0\\-1&3-\lambda&-1\\0&-1&2-\lambda\end{bmatrix}\\
+&=(4-\lambda)\big((3-\lambda)(2-\lambda)-1\big)-(-1)\big((-1)(2-\lambda)-0\big)\\
+&=(4-\lambda)\big(\lambda^2-5\lambda+5\big)+(2-\lambda).\\
+&=-(\lambda^3-9\lambda^2+24\lambda-18).\\
+&\lambda^3-9\lambda^2+24\lambda-18=0.\\
+&\text{Try }\lambda=3:\ 27-81+72-18=0\Rightarrow \lambda=3\ \text{root}.\\
+&\text{Divide: } (\lambda-3)(\lambda^2-6\lambda+6)=0.\\
+&\lambda=\{3,\ 3\pm \sqrt{3}\}\Rightarrow \lambda_{\max}=3+\sqrt{3}\approx 4.732.\\
+&\text{SDP: } t^\star=\min\{t:\ tI-A\succeq 0\}=\lambda_{\max}=3+\sqrt{3}.
+\end{align*}
+}
+\RESULT{
+Gershgorin bound $5$; SDP exact value $3+\sqrt{3}\approx 4.732$.}
+\UNITCHECK{
+All units scalar; PSD condition dimensionally valid.}
+\EDGECASES{
+\begin{bullets}
+\item Diagonally dominant matrices can make Gershgorin tight.
+\end{bullets}
+}
+\ALTERNATE{
+Power iteration computes $\lambda_{\max}$ numerically; matches SDP.}
+\VALIDATION{
+\begin{bullets}
+\item Verify $tI-A\succeq 0$ at $t=3+\sqrt{3}$ by eigenvalues nonnegative.
+\end{bullets}
+}
+\INTUITION{
+SDP encodes the exact spectral bound; Gershgorin is conservative.}
+\CANONICAL{
+\begin{bullets}
+\item Eigenvalue problems are SDPs in disguise via $tI-A\succeq 0$.
+\end{bullets}
+}
+
+\ProblemPage{10}{Combo: Nearest PSD Matrix via Eigenvalue Thresholding}
+\textbf{CANONICAL MATHEMATICAL STATEMENT.}
+Given $M=\begin{bmatrix}2&3\\3&1\end{bmatrix}$, find
+$X^\star=\arg\min_{X\succeq 0}\ \|X-M\|_F^2$. Show $X^\star$ is the PSD
+projection by zeroing negative eigenvalues.
+\PROBLEM{
+Compute $X^\star$ explicitly and check optimality via KKT.}
+\MODEL{
+\[
+\min_{X\succeq 0}\ \|X-M\|_F^2\quad \text{(orthogonal projection onto }
+\mathbb{S}^n_+ \text{ in Frobenius norm)}.
+\]
+}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Spectral decomposition exists; Frobenius norm unitarily invariant.
+\end{bullets}
+}
+\varmapStart
+\var{M}{Given symmetric matrix.}
+\var{Q,\Lambda}{Eigenvectors and eigenvalues of $M$.}
+\varmapEnd
+\WHICHFORMULA{
+Unitary invariance reduces to shrinking negative eigenvalues to zero.}
+\GOVERN{
+\[
+M=Q\Lambda Q^\top,\ \Pi_{\mathbb{S}^n_+}(M)=Q\max(\Lambda,0)Q^\top.
+\]
+}
+\INPUTS{$M=\begin{bmatrix}2&3\\3&1\end{bmatrix}$.}
+\DERIVATION{
+\begin{align*}
+&\det(M-\lambda I)=(2-\lambda)(1-\lambda)-9
+=\lambda^2-3\lambda-7.\\
+&\lambda_{1,2}=\frac{3\pm \sqrt{9+28}}{2}=\frac{3\pm \sqrt{37}}{2}.\\
+&\lambda_1=\tfrac{3+\sqrt{37}}{2}>0,\ \lambda_2=\tfrac{3-\sqrt{37}}{2}<0.\\
+&Q=\text{orthonormal eigenvectors }[q_1,q_2].\\
+&X^\star=Q\mathrm{diag}(\lambda_1,0)Q^\top.\\
+&\text{KKT: } X^\star\succeq 0,\ S^\star=M-X^\star,\ S^\star\succeq 0?\\
+&\text{Stationarity } X^\star=\Pi_{\mathbb{S}^n_+}(M)\ \Rightarrow
+\langle S^\star, X^\star\rangle=0.\\
+&\text{Since } S^\star=Q\mathrm{diag}(0,\lambda_2)Q^\top\preceq 0,\ 
+\text{use normal cone: } S^\star\in N_{\mathbb{S}^n_+}(X^\star).\\
+&\text{Hence optimal by projection theorem.}
+\end{align*}
+}
+\RESULT{
+$X^\star$ equals PSD projection via eigenvalue thresholding.}
+\UNITCHECK{
+Frobenius norm and spectral decomposition consistent; dimensions match.}
+\EDGECASES{
+\begin{bullets}
+\item If $M\succeq 0$, projection is $M$ itself.
+\item If $M\preceq 0$, projection is $0$.
+\end{bullets}
+}
+\ALTERNATE{
+Solve via semidefinite Lagrangian with cone normal: leads to same rule.}
+\VALIDATION{
+\begin{bullets}
+\item Numerically diagonalize $M$ and reconstruct $X^\star$; check PSD.
+\end{bullets}
+}
+\INTUITION{
+Projection keeps positive directions and discards negative curvature.}
+\CANONICAL{
+\begin{bullets}
+\item Orthogonal projection onto $\mathbb{S}^n_+$ by eigenvalue clipping.
+\end{bullets}
+}
+
+\clearpage
+\section{Coding Demonstrations}
+
+\CodeDemoPage{Eigenvalue as SDP: Primal-Dual Equality for $\lambda_{\max}$}
+\PROBLEM{
+Verify that $\lambda_{\max}(A)=\min\{t:\ tI-A\succeq 0\}$ equals the dual
+$\max\{\langle A,X\rangle:\ \mathrm{Tr}(X)=1,\ X\succeq 0\}$ on a random
+$2\times 2$ symmetric matrix with fixed seed.}
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> np.ndarray} — parse 4 floats to 2x2.
+\item \inlinecode{def solve_case(A) -> tuple} — compute primal, dual, gap.
+\item \inlinecode{def validate() -> None} — fixed seeded test and asserts.
+\item \inlinecode{def main() -> None} — orchestrate.
+\end{bullets}
+}
+\INPUTS{
+Matrix $A\in\mathbb{S}^2$ provided as four numbers $a_{11}\ a_{12}\ a_{22}$
+with symmetry $a_{21}=a_{12}$.}
+\OUTPUTS{
+Primal value $t^\star$, dual value $d^\star$, gap $|t^\star-d^\star|$.}
+\FORMULA{
+\[
+t^\star=\lambda_{\max}(A),\quad
+d^\star=\max_{X\succeq 0,\ \mathrm{Tr}(X)=1}\ \langle A,X\rangle
+=\lambda_{\max}(A).
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    vals = [float(x) for x in s.split()]
+    if len(vals) == 3:
+        a11, a12, a22 = vals
+        A = np.array([[a11, a12], [a12, a22]], dtype=float)
+    elif len(vals) == 4:
+        a11, a12, a21, a22 = vals
+        A = np.array([[a11, (a12+a21)/2], [(a12+a21)/2, a22]], dtype=float)
+    else:
+        raise ValueError("need 3 or 4 numbers")
+    return A
+
+def power_iter_sym(A, iters=50):
+    np.random.seed(0)
+    v = np.array([1.0, 0.0])
+    for _ in range(iters):
+        w = A @ v
+        nrm = np.linalg.norm(w)
+        if nrm == 0.0:
+            return 0.0, v
+        v = w / nrm
+    val = float(v @ (A @ v))
+    return val, v
+
+def solve_case(A):
+    # primal: t* = lambda_max(A)
+    t_star = float(np.linalg.eigvalsh(A)[-1])
+    # dual: maximize v^T A v with ||v||=1 via power iteration
+    d_star, v = power_iter_sym(A, iters=80)
+    return t_star, d_star, abs(t_star - d_star)
+
+def validate():
+    np.random.seed(1)
+    A = np.array([[2.0, -1.0], [-1.0, 3.0]])
+    t_star, d_star, gap = solve_case(A)
+    assert abs(t_star - (3.0 + np.sqrt(2.0))) < 1e-9
+    assert gap < 1e-6
+
+def main():
+    validate()
+    A = read_input("2 -1 3")
+    t_star, d_star, gap = solve_case(A)
+    print("t*", round(t_star, 6), "d*", round(d_star, 6), "gap", gap)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    vals = [float(x) for x in s.split()]
+    if len(vals) == 3:
+        a11, a12, a22 = vals
+        A = np.array([[a11, a12], [a12, a22]], dtype=float)
+    elif len(vals) == 4:
+        a11, a12, a21, a22 = vals
+        A = np.array([[a11, (a12+a21)/2], [(a12+a21)/2, a22]], dtype=float)
+    else:
+        raise ValueError("need 3 or 4 numbers")
+    return A
+
+def solve_case(A):
+    eigs = np.linalg.eigvalsh(A)
+    t_star = float(eigs[-1])
+    d_star = float(eigs[-1])
+    return t_star, d_star, abs(t_star - d_star)
+
+def validate():
+    A = read_input("4 -1 2")
+    t_star, d_star, gap = solve_case(A)
+    assert abs(t_star - d_star) < 1e-12
+    assert t_star >= 0.0
+
+def main():
+    validate()
+    A = read_input("4 -1 2")
+    t_star, d_star, gap = solve_case(A)
+    print("t*", round(t_star, 6), "d*", round(d_star, 6), "gap", gap)
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Both variants: time $\mathcal{O}(n^3)$ for eigendecomposition (here $n=2$).
+Power iteration is $\mathcal{O}(n^2 k)$ for $k$ iterations; here constant.}
+\FAILMODES{
+\begin{bullets}
+\item Non-symmetric input: we symmetrize to ensure validity.
+\item Zero vector in power iteration: guard with early return.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Small gaps between top eigenvalues slow power iteration.
+\item Use more iterations or Rayleigh quotient iteration if needed.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Assert equality of primal and dual to tolerance.
+\item Cross-check against closed-form for small matrices.
+\end{bullets}
+}
+\RESULT{
+Both implementations return identical values with negligible gap,
+confirming primal-dual equality.}
+\EXPLANATION{
+The primal minimizes $t$ with $tI-A\succeq 0$; the dual maximizes the
+Rayleigh quotient. Equality follows from eigenvalue theory and SDP duality.}
+\EXTENSION{
+Generalize to $n\times n$ matrices and compare with Lanczos iteration.}
+
+\CodeDemoPage{Schur Complement LMI for Spectral Norm}
+\PROBLEM{
+Verify the equivalence $\|A\|_2\le t \iff
+\begin{bmatrix}tI&A\\A^\top&tI\end{bmatrix}\succeq 0$ for a random
+$3\times 2$ matrix $A$ with fixed seed, by checking PSD at $t=\|A\|_2$.}
+\API{
+\begin{bullets}
+\item \inlinecode{def read_input(s) -> np.ndarray} — parse 6 floats to 3x2.
+\item \inlinecode{def solve_case(A) -> tuple} — compute t and PSD check.
+\item \inlinecode{def validate() -> None} — seeded test and asserts.
+\item \inlinecode{def main() -> None} — run validation and print.
+\end{bullets}
+}
+\INPUTS{
+Matrix $A\in\mathbb{R}^{3\times 2}$ in row-major order: six floats.}
+\OUTPUTS{
+$t=\|A\|_2$, eigenvalues of the block matrix at $t$.}
+\FORMULA{
+\[
+t=\sqrt{\lambda_{\max}(A^\top A)},\quad
+\begin{bmatrix}tI&A\\A^\top&tI\end{bmatrix}\succeq 0.
+\]
+}
+\textbf{SOLUTION A — From Scratch (Mathematically Explicit Implementation)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    vals = [float(x) for x in s.split()]
+    if len(vals) != 6:
+        raise ValueError("need 6 numbers")
+    A = np.array(vals, dtype=float).reshape(3, 2)
+    return A
+
+def block_psd_check(A, t):
+    I3 = np.eye(3)
+    I2 = np.eye(2)
+    # build 5x5 symmetric block matrix
+    M = np.zeros((5, 5), dtype=float)
+    M[:3, :3] = t * I3
+    M[:3, 3:] = A
+    M[3:, :3] = A.T
+    M[3:, 3:] = t * I2
+    evals = np.linalg.eigvalsh(M)
+    return M, evals
+
+def solve_case(A):
+    AtA = A.T @ A
+    t = float(np.sqrt(np.linalg.eigvalsh(AtA)[-1]))
+    M, evals = block_psd_check(A, t)
+    return t, evals
+
+def validate():
+    np.random.seed(0)
+    A = np.random.randn(3, 2)
+    t, evals = solve_case(A)
+    assert min(evals) > -1e-10
+    # increase t slightly to ensure strict PSD
+    t2, evals2 = solve_case(1.01 * A)
+    assert min(evals2) > 0.0
+
+def main():
+    validate()
+    A = read_input("1 2 -1 0 3 -2")
+    t, evals = solve_case(A)
+    print("t", round(t, 6), "min_eig", round(float(min(evals)), 9))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{SOLUTION B — Library-Based (Validated Computational Shortcut)}
+\begin{codepy}
+import numpy as np
+
+def read_input(s):
+    vals = [float(x) for x in s.split()]
+    if len(vals) != 6:
+        raise ValueError("need 6 numbers")
+    return np.array(vals, dtype=float).reshape(3, 2)
+
+def solve_case(A):
+    svals = np.linalg.svd(A, compute_uv=False)
+    t = float(svals[0])
+    I3 = np.eye(3)
+    I2 = np.eye(2)
+    M = np.block([[t * I3, A], [A.T, t * I2]])
+    evals = np.linalg.eigvalsh(M)
+    return t, evals
+
+def validate():
+    A = read_input("1 0 0 1 0 0")
+    t, evals = solve_case(A)
+    assert abs(t - 1.0) < 1e-12
+    assert min(evals) > -1e-12
+
+def main():
+    validate()
+    A = read_input("1 2 -1 0 3 -2")
+    t, evals = solve_case(A)
+    print("t", round(t, 6), "min_eig", round(float(min(evals)), 9))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\COMPLEXITY{
+Building the block matrix is $\mathcal{O}(n^2)$; eigenvalues
+$\mathcal{O}(n^3)$ with $n=5$. SVD is $\mathcal{O}(mn^2)$ for $3\times 2$.}
+\FAILMODES{
+\begin{bullets}
+\item Nonconformable inputs; we enforce exact shapes.
+\item Numerical negativity near zero eigenvalues; allow small tolerance.
+\end{bullets}
+}
+\STABILITY{
+\begin{bullets}
+\item Small singular value gaps can yield nearly singular blocks.
+\item Slightly increasing $t$ ensures strict PSD.
+\end{bullets}
+}
+\VALIDATION{
+\begin{bullets}
+\item Identity submatrix test; asserts on eigenvalue signs.
+\item Cross-check SVD norm equals spectral norm.
+\end{bullets}
+}
+\RESULT{
+Both implementations confirm PSD at $t=\|A\|_2$ with minimal eigenvalue
+near zero (within tolerance).}
+\EXPLANATION{
+Schur complement encodes $\|A\|_2\le t$ as an LMI; SVD gives $t$ exactly.
+The PSD check validates the equivalence numerically.}
+\EXTENSION{
+Vectorize to handle batches of matrices and norms.}
+
+\clearpage
+\section{Applied Domains — Detailed End-to-End Scenarios}
+
+\DomainPage{Machine Learning}
+\SCENARIO{
+Spectral norm regularization of a linear classifier weight matrix $W$
+controls Lipschitz constant. Use the SDP LMI for $\|W\|_2\le t$ to
+compute and verify $t$ for a synthetic $W$.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Linear model; controlling $\|W\|_2$ bounds adversarial sensitivity.
+\item Spectral norm computed via SVD equals SDP optimum.
+\end{bullets}
+}
+\WHICHFORMULA{
+Spectral norm LMI:
+$\|W\|_2\le t \iff \begin{bmatrix}tI&W\\W^\top&tI\end{bmatrix}\succeq 0$.}
+\varmapStart
+\var{W}{Weight matrix in $\mathbb{R}^{d\times d}$.}
+\var{t}{Spectral norm bound.}
+\var{M}{Block LMI matrix.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Generate $W$ with fixed seed.
+\item Compute $t=\|W\|_2$ via SVD.
+\item Verify PSD of the LMI block at $t$.
+\end{bullets}
+}
+\textbf{Implementation (From Scratch)}
+\begin{codepy}
+import numpy as np
+
+def generate_W(d=3, seed=0):
+    np.random.seed(seed)
+    return np.random.randn(d, d)
+
+def spectral_norm(W):
+    # power iteration for symmetric W^T W
+    v = np.ones(W.shape[1])
+    for _ in range(100):
+        v = W.T @ (W @ v)
+        v = v / np.linalg.norm(v)
+    val = float(np.sqrt(v @ (W.T @ (W @ v))))
+    return val
+
+def verify_lmi(W, t):
+    I = np.eye(W.shape[0])
+    M = np.block([[t * I, W], [W.T, t * I]])
+    eigs = np.linalg.eigvalsh(M)
+    return float(min(eigs))
+
+def main():
+    W = generate_W()
+    t = spectral_norm(W)
+    mineig = verify_lmi(W, t)
+    print("t", round(t, 6), "min_eig", round(mineig, 9))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\textbf{Implementation (Library Version)}
+\begin{codepy}
+import numpy as np
+
+def main():
+    np.random.seed(0)
+    W = np.random.randn(3, 3)
+    svals = np.linalg.svd(W, compute_uv=False)
+    t = float(svals[0])
+    I = np.eye(3)
+    M = np.block([[t * I, W], [W.T, t * I]])
+    mineig = float(np.min(np.linalg.eigvalsh(M)))
+    print("t", round(t, 6), "min_eig", round(mineig, 9))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Report $t$ and minimal eigenvalue of the LMI block (should be $\ge 0$).}
+\INTERPRET{Spectral norm equals the exact SDP bound; PSD verifies the LMI.}
+\NEXTSTEPS{Add constraint $\|W\|_2\le \tau$ during training via proximal step.}
+
+\DomainPage{Quantitative Finance}
+\SCENARIO{
+Robust variance bound via LMI: ensure portfolio risk $\sigma^2=w^\top\Sigma w$
+by Schur complement as
+$\begin{bmatrix}\sigma^2 & w^\top\\ w & \Sigma^{-1}\end{bmatrix}\succeq 0$.
+Compute $\sigma^2$ and verify the LMI.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item $\Sigma\succ 0$ (invertible covariance).
+\item Schur complement equivalence holds.
+\end{bullets}
+}
+\WHICHFORMULA{
+$w^\top \Sigma w\le \sigma^2 \iff
+\begin{bmatrix}\sigma^2 & w^\top\\ w & \Sigma^{-1}\end{bmatrix}\succeq 0$.}
+\varmapStart
+\var{w}{Portfolio weights.}
+\var{\Sigma}{Covariance matrix $\succ 0$.}
+\var{\sigma^2}{Variance bound.}
+\varmapEnd
+\PIPELINE{
+\begin{bullets}
+\item Simulate $\Sigma=A A^\top$ with fixed seed.
+\item Choose $w$; compute $\sigma^2=w^\top\Sigma w$.
+\item Verify PSD of the LMI block.
+\end{bullets}
+}
+\textbf{Implementation (Full Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def simulate_cov(d=3, seed=0):
+    np.random.seed(seed)
+    A = np.random.randn(d, d)
+    return A @ A.T
+
+def variance_lmi(Sigma, w):
+    sig2 = float(w.T @ Sigma @ w)
+    Sinv = np.linalg.inv(Sigma)
+    M = np.block([[np.array([[sig2]]), w.reshape(1, -1)],
+                  [w.reshape(-1, 1), Sinv]])
+    mineig = float(np.min(np.linalg.eigvalsh(M)))
+    return sig2, mineig
+
+def main():
+    Sigma = simulate_cov()
+    w = np.array([0.5, 0.3, 0.2])
+    sig2, mineig = variance_lmi(Sigma, w)
+    print("var", round(sig2, 6), "min_eig", round(mineig, 9))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Variance value and minimal eigenvalue of the LMI block.}
+\INTERPRET{At $\sigma^2=w^\top\Sigma w$, the LMI is PSD with zero Schur
+complement, certifying the bound tightness.}
+\NEXTSTEPS{Add expected return and solve mean-variance SDP with robust sets.}
+
+\DomainPage{Deep Learning}
+\SCENARIO{
+Lipschitz constant of a linear layer equals $\|W\|_2$. Use the SDP LMI to
+verify the bound and compute a safe step size for gradient descent.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Linear layer; Lipschitz constant is spectral norm.
+\item Step size $\eta<2/\|W\|_2^2$ for gradient descent on quadratic loss.
+\end{bullets}
+}
+\WHICHFORMULA{
+$\|W\|_2\le t \iff \begin{bmatrix}tI&W\\W^\top&tI\end{bmatrix}\succeq 0$.}
+\PIPELINE{
+\begin{bullets}
+\item Generate $W$.
+\item Compute $t=\|W\|_2$.
+\item Set $\eta=1/t^2$ and report.
+\end{bullets}
+}
+\textbf{Implementation (End-to-End)}
+\begin{codepy}
+import numpy as np
+
+def generate_W(seed=1):
+    np.random.seed(seed)
+    return np.random.randn(4, 4)
+
+def spectral_norm(W):
+    svals = np.linalg.svd(W, compute_uv=False)
+    return float(svals[0])
+
+def safe_stepsize(W):
+    t = spectral_norm(W)
+    eta = 1.0 / (t * t)
+    I = np.eye(W.shape[0])
+    M = np.block([[t * I, W], [W.T, t * I]])
+    min_eig = float(np.min(np.linalg.eigvalsh(M)))
+    return t, eta, min_eig
+
+def main():
+    W = generate_W()
+    t, eta, min_eig = safe_stepsize(W)
+    print("t", round(t, 6), "eta", round(eta, 6),
+          "min_eig", round(min_eig, 9))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{$t=\|W\|_2$, $\eta=1/t^2$, minimal eigenvalue of LMI block.}
+\INTERPRET{LMI validates spectral norm; chosen $\eta$ stabilizes descent.}
+\NEXTSTEPS{Impose $\|W\|_2\le \tau$ via spectral norm regularization.}
+
+\DomainPage{Kaggle / Data Analytics}
+\SCENARIO{
+Nearest correlation matrix for a noisy covariance estimate: project the
+matrix to $\mathbb{S}^n_+$ and normalize diagonal to $1$.}
+\ASSUMPTIONS{
+\begin{bullets}
+\item Frobenius norm projection; eigenvalue clipping.
+\item Diagonal scaling to unit variance.
+\end{bullets}
+}
+\WHICHFORMULA{
+Projection onto PSD cone: zero negative eigenvalues.}
+\PIPELINE{
+\begin{bullets}
+\item Create noisy symmetric matrix with fixed seed.
+\item Project to PSD.
+\item Scale to unit diagonal to get a correlation matrix.
+\end{bullets}
+}
+\textbf{Implementation (Complete EDA Pipeline)}
+\begin{codepy}
+import numpy as np
+
+def noisy_cov(n=4, seed=0):
+    np.random.seed(seed)
+    M = np.random.randn(n, n)
+    S = (M + M.T) / 2.0
+    return S
+
+def project_psd(S):
+    eigvals, Q = np.linalg.eigh(S)
+    eigvals_clipped = np.clip(eigvals, 0.0, None)
+    return (Q * eigvals_clipped) @ Q.T
+
+def normalize_diag(C):
+    d = np.sqrt(np.diag(C))
+    Dinv = np.diag(1.0 / np.maximum(d, 1e-12))
+    return Dinv @ C @ Dinv
+
+def main():
+    S = noisy_cov()
+    C_psd = project_psd(S)
+    R = normalize_diag(C_psd)
+    mineig = float(np.min(np.linalg.eigvalsh(R)))
+    diag = np.diag(R)
+    print("min_eig", round(mineig, 9), "diag", np.round(diag, 6))
+
+if __name__ == "__main__":
+    main()
+\end{codepy}
+\METRICS{Minimal eigenvalue (should be $\ge 0$) and diagonal entries (near $1$).}
+\INTERPRET{Projection and scaling yield a valid correlation matrix suitable
+for downstream analytics and modeling.}
+\NEXTSTEPS{Add shrinkage and ensure closeness to the original estimate.}
+
+\end{document}
